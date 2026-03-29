@@ -88,6 +88,11 @@ func (c *BaseClient) Delete(ctx context.Context, path string, dst any) error {
 	return c.do(ctx, http.MethodDelete, path, nil, dst)
 }
 
+// Patch performs an authenticated PATCH request with a JSON body and decodes the response into dst.
+func (c *BaseClient) Patch(ctx context.Context, path string, body, dst any) error {
+	return c.do(ctx, http.MethodPatch, path, body, dst)
+}
+
 // do is the internal method that executes every HTTP request.
 func (c *BaseClient) do(ctx context.Context, method, path string, body, dst any) error {
 	ref, err := url.Parse(path)
