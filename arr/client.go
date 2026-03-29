@@ -90,7 +90,11 @@ func (c *BaseClient) Delete(ctx context.Context, path string, dst any) error {
 
 // do is the internal method that executes every HTTP request.
 func (c *BaseClient) do(ctx context.Context, method, path string, body, dst any) error {
-	u := c.baseURL.JoinPath(path)
+	ref, err := url.Parse(path)
+	if err != nil {
+		return fmt.Errorf("arr: parse path: %w", err)
+	}
+	u := c.baseURL.ResolveReference(ref)
 
 	var reqBody io.Reader
 	if body != nil {
