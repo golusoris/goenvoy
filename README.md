@@ -11,7 +11,9 @@ Designed as a **multi-module monorepo** — import only what you need, from a si
 | **Arr Stack** | `github.com/lusoris/goenvoy/arr` | Sonarr, Radarr, Lidarr, Readarr, Whisparr (v2+v3), Prowlarr, Bazarr, Seerr |
 | **Metadata** | `github.com/lusoris/goenvoy/metadata` | TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, AniList, Kitsu, AniDB, MAL, Trakt, Simkl, Letterboxd |
 | **Download Clients** | `github.com/lusoris/goenvoy/downloadclient` | qBittorrent, Transmission, Deluge, rTorrent, uTorrent, SABnzbd, NZBGet |
+| **Media Servers** | `github.com/lusoris/goenvoy/mediaserver` | Plex, Jellyfin, Emby |
 | **Anime** | `github.com/lusoris/goenvoy/anime` | Shoko Server |
+| **Adult Media** | `github.com/lusoris/goenvoy/stash` | StashApp |
 
 ## Install
 
@@ -71,8 +73,13 @@ goenvoy/
 ├── downloadclient/   # shared download types + Downloader interface
 │   ├── qbittorrent/  # qBittorrent WebUI client
 │   └── ...
-└── anime/            # shared anime types
-    └── shoko/        # Shoko Server client
+├── mediaserver/      # shared media server types
+│   ├── plex/         # Plex Media Server client
+│   ├── jellyfin/     # Jellyfin client
+│   └── ...
+├── anime/            # shared anime types
+│   └── shoko/        # Shoko Server client
+└── stash/            # StashApp GraphQL client
 ```
 
 ## Development
