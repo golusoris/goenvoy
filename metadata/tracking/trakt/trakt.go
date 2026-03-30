@@ -1,0 +1,650 @@
+package trakt
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strconv"
+	"time"
+)
+
+const (
+	defaultBaseURL   = "https://api.trakt.tv"
+	defaultTimeout   = 30 * time.Second
+	defaultUserAgent = "goenvoy/0.0.1"
+	apiVersion       = "2"
+)
+
+// Option configures a [Client].
+type Option func(*Client)
+
+// WithHTTPClient sets a custom [http.Client].
+func WithHTTPClient(c *http.Client) Option {
+	return func(cl *Client) { cl.httpClient = c }
+}
+
+// WithTimeout overrides the default HTTP request timeout.
+func WithTimeout(d time.Duration) Option {
+	return func(cl *Client) { cl.httpClient.Timeout = d }
+}
+
+// WithUserAgent sets the User-Agent header sent with every request.
+func WithUserAgent(ua string) Option {
+	return func(cl *Client) { cl.userAgent = ua }
+}
+
+// WithBaseURL overrides the default Trakt API base URL.
+// The URL must not have a trailing slash.
+func WithBaseURL(u string) Option {
+	return func(cl *Client) { cl.rawBaseURL = u }
+}
+
+// Client is a Trakt API v2 client.
+type Client struct {
+	clientID   string
+	rawBaseURL string
+	httpClient *http.Client
+	userAgent  string
+}
+
+// New creates a Trakt [Client] using the given client ID (API key).
+func New(clientID string, opts ...Option) *Client {
+	c := &Client{
+		clientID:   clientID,
+		rawBaseURL: defaultBaseURL,
+		httpClient: &http.Client{Timeout: defaultTimeout},
+		userAgent:  defaultUserAgent,
+	}
+	for _, o := range opts {
+		o(c)
+	}
+	return c
+}
+
+// APIError is returned when the API responds with a non-2xx status.
+type APIError struct {
+	StatusCode  int    `json:"-"`
+	Error_      string `json:"error"`
+	Description string `json:"error_description"`
+	// RawBody holds the raw response body when the error could not be parsed as JSON.
+	RawBody string `json:"-"`
+}
+
+func (e *APIError) Error() string {
+	if e.Description != "" {
+		return fmt.Sprintf("trakt: HTTP %d: %s: %s", e.StatusCode, e.Error_, e.Description)
+	}
+	if e.Error_ != "" {
+		return fmt.Sprintf("trakt: HTTP %d: %s", e.StatusCode, e.Error_)
+	}
+	if e.RawBody != "" {
+		return fmt.Sprintf("trakt: HTTP %d: %s", e.StatusCode, e.RawBody)
+	}
+	return fmt.Sprintf("trakt: HTTP %d", e.StatusCode)
+}
+
+// PaginationHeaders contains pagination information from response headers.
+type PaginationHeaders struct {
+	Page      int
+	Limit     int
+	PageCount int
+	ItemCount int
+}
+
+func parsePaginationHeaders(h http.Header) PaginationHeaders {
+	atoi := func(s string) int {
+		v, _ := strconv.Atoi(s)
+		return v
+	}
+	return PaginationHeaders{
+		Page:      atoi(h.Get("X-Pagination-Page")),
+		Limit:     atoi(h.Get("X-Pagination-Limit")),
+		PageCount: atoi(h.Get("X-Pagination-Page-Count")),
+		ItemCount: atoi(h.Get("X-Pagination-Item-Count")),
+	}
+}
+
+func (c *Client) get(ctx context.Context, path string, params url.Values, dst any) (*PaginationHeaders, error) {
+	u, err := url.Parse(c.rawBaseURL + path)
+	if err != nil {
+		return nil, fmt.Errorf("trakt: parse URL: %w", err)
+	}
+	if params != nil {
+		u.RawQuery = params.Encode()
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("trakt: create request: %w", err)
+	}
+
+	req.Header.Set("trakt-api-key", c.clientID)
+	req.Header.Set("trakt-api-version", apiVersion)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", c.userAgent)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("trakt: GET %s: %w", path, err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("trakt: read response: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		apiErr := &APIError{StatusCode: resp.StatusCode}
+		if err := json.Unmarshal(body, apiErr); err != nil {
+			apiErr.RawBody = string(body)
+		}
+		return nil, apiErr
+	}
+
+	pg := parsePaginationHeaders(resp.Header)
+
+	if dst != nil && len(body) > 0 {
+		if err := json.Unmarshal(body, dst); err != nil {
+			return nil, fmt.Errorf("trakt: decode response: %w", err)
+		}
+	}
+	return &pg, nil
+}
+
+func pageParams(page, limit int) url.Values {
+	p := url.Values{}
+	if page > 0 {
+		p.Set("page", strconv.Itoa(page))
+	}
+	if limit > 0 {
+		p.Set("limit", strconv.Itoa(limit))
+	}
+	return p
+}
+
+func extendedParams(page, limit int) url.Values {
+	p := pageParams(page, limit)
+	p.Set("extended", "full")
+	return p
+}
+
+// Movies.
+
+// GetMovie returns a single movie by its Trakt slug or ID.
+func (c *Client) GetMovie(ctx context.Context, idOrSlug string) (*Movie, error) {
+	var out Movie
+	_, err := c.get(ctx, "/movies/"+url.PathEscape(idOrSlug), url.Values{"extended": {"full"}}, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetMovieAliases returns all title aliases for a movie.
+func (c *Client) GetMovieAliases(ctx context.Context, idOrSlug string) ([]Alias, error) {
+	var out []Alias
+	_, err := c.get(ctx, "/movies/"+url.PathEscape(idOrSlug)+"/aliases", nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetMovieReleases returns release information for a movie in a given country.
+// Pass an empty country for all countries.
+func (c *Client) GetMovieReleases(ctx context.Context, idOrSlug, country string) ([]MovieRelease, error) {
+	path := "/movies/" + url.PathEscape(idOrSlug) + "/releases"
+	if country != "" {
+		path += "/" + url.PathEscape(country)
+	}
+	var out []MovieRelease
+	_, err := c.get(ctx, path, nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetMovieTranslations returns translations for a movie.
+// Pass an empty language for all languages.
+func (c *Client) GetMovieTranslations(ctx context.Context, idOrSlug, language string) ([]MovieTranslation, error) {
+	path := "/movies/" + url.PathEscape(idOrSlug) + "/translations"
+	if language != "" {
+		path += "/" + url.PathEscape(language)
+	}
+	var out []MovieTranslation
+	_, err := c.get(ctx, path, nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetMoviePeople returns the cast and crew for a movie.
+func (c *Client) GetMoviePeople(ctx context.Context, idOrSlug string) (*People, error) {
+	var out People
+	_, err := c.get(ctx, "/movies/"+url.PathEscape(idOrSlug)+"/people", nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetMovieRatings returns the rating and vote distribution for a movie.
+func (c *Client) GetMovieRatings(ctx context.Context, idOrSlug string) (*Ratings, error) {
+	var out Ratings
+	_, err := c.get(ctx, "/movies/"+url.PathEscape(idOrSlug)+"/ratings", nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetMovieStats returns stats for a movie.
+func (c *Client) GetMovieStats(ctx context.Context, idOrSlug string) (*Stats, error) {
+	var out Stats
+	_, err := c.get(ctx, "/movies/"+url.PathEscape(idOrSlug)+"/stats", nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetMovieStudios returns production studios for a movie.
+func (c *Client) GetMovieStudios(ctx context.Context, idOrSlug string) ([]Studio, error) {
+	var out []Studio
+	_, err := c.get(ctx, "/movies/"+url.PathEscape(idOrSlug)+"/studios", nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TrendingMovies returns trending movies with pagination.
+func (c *Client) TrendingMovies(ctx context.Context, page, limit int) ([]TrendingMovie, *PaginationHeaders, error) {
+	var out []TrendingMovie
+	pg, err := c.get(ctx, "/movies/trending", extendedParams(page, limit), &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, pg, nil
+}
+
+// PopularMovies returns popular movies with pagination.
+func (c *Client) PopularMovies(ctx context.Context, page, limit int) ([]Movie, *PaginationHeaders, error) {
+	var out []Movie
+	pg, err := c.get(ctx, "/movies/popular", extendedParams(page, limit), &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, pg, nil
+}
+
+// MostPlayedMovies returns the most played movies for a given period (weekly, monthly, yearly, all).
+func (c *Client) MostPlayedMovies(ctx context.Context, period string, page, limit int) ([]PlayedMovie, *PaginationHeaders, error) {
+	var out []PlayedMovie
+	pg, err := c.get(ctx, "/movies/played/"+url.PathEscape(period), extendedParams(page, limit), &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, pg, nil
+}
+
+// MostWatchedMovies returns the most watched movies for a given period.
+func (c *Client) MostWatchedMovies(ctx context.Context, period string, page, limit int) ([]PlayedMovie, *PaginationHeaders, error) {
+	var out []PlayedMovie
+	pg, err := c.get(ctx, "/movies/watched/"+url.PathEscape(period), extendedParams(page, limit), &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, pg, nil
+}
+
+// AnticipatedMovies returns the most anticipated movies.
+func (c *Client) AnticipatedMovies(ctx context.Context, page, limit int) ([]AnticipatedMovie, *PaginationHeaders, error) {
+	var out []AnticipatedMovie
+	pg, err := c.get(ctx, "/movies/anticipated", extendedParams(page, limit), &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, pg, nil
+}
+
+// BoxOfficeMovies returns the current weekend box office.
+func (c *Client) BoxOfficeMovies(ctx context.Context) ([]BoxOfficeMovie, error) {
+	var out []BoxOfficeMovie
+	_, err := c.get(ctx, "/movies/boxoffice", url.Values{"extended": {"full"}}, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Shows.
+
+// GetShow returns a single show by its Trakt slug or ID.
+func (c *Client) GetShow(ctx context.Context, idOrSlug string) (*Show, error) {
+	var out Show
+	_, err := c.get(ctx, "/shows/"+url.PathEscape(idOrSlug), url.Values{"extended": {"full"}}, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetShowAliases returns all title aliases for a show.
+func (c *Client) GetShowAliases(ctx context.Context, idOrSlug string) ([]Alias, error) {
+	var out []Alias
+	_, err := c.get(ctx, "/shows/"+url.PathEscape(idOrSlug)+"/aliases", nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetShowTranslations returns translations for a show.
+func (c *Client) GetShowTranslations(ctx context.Context, idOrSlug, language string) ([]ShowTranslation, error) {
+	path := "/shows/" + url.PathEscape(idOrSlug) + "/translations"
+	if language != "" {
+		path += "/" + url.PathEscape(language)
+	}
+	var out []ShowTranslation
+	_, err := c.get(ctx, path, nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetShowPeople returns the cast and crew for a show.
+func (c *Client) GetShowPeople(ctx context.Context, idOrSlug string) (*People, error) {
+	var out People
+	_, err := c.get(ctx, "/shows/"+url.PathEscape(idOrSlug)+"/people", nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetShowRatings returns the rating for a show.
+func (c *Client) GetShowRatings(ctx context.Context, idOrSlug string) (*Ratings, error) {
+	var out Ratings
+	_, err := c.get(ctx, "/shows/"+url.PathEscape(idOrSlug)+"/ratings", nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetShowStats returns stats for a show.
+func (c *Client) GetShowStats(ctx context.Context, idOrSlug string) (*Stats, error) {
+	var out Stats
+	_, err := c.get(ctx, "/shows/"+url.PathEscape(idOrSlug)+"/stats", nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetShowStudios returns production studios for a show.
+func (c *Client) GetShowStudios(ctx context.Context, idOrSlug string) ([]Studio, error) {
+	var out []Studio
+	_, err := c.get(ctx, "/shows/"+url.PathEscape(idOrSlug)+"/studios", nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// TrendingShows returns trending shows with pagination.
+func (c *Client) TrendingShows(ctx context.Context, page, limit int) ([]TrendingShow, *PaginationHeaders, error) {
+	var out []TrendingShow
+	pg, err := c.get(ctx, "/shows/trending", extendedParams(page, limit), &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, pg, nil
+}
+
+// PopularShows returns popular shows with pagination.
+func (c *Client) PopularShows(ctx context.Context, page, limit int) ([]Show, *PaginationHeaders, error) {
+	var out []Show
+	pg, err := c.get(ctx, "/shows/popular", extendedParams(page, limit), &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, pg, nil
+}
+
+// MostPlayedShows returns the most played shows for a given period.
+func (c *Client) MostPlayedShows(ctx context.Context, period string, page, limit int) ([]PlayedShow, *PaginationHeaders, error) {
+	var out []PlayedShow
+	pg, err := c.get(ctx, "/shows/played/"+url.PathEscape(period), extendedParams(page, limit), &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, pg, nil
+}
+
+// MostWatchedShows returns the most watched shows for a given period.
+func (c *Client) MostWatchedShows(ctx context.Context, period string, page, limit int) ([]PlayedShow, *PaginationHeaders, error) {
+	var out []PlayedShow
+	pg, err := c.get(ctx, "/shows/watched/"+url.PathEscape(period), extendedParams(page, limit), &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, pg, nil
+}
+
+// AnticipatedShows returns the most anticipated shows.
+func (c *Client) AnticipatedShows(ctx context.Context, page, limit int) ([]AnticipatedShow, *PaginationHeaders, error) {
+	var out []AnticipatedShow
+	pg, err := c.get(ctx, "/shows/anticipated", extendedParams(page, limit), &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, pg, nil
+}
+
+// Seasons and episodes.
+
+// GetShowSeasons returns all seasons for a show.
+func (c *Client) GetShowSeasons(ctx context.Context, idOrSlug string) ([]Season, error) {
+	var out []Season
+	_, err := c.get(ctx, "/shows/"+url.PathEscape(idOrSlug)+"/seasons", url.Values{"extended": {"full"}}, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetSeasonEpisodes returns all episodes for a specific season of a show.
+func (c *Client) GetSeasonEpisodes(ctx context.Context, idOrSlug string, season int) ([]Episode, error) {
+	var out []Episode
+	path := "/shows/" + url.PathEscape(idOrSlug) + "/seasons/" + strconv.Itoa(season)
+	_, err := c.get(ctx, path, url.Values{"extended": {"full"}}, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetEpisode returns a single episode by show, season number, and episode number.
+func (c *Client) GetEpisode(ctx context.Context, idOrSlug string, season, episode int) (*Episode, error) {
+	var out Episode
+	path := "/shows/" + url.PathEscape(idOrSlug) + "/seasons/" + strconv.Itoa(season) + "/episodes/" + strconv.Itoa(episode)
+	_, err := c.get(ctx, path, url.Values{"extended": {"full"}}, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetEpisodeRatings returns the ratings for a specific episode.
+func (c *Client) GetEpisodeRatings(ctx context.Context, idOrSlug string, season, episode int) (*Ratings, error) {
+	var out Ratings
+	path := "/shows/" + url.PathEscape(idOrSlug) + "/seasons/" + strconv.Itoa(season) + "/episodes/" + strconv.Itoa(episode) + "/ratings"
+	_, err := c.get(ctx, path, nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetEpisodeStats returns the stats for a specific episode.
+func (c *Client) GetEpisodeStats(ctx context.Context, idOrSlug string, season, episode int) (*Stats, error) {
+	var out Stats
+	path := "/shows/" + url.PathEscape(idOrSlug) + "/seasons/" + strconv.Itoa(season) + "/episodes/" + strconv.Itoa(episode) + "/stats"
+	_, err := c.get(ctx, path, nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// People.
+
+// GetPerson returns a single person by their Trakt slug or ID.
+func (c *Client) GetPerson(ctx context.Context, idOrSlug string) (*Person, error) {
+	var out Person
+	_, err := c.get(ctx, "/people/"+url.PathEscape(idOrSlug), url.Values{"extended": {"full"}}, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// Search.
+
+// SearchText searches Trakt by text query.
+// searchType can be "movie", "show", "episode", "person", or a comma-separated combination.
+func (c *Client) SearchText(ctx context.Context, query, searchType string, page, limit int) ([]SearchResult, *PaginationHeaders, error) {
+	params := pageParams(page, limit)
+	params.Set("query", query)
+	var out []SearchResult
+	pg, err := c.get(ctx, "/search/"+url.PathEscape(searchType), params, &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, pg, nil
+}
+
+// SearchByID searches by an external ID (imdb, tmdb, tvdb, trakt).
+// idType should be one of: "imdb", "tmdb", "tvdb", "trakt".
+// searchType filters result types (e.g. "movie", "show" or "" for all).
+func (c *Client) SearchByID(ctx context.Context, idType, id, searchType string) ([]SearchResult, error) {
+	params := url.Values{}
+	if searchType != "" {
+		params.Set("type", searchType)
+	}
+	var out []SearchResult
+	_, err := c.get(ctx, "/search/"+url.PathEscape(idType)+"/"+url.PathEscape(id), params, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Calendars.
+
+// CalendarMovies returns movies with releases in the given date range.
+// startDate format: YYYY-MM-DD, days is the number of days (1-33).
+func (c *Client) CalendarMovies(ctx context.Context, startDate string, days int) ([]CalendarMovie, error) {
+	path := "/calendars/all/movies/" + url.PathEscape(startDate) + "/" + strconv.Itoa(days)
+	var out []CalendarMovie
+	_, err := c.get(ctx, path, url.Values{"extended": {"full"}}, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CalendarShows returns show episodes airing in the given date range.
+func (c *Client) CalendarShows(ctx context.Context, startDate string, days int) ([]CalendarShow, error) {
+	path := "/calendars/all/shows/" + url.PathEscape(startDate) + "/" + strconv.Itoa(days)
+	var out []CalendarShow
+	_, err := c.get(ctx, path, url.Values{"extended": {"full"}}, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CalendarNewShows returns new show premieres in the given date range.
+func (c *Client) CalendarNewShows(ctx context.Context, startDate string, days int) ([]CalendarShow, error) {
+	path := "/calendars/all/shows/new/" + url.PathEscape(startDate) + "/" + strconv.Itoa(days)
+	var out []CalendarShow
+	_, err := c.get(ctx, path, url.Values{"extended": {"full"}}, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// CalendarSeasonPremieres returns season premieres in the given date range.
+func (c *Client) CalendarSeasonPremieres(ctx context.Context, startDate string, days int) ([]CalendarShow, error) {
+	path := "/calendars/all/shows/premieres/" + url.PathEscape(startDate) + "/" + strconv.Itoa(days)
+	var out []CalendarShow
+	_, err := c.get(ctx, path, url.Values{"extended": {"full"}}, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Reference data.
+
+// Genres returns all genres for the given type ("movies" or "shows").
+func (c *Client) Genres(ctx context.Context, mediaType string) ([]Genre, error) {
+	var out []Genre
+	_, err := c.get(ctx, "/genres/"+url.PathEscape(mediaType), nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Certifications returns all certifications for the given type ("movies" or "shows").
+func (c *Client) Certifications(ctx context.Context, mediaType string) ([]Certification, error) {
+	var out []Certification
+	_, err := c.get(ctx, "/certifications/"+url.PathEscape(mediaType), nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Countries returns all countries.
+func (c *Client) Countries(ctx context.Context, mediaType string) ([]Country, error) {
+	var out []Country
+	_, err := c.get(ctx, "/countries/"+url.PathEscape(mediaType), nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Languages returns all languages.
+func (c *Client) Languages(ctx context.Context, mediaType string) ([]Language, error) {
+	var out []Language
+	_, err := c.get(ctx, "/languages/"+url.PathEscape(mediaType), nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Networks returns all TV networks.
+func (c *Client) Networks(ctx context.Context) ([]Network, error) {
+	var out []Network
+	_, err := c.get(ctx, "/networks", nil, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
