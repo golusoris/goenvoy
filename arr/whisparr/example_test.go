@@ -9,7 +9,7 @@ import (
 )
 
 func Example() {
-	// Create a new Whisparr client
+	// Create a new Whisparr v2 client (Sonarr-based).
 	client, err := whisparr.New("http://localhost:6969", "your-api-key")
 	if err != nil {
 		log.Fatal(err)
@@ -17,17 +17,34 @@ func Example() {
 
 	ctx := context.Background()
 
-	// Get system status
+	// Get system status.
 	status, err := client.GetSystemStatus(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("%s version %s\n", status.AppName, status.Version)
 
-	// Get all series
+	// Get all series.
 	series, err := client.GetAllSeries(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("Total series: %d\n", len(series))
+}
+
+func Example_eros() {
+	// Create a new Whisparr v3 (Eros) client (Radarr-based).
+	client, err := whisparr.NewEros("http://localhost:6969", "your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx := context.Background()
+
+	// Get all movies.
+	movies, err := client.GetAllMovies(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Total movies: %d\n", len(movies))
 }

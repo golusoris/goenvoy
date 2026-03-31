@@ -9,8 +9,8 @@ import (
 )
 
 func Example() {
-	// Create a new TMDb client
-	client := tmdb.New("your-api-key")
+	// Create a new TMDb client with a v4 Read Access Token (Bearer).
+	client := tmdb.New("your-access-token")
 
 	ctx := context.Background()
 

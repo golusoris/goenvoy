@@ -1,12 +1,23 @@
 package opensubtitles_test
 
 import (
+	"context"
 	"fmt"
+	"log"
 
 	"github.com/lusoris/goenvoy/metadata/movie/opensubtitles"
 )
 
 func Example() {
 	c := opensubtitles.New("your-api-key")
-	fmt.Println(c)
+
+	ctx := context.Background()
+
+	results, err := c.Search(ctx, &opensubtitles.SearchParams{
+		Query: "Inception",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Subtitles found: %d\n", results.TotalCount)
 }
