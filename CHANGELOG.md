@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Each module is versioned independently following [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.1.0] - 2026-03-31
 
 ### Added
 - **Jackett** (`arr/jackett`): Torznab/Newznab proxy client — search all/specific indexers, TV/movie/music/book search, capabilities, indexer management, server config.
