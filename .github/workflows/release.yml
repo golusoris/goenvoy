@@ -15,18 +15,22 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-go@v6
-        with:
-          go-version: stable
-
       - name: Determine module from tag
         id: module
         run: |
           tag="${GITHUB_REF#refs/tags/}"
           module_path=$(echo "$tag" | sed 's|/v[0-9].*||')
+          version=$(echo "$tag" | grep -oP 'v[0-9].*')
           echo "path=./$module_path" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "Module: $module_path, Tag: $tag"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "module_path=$module_path" >> "$GITHUB_OUTPUT"
+          echo "Module: $module_path, Tag: $tag, Version: $version"
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache-dependency-path: ${{ steps.module.outputs.path }}/go.mod
 
       - name: Validate module builds
         working-directory: ${{ steps.module.outputs.path }}
@@ -34,3 +38,10 @@ jobs:
           go build ./...
           go vet ./...
           go test -race ./...
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.module.outputs.tag }}
+          name: ${{ steps.module.outputs.module_path }} ${{ steps.module.outputs.version }}
+          generate_release_notes: true
