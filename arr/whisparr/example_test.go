@@ -32,9 +32,9 @@ func Example() {
 	fmt.Printf("Total series: %d\n", len(series))
 }
 
-func Example_eros() {
-	// Create a new Whisparr v3 (Eros) client (Radarr-based).
-	client, err := whisparr.NewEros("http://localhost:6969", "your-api-key")
+func Example_v3() {
+	// Create a new Whisparr v3 client (Radarr-based).
+	client, err := whisparr.NewV3("http://localhost:6969", "your-api-key")
 	if err != nil {
 		log.Fatal(err)
 	}

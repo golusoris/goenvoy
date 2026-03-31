@@ -148,7 +148,7 @@ type SeasonPassSeries struct {
 	Seasons []Season `json:"seasons,omitempty"`
 }
 
-// Movie represents a movie or scene in Whisparr v3 (Eros).
+// Movie represents a movie or scene in Whisparr v3.
 type Movie struct {
 	ID                  int              `json:"id"`
 	Title               string           `json:"title"`
@@ -185,14 +185,14 @@ type Movie struct {
 	ItemType            string           `json:"itemType,omitempty"`
 }
 
-// AddMovieOptions controls behavior when adding a new movie in Eros.
+// AddMovieOptions controls behavior when adding a new movie in Whisparr v3.
 type AddMovieOptions struct {
 	Monitor        string `json:"monitor,omitempty"`
 	SearchForMovie bool   `json:"searchForMovie"`
 	AddMethod      string `json:"addMethod,omitempty"`
 }
 
-// MovieFile represents a downloaded movie/scene file in Eros.
+// MovieFile represents a downloaded movie/scene file in Whisparr v3.
 type MovieFile struct {
 	ID           int        `json:"id"`
 	MovieID      int        `json:"movieId"`
@@ -204,8 +204,8 @@ type MovieFile struct {
 	Languages    []Language `json:"languages,omitempty"`
 }
 
-// ErosHistoryRecord represents a history event in Eros.
-type ErosHistoryRecord struct {
+// HistoryRecordV3 represents a history event in Whisparr v3.
+type HistoryRecordV3 struct {
 	ID          int    `json:"id"`
 	MovieID     int    `json:"movieId"`
 	SourceTitle string `json:"sourceTitle,omitempty"`
@@ -213,14 +213,14 @@ type ErosHistoryRecord struct {
 	EventType   string `json:"eventType,omitempty"`
 }
 
-// ErosParseResult holds the result of an Eros title parse.
-type ErosParseResult struct {
+// ParseResultV3 holds the result of a Whisparr v3 title parse.
+type ParseResultV3 struct {
 	Title           string                 `json:"title,omitempty"`
 	ParsedMovieInfo map[string]interface{} `json:"parsedMovieInfo,omitempty"`
 	Movie           *Movie                 `json:"movie,omitempty"`
 }
 
-// MovieEditorResource is the payload for bulk movie editing in Eros.
+// MovieEditorResource is the payload for bulk movie editing in Whisparr v3.
 type MovieEditorResource struct {
 	MovieIDs           []int  `json:"movieIds"`
 	Monitored          *bool  `json:"monitored,omitempty"`
@@ -233,7 +233,7 @@ type MovieEditorResource struct {
 	AddImportExclusion bool   `json:"addImportExclusion,omitempty"`
 }
 
-// Performer represents a performer in Eros.
+// Performer represents a performer in Whisparr v3.
 type Performer struct {
 	ID               int     `json:"id"`
 	ForeignID        string  `json:"foreignId,omitempty"`
@@ -253,7 +253,7 @@ type Performer struct {
 	SizeOnDisk       int64   `json:"sizeOnDisk,omitempty"`
 }
 
-// Studio represents a production studio in Eros.
+// Studio represents a production studio in Whisparr v3.
 type Studio struct {
 	ID               int     `json:"id"`
 	Title            string  `json:"title"`
@@ -273,7 +273,7 @@ type Studio struct {
 	SizeOnDisk       int64   `json:"sizeOnDisk,omitempty"`
 }
 
-// Credit represents a performer credit on a movie/scene in Eros.
+// Credit represents a performer credit on a movie/scene in Whisparr v3.
 type Credit struct {
 	ID                 int     `json:"id"`
 	PerformerName      string  `json:"personName,omitempty"`
@@ -283,7 +283,7 @@ type Credit struct {
 	CreditType         string  `json:"type,omitempty"`
 }
 
-// ImportExclusion represents an item excluded from import in Eros.
+// ImportExclusion represents an item excluded from import in Whisparr v3.
 type ImportExclusion struct {
 	ID         int    `json:"id"`
 	ForeignID  string `json:"foreignId,omitempty"`

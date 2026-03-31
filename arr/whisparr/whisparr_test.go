@@ -21,7 +21,7 @@ func newV2TestServer(t *testing.T, wantPath, body string) *httptest.Server {
 	}))
 }
 
-func newErosTestServer(t *testing.T, wantPath, body string) *httptest.Server {
+func newV3TestServer(t *testing.T, wantPath, body string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path+"?"+r.URL.RawQuery != wantPath && r.URL.Path != wantPath {
@@ -46,17 +46,17 @@ func TestNewInvalidURL(t *testing.T) {
 	}
 }
 
-func TestNewEros(t *testing.T) {
-	_, err := whisparr.NewEros("http://localhost:6969", "abc123")
+func TestNewV3(t *testing.T) {
+	_, err := whisparr.NewV3("http://localhost:6969", "abc123")
 	if err != nil {
-		t.Fatalf("NewEros() error = %v", err)
+		t.Fatalf("NewV3() error = %v", err)
 	}
 }
 
-func TestNewErosInvalidURL(t *testing.T) {
-	_, err := whisparr.NewEros("://bad", "key")
+func TestNewV3InvalidURL(t *testing.T) {
+	_, err := whisparr.NewV3("://bad", "key")
 	if err == nil {
-		t.Fatal("NewEros() with bad URL should fail")
+		t.Fatal("NewV3() with bad URL should fail")
 	}
 }
 
@@ -241,10 +241,10 @@ func TestV2GetRootFolders(t *testing.T) {
 	}
 }
 
-func TestErosGetAllMovies(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/movie", `[{"id":1,"title":"Scene 1","stashId":"abc","itemType":"scene"}]`)
+func TestV3GetAllMovies(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/movie", `[{"id":1,"title":"Scene 1","stashId":"abc","itemType":"scene"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	movies, err := c.GetAllMovies(context.Background())
 	if err != nil {
 		t.Fatalf("GetAllMovies() error = %v", err)
@@ -254,10 +254,10 @@ func TestErosGetAllMovies(t *testing.T) {
 	}
 }
 
-func TestErosGetMovie(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/movie/1", `{"id":1,"title":"Movie A","code":"ABC-123"}`)
+func TestV3GetMovie(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/movie/1", `{"id":1,"title":"Movie A","code":"ABC-123"}`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	m, err := c.GetMovie(context.Background(), 1)
 	if err != nil {
 		t.Fatalf("GetMovie() error = %v", err)
@@ -267,7 +267,7 @@ func TestErosGetMovie(t *testing.T) {
 	}
 }
 
-func TestErosAddMovie(t *testing.T) {
+func TestV3AddMovie(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -279,7 +279,7 @@ func TestErosAddMovie(t *testing.T) {
 		json.NewEncoder(w).Encode(m)
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	out, err := c.AddMovie(context.Background(), &whisparr.Movie{Title: "New Scene"})
 	if err != nil {
 		t.Fatalf("AddMovie() error = %v", err)
@@ -289,7 +289,7 @@ func TestErosAddMovie(t *testing.T) {
 	}
 }
 
-func TestErosDeleteMovie(t *testing.T) {
+func TestV3DeleteMovie(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s, want DELETE", r.Method)
@@ -297,16 +297,16 @@ func TestErosDeleteMovie(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	if err := c.DeleteMovie(context.Background(), 1, true, false); err != nil {
 		t.Fatalf("DeleteMovie() error = %v", err)
 	}
 }
 
-func TestErosLookupScene(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/lookup/scene?term=test", `[{"id":1,"title":"Found"}]`)
+func TestV3LookupScene(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/lookup/scene?term=test", `[{"id":1,"title":"Found"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	res, err := c.LookupScene(context.Background(), "test")
 	if err != nil {
 		t.Fatalf("LookupScene() error = %v", err)
@@ -316,10 +316,10 @@ func TestErosLookupScene(t *testing.T) {
 	}
 }
 
-func TestErosGetPerformers(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/performer", `[{"id":1,"name":"Jane Doe","gender":"female","stashId":"xyz"}]`)
+func TestV3GetPerformers(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/performer", `[{"id":1,"name":"Jane Doe","gender":"female","stashId":"xyz"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	perfs, err := c.GetPerformers(context.Background())
 	if err != nil {
 		t.Fatalf("GetPerformers() error = %v", err)
@@ -332,7 +332,7 @@ func TestErosGetPerformers(t *testing.T) {
 	}
 }
 
-func TestErosAddPerformer(t *testing.T) {
+func TestV3AddPerformer(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -344,7 +344,7 @@ func TestErosAddPerformer(t *testing.T) {
 		json.NewEncoder(w).Encode(p)
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	out, err := c.AddPerformer(context.Background(), &whisparr.Performer{Name: "New"})
 	if err != nil {
 		t.Fatalf("AddPerformer() error = %v", err)
@@ -354,7 +354,7 @@ func TestErosAddPerformer(t *testing.T) {
 	}
 }
 
-func TestErosDeletePerformer(t *testing.T) {
+func TestV3DeletePerformer(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s, want DELETE", r.Method)
@@ -362,16 +362,16 @@ func TestErosDeletePerformer(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	if err := c.DeletePerformer(context.Background(), 1, false); err != nil {
 		t.Fatalf("DeletePerformer() error = %v", err)
 	}
 }
 
-func TestErosGetStudios(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/studio", `[{"id":1,"title":"Studio X","stashId":"s1"}]`)
+func TestV3GetStudios(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/studio", `[{"id":1,"title":"Studio X","stashId":"s1"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	studios, err := c.GetStudios(context.Background())
 	if err != nil {
 		t.Fatalf("GetStudios() error = %v", err)
@@ -381,7 +381,7 @@ func TestErosGetStudios(t *testing.T) {
 	}
 }
 
-func TestErosAddStudio(t *testing.T) {
+func TestV3AddStudio(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -393,7 +393,7 @@ func TestErosAddStudio(t *testing.T) {
 		json.NewEncoder(w).Encode(s)
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	out, err := c.AddStudio(context.Background(), &whisparr.Studio{Title: "New Studio"})
 	if err != nil {
 		t.Fatalf("AddStudio() error = %v", err)
@@ -403,7 +403,7 @@ func TestErosAddStudio(t *testing.T) {
 	}
 }
 
-func TestErosDeleteStudio(t *testing.T) {
+func TestV3DeleteStudio(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s, want DELETE", r.Method)
@@ -411,16 +411,16 @@ func TestErosDeleteStudio(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	if err := c.DeleteStudio(context.Background(), 1, false); err != nil {
 		t.Fatalf("DeleteStudio() error = %v", err)
 	}
 }
 
-func TestErosGetCredits(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/credit?movieId=1", `[{"id":1,"personName":"Jane","type":"cast"}]`)
+func TestV3GetCredits(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/credit?movieId=1", `[{"id":1,"personName":"Jane","type":"cast"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	credits, err := c.GetCredits(context.Background(), 1)
 	if err != nil {
 		t.Fatalf("GetCredits() error = %v", err)
@@ -430,10 +430,10 @@ func TestErosGetCredits(t *testing.T) {
 	}
 }
 
-func TestErosGetMoviesByPerformer(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/movie/listbyperformerforeignid?performerForeignId=abc", `[{"id":1,"title":"Scene 1"}]`)
+func TestV3GetMoviesByPerformer(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/movie/listbyperformerforeignid?performerForeignId=abc", `[{"id":1,"title":"Scene 1"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	movies, err := c.GetMoviesByPerformer(context.Background(), "abc")
 	if err != nil {
 		t.Fatalf("GetMoviesByPerformer() error = %v", err)
@@ -443,10 +443,10 @@ func TestErosGetMoviesByPerformer(t *testing.T) {
 	}
 }
 
-func TestErosGetSystemStatus(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/system/status", `{"appName":"Whisparr","version":"3.3.3"}`)
+func TestV3GetSystemStatus(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/system/status", `{"appName":"Whisparr","version":"3.3.3"}`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	status, err := c.GetSystemStatus(context.Background())
 	if err != nil {
 		t.Fatalf("GetSystemStatus() error = %v", err)
@@ -456,10 +456,10 @@ func TestErosGetSystemStatus(t *testing.T) {
 	}
 }
 
-func TestErosGetImportExclusions(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/exclusions", `[{"id":1,"movieTitle":"Excluded"}]`)
+func TestV3GetImportExclusions(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/exclusions", `[{"id":1,"movieTitle":"Excluded"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	exclusions, err := c.GetImportExclusions(context.Background())
 	if err != nil {
 		t.Fatalf("GetImportExclusions() error = %v", err)
@@ -482,13 +482,13 @@ func TestV2ErrorResponse(t *testing.T) {
 	}
 }
 
-func TestErosErrorResponse(t *testing.T) {
+func TestV3ErrorResponse(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{"message":"Unauthorized"}`))
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "bad-key")
+	c, _ := whisparr.NewV3(ts.URL, "bad-key")
 	_, err := c.GetAllMovies(context.Background())
 	if err == nil {
 		t.Fatal("expected error for 401 response")
@@ -644,9 +644,9 @@ func TestV2UpdateSeasonPass(t *testing.T) {
 	}
 }
 
-// Eros untested methods.
+// V3 untested methods.
 
-func TestErosUpdateMovie(t *testing.T) {
+func TestV3UpdateMovie(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %s, want PUT", r.Method)
@@ -657,7 +657,7 @@ func TestErosUpdateMovie(t *testing.T) {
 		json.NewEncoder(w).Encode(m)
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	out, err := c.UpdateMovie(context.Background(), &whisparr.Movie{ID: 1, Title: "Updated"}, true)
 	if err != nil {
 		t.Fatalf("UpdateMovie() error = %v", err)
@@ -667,10 +667,10 @@ func TestErosUpdateMovie(t *testing.T) {
 	}
 }
 
-func TestErosLookupMovie(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/lookup/movie?term=test", `[{"id":1,"title":"Found"}]`)
+func TestV3LookupMovie(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/lookup/movie?term=test", `[{"id":1,"title":"Found"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	res, err := c.LookupMovie(context.Background(), "test")
 	if err != nil {
 		t.Fatalf("LookupMovie() error = %v", err)
@@ -680,10 +680,10 @@ func TestErosLookupMovie(t *testing.T) {
 	}
 }
 
-func TestErosGetMoviesByStudio(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/movie/listbystudioforeignid?studioForeignId=s1", `[{"id":1,"title":"Scene 1"}]`)
+func TestV3GetMoviesByStudio(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/movie/listbystudioforeignid?studioForeignId=s1", `[{"id":1,"title":"Scene 1"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	movies, err := c.GetMoviesByStudio(context.Background(), "s1")
 	if err != nil {
 		t.Fatalf("GetMoviesByStudio() error = %v", err)
@@ -693,10 +693,10 @@ func TestErosGetMoviesByStudio(t *testing.T) {
 	}
 }
 
-func TestErosGetMovieFile(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/moviefile/1", `{"id":1,"size":2048}`)
+func TestV3GetMovieFile(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/moviefile/1", `{"id":1,"size":2048}`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	f, err := c.GetMovieFile(context.Background(), 1)
 	if err != nil {
 		t.Fatalf("GetMovieFile() error = %v", err)
@@ -706,7 +706,7 @@ func TestErosGetMovieFile(t *testing.T) {
 	}
 }
 
-func TestErosDeleteMovieFile(t *testing.T) {
+func TestV3DeleteMovieFile(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s, want DELETE", r.Method)
@@ -714,13 +714,13 @@ func TestErosDeleteMovieFile(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	if err := c.DeleteMovieFile(context.Background(), 1); err != nil {
 		t.Fatalf("DeleteMovieFile() error = %v", err)
 	}
 }
 
-func TestErosEditMovies(t *testing.T) {
+func TestV3EditMovies(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %s, want PUT", r.Method)
@@ -728,14 +728,14 @@ func TestErosEditMovies(t *testing.T) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	err := c.EditMovies(context.Background(), &whisparr.MovieEditorResource{MovieIDs: []int{1, 2}})
 	if err != nil {
 		t.Fatalf("EditMovies() error = %v", err)
 	}
 }
 
-func TestErosDeleteMovies(t *testing.T) {
+func TestV3DeleteMovies(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s, want DELETE", r.Method)
@@ -743,17 +743,17 @@ func TestErosDeleteMovies(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	err := c.DeleteMovies(context.Background(), &whisparr.MovieEditorResource{MovieIDs: []int{1}})
 	if err != nil {
 		t.Fatalf("DeleteMovies() error = %v", err)
 	}
 }
 
-func TestErosGetPerformer(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/performer/1", `{"id":1,"name":"Jane"}`)
+func TestV3GetPerformer(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/performer/1", `{"id":1,"name":"Jane"}`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	p, err := c.GetPerformer(context.Background(), 1)
 	if err != nil {
 		t.Fatalf("GetPerformer() error = %v", err)
@@ -763,7 +763,7 @@ func TestErosGetPerformer(t *testing.T) {
 	}
 }
 
-func TestErosUpdatePerformer(t *testing.T) {
+func TestV3UpdatePerformer(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %s, want PUT", r.Method)
@@ -774,7 +774,7 @@ func TestErosUpdatePerformer(t *testing.T) {
 		json.NewEncoder(w).Encode(p)
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	out, err := c.UpdatePerformer(context.Background(), &whisparr.Performer{ID: 1, Name: "Updated"})
 	if err != nil {
 		t.Fatalf("UpdatePerformer() error = %v", err)
@@ -784,10 +784,10 @@ func TestErosUpdatePerformer(t *testing.T) {
 	}
 }
 
-func TestErosGetStudio(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/studio/1", `{"id":1,"title":"Studio A"}`)
+func TestV3GetStudio(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/studio/1", `{"id":1,"title":"Studio A"}`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	s, err := c.GetStudio(context.Background(), 1)
 	if err != nil {
 		t.Fatalf("GetStudio() error = %v", err)
@@ -797,7 +797,7 @@ func TestErosGetStudio(t *testing.T) {
 	}
 }
 
-func TestErosUpdateStudio(t *testing.T) {
+func TestV3UpdateStudio(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %s, want PUT", r.Method)
@@ -808,7 +808,7 @@ func TestErosUpdateStudio(t *testing.T) {
 		json.NewEncoder(w).Encode(s)
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	out, err := c.UpdateStudio(context.Background(), &whisparr.Studio{ID: 1, Title: "Updated"})
 	if err != nil {
 		t.Fatalf("UpdateStudio() error = %v", err)
@@ -818,10 +818,10 @@ func TestErosUpdateStudio(t *testing.T) {
 	}
 }
 
-func TestErosGetCalendar(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/calendar?start=2026-01-01&end=2026-01-31&unmonitored=false", `[{"id":1,"title":"Upcoming"}]`)
+func TestV3GetCalendar(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/calendar?start=2026-01-01&end=2026-01-31&unmonitored=false", `[{"id":1,"title":"Upcoming"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	movies, err := c.GetCalendar(context.Background(), "2026-01-01", "2026-01-31", false)
 	if err != nil {
 		t.Fatalf("GetCalendar() error = %v", err)
@@ -831,10 +831,10 @@ func TestErosGetCalendar(t *testing.T) {
 	}
 }
 
-func TestErosSendCommand(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/command", `{"id":1,"name":"RefreshMovie","status":"queued"}`)
+func TestV3SendCommand(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/command", `{"id":1,"name":"RefreshMovie","status":"queued"}`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	_, err := c.SendCommand(context.Background(), struct {
 		Name string `json:"name"`
 	}{Name: "RefreshMovie"})
@@ -843,10 +843,10 @@ func TestErosSendCommand(t *testing.T) {
 	}
 }
 
-func TestErosParse(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/parse?title=test+movie", `{"title":"test movie"}`)
+func TestV3Parse(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/parse?title=test+movie", `{"title":"test movie"}`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	result, err := c.Parse(context.Background(), "test movie")
 	if err != nil {
 		t.Fatalf("Parse() error = %v", err)
@@ -856,10 +856,10 @@ func TestErosParse(t *testing.T) {
 	}
 }
 
-func TestErosGetHealth(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/health", `[{"type":"warning","message":"test"}]`)
+func TestV3GetHealth(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/health", `[{"type":"warning","message":"test"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	health, err := c.GetHealth(context.Background())
 	if err != nil {
 		t.Fatalf("GetHealth() error = %v", err)
@@ -869,10 +869,10 @@ func TestErosGetHealth(t *testing.T) {
 	}
 }
 
-func TestErosGetDiskSpace(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/diskspace", `[{"path":"/data","freeSpace":1000}]`)
+func TestV3GetDiskSpace(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/diskspace", `[{"path":"/data","freeSpace":1000}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	ds, err := c.GetDiskSpace(context.Background())
 	if err != nil {
 		t.Fatalf("GetDiskSpace() error = %v", err)
@@ -882,10 +882,10 @@ func TestErosGetDiskSpace(t *testing.T) {
 	}
 }
 
-func TestErosGetQueue(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/queue?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
+func TestV3GetQueue(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/queue?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	q, err := c.GetQueue(context.Background(), 1, 10)
 	if err != nil {
 		t.Fatalf("GetQueue() error = %v", err)
@@ -895,10 +895,10 @@ func TestErosGetQueue(t *testing.T) {
 	}
 }
 
-func TestErosGetQualityProfiles(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/qualityprofile", `[{"id":1,"name":"Any"}]`)
+func TestV3GetQualityProfiles(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/qualityprofile", `[{"id":1,"name":"Any"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	profiles, err := c.GetQualityProfiles(context.Background())
 	if err != nil {
 		t.Fatalf("GetQualityProfiles() error = %v", err)
@@ -908,10 +908,10 @@ func TestErosGetQualityProfiles(t *testing.T) {
 	}
 }
 
-func TestErosGetTags(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/tag", `[{"id":1,"label":"hd"}]`)
+func TestV3GetTags(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/tag", `[{"id":1,"label":"hd"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	tags, err := c.GetTags(context.Background())
 	if err != nil {
 		t.Fatalf("GetTags() error = %v", err)
@@ -921,7 +921,7 @@ func TestErosGetTags(t *testing.T) {
 	}
 }
 
-func TestErosCreateTag(t *testing.T) {
+func TestV3CreateTag(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -930,7 +930,7 @@ func TestErosCreateTag(t *testing.T) {
 		w.Write([]byte(`{"id":1,"label":"new-tag"}`))
 	}))
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	tag, err := c.CreateTag(context.Background(), "new-tag")
 	if err != nil {
 		t.Fatalf("CreateTag() error = %v", err)
@@ -940,10 +940,10 @@ func TestErosCreateTag(t *testing.T) {
 	}
 }
 
-func TestErosGetRootFolders(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/rootfolder", `[{"id":1,"path":"/data"}]`)
+func TestV3GetRootFolders(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/rootfolder", `[{"id":1,"path":"/data"}]`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	folders, err := c.GetRootFolders(context.Background())
 	if err != nil {
 		t.Fatalf("GetRootFolders() error = %v", err)
@@ -953,10 +953,10 @@ func TestErosGetRootFolders(t *testing.T) {
 	}
 }
 
-func TestErosGetHistory(t *testing.T) {
-	ts := newErosTestServer(t, "/api/v3/history?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
+func TestV3GetHistory(t *testing.T) {
+	ts := newV3TestServer(t, "/api/v3/history?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
-	c, _ := whisparr.NewEros(ts.URL, "test-key")
+	c, _ := whisparr.NewV3(ts.URL, "test-key")
 	h, err := c.GetHistory(context.Background(), 1, 10)
 	if err != nil {
 		t.Fatalf("GetHistory() error = %v", err)

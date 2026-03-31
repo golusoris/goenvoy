@@ -8,22 +8,22 @@ import (
 	"github.com/lusoris/goenvoy/arr"
 )
 
-// ErosClient is a Whisparr v3/Eros (Radarr-based) API client.
-type ErosClient struct {
+// ClientV3 is a Whisparr v3 (Radarr-based) API client.
+type ClientV3 struct {
 	base *arr.BaseClient
 }
 
-// NewEros creates a Whisparr v3/Eros [ErosClient] for the instance at baseURL.
-func NewEros(baseURL, apiKey string, opts ...arr.Option) (*ErosClient, error) {
+// NewV3 creates a Whisparr v3 [ClientV3] for the instance at baseURL.
+func NewV3(baseURL, apiKey string, opts ...arr.Option) (*ClientV3, error) {
 	base, err := arr.NewBaseClient(baseURL, apiKey, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return &ErosClient{base: base}, nil
+	return &ClientV3{base: base}, nil
 }
 
 // GetAllMovies returns every movie/scene configured in the instance.
-func (c *ErosClient) GetAllMovies(ctx context.Context) ([]Movie, error) {
+func (c *ClientV3) GetAllMovies(ctx context.Context) ([]Movie, error) {
 	var out []Movie
 	if err := c.base.Get(ctx, "/api/v3/movie", &out); err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (c *ErosClient) GetAllMovies(ctx context.Context) ([]Movie, error) {
 }
 
 // GetMovie returns a single movie/scene by its database ID.
-func (c *ErosClient) GetMovie(ctx context.Context, id int) (*Movie, error) {
+func (c *ClientV3) GetMovie(ctx context.Context, id int) (*Movie, error) {
 	var out Movie
 	path := fmt.Sprintf("/api/v3/movie/%d", id)
 	if err := c.base.Get(ctx, path, &out); err != nil {
@@ -42,7 +42,7 @@ func (c *ErosClient) GetMovie(ctx context.Context, id int) (*Movie, error) {
 }
 
 // AddMovie adds a new movie/scene.
-func (c *ErosClient) AddMovie(ctx context.Context, movie *Movie) (*Movie, error) {
+func (c *ClientV3) AddMovie(ctx context.Context, movie *Movie) (*Movie, error) {
 	var out Movie
 	if err := c.base.Post(ctx, "/api/v3/movie", movie, &out); err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (c *ErosClient) AddMovie(ctx context.Context, movie *Movie) (*Movie, error)
 
 // UpdateMovie updates an existing movie/scene. Set moveFiles to true to
 // relocate files when the path changes.
-func (c *ErosClient) UpdateMovie(ctx context.Context, movie *Movie, moveFiles bool) (*Movie, error) {
+func (c *ClientV3) UpdateMovie(ctx context.Context, movie *Movie, moveFiles bool) (*Movie, error) {
 	var out Movie
 	path := fmt.Sprintf("/api/v3/movie/%d?moveFiles=%t", movie.ID, moveFiles)
 	if err := c.base.Put(ctx, path, movie, &out); err != nil {
@@ -62,13 +62,13 @@ func (c *ErosClient) UpdateMovie(ctx context.Context, movie *Movie, moveFiles bo
 }
 
 // DeleteMovie removes a movie/scene by ID.
-func (c *ErosClient) DeleteMovie(ctx context.Context, id int, deleteFiles, addImportExclusion bool) error {
+func (c *ClientV3) DeleteMovie(ctx context.Context, id int, deleteFiles, addImportExclusion bool) error {
 	path := fmt.Sprintf("/api/v3/movie/%d?deleteFiles=%t&addImportExclusion=%t", id, deleteFiles, addImportExclusion)
 	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // LookupMovie searches for a movie by term.
-func (c *ErosClient) LookupMovie(ctx context.Context, term string) ([]Movie, error) {
+func (c *ClientV3) LookupMovie(ctx context.Context, term string) ([]Movie, error) {
 	var out []Movie
 	path := "/api/v3/lookup/movie?term=" + url.QueryEscape(term)
 	if err := c.base.Get(ctx, path, &out); err != nil {
@@ -78,7 +78,7 @@ func (c *ErosClient) LookupMovie(ctx context.Context, term string) ([]Movie, err
 }
 
 // LookupScene searches for a scene by term.
-func (c *ErosClient) LookupScene(ctx context.Context, term string) ([]Movie, error) {
+func (c *ClientV3) LookupScene(ctx context.Context, term string) ([]Movie, error) {
 	var out []Movie
 	path := "/api/v3/lookup/scene?term=" + url.QueryEscape(term)
 	if err := c.base.Get(ctx, path, &out); err != nil {
@@ -88,7 +88,7 @@ func (c *ErosClient) LookupScene(ctx context.Context, term string) ([]Movie, err
 }
 
 // GetMoviesByPerformer returns all movies associated with a performer foreign ID.
-func (c *ErosClient) GetMoviesByPerformer(ctx context.Context, foreignID string) ([]Movie, error) {
+func (c *ClientV3) GetMoviesByPerformer(ctx context.Context, foreignID string) ([]Movie, error) {
 	var out []Movie
 	path := "/api/v3/movie/listbyperformerforeignid?performerForeignId=" + url.QueryEscape(foreignID)
 	if err := c.base.Get(ctx, path, &out); err != nil {
@@ -98,7 +98,7 @@ func (c *ErosClient) GetMoviesByPerformer(ctx context.Context, foreignID string)
 }
 
 // GetMoviesByStudio returns all movies associated with a studio foreign ID.
-func (c *ErosClient) GetMoviesByStudio(ctx context.Context, foreignID string) ([]Movie, error) {
+func (c *ClientV3) GetMoviesByStudio(ctx context.Context, foreignID string) ([]Movie, error) {
 	var out []Movie
 	path := "/api/v3/movie/listbystudioforeignid?studioForeignId=" + url.QueryEscape(foreignID)
 	if err := c.base.Get(ctx, path, &out); err != nil {
@@ -108,7 +108,7 @@ func (c *ErosClient) GetMoviesByStudio(ctx context.Context, foreignID string) ([
 }
 
 // GetMovieFile returns a single movie file by ID.
-func (c *ErosClient) GetMovieFile(ctx context.Context, id int) (*MovieFile, error) {
+func (c *ClientV3) GetMovieFile(ctx context.Context, id int) (*MovieFile, error) {
 	var out MovieFile
 	path := fmt.Sprintf("/api/v3/moviefile/%d", id)
 	if err := c.base.Get(ctx, path, &out); err != nil {
@@ -118,23 +118,23 @@ func (c *ErosClient) GetMovieFile(ctx context.Context, id int) (*MovieFile, erro
 }
 
 // DeleteMovieFile deletes a movie file by ID.
-func (c *ErosClient) DeleteMovieFile(ctx context.Context, id int) error {
+func (c *ClientV3) DeleteMovieFile(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v3/moviefile/%d", id)
 	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // EditMovies applies bulk edits to multiple movies.
-func (c *ErosClient) EditMovies(ctx context.Context, editor *MovieEditorResource) error {
+func (c *ClientV3) EditMovies(ctx context.Context, editor *MovieEditorResource) error {
 	return c.base.Put(ctx, "/api/v3/movie/editor", editor, nil)
 }
 
 // DeleteMovies deletes multiple movies according to the editor payload.
-func (c *ErosClient) DeleteMovies(ctx context.Context, editor *MovieEditorResource) error {
+func (c *ClientV3) DeleteMovies(ctx context.Context, editor *MovieEditorResource) error {
 	return c.base.Delete(ctx, "/api/v3/movie/editor", editor, nil)
 }
 
 // GetPerformers returns all performers.
-func (c *ErosClient) GetPerformers(ctx context.Context) ([]Performer, error) {
+func (c *ClientV3) GetPerformers(ctx context.Context) ([]Performer, error) {
 	var out []Performer
 	if err := c.base.Get(ctx, "/api/v3/performer", &out); err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func (c *ErosClient) GetPerformers(ctx context.Context) ([]Performer, error) {
 }
 
 // GetPerformer returns a single performer by ID.
-func (c *ErosClient) GetPerformer(ctx context.Context, id int) (*Performer, error) {
+func (c *ClientV3) GetPerformer(ctx context.Context, id int) (*Performer, error) {
 	var out Performer
 	path := fmt.Sprintf("/api/v3/performer/%d", id)
 	if err := c.base.Get(ctx, path, &out); err != nil {
@@ -153,7 +153,7 @@ func (c *ErosClient) GetPerformer(ctx context.Context, id int) (*Performer, erro
 }
 
 // AddPerformer adds a new performer to the instance.
-func (c *ErosClient) AddPerformer(ctx context.Context, performer *Performer) (*Performer, error) {
+func (c *ClientV3) AddPerformer(ctx context.Context, performer *Performer) (*Performer, error) {
 	var out Performer
 	if err := c.base.Post(ctx, "/api/v3/performer", performer, &out); err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func (c *ErosClient) AddPerformer(ctx context.Context, performer *Performer) (*P
 }
 
 // UpdatePerformer updates an existing performer.
-func (c *ErosClient) UpdatePerformer(ctx context.Context, performer *Performer) (*Performer, error) {
+func (c *ClientV3) UpdatePerformer(ctx context.Context, performer *Performer) (*Performer, error) {
 	var out Performer
 	path := fmt.Sprintf("/api/v3/performer/%d", performer.ID)
 	if err := c.base.Put(ctx, path, performer, &out); err != nil {
@@ -172,13 +172,13 @@ func (c *ErosClient) UpdatePerformer(ctx context.Context, performer *Performer) 
 }
 
 // DeletePerformer removes a performer by ID.
-func (c *ErosClient) DeletePerformer(ctx context.Context, id int, deleteFiles bool) error {
+func (c *ClientV3) DeletePerformer(ctx context.Context, id int, deleteFiles bool) error {
 	path := fmt.Sprintf("/api/v3/performer/%d?deleteFiles=%t", id, deleteFiles)
 	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetStudios returns all studios.
-func (c *ErosClient) GetStudios(ctx context.Context) ([]Studio, error) {
+func (c *ClientV3) GetStudios(ctx context.Context) ([]Studio, error) {
 	var out []Studio
 	if err := c.base.Get(ctx, "/api/v3/studio", &out); err != nil {
 		return nil, err
@@ -187,7 +187,7 @@ func (c *ErosClient) GetStudios(ctx context.Context) ([]Studio, error) {
 }
 
 // GetStudio returns a single studio by ID.
-func (c *ErosClient) GetStudio(ctx context.Context, id int) (*Studio, error) {
+func (c *ClientV3) GetStudio(ctx context.Context, id int) (*Studio, error) {
 	var out Studio
 	path := fmt.Sprintf("/api/v3/studio/%d", id)
 	if err := c.base.Get(ctx, path, &out); err != nil {
@@ -197,7 +197,7 @@ func (c *ErosClient) GetStudio(ctx context.Context, id int) (*Studio, error) {
 }
 
 // AddStudio adds a new studio to the instance.
-func (c *ErosClient) AddStudio(ctx context.Context, studio *Studio) (*Studio, error) {
+func (c *ClientV3) AddStudio(ctx context.Context, studio *Studio) (*Studio, error) {
 	var out Studio
 	if err := c.base.Post(ctx, "/api/v3/studio", studio, &out); err != nil {
 		return nil, err
@@ -206,7 +206,7 @@ func (c *ErosClient) AddStudio(ctx context.Context, studio *Studio) (*Studio, er
 }
 
 // UpdateStudio updates an existing studio.
-func (c *ErosClient) UpdateStudio(ctx context.Context, studio *Studio) (*Studio, error) {
+func (c *ClientV3) UpdateStudio(ctx context.Context, studio *Studio) (*Studio, error) {
 	var out Studio
 	path := fmt.Sprintf("/api/v3/studio/%d", studio.ID)
 	if err := c.base.Put(ctx, path, studio, &out); err != nil {
@@ -216,13 +216,13 @@ func (c *ErosClient) UpdateStudio(ctx context.Context, studio *Studio) (*Studio,
 }
 
 // DeleteStudio removes a studio by ID.
-func (c *ErosClient) DeleteStudio(ctx context.Context, id int, deleteFiles bool) error {
+func (c *ClientV3) DeleteStudio(ctx context.Context, id int, deleteFiles bool) error {
 	path := fmt.Sprintf("/api/v3/studio/%d?deleteFiles=%t", id, deleteFiles)
 	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetCredits returns all credits for a movie/scene.
-func (c *ErosClient) GetCredits(ctx context.Context, movieID int) ([]Credit, error) {
+func (c *ClientV3) GetCredits(ctx context.Context, movieID int) ([]Credit, error) {
 	var out []Credit
 	path := fmt.Sprintf("/api/v3/credit?movieId=%d", movieID)
 	if err := c.base.Get(ctx, path, &out); err != nil {
@@ -232,7 +232,7 @@ func (c *ErosClient) GetCredits(ctx context.Context, movieID int) ([]Credit, err
 }
 
 // GetCalendar returns movies/scenes releasing between start and end dates.
-func (c *ErosClient) GetCalendar(ctx context.Context, start, end string, unmonitored bool) ([]Movie, error) {
+func (c *ClientV3) GetCalendar(ctx context.Context, start, end string, unmonitored bool) ([]Movie, error) {
 	var out []Movie
 	path := fmt.Sprintf("/api/v3/calendar?start=%s&end=%s&unmonitored=%t",
 		url.QueryEscape(start), url.QueryEscape(end), unmonitored)
@@ -243,7 +243,7 @@ func (c *ErosClient) GetCalendar(ctx context.Context, start, end string, unmonit
 }
 
 // SendCommand sends a command to the instance.
-func (c *ErosClient) SendCommand(ctx context.Context, cmd arr.CommandRequest) (*arr.CommandResponse, error) {
+func (c *ClientV3) SendCommand(ctx context.Context, cmd arr.CommandRequest) (*arr.CommandResponse, error) {
 	var out arr.CommandResponse
 	if err := c.base.Post(ctx, "/api/v3/command", cmd, &out); err != nil {
 		return nil, err
@@ -252,8 +252,8 @@ func (c *ErosClient) SendCommand(ctx context.Context, cmd arr.CommandRequest) (*
 }
 
 // Parse parses a title string and returns matched movie info.
-func (c *ErosClient) Parse(ctx context.Context, title string) (*ErosParseResult, error) {
-	var out ErosParseResult
+func (c *ClientV3) Parse(ctx context.Context, title string) (*ParseResultV3, error) {
+	var out ParseResultV3
 	path := "/api/v3/parse?title=" + url.QueryEscape(title)
 	if err := c.base.Get(ctx, path, &out); err != nil {
 		return nil, err
@@ -262,7 +262,7 @@ func (c *ErosClient) Parse(ctx context.Context, title string) (*ErosParseResult,
 }
 
 // GetSystemStatus returns system information.
-func (c *ErosClient) GetSystemStatus(ctx context.Context) (*arr.StatusResponse, error) {
+func (c *ClientV3) GetSystemStatus(ctx context.Context) (*arr.StatusResponse, error) {
 	var out arr.StatusResponse
 	if err := c.base.Get(ctx, "/api/v3/system/status", &out); err != nil {
 		return nil, err
@@ -271,7 +271,7 @@ func (c *ErosClient) GetSystemStatus(ctx context.Context) (*arr.StatusResponse, 
 }
 
 // GetHealth returns a list of health check results.
-func (c *ErosClient) GetHealth(ctx context.Context) ([]arr.HealthCheck, error) {
+func (c *ClientV3) GetHealth(ctx context.Context) ([]arr.HealthCheck, error) {
 	var out []arr.HealthCheck
 	if err := c.base.Get(ctx, "/api/v3/health", &out); err != nil {
 		return nil, err
@@ -280,7 +280,7 @@ func (c *ErosClient) GetHealth(ctx context.Context) ([]arr.HealthCheck, error) {
 }
 
 // GetDiskSpace returns disk space information for all root folders.
-func (c *ErosClient) GetDiskSpace(ctx context.Context) ([]arr.DiskSpace, error) {
+func (c *ClientV3) GetDiskSpace(ctx context.Context) ([]arr.DiskSpace, error) {
 	var out []arr.DiskSpace
 	if err := c.base.Get(ctx, "/api/v3/diskspace", &out); err != nil {
 		return nil, err
@@ -289,7 +289,7 @@ func (c *ErosClient) GetDiskSpace(ctx context.Context) ([]arr.DiskSpace, error) 
 }
 
 // GetQueue returns the download queue (paged).
-func (c *ErosClient) GetQueue(ctx context.Context, page, pageSize int) (*arr.PagingResource[arr.QueueRecord], error) {
+func (c *ClientV3) GetQueue(ctx context.Context, page, pageSize int) (*arr.PagingResource[arr.QueueRecord], error) {
 	var out arr.PagingResource[arr.QueueRecord]
 	path := fmt.Sprintf("/api/v3/queue?page=%d&pageSize=%d", page, pageSize)
 	if err := c.base.Get(ctx, path, &out); err != nil {
@@ -299,7 +299,7 @@ func (c *ErosClient) GetQueue(ctx context.Context, page, pageSize int) (*arr.Pag
 }
 
 // GetQualityProfiles returns all quality profiles.
-func (c *ErosClient) GetQualityProfiles(ctx context.Context) ([]arr.QualityProfile, error) {
+func (c *ClientV3) GetQualityProfiles(ctx context.Context) ([]arr.QualityProfile, error) {
 	var out []arr.QualityProfile
 	if err := c.base.Get(ctx, "/api/v3/qualityprofile", &out); err != nil {
 		return nil, err
@@ -308,7 +308,7 @@ func (c *ErosClient) GetQualityProfiles(ctx context.Context) ([]arr.QualityProfi
 }
 
 // GetTags returns all tags.
-func (c *ErosClient) GetTags(ctx context.Context) ([]arr.Tag, error) {
+func (c *ClientV3) GetTags(ctx context.Context) ([]arr.Tag, error) {
 	var out []arr.Tag
 	if err := c.base.Get(ctx, "/api/v3/tag", &out); err != nil {
 		return nil, err
@@ -317,7 +317,7 @@ func (c *ErosClient) GetTags(ctx context.Context) ([]arr.Tag, error) {
 }
 
 // CreateTag creates a new tag with the given label.
-func (c *ErosClient) CreateTag(ctx context.Context, label string) (*arr.Tag, error) {
+func (c *ClientV3) CreateTag(ctx context.Context, label string) (*arr.Tag, error) {
 	var out arr.Tag
 	if err := c.base.Post(ctx, "/api/v3/tag", arr.Tag{Label: label}, &out); err != nil {
 		return nil, err
@@ -326,7 +326,7 @@ func (c *ErosClient) CreateTag(ctx context.Context, label string) (*arr.Tag, err
 }
 
 // GetRootFolders returns all configured root folders.
-func (c *ErosClient) GetRootFolders(ctx context.Context) ([]arr.RootFolder, error) {
+func (c *ClientV3) GetRootFolders(ctx context.Context) ([]arr.RootFolder, error) {
 	var out []arr.RootFolder
 	if err := c.base.Get(ctx, "/api/v3/rootfolder", &out); err != nil {
 		return nil, err
@@ -335,8 +335,8 @@ func (c *ErosClient) GetRootFolders(ctx context.Context) ([]arr.RootFolder, erro
 }
 
 // GetHistory returns history records (paged).
-func (c *ErosClient) GetHistory(ctx context.Context, page, pageSize int) (*arr.PagingResource[ErosHistoryRecord], error) {
-	var out arr.PagingResource[ErosHistoryRecord]
+func (c *ClientV3) GetHistory(ctx context.Context, page, pageSize int) (*arr.PagingResource[HistoryRecordV3], error) {
+	var out arr.PagingResource[HistoryRecordV3]
 	path := fmt.Sprintf("/api/v3/history?page=%d&pageSize=%d", page, pageSize)
 	if err := c.base.Get(ctx, path, &out); err != nil {
 		return nil, err
@@ -345,7 +345,7 @@ func (c *ErosClient) GetHistory(ctx context.Context, page, pageSize int) (*arr.P
 }
 
 // GetImportExclusions returns all import exclusions.
-func (c *ErosClient) GetImportExclusions(ctx context.Context) ([]ImportExclusion, error) {
+func (c *ClientV3) GetImportExclusions(ctx context.Context) ([]ImportExclusion, error) {
 	var out []ImportExclusion
 	if err := c.base.Get(ctx, "/api/v3/exclusions", &out); err != nil {
 		return nil, err
