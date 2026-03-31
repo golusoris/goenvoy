@@ -1,6 +1,6 @@
 // Package arr provides shared types and a base HTTP client for interacting
 // with *arr application APIs (Sonarr, Radarr, Lidarr, Readarr, Prowlarr,
-// Bazarr, Whisparr, Seerr).
+// Bazarr, Whisparr, Seerr, Autobrr, FlareSolverr, Jackett, Mylar, NZBHydra).
 //
 // The [BaseClient] handles authentication, request construction, and response
 // parsing common to all *arr services. Individual service packages build on

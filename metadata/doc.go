@@ -3,11 +3,13 @@
 //
 // Providers are organized by media category:
 //
-//   - movie: TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze
+//   - movie: TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, OpenSubtitles
 //   - anime: AniList, AniDB, Kitsu, MyAnimeList
 //   - tracking: Trakt, Simkl
 //   - adult: StashBox, TPDB
-//   - music: MusicBrainz
+//   - music: MusicBrainz, AudioDB, Deezer, Discogs, Last.fm, ListenBrainz, Spotify
+//   - book: Google Books, Open Library
+//   - game: IGDB, RAWG, Steam
 //
 // Individual provider packages build on these shared types to offer
 // provider-specific clients.
