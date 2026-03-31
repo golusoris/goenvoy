@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Each module is versioned independently following [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.0.0] - 2026-03-31
+
+### Changed
+- **Whisparr** (`arr/whisparr`): Renamed `ErosClient` → `ClientV3`, `NewEros` → `NewV3`, `ErosHistoryRecord` → `HistoryRecordV3`, `ErosParseResult` → `ParseResultV3`. Removes internal codename from public API.
+- **TMDb** (`metadata/movie/tmdb`): `DiscoverMovies` and `DiscoverTV` now accept `url.Values` instead of raw `string` for the `extraParams` parameter.
+
+### Fixed
+- **arr** (`arr`): `BaseClient.Delete` now accepts a request body, fixing 9 bulk-delete and editor-delete operations across Lidarr, Radarr, Sonarr, Readarr, and Whisparr v3 that silently sent empty DELETE requests.
+- **Seerr** (`arr/seerr`): URL-encode `filter` parameter to prevent query string injection.
+- **Mylar** (`arr/mylar`): Use `url.Values` for API key and command parameters instead of raw string concatenation.
+- **Jackett** (`arr/jackett`): URL-escape indexer ID in Torznab search path to prevent path traversal.
+- **Steam** (`metadata/game/steam`): URL-encode API key in query parameters.
+- **TMDb** (`metadata/movie/tmdb`): URL-escape `mediaType` and `timeWindow` path segments in `GetTrending` to prevent path traversal.
+- **Kavita** (`mediaserver/kavita`): Add `sync.RWMutex` to protect JWT token from data races under concurrent use.
+- 15 modules now use a 30-second HTTP client timeout instead of `http.DefaultClient` with no timeout: Navidrome, Komga, Kavita, Steam, RAWG, IGDB, OpenSubtitles, Open Library, Google Books, Last.fm, Spotify, ListenBrainz, Discogs, TheAudioDB, Deezer.
+
 ## [v0.1.0] - 2026-03-31
 
 ### Added
