@@ -26,9 +26,8 @@ Designed as a **multi-module monorepo** — import only what you need, from a si
 | **Arr Stack** | `github.com/lusoris/goenvoy/arr` | Sonarr, Radarr, Lidarr, Readarr, Whisparr (v2+v3), Prowlarr, Bazarr, Seerr, Autobrr, Mylar3, FlareSolverr, Jackett, NZBHydra2 |
 | **Metadata** | `github.com/lusoris/goenvoy/metadata` | TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, AniList, Kitsu, AniDB, MAL, Trakt, Simkl, MusicBrainz, StashBox, TPDB, OpenSubtitles, Last.fm, Discogs, TheAudioDB, Open Library, Google Books, Spotify, Deezer, ListenBrainz, IGDB, RAWG, Steam |
 | **Download Clients** | `github.com/lusoris/goenvoy/downloadclient` | qBittorrent, Transmission, Deluge, rTorrent, SABnzbd, NZBGet |
-| **Media Servers** | `github.com/lusoris/goenvoy/mediaserver` | Plex, Jellyfin, Emby, Tautulli, Audiobookshelf, Komga, Navidrome, Kavita, Tdarr |
+| **Media Servers** | `github.com/lusoris/goenvoy/mediaserver` | Plex, Jellyfin, Emby, Tautulli, Audiobookshelf, Komga, Navidrome, Kavita, Stash, Tdarr |
 | **Anime** | `github.com/lusoris/goenvoy/anime` | Shoko Server |
-| **Adult Media** | `github.com/lusoris/goenvoy/stash` | StashApp |
 
 ## Install
 
@@ -127,10 +126,10 @@ goenvoy/
 │   ├── komga/        # Komga client
 │   ├── navidrome/    # Navidrome client
 │   ├── kavita/       # Kavita client
+│   ├── stash/        # StashApp GraphQL client
 │   └── tdarr/        # Tdarr client
 ├── anime/            # shared anime types
 │   └── shoko/        # Shoko Server client
-└── stash/            # StashApp GraphQL client
 ```
 
 ## Development
