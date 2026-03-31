@@ -8,9 +8,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
-const defaultBaseURL = "https://api.igdb.com/v4"
+const (
+	defaultBaseURL = "https://api.igdb.com/v4"
+	defaultTimeout = 30 * time.Second
+)
 
 // Client is an IGDB v4 API client.
 type Client struct {
@@ -50,7 +54,7 @@ func New(clientID, accessToken string, opts ...Option) *Client {
 		baseURL:     defaultBaseURL,
 		clientID:    clientID,
 		accessToken: accessToken,
-		http:        http.DefaultClient,
+		http:        &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)

@@ -9,9 +9,13 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
-const defaultBaseURL = "https://api.discogs.com"
+const (
+	defaultBaseURL = "https://api.discogs.com"
+	defaultTimeout = 30 * time.Second
+)
 
 // Client is a Discogs API client.
 type Client struct {
@@ -58,7 +62,7 @@ func New(token string, opts ...Option) *Client {
 		baseURL:   defaultBaseURL,
 		token:     token,
 		userAgent: "goenvoy/1.0",
-		http:      http.DefaultClient,
+		http:      &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)

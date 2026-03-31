@@ -65,7 +65,7 @@ func (c *Client) UpdateSeries(ctx context.Context, series *Series, moveFiles boo
 // downloaded episode files from disk.
 func (c *Client) DeleteSeries(ctx context.Context, id int, deleteFiles, addImportListExclusion bool) error {
 	path := fmt.Sprintf("/api/v3/series/%d?deleteFiles=%t&addImportListExclusion=%t", id, deleteFiles, addImportListExclusion)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // LookupSeries searches for a series by term (title or TVDB ID slug).
@@ -137,13 +137,13 @@ func (c *Client) GetEpisodeFile(ctx context.Context, id int) (*EpisodeFile, erro
 // DeleteEpisodeFile removes a single episode file by its database ID.
 func (c *Client) DeleteEpisodeFile(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v3/episodefile/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // DeleteEpisodeFiles removes multiple episode files by their IDs.
 func (c *Client) DeleteEpisodeFiles(ctx context.Context, ids []int) error {
 	body := EpisodeFileListResource{EpisodeFileIDs: ids}
-	return c.base.Delete(ctx, "/api/v3/episodefile/bulk", &body)
+	return c.base.Delete(ctx, "/api/v3/episodefile/bulk", &body, nil)
 }
 
 // SendCommand triggers a named command (e.g. "RefreshSeries", "EpisodeSearch").
@@ -235,7 +235,7 @@ func (c *Client) GetQueue(ctx context.Context, page, pageSize int) (*arr.PagingR
 // DeleteQueueItem removes an item from the download queue.
 func (c *Client) DeleteQueueItem(ctx context.Context, id int, removeFromClient, blocklist bool) error {
 	path := fmt.Sprintf("/api/v3/queue/%d?removeFromClient=%t&blocklist=%t", id, removeFromClient, blocklist)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetQualityProfiles returns all configured quality profiles.

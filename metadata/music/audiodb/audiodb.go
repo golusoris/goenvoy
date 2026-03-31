@@ -8,9 +8,13 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
-const defaultBaseURL = "https://www.theaudiodb.com/api/v1/json"
+const (
+	defaultBaseURL = "https://www.theaudiodb.com/api/v1/json"
+	defaultTimeout = 30 * time.Second
+)
 
 // Client is a TheAudioDB API client.
 type Client struct {
@@ -48,7 +52,7 @@ func New(apiKey string, opts ...Option) *Client {
 	c := &Client{
 		baseURL: defaultBaseURL,
 		apiKey:  apiKey,
-		http:    http.DefaultClient,
+		http:    &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)

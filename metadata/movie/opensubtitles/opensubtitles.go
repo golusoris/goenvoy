@@ -10,9 +10,13 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
-const baseURL = "https://api.opensubtitles.com/api/v1"
+const (
+	baseURL        = "https://api.opensubtitles.com/api/v1"
+	defaultTimeout = 30 * time.Second
+)
 
 // Client is an OpenSubtitles API client.
 type Client struct {
@@ -59,7 +63,7 @@ func New(apiKey string, opts ...Option) *Client {
 	c := &Client{
 		apiKey:    apiKey,
 		userAgent: "goenvoy v1.0",
-		http:      http.DefaultClient,
+		http:      &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)

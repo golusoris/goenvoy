@@ -65,7 +65,7 @@ func (c *Client) UpdateMovie(ctx context.Context, movie *Movie, moveFiles bool) 
 // downloaded movie files from disk.
 func (c *Client) DeleteMovie(ctx context.Context, id int, deleteFiles, addImportExclusion bool) error {
 	path := fmt.Sprintf("/api/v3/movie/%d?deleteFiles=%t&addImportExclusion=%t", id, deleteFiles, addImportExclusion)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // LookupMovie searches for a movie by term (title).
@@ -121,13 +121,13 @@ func (c *Client) GetMovieFile(ctx context.Context, id int) (*MovieFile, error) {
 // DeleteMovieFile removes a single movie file by its database ID.
 func (c *Client) DeleteMovieFile(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v3/moviefile/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // DeleteMovieFiles removes multiple movie files by their IDs.
 func (c *Client) DeleteMovieFiles(ctx context.Context, ids []int) error {
 	body := MovieFileListResource{MovieFileIDs: ids}
-	return c.base.Delete(ctx, "/api/v3/moviefile/bulk", &body)
+	return c.base.Delete(ctx, "/api/v3/moviefile/bulk", &body, nil)
 }
 
 // GetCollections returns all movie collections.
@@ -258,7 +258,7 @@ func (c *Client) GetQueue(ctx context.Context, page, pageSize int) (*arr.PagingR
 // DeleteQueueItem removes an item from the download queue.
 func (c *Client) DeleteQueueItem(ctx context.Context, id int, removeFromClient, blocklist bool) error {
 	path := fmt.Sprintf("/api/v3/queue/%d?removeFromClient=%t&blocklist=%t", id, removeFromClient, blocklist)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetQualityProfiles returns all configured quality profiles.
@@ -323,5 +323,5 @@ func (c *Client) EditMovies(ctx context.Context, editor *MovieEditorResource) er
 
 // DeleteMovies performs a batch delete of multiple movies.
 func (c *Client) DeleteMovies(ctx context.Context, editor *MovieEditorResource) error {
-	return c.base.Delete(ctx, "/api/v3/movie/editor", editor)
+	return c.base.Delete(ctx, "/api/v3/movie/editor", editor, nil)
 }

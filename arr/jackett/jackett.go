@@ -130,7 +130,7 @@ func (c *Client) getXML(ctx context.Context, path string, params url.Values, v a
 }
 
 func (c *Client) torznabSearch(ctx context.Context, indexer string, params url.Values) ([]SearchResult, error) {
-	path := "/api/v2.0/indexers/" + indexer + "/results/torznab"
+	path := "/api/v2.0/indexers/" + url.PathEscape(indexer) + "/results/torznab"
 	var rss rssResponse
 	if err := c.getXML(ctx, path, params, &rss); err != nil {
 		return nil, err

@@ -9,7 +9,10 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
+
+const defaultTimeout = 30 * time.Second
 
 // Client is a Kavita API client.
 type Client struct {
@@ -36,7 +39,7 @@ func New(baseURL, apiKey string, opts ...Option) *Client {
 	c := &Client{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		apiKey:  apiKey,
-		http:    http.DefaultClient,
+		http:    &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)

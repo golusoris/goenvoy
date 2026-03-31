@@ -129,7 +129,7 @@ func (c *Client) DeleteEpisodeSubtitle(ctx context.Context, seriesID, episodeID 
 	params.Set("hi", hi)
 	params.Set("path", subtitlePath)
 	path := "/api/episodes/subtitles?" + params.Encode()
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetMovies returns movie metadata. Pass radarrIDs to filter specific movies,
@@ -214,7 +214,7 @@ func (c *Client) DeleteMovieSubtitle(ctx context.Context, radarrID int, language
 	params.Set("hi", hi)
 	params.Set("path", subtitlePath)
 	path := "/api/movies/subtitles?" + params.Encode()
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetProviders returns the status of all subtitle providers.

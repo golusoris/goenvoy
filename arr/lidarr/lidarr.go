@@ -65,7 +65,7 @@ func (c *Client) UpdateArtist(ctx context.Context, artist *Artist, moveFiles boo
 // downloaded files from disk.
 func (c *Client) DeleteArtist(ctx context.Context, id int, deleteFiles, addImportListExclusion bool) error {
 	path := fmt.Sprintf("/api/v1/artist/%d?deleteFiles=%t&addImportListExclusion=%t", id, deleteFiles, addImportListExclusion)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // LookupArtist searches for an artist by name.
@@ -120,7 +120,7 @@ func (c *Client) UpdateAlbum(ctx context.Context, album *Album) (*Album, error) 
 // DeleteAlbum removes an album.
 func (c *Client) DeleteAlbum(ctx context.Context, id int, deleteFiles, addImportListExclusion bool) error {
 	path := fmt.Sprintf("/api/v1/album/%d?deleteFiles=%t&addImportListExclusion=%t", id, deleteFiles, addImportListExclusion)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // LookupAlbum searches for an album by name.
@@ -181,13 +181,13 @@ func (c *Client) GetTrackFile(ctx context.Context, id int) (*TrackFile, error) {
 // DeleteTrackFile removes a single track file by its database ID.
 func (c *Client) DeleteTrackFile(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v1/trackfile/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // DeleteTrackFiles removes multiple track files by their IDs.
 func (c *Client) DeleteTrackFiles(ctx context.Context, ids []int) error {
 	body := TrackFileListResource{TrackFileIDs: ids}
-	return c.base.Delete(ctx, "/api/v1/trackfile/bulk", &body)
+	return c.base.Delete(ctx, "/api/v1/trackfile/bulk", &body, nil)
 }
 
 // GetCalendar returns albums with releases between start and end (RFC 3339 timestamps).
@@ -289,7 +289,7 @@ func (c *Client) GetQueue(ctx context.Context, page, pageSize int) (*arr.PagingR
 // DeleteQueueItem removes an item from the download queue.
 func (c *Client) DeleteQueueItem(ctx context.Context, id int, removeFromClient, blocklist bool) error {
 	path := fmt.Sprintf("/api/v1/queue/%d?removeFromClient=%t&blocklist=%t", id, removeFromClient, blocklist)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetQualityProfiles returns all configured quality profiles.
@@ -383,5 +383,5 @@ func (c *Client) EditArtists(ctx context.Context, editor *ArtistEditorResource) 
 
 // DeleteArtists performs a batch delete of multiple artists.
 func (c *Client) DeleteArtists(ctx context.Context, editor *ArtistEditorResource) error {
-	return c.base.Delete(ctx, "/api/v1/artist/editor", editor)
+	return c.base.Delete(ctx, "/api/v1/artist/editor", editor, nil)
 }

@@ -181,7 +181,7 @@ func TestBaseClient_Delete(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if err := c.Delete(context.Background(), "/api/v3/series/1", nil); err != nil {
+	if err := c.Delete(context.Background(), "/api/v3/series/1", nil, nil); err != nil {
 		t.Fatalf("Delete failed: %v", err)
 	}
 }

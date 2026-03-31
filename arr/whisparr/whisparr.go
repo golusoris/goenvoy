@@ -64,7 +64,7 @@ func (c *Client) UpdateSeries(ctx context.Context, series *Series, moveFiles boo
 // DeleteSeries removes a series by ID.
 func (c *Client) DeleteSeries(ctx context.Context, id int, deleteFiles, addImportListExclusion bool) error {
 	path := fmt.Sprintf("/api/v3/series/%d?deleteFiles=%t&addImportListExclusion=%t", id, deleteFiles, addImportListExclusion)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // LookupSeries searches for a series by term.
@@ -110,7 +110,7 @@ func (c *Client) GetEpisodeFiles(ctx context.Context, seriesID int) ([]EpisodeFi
 // DeleteEpisodeFile deletes an episode file by ID.
 func (c *Client) DeleteEpisodeFile(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v3/episodefile/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetCalendar returns episodes airing between start and end dates.

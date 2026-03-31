@@ -9,9 +9,13 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
-const defaultBaseURL = "https://ws.audioscrobbler.com/2.0/"
+const (
+	defaultBaseURL = "https://ws.audioscrobbler.com/2.0/"
+	defaultTimeout = 30 * time.Second
+)
 
 // Client is a Last.fm API client.
 type Client struct {
@@ -60,7 +64,7 @@ func New(apiKey string, opts ...Option) *Client {
 	c := &Client{
 		baseURL: defaultBaseURL,
 		apiKey:  apiKey,
-		http:    http.DefaultClient,
+		http:    &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)

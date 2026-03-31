@@ -65,7 +65,7 @@ func (c *Client) UpdateAuthor(ctx context.Context, author *Author, moveFiles boo
 // downloaded files from disk.
 func (c *Client) DeleteAuthor(ctx context.Context, id int, deleteFiles, addImportListExclusion bool) error {
 	path := fmt.Sprintf("/api/v1/author/%d?deleteFiles=%t&addImportListExclusion=%t", id, deleteFiles, addImportListExclusion)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // LookupAuthor searches for an author by name.
@@ -120,7 +120,7 @@ func (c *Client) UpdateBook(ctx context.Context, book *Book) (*Book, error) {
 // DeleteBook removes a book.
 func (c *Client) DeleteBook(ctx context.Context, id int, deleteFiles, addImportListExclusion bool) error {
 	path := fmt.Sprintf("/api/v1/book/%d?deleteFiles=%t&addImportListExclusion=%t", id, deleteFiles, addImportListExclusion)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // LookupBook searches for a book by term.
@@ -161,13 +161,13 @@ func (c *Client) GetBookFile(ctx context.Context, id int) (*BookFile, error) {
 // DeleteBookFile removes a single book file by its database ID.
 func (c *Client) DeleteBookFile(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v1/bookfile/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // DeleteBookFiles removes multiple book files by their IDs.
 func (c *Client) DeleteBookFiles(ctx context.Context, ids []int) error {
 	body := BookFileListResource{BookFileIDs: ids}
-	return c.base.Delete(ctx, "/api/v1/bookfile/bulk", &body)
+	return c.base.Delete(ctx, "/api/v1/bookfile/bulk", &body, nil)
 }
 
 // GetEditions returns all editions for the given book IDs.
@@ -269,7 +269,7 @@ func (c *Client) GetQueue(ctx context.Context, page, pageSize int) (*arr.PagingR
 // DeleteQueueItem removes an item from the download queue.
 func (c *Client) DeleteQueueItem(ctx context.Context, id int, removeFromClient, blocklist bool) error {
 	path := fmt.Sprintf("/api/v1/queue/%d?removeFromClient=%t&blocklist=%t", id, removeFromClient, blocklist)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetQualityProfiles returns all configured quality profiles.
@@ -373,7 +373,7 @@ func (c *Client) EditAuthors(ctx context.Context, editor *AuthorEditorResource) 
 
 // DeleteAuthors performs a batch delete of multiple authors.
 func (c *Client) DeleteAuthors(ctx context.Context, editor *AuthorEditorResource) error {
-	return c.base.Delete(ctx, "/api/v1/author/editor", editor)
+	return c.base.Delete(ctx, "/api/v1/author/editor", editor, nil)
 }
 
 // EditBooks performs a batch update on multiple books.
@@ -383,5 +383,5 @@ func (c *Client) EditBooks(ctx context.Context, editor *BookEditorResource) erro
 
 // DeleteBooks performs a batch delete of multiple books.
 func (c *Client) DeleteBooks(ctx context.Context, editor *BookEditorResource) error {
-	return c.base.Delete(ctx, "/api/v1/book/editor", editor)
+	return c.base.Delete(ctx, "/api/v1/book/editor", editor, nil)
 }

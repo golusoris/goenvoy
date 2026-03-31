@@ -9,9 +9,13 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
-const defaultBaseURL = "https://api.spotify.com/v1"
+const (
+	defaultBaseURL = "https://api.spotify.com/v1"
+	defaultTimeout = 30 * time.Second
+)
 
 // Client is a Spotify Web API client.
 type Client struct {
@@ -49,7 +53,7 @@ func New(accessToken string, opts ...Option) *Client {
 	c := &Client{
 		baseURL:     defaultBaseURL,
 		accessToken: accessToken,
-		http:        http.DefaultClient,
+		http:        &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)

@@ -64,7 +64,7 @@ func (c *ErosClient) UpdateMovie(ctx context.Context, movie *Movie, moveFiles bo
 // DeleteMovie removes a movie/scene by ID.
 func (c *ErosClient) DeleteMovie(ctx context.Context, id int, deleteFiles, addImportExclusion bool) error {
 	path := fmt.Sprintf("/api/v3/movie/%d?deleteFiles=%t&addImportExclusion=%t", id, deleteFiles, addImportExclusion)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // LookupMovie searches for a movie by term.
@@ -120,7 +120,7 @@ func (c *ErosClient) GetMovieFile(ctx context.Context, id int) (*MovieFile, erro
 // DeleteMovieFile deletes a movie file by ID.
 func (c *ErosClient) DeleteMovieFile(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v3/moviefile/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // EditMovies applies bulk edits to multiple movies.
@@ -130,7 +130,7 @@ func (c *ErosClient) EditMovies(ctx context.Context, editor *MovieEditorResource
 
 // DeleteMovies deletes multiple movies according to the editor payload.
 func (c *ErosClient) DeleteMovies(ctx context.Context, editor *MovieEditorResource) error {
-	return c.base.Delete(ctx, "/api/v3/movie/editor", editor)
+	return c.base.Delete(ctx, "/api/v3/movie/editor", editor, nil)
 }
 
 // GetPerformers returns all performers.
@@ -174,7 +174,7 @@ func (c *ErosClient) UpdatePerformer(ctx context.Context, performer *Performer) 
 // DeletePerformer removes a performer by ID.
 func (c *ErosClient) DeletePerformer(ctx context.Context, id int, deleteFiles bool) error {
 	path := fmt.Sprintf("/api/v3/performer/%d?deleteFiles=%t", id, deleteFiles)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetStudios returns all studios.
@@ -218,7 +218,7 @@ func (c *ErosClient) UpdateStudio(ctx context.Context, studio *Studio) (*Studio,
 // DeleteStudio removes a studio by ID.
 func (c *ErosClient) DeleteStudio(ctx context.Context, id int, deleteFiles bool) error {
 	path := fmt.Sprintf("/api/v3/studio/%d?deleteFiles=%t", id, deleteFiles)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetCredits returns all credits for a movie/scene.

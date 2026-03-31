@@ -12,12 +12,14 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
-	apiVersion = "1.16.1"
-	clientName = "goenvoy"
-	saltLength = 12
+	apiVersion     = "1.16.1"
+	clientName     = "goenvoy"
+	saltLength     = 12
+	defaultTimeout = 30 * time.Second
 )
 
 // Client is a Navidrome/Subsonic API client.
@@ -56,7 +58,7 @@ func New(baseURL, username, password string, opts ...Option) *Client {
 		baseURL:  strings.TrimRight(baseURL, "/"),
 		username: username,
 		password: password,
-		http:     http.DefaultClient,
+		http:     &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)

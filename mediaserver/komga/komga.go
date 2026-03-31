@@ -9,7 +9,10 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
+
+const defaultTimeout = 30 * time.Second
 
 // Client is a Komga API client.
 type Client struct {
@@ -47,7 +50,7 @@ func New(baseURL, username, password string, opts ...Option) *Client {
 		baseURL:  strings.TrimRight(baseURL, "/"),
 		username: username,
 		password: password,
-		http:     http.DefaultClient,
+		http:     &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)

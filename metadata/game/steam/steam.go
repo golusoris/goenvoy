@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
 	defaultStoreURL  = "https://store.steampowered.com/api"
 	defaultWebAPIURL = "https://api.steampowered.com"
+	defaultTimeout   = 30 * time.Second
 )
 
 // Client is a Steam API client.
@@ -62,7 +65,7 @@ func New(opts ...Option) *Client {
 	c := &Client{
 		storeURL:  defaultStoreURL,
 		webAPIURL: defaultWebAPIURL,
-		http:      http.DefaultClient,
+		http:      &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)
@@ -96,7 +99,7 @@ func (c *Client) get(ctx context.Context, u string, v any) error {
 
 func (c *Client) webAPIKeyParam() string {
 	if c.apiKey != "" {
-		return "&key=" + c.apiKey
+		return "&key=" + url.QueryEscape(c.apiKey)
 	}
 	return ""
 }
@@ -168,7 +171,7 @@ func (c *Client) GetFeaturedCategories(ctx context.Context) (*FeaturedCategories
 func (c *Client) GetAppList(ctx context.Context) ([]AppListEntry, error) {
 	u := c.webAPIURL + "/ISteamApps/GetAppList/v2/"
 	if c.apiKey != "" {
-		u += "?key=" + c.apiKey
+		u += "?key=" + url.QueryEscape(c.apiKey)
 	}
 
 	var resp appListResponse

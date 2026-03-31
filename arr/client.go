@@ -83,9 +83,9 @@ func (c *BaseClient) Put(ctx context.Context, path string, body, dst any) error 
 	return c.do(ctx, http.MethodPut, path, body, dst)
 }
 
-// Delete performs an authenticated DELETE request and decodes the response into dst.
-func (c *BaseClient) Delete(ctx context.Context, path string, dst any) error {
-	return c.do(ctx, http.MethodDelete, path, nil, dst)
+// Delete performs an authenticated DELETE request with an optional JSON body and decodes the response into dst.
+func (c *BaseClient) Delete(ctx context.Context, path string, body, dst any) error {
+	return c.do(ctx, http.MethodDelete, path, body, dst)
 }
 
 // Patch performs an authenticated PATCH request with a JSON body and decodes the response into dst.

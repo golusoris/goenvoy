@@ -65,7 +65,7 @@ func (c *Client) UpdateIndexer(ctx context.Context, indexer *Indexer) (*Indexer,
 // DeleteIndexer removes an indexer by its database ID.
 func (c *Client) DeleteIndexer(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v1/indexer/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetIndexerCategories returns the global list of Newznab/Torznab categories.
@@ -118,7 +118,7 @@ func (c *Client) UpdateApplication(ctx context.Context, app *Application) (*Appl
 // DeleteApplication removes a connected application by its ID.
 func (c *Client) DeleteApplication(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v1/applications/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetAppProfiles returns all app profiles.
@@ -162,7 +162,7 @@ func (c *Client) UpdateAppProfile(ctx context.Context, profile *AppProfile) (*Ap
 // DeleteAppProfile removes an app profile by its ID.
 func (c *Client) DeleteAppProfile(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v1/appprofile/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // SearchOptions configures a search request.

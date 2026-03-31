@@ -8,9 +8,13 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
-const defaultBaseURL = "https://openlibrary.org"
+const (
+	defaultBaseURL = "https://openlibrary.org"
+	defaultTimeout = 30 * time.Second
+)
 
 // Client is an Open Library API client.
 type Client struct {
@@ -46,7 +50,7 @@ func (e *APIError) Error() string {
 func New(opts ...Option) *Client {
 	c := &Client{
 		baseURL: defaultBaseURL,
-		http:    http.DefaultClient,
+		http:    &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)

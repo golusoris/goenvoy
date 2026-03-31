@@ -60,10 +60,12 @@ func (e *APIError) Error() string {
 }
 
 func (c *Client) get(ctx context.Context, cmd string, params url.Values, v any) error {
-	u := c.rawBaseURL + "/api?apikey=" + c.apiKey + "&cmd=" + cmd
-	if params != nil {
-		u += "&" + params.Encode()
+	if params == nil {
+		params = url.Values{}
 	}
+	params.Set("apikey", c.apiKey)
+	params.Set("cmd", cmd)
+	u := c.rawBaseURL + "/api?" + params.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {

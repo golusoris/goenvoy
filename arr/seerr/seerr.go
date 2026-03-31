@@ -111,7 +111,7 @@ func (c *Client) GetRequests(ctx context.Context, take, skip int, filter string)
 	var out pagedRequests
 	path := fmt.Sprintf("/api/v1/request?take=%d&skip=%d", take, skip)
 	if filter != "" {
-		path += "&filter=" + filter
+		path += "&filter=" + url.QueryEscape(filter)
 	}
 	if err := c.base.Get(ctx, path, &out); err != nil {
 		return nil, nil, err
@@ -141,7 +141,7 @@ func (c *Client) CreateRequest(ctx context.Context, body *CreateRequestBody) (*M
 // DeleteRequest removes a media request by its ID.
 func (c *Client) DeleteRequest(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v1/request/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // ApproveRequest approves a pending request.
@@ -272,7 +272,7 @@ func (c *Client) GetMedia(ctx context.Context, take, skip int) ([]MediaInfo, *Pa
 // DeleteMedia removes a media item by its ID.
 func (c *Client) DeleteMedia(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v1/media/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // UpdateMediaStatus updates a media item's availability status.
@@ -315,7 +315,7 @@ func (c *Client) GetUser(ctx context.Context, id int) (*User, error) {
 // DeleteUser removes a user by their ID.
 func (c *Client) DeleteUser(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v1/user/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // GetUserQuota returns the request quota for a specific user.
@@ -339,7 +339,7 @@ func (c *Client) GetIssues(ctx context.Context, take, skip int, filter string) (
 	var out pagedIssues
 	path := fmt.Sprintf("/api/v1/issue?take=%d&skip=%d", take, skip)
 	if filter != "" {
-		path += "&filter=" + filter
+		path += "&filter=" + url.QueryEscape(filter)
 	}
 	if err := c.base.Get(ctx, path, &out); err != nil {
 		return nil, nil, err
@@ -369,7 +369,7 @@ func (c *Client) CreateIssue(ctx context.Context, body *CreateIssueBody) (*Issue
 // DeleteIssue removes an issue by its ID.
 func (c *Client) DeleteIssue(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v1/issue/%d", id)
-	return c.base.Delete(ctx, path, nil)
+	return c.base.Delete(ctx, path, nil, nil)
 }
 
 // AddIssueComment adds a comment to an existing issue.
