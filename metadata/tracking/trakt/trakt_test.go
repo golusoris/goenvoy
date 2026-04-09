@@ -1828,3 +1828,1337 @@ func TestGetShowRecommendations(t *testing.T) {
 		t.Errorf("Title = %q, want %q", shows[0].Title, "Severance")
 	}
 }
+
+// Tests for new methods.
+
+func TestHideMovieRecommendation(t *testing.T) {
+	ts := newAuthServer(t, http.MethodDelete, "/recommendations/movies/inception-2010", "hm-key", "hm-tok", nil)
+	defer ts.Close()
+
+	c := trakt.New("hm-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("hm-tok"))
+	err := c.HideMovieRecommendation(context.Background(), "inception-2010")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestHideShowRecommendation(t *testing.T) {
+	ts := newAuthServer(t, http.MethodDelete, "/recommendations/shows/breaking-bad", "hs-key", "hs-tok", nil)
+	defer ts.Close()
+
+	c := trakt.New("hs-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("hs-tok"))
+	err := c.HideShowRecommendation(context.Background(), "breaking-bad")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMostCollectedMovies(t *testing.T) {
+	ts := newTestServer(t, "/movies/collected/weekly", "mc-key", []trakt.PlayedMovie{
+		{CollectedCount: 5000, Movie: trakt.Movie{Title: "Inception", IDs: trakt.IDs{Trakt: 16662}}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("mc-key", trakt.WithBaseURL(ts.URL))
+	movies, _, err := c.MostCollectedMovies(context.Background(), "weekly", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(movies) != 1 {
+		t.Fatalf("len = %d, want 1", len(movies))
+	}
+	if movies[0].CollectedCount != 5000 {
+		t.Errorf("CollectedCount = %d, want 5000", movies[0].CollectedCount)
+	}
+}
+
+func TestMostCollectedShows(t *testing.T) {
+	ts := newTestServer(t, "/shows/collected/monthly", "mcs-key", []trakt.PlayedShow{
+		{CollectedCount: 3000, Show: trakt.Show{Title: "Breaking Bad"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("mcs-key", trakt.WithBaseURL(ts.URL))
+	shows, _, err := c.MostCollectedShows(context.Background(), "monthly", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(shows) != 1 {
+		t.Fatalf("len = %d, want 1", len(shows))
+	}
+}
+
+func TestGetMovieComments(t *testing.T) {
+	ts := newTestServer(t, "/movies/the-dark-knight/comments/newest", "mcom-key", []trakt.Comment{
+		{ID: 1, Comment: "Great movie!", Spoiler: false, Likes: 10},
+	})
+	defer ts.Close()
+
+	c := trakt.New("mcom-key", trakt.WithBaseURL(ts.URL))
+	comments, _, err := c.GetMovieComments(context.Background(), "the-dark-knight", "newest", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(comments) != 1 {
+		t.Fatalf("len = %d, want 1", len(comments))
+	}
+	if comments[0].Comment != "Great movie!" {
+		t.Errorf("Comment = %q, want %q", comments[0].Comment, "Great movie!")
+	}
+}
+
+func TestGetMovieRelated(t *testing.T) {
+	ts := newTestServer(t, "/movies/the-dark-knight/related", "mrel-key", []trakt.Movie{
+		{Title: "Batman Begins", Year: 2005, IDs: trakt.IDs{Trakt: 119}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("mrel-key", trakt.WithBaseURL(ts.URL))
+	movies, _, err := c.GetMovieRelated(context.Background(), "the-dark-knight", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(movies) != 1 {
+		t.Fatalf("len = %d, want 1", len(movies))
+	}
+	if movies[0].Title != "Batman Begins" {
+		t.Errorf("Title = %q, want %q", movies[0].Title, "Batman Begins")
+	}
+}
+
+func TestGetMovieLists(t *testing.T) {
+	ts := newTestServer(t, "/movies/the-dark-knight/lists/personal/popular", "mlist-key", []trakt.UserList{
+		{Name: "Best Superhero Movies", ItemCount: 50, IDs: trakt.IDs{Trakt: 1}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("mlist-key", trakt.WithBaseURL(ts.URL))
+	lists, _, err := c.GetMovieLists(context.Background(), "the-dark-knight", "personal", "popular", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lists) != 1 {
+		t.Fatalf("len = %d, want 1", len(lists))
+	}
+	if lists[0].Name != "Best Superhero Movies" {
+		t.Errorf("Name = %q, want %q", lists[0].Name, "Best Superhero Movies")
+	}
+}
+
+func TestGetMovieWatching(t *testing.T) {
+	ts := newTestServer(t, "/movies/the-dark-knight/watching", "mw-key", []trakt.WatchingItem{
+		{Action: "watching", Type: "movie"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("mw-key", trakt.WithBaseURL(ts.URL))
+	items, err := c.GetMovieWatching(context.Background(), "the-dark-knight")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+}
+
+func TestGetShowComments(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/comments/newest", "scom-key", []trakt.Comment{
+		{ID: 2, Comment: "Best show ever"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("scom-key", trakt.WithBaseURL(ts.URL))
+	comments, _, err := c.GetShowComments(context.Background(), "breaking-bad", "newest", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(comments) != 1 {
+		t.Fatalf("len = %d, want 1", len(comments))
+	}
+}
+
+func TestGetShowRelated(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/related", "srel-key", []trakt.Show{
+		{Title: "Better Call Saul", Year: 2015},
+	})
+	defer ts.Close()
+
+	c := trakt.New("srel-key", trakt.WithBaseURL(ts.URL))
+	shows, _, err := c.GetShowRelated(context.Background(), "breaking-bad", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(shows) != 1 {
+		t.Fatalf("len = %d, want 1", len(shows))
+	}
+	if shows[0].Title != "Better Call Saul" {
+		t.Errorf("Title = %q, want %q", shows[0].Title, "Better Call Saul")
+	}
+}
+
+func TestGetShowLists(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/lists", "slist-key", []trakt.UserList{
+		{Name: "Top Drama", IDs: trakt.IDs{Trakt: 2}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("slist-key", trakt.WithBaseURL(ts.URL))
+	lists, _, err := c.GetShowLists(context.Background(), "breaking-bad", "", "", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lists) != 1 {
+		t.Fatalf("len = %d, want 1", len(lists))
+	}
+}
+
+func TestGetShowWatching(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/watching", "sw-key", []trakt.WatchingItem{
+		{Action: "watching", Type: "episode"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("sw-key", trakt.WithBaseURL(ts.URL))
+	items, err := c.GetShowWatching(context.Background(), "breaking-bad")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+}
+
+func TestGetShowWatchedProgress(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/shows/breaking-bad/progress/watched", "swp-key", "swp-tok", trakt.WatchedProgress{
+		Aired: 62, Completed: 60, Seasons: []trakt.SeasonProgress{{Number: 1, Aired: 7, Completed: 7}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("swp-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("swp-tok"))
+	progress, err := c.GetShowWatchedProgress(context.Background(), "breaking-bad")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if progress.Aired != 62 {
+		t.Errorf("Aired = %d, want 62", progress.Aired)
+	}
+	if progress.Completed != 60 {
+		t.Errorf("Completed = %d, want 60", progress.Completed)
+	}
+}
+
+func TestGetShowCollectionProgress(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/shows/breaking-bad/progress/collection", "scp-key", "scp-tok", trakt.CollectionProgress{
+		Aired: 62, Completed: 50,
+	})
+	defer ts.Close()
+
+	c := trakt.New("scp-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("scp-tok"))
+	progress, err := c.GetShowCollectionProgress(context.Background(), "breaking-bad")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if progress.Completed != 50 {
+		t.Errorf("Completed = %d, want 50", progress.Completed)
+	}
+}
+
+func TestGetSeasonComments(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/comments/newest", "secom-key", []trakt.Comment{
+		{ID: 10, Comment: "Best season"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("secom-key", trakt.WithBaseURL(ts.URL))
+	comments, _, err := c.GetSeasonComments(context.Background(), "breaking-bad", 5, "newest", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(comments) != 1 {
+		t.Fatalf("len = %d, want 1", len(comments))
+	}
+}
+
+func TestGetSeasonRatings(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/ratings", "serat-key", trakt.Ratings{Rating: 9.8, Votes: 15000})
+	defer ts.Close()
+
+	c := trakt.New("serat-key", trakt.WithBaseURL(ts.URL))
+	r, err := c.GetSeasonRatings(context.Background(), "breaking-bad", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Rating != 9.8 {
+		t.Errorf("Rating = %f, want 9.8", r.Rating)
+	}
+}
+
+func TestGetSeasonStats(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/stats", "sest-key", trakt.Stats{Watchers: 20000, Plays: 80000})
+	defer ts.Close()
+
+	c := trakt.New("sest-key", trakt.WithBaseURL(ts.URL))
+	s, err := c.GetSeasonStats(context.Background(), "breaking-bad", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.Watchers != 20000 {
+		t.Errorf("Watchers = %d, want 20000", s.Watchers)
+	}
+}
+
+func TestGetSeasonWatching(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/watching", "sew-key", []trakt.WatchingItem{
+		{Action: "watching", Type: "episode"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("sew-key", trakt.WithBaseURL(ts.URL))
+	items, err := c.GetSeasonWatching(context.Background(), "breaking-bad", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+}
+
+func TestGetSeasonPeople(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/people", "sep-key", trakt.People{
+		Cast: []trakt.CastMember{{Characters: []string{"Walter White"}, Person: trakt.Person{Name: "Bryan Cranston"}}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("sep-key", trakt.WithBaseURL(ts.URL))
+	p, err := c.GetSeasonPeople(context.Background(), "breaking-bad", 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(p.Cast) != 1 {
+		t.Fatalf("len(cast) = %d, want 1", len(p.Cast))
+	}
+}
+
+func TestGetSeasonLists(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/lists", "sel-key", []trakt.UserList{
+		{Name: "Best Seasons", IDs: trakt.IDs{Trakt: 3}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("sel-key", trakt.WithBaseURL(ts.URL))
+	lists, _, err := c.GetSeasonLists(context.Background(), "breaking-bad", 5, "", "", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lists) != 1 {
+		t.Fatalf("len = %d, want 1", len(lists))
+	}
+}
+
+func TestGetEpisodeTranslations(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/seasons/1/episodes/1/translations/de", "ept-key", []trakt.EpisodeTranslation{
+		{Title: "Pilot", Overview: "Ein Lehrer...", Language: "de"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("ept-key", trakt.WithBaseURL(ts.URL))
+	trans, err := c.GetEpisodeTranslations(context.Background(), "breaking-bad", 1, 1, "de")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(trans) != 1 {
+		t.Fatalf("len = %d, want 1", len(trans))
+	}
+	if trans[0].Language != "de" {
+		t.Errorf("Language = %q, want %q", trans[0].Language, "de")
+	}
+}
+
+func TestGetEpisodeComments(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/episodes/16/comments", "epc-key", []trakt.Comment{
+		{ID: 20, Comment: "Perfect ending"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("epc-key", trakt.WithBaseURL(ts.URL))
+	comments, _, err := c.GetEpisodeComments(context.Background(), "breaking-bad", 5, 16, "", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(comments) != 1 {
+		t.Fatalf("len = %d, want 1", len(comments))
+	}
+}
+
+func TestGetEpisodeLists(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/episodes/16/lists", "epl-key", []trakt.UserList{
+		{Name: "Best Finales", IDs: trakt.IDs{Trakt: 4}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("epl-key", trakt.WithBaseURL(ts.URL))
+	lists, _, err := c.GetEpisodeLists(context.Background(), "breaking-bad", 5, 16, "", "", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lists) != 1 {
+		t.Fatalf("len = %d, want 1", len(lists))
+	}
+}
+
+func TestGetEpisodePeople(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/episodes/16/people", "epp-key", trakt.People{
+		Cast: []trakt.CastMember{{Characters: []string{"Walter White"}, Person: trakt.Person{Name: "Bryan Cranston"}}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("epp-key", trakt.WithBaseURL(ts.URL))
+	p, err := c.GetEpisodePeople(context.Background(), "breaking-bad", 5, 16)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(p.Cast) != 1 {
+		t.Fatalf("len(cast) = %d, want 1", len(p.Cast))
+	}
+}
+
+func TestGetEpisodeWatching(t *testing.T) {
+	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/episodes/16/watching", "epw-key", []trakt.WatchingItem{
+		{Action: "watching", Type: "episode"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("epw-key", trakt.WithBaseURL(ts.URL))
+	items, err := c.GetEpisodeWatching(context.Background(), "breaking-bad", 5, 16)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+}
+
+func TestGetPersonMovies(t *testing.T) {
+	ts := newTestServer(t, "/people/bryan-cranston/movies", "pm-key", trakt.PersonMovieCredits{
+		Cast: []trakt.PersonMovieCast{
+			{Characters: []string{"Walter White"}, Movie: trakt.Movie{Title: "Breaking Bad Movie"}},
+		},
+	})
+	defer ts.Close()
+
+	c := trakt.New("pm-key", trakt.WithBaseURL(ts.URL))
+	credits, err := c.GetPersonMovies(context.Background(), "bryan-cranston")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(credits.Cast) != 1 {
+		t.Fatalf("len(cast) = %d, want 1", len(credits.Cast))
+	}
+}
+
+func TestGetPersonShows(t *testing.T) {
+	ts := newTestServer(t, "/people/bryan-cranston/shows", "ps-key", trakt.PersonShowCredits{
+		Cast: []trakt.PersonShowCast{
+			{Characters: []string{"Walter White"}, Show: trakt.Show{Title: "Breaking Bad"}},
+		},
+	})
+	defer ts.Close()
+
+	c := trakt.New("ps-key", trakt.WithBaseURL(ts.URL))
+	credits, err := c.GetPersonShows(context.Background(), "bryan-cranston")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(credits.Cast) != 1 {
+		t.Fatalf("len(cast) = %d, want 1", len(credits.Cast))
+	}
+}
+
+func TestGetPersonLists(t *testing.T) {
+	ts := newTestServer(t, "/people/bryan-cranston/lists", "pl-key", []trakt.UserList{
+		{Name: "Great Actors", IDs: trakt.IDs{Trakt: 5}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("pl-key", trakt.WithBaseURL(ts.URL))
+	lists, _, err := c.GetPersonLists(context.Background(), "bryan-cranston", "", "", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lists) != 1 {
+		t.Fatalf("len = %d, want 1", len(lists))
+	}
+}
+
+func TestMyCalendarMovies(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/calendars/my/movies/2024-01-01/7", "mycm-key", "mycm-tok", []trakt.CalendarMovie{
+		{Released: "2024-01-05", Movie: trakt.Movie{Title: "My Movie"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("mycm-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("mycm-tok"))
+	movies, err := c.MyCalendarMovies(context.Background(), "2024-01-01", 7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(movies) != 1 {
+		t.Fatalf("len = %d, want 1", len(movies))
+	}
+}
+
+func TestMyCalendarShows(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/calendars/my/shows/2024-01-01/7", "mycs-key", "mycs-tok", []trakt.CalendarShow{
+		{FirstAired: "2024-01-03", Show: trakt.Show{Title: "My Show"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("mycs-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("mycs-tok"))
+	shows, err := c.MyCalendarShows(context.Background(), "2024-01-01", 7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(shows) != 1 {
+		t.Fatalf("len = %d, want 1", len(shows))
+	}
+}
+
+func TestMyCalendarNewShows(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/calendars/my/shows/new/2024-01-01/30", "mycns-key", "mycns-tok", []trakt.CalendarShow{
+		{FirstAired: "2024-01-15", Show: trakt.Show{Title: "New Premiere"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("mycns-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("mycns-tok"))
+	shows, err := c.MyCalendarNewShows(context.Background(), "2024-01-01", 30)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(shows) != 1 {
+		t.Fatalf("len = %d, want 1", len(shows))
+	}
+}
+
+func TestMyCalendarSeasonPremieres(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/calendars/my/shows/premieres/2024-03-01/14", "mycsp-key", "mycsp-tok", []trakt.CalendarShow{
+		{FirstAired: "2024-03-10", Show: trakt.Show{Title: "Season Premiere"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("mycsp-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("mycsp-tok"))
+	shows, err := c.MyCalendarSeasonPremieres(context.Background(), "2024-03-01", 14)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(shows) != 1 {
+		t.Fatalf("len = %d, want 1", len(shows))
+	}
+}
+
+func TestMyCalendarDVD(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/calendars/my/dvd/2024-01-01/30", "mydvd-key", "mydvd-tok", []trakt.CalendarDVDMovie{
+		{Released: "2024-01-20", Movie: trakt.Movie{Title: "DVD Release"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("mydvd-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("mydvd-tok"))
+	movies, err := c.MyCalendarDVD(context.Background(), "2024-01-01", 30)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(movies) != 1 {
+		t.Fatalf("len = %d, want 1", len(movies))
+	}
+}
+
+func TestCalendarDVD(t *testing.T) {
+	ts := newTestServer(t, "/calendars/all/dvd/2024-01-01/30", "dvd-key", []trakt.CalendarDVDMovie{
+		{Released: "2024-01-20", Movie: trakt.Movie{Title: "DVD Release"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("dvd-key", trakt.WithBaseURL(ts.URL))
+	movies, err := c.CalendarDVD(context.Background(), "2024-01-01", 30)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(movies) != 1 {
+		t.Fatalf("len = %d, want 1", len(movies))
+	}
+}
+
+func TestGetComment(t *testing.T) {
+	ts := newTestServer(t, "/comments/417", "gc-key", trakt.Comment{
+		ID: 417, Comment: "Amazing film!", Likes: 5,
+	})
+	defer ts.Close()
+
+	c := trakt.New("gc-key", trakt.WithBaseURL(ts.URL))
+	comment, err := c.GetComment(context.Background(), 417)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if comment.ID != 417 {
+		t.Errorf("ID = %d, want 417", comment.ID)
+	}
+	if comment.Likes != 5 {
+		t.Errorf("Likes = %d, want 5", comment.Likes)
+	}
+}
+
+func TestPostComment(t *testing.T) {
+	ts := newAuthServer(t, http.MethodPost, "/comments", "pc-key", "pc-tok", trakt.Comment{
+		ID: 500, Comment: "Great movie!", Spoiler: false,
+	})
+	defer ts.Close()
+
+	c := trakt.New("pc-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("pc-tok"))
+	comment, err := c.PostComment(context.Background(), &trakt.CommentRequest{
+		Comment: "Great movie!",
+		Movie:   &trakt.SyncMovie{IDs: trakt.IDs{Trakt: 120}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if comment.ID != 500 {
+		t.Errorf("ID = %d, want 500", comment.ID)
+	}
+}
+
+func TestDeleteComment(t *testing.T) {
+	ts := newAuthServer(t, http.MethodDelete, "/comments/500", "dc-key", "dc-tok", nil)
+	defer ts.Close()
+
+	c := trakt.New("dc-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("dc-tok"))
+	err := c.DeleteComment(context.Background(), 500)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetCommentReplies(t *testing.T) {
+	ts := newTestServer(t, "/comments/417/replies", "cr-key", []trakt.Comment{
+		{ID: 418, Comment: "I agree!", ParentID: 417},
+	})
+	defer ts.Close()
+
+	c := trakt.New("cr-key", trakt.WithBaseURL(ts.URL))
+	replies, _, err := c.GetCommentReplies(context.Background(), 417, 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(replies) != 1 {
+		t.Fatalf("len = %d, want 1", len(replies))
+	}
+	if replies[0].ParentID != 417 {
+		t.Errorf("ParentID = %d, want 417", replies[0].ParentID)
+	}
+}
+
+func TestPostCommentReply(t *testing.T) {
+	ts := newAuthServer(t, http.MethodPost, "/comments/417/replies", "pcr-key", "pcr-tok", trakt.Comment{
+		ID: 419, Comment: "Thanks!", ParentID: 417,
+	})
+	defer ts.Close()
+
+	c := trakt.New("pcr-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("pcr-tok"))
+	reply, err := c.PostCommentReply(context.Background(), 417, &trakt.CommentRequest{Comment: "Thanks!"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reply.ParentID != 417 {
+		t.Errorf("ParentID = %d, want 417", reply.ParentID)
+	}
+}
+
+func TestGetCommentItem(t *testing.T) {
+	ts := newTestServer(t, "/comments/417/item", "ci-key", trakt.CommentItem{
+		Type:    "movie",
+		Comment: trakt.Comment{ID: 417},
+		Movie:   &trakt.Movie{Title: "Inception"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("ci-key", trakt.WithBaseURL(ts.URL))
+	item, err := c.GetCommentItem(context.Background(), 417)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item.Type != "movie" {
+		t.Errorf("Type = %q, want %q", item.Type, "movie")
+	}
+	if item.Movie.Title != "Inception" {
+		t.Errorf("Title = %q, want %q", item.Movie.Title, "Inception")
+	}
+}
+
+func TestLikeComment(t *testing.T) {
+	ts := newAuthServer(t, http.MethodPost, "/comments/417/like", "lc-key", "lc-tok", nil)
+	defer ts.Close()
+
+	c := trakt.New("lc-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("lc-tok"))
+	err := c.LikeComment(context.Background(), 417)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUnlikeComment(t *testing.T) {
+	ts := newAuthServer(t, http.MethodDelete, "/comments/417/like", "ulc-key", "ulc-tok", nil)
+	defer ts.Close()
+
+	c := trakt.New("ulc-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("ulc-tok"))
+	err := c.UnlikeComment(context.Background(), 417)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTrendingComments(t *testing.T) {
+	ts := newTestServer(t, "/comments/trending/reviews/movies", "tc-key", []trakt.CommentItem{
+		{Type: "movie", Comment: trakt.Comment{ID: 1, Comment: "Trending review"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("tc-key", trakt.WithBaseURL(ts.URL))
+	comments, _, err := c.TrendingComments(context.Background(), "reviews", "movies", false, 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(comments) != 1 {
+		t.Fatalf("len = %d, want 1", len(comments))
+	}
+}
+
+func TestRecentComments(t *testing.T) {
+	ts := newTestServer(t, "/comments/recent", "rc-key", []trakt.CommentItem{
+		{Type: "show", Comment: trakt.Comment{ID: 2, Comment: "Recent comment"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("rc-key", trakt.WithBaseURL(ts.URL))
+	comments, _, err := c.RecentComments(context.Background(), "", "", false, 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(comments) != 1 {
+		t.Fatalf("len = %d, want 1", len(comments))
+	}
+}
+
+func TestUpdatedComments(t *testing.T) {
+	ts := newTestServer(t, "/comments/updates", "uc-key", []trakt.CommentItem{
+		{Type: "movie", Comment: trakt.Comment{ID: 3}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("uc-key", trakt.WithBaseURL(ts.URL))
+	comments, _, err := c.UpdatedComments(context.Background(), "", "", false, 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(comments) != 1 {
+		t.Fatalf("len = %d, want 1", len(comments))
+	}
+}
+
+func TestGetNotes(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/notes", "gn-key", "gn-tok", []trakt.NoteItem{
+		{Type: "movie", Note: trakt.Note{ID: 1, Notes: "Watch again"}, Movie: &trakt.Movie{Title: "Inception"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("gn-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("gn-tok"))
+	notes, _, err := c.GetNotes(context.Background(), 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(notes) != 1 {
+		t.Fatalf("len = %d, want 1", len(notes))
+	}
+	if notes[0].Note.Notes != "Watch again" {
+		t.Errorf("Notes = %q, want %q", notes[0].Note.Notes, "Watch again")
+	}
+}
+
+func TestGetNote(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/notes/1", "gn1-key", "gn1-tok", trakt.NoteItem{
+		Type: "movie", Note: trakt.Note{ID: 1, Notes: "Watch again"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("gn1-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("gn1-tok"))
+	note, err := c.GetNote(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if note.Note.ID != 1 {
+		t.Errorf("ID = %d, want 1", note.Note.ID)
+	}
+}
+
+func TestAddNote(t *testing.T) {
+	ts := newAuthServer(t, http.MethodPost, "/notes", "an-key", "an-tok", trakt.NoteItem{
+		Type: "movie", Note: trakt.Note{ID: 2, Notes: "New note"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("an-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("an-tok"))
+	note, err := c.AddNote(context.Background(), &trakt.NoteRequest{
+		Movie: &trakt.SyncMovie{IDs: trakt.IDs{Trakt: 120}},
+		Notes: "New note",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if note.Note.ID != 2 {
+		t.Errorf("ID = %d, want 2", note.Note.ID)
+	}
+}
+
+func TestUpdateNote(t *testing.T) {
+	ts := newAuthServer(t, http.MethodPut, "/notes/2", "un-key", "un-tok", nil)
+	defer ts.Close()
+
+	c := trakt.New("un-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("un-tok"))
+	err := c.UpdateNote(context.Background(), 2, &trakt.NoteRequest{Notes: "Updated"})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDeleteNote(t *testing.T) {
+	ts := newAuthServer(t, http.MethodDelete, "/notes/2", "dn-key", "dn-tok", nil)
+	defer ts.Close()
+
+	c := trakt.New("dn-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("dn-tok"))
+	err := c.DeleteNote(context.Background(), 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetLastActivities(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/sync/last_activities", "la-key", "la-tok", trakt.LastActivities{
+		All: "2024-06-15T20:00:00.000Z",
+		Movies: trakt.LastActivityTimes{WatchedAt: "2024-06-14T10:00:00.000Z"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("la-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("la-tok"))
+	activities, err := c.GetLastActivities(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if activities.All != "2024-06-15T20:00:00.000Z" {
+		t.Errorf("All = %q, want %q", activities.All, "2024-06-15T20:00:00.000Z")
+	}
+}
+
+func TestGetPlaybackProgress(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/sync/playback/movies", "pp-key", "pp-tok", []trakt.PlaybackProgress{
+		{ID: 1, Progress: 45.5, Type: "movie", Movie: &trakt.Movie{Title: "Inception"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("pp-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("pp-tok"))
+	items, err := c.GetPlaybackProgress(context.Background(), "movies")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+	if items[0].Progress != 45.5 {
+		t.Errorf("Progress = %f, want 45.5", items[0].Progress)
+	}
+}
+
+func TestRemovePlaybackItem(t *testing.T) {
+	ts := newAuthServer(t, http.MethodDelete, "/sync/playback/1", "rpi-key", "rpi-tok", nil)
+	defer ts.Close()
+
+	c := trakt.New("rpi-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("rpi-tok"))
+	err := c.RemovePlaybackItem(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetWatched(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/sync/watched/movies", "gw-key", "gw-tok", []trakt.WatchedItem{
+		{Plays: 3, LastWatchedAt: "2024-06-01T00:00:00.000Z", Movie: &trakt.Movie{Title: "Inception"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("gw-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("gw-tok"))
+	items, err := c.GetWatched(context.Background(), "movies")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+	if items[0].Plays != 3 {
+		t.Errorf("Plays = %d, want 3", items[0].Plays)
+	}
+}
+
+func TestGetFavorites(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/sync/favorites/movies", "fav-key", "fav-tok", []trakt.FavoritesItem{
+		{Rank: 1, Type: "movie", Movie: &trakt.Movie{Title: "Inception"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("fav-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("fav-tok"))
+	items, _, err := c.GetFavorites(context.Background(), "movies", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+}
+
+func TestAddToFavorites(t *testing.T) {
+	ts := newAuthServer(t, http.MethodPost, "/sync/favorites", "af-key", "af-tok", trakt.SyncResponse{
+		Added: &trakt.SyncCount{Movies: 1},
+	})
+	defer ts.Close()
+
+	c := trakt.New("af-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("af-tok"))
+	resp, err := c.AddToFavorites(context.Background(), &trakt.SyncItems{
+		Movies: []trakt.SyncMovie{{IDs: trakt.IDs{Trakt: 120}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Added.Movies != 1 {
+		t.Errorf("Added.Movies = %d, want 1", resp.Added.Movies)
+	}
+}
+
+func TestRemoveFromFavorites(t *testing.T) {
+	ts := newAuthServer(t, http.MethodPost, "/sync/favorites/remove", "rf-key", "rf-tok", trakt.SyncResponse{
+		Deleted: &trakt.SyncCount{Movies: 1},
+	})
+	defer ts.Close()
+
+	c := trakt.New("rf-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("rf-tok"))
+	resp, err := c.RemoveFromFavorites(context.Background(), &trakt.SyncItems{
+		Movies: []trakt.SyncMovie{{IDs: trakt.IDs{Trakt: 120}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Deleted.Movies != 1 {
+		t.Errorf("Deleted.Movies = %d, want 1", resp.Deleted.Movies)
+	}
+}
+
+func TestGetUserProfile(t *testing.T) {
+	ts := newTestServer(t, "/users/sean", "up-key", trakt.UserProfile{
+		Username: "sean", Name: "Sean Rudford", VIP: true,
+	})
+	defer ts.Close()
+
+	c := trakt.New("up-key", trakt.WithBaseURL(ts.URL))
+	profile, err := c.GetUserProfile(context.Background(), "sean")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if profile.Username != "sean" {
+		t.Errorf("Username = %q, want %q", profile.Username, "sean")
+	}
+}
+
+func TestGetUserWatchlist(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/watchlist/movies", "uw-key", []trakt.WatchlistItem{
+		{Rank: 1, Type: "movie", Movie: &trakt.Movie{Title: "Dune"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("uw-key", trakt.WithBaseURL(ts.URL))
+	items, _, err := c.GetUserWatchlist(context.Background(), "sean", "movies", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+}
+
+func TestGetUserListsByUsername(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/lists", "ulb-key", []trakt.UserList{
+		{Name: "Favorites", IDs: trakt.IDs{Trakt: 1}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("ulb-key", trakt.WithBaseURL(ts.URL))
+	lists, err := c.GetUserListsByUsername(context.Background(), "sean")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lists) != 1 {
+		t.Fatalf("len = %d, want 1", len(lists))
+	}
+}
+
+func TestGetUserListByUsername(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/lists/favorites", "ulb1-key", trakt.UserList{
+		Name: "Favorites", IDs: trakt.IDs{Trakt: 1},
+	})
+	defer ts.Close()
+
+	c := trakt.New("ulb1-key", trakt.WithBaseURL(ts.URL))
+	list, err := c.GetUserListByUsername(context.Background(), "sean", "favorites")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if list.Name != "Favorites" {
+		t.Errorf("Name = %q, want %q", list.Name, "Favorites")
+	}
+}
+
+func TestGetUserListItemsByUsername(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/lists/favorites/items", "uli-key", []trakt.ListItem{
+		{Rank: 1, Type: "movie", Movie: &trakt.Movie{Title: "Inception"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("uli-key", trakt.WithBaseURL(ts.URL))
+	items, _, err := c.GetUserListItemsByUsername(context.Background(), "sean", "favorites", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+}
+
+func TestGetUserRatings(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/ratings/movies", "urr-key", []trakt.RatedItem{
+		{Rating: 10, Type: "movie", Movie: &trakt.Movie{Title: "Inception"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("urr-key", trakt.WithBaseURL(ts.URL))
+	items, err := c.GetUserRatings(context.Background(), "sean", "movies")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+}
+
+func TestGetUserHistory(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/history/movies", "uh-key", []trakt.HistoryItem{
+		{ID: 1, Type: "movie", Movie: &trakt.Movie{Title: "Inception"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("uh-key", trakt.WithBaseURL(ts.URL))
+	items, _, err := c.GetUserHistory(context.Background(), "sean", "movies", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+}
+
+func TestGetUserCollection(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/collection/movies", "ucol-key", []trakt.CollectionItem{
+		{Movie: &trakt.Movie{Title: "Inception"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("ucol-key", trakt.WithBaseURL(ts.URL))
+	items, err := c.GetUserCollection(context.Background(), "sean", "movies")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+}
+
+func TestGetUserStatsByUsername(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/stats", "ust-key", trakt.UserStats{
+		Movies: trakt.UserMovieStats{Plays: 100},
+	})
+	defer ts.Close()
+
+	c := trakt.New("ust-key", trakt.WithBaseURL(ts.URL))
+	stats, err := c.GetUserStatsByUsername(context.Background(), "sean")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.Movies.Plays != 100 {
+		t.Errorf("Movies.Plays = %d, want 100", stats.Movies.Plays)
+	}
+}
+
+func TestGetFollowers(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/users/me/followers", "gf-key", "gf-tok", []trakt.UserFollower{
+		{FollowedAt: "2024-01-01T00:00:00.000Z", User: trakt.UserProfile{Username: "fan1"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("gf-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("gf-tok"))
+	followers, err := c.GetFollowers(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(followers) != 1 {
+		t.Fatalf("len = %d, want 1", len(followers))
+	}
+	if followers[0].User.Username != "fan1" {
+		t.Errorf("Username = %q, want %q", followers[0].User.Username, "fan1")
+	}
+}
+
+func TestGetFollowing(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/users/me/following", "gfo-key", "gfo-tok", []trakt.UserFollower{
+		{User: trakt.UserProfile{Username: "celeb1"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("gfo-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("gfo-tok"))
+	following, err := c.GetFollowing(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(following) != 1 {
+		t.Fatalf("len = %d, want 1", len(following))
+	}
+}
+
+func TestFollowUser(t *testing.T) {
+	ts := newAuthServer(t, http.MethodPost, "/users/sean/follow", "fu-key", "fu-tok", nil)
+	defer ts.Close()
+
+	c := trakt.New("fu-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("fu-tok"))
+	err := c.FollowUser(context.Background(), "sean")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUnfollowUser(t *testing.T) {
+	ts := newAuthServer(t, http.MethodDelete, "/users/sean/follow", "uu-key", "uu-tok", nil)
+	defer ts.Close()
+
+	c := trakt.New("uu-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("uu-tok"))
+	err := c.UnfollowUser(context.Background(), "sean")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetFollowRequests(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/users/requests", "fr-key", "fr-tok", []trakt.FollowRequest{
+		{ID: 1, RequestedAt: "2024-01-01T00:00:00.000Z", User: trakt.UserProfile{Username: "newuser"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("fr-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("fr-tok"))
+	requests, err := c.GetFollowRequests(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(requests) != 1 {
+		t.Fatalf("len = %d, want 1", len(requests))
+	}
+	if requests[0].User.Username != "newuser" {
+		t.Errorf("Username = %q, want %q", requests[0].User.Username, "newuser")
+	}
+}
+
+func TestApproveFollowRequest(t *testing.T) {
+	ts := newAuthServer(t, http.MethodPost, "/users/requests/1", "afr-key", "afr-tok", nil)
+	defer ts.Close()
+
+	c := trakt.New("afr-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("afr-tok"))
+	err := c.ApproveFollowRequest(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDenyFollowRequest(t *testing.T) {
+	ts := newAuthServer(t, http.MethodDelete, "/users/requests/1", "dfr-key", "dfr-tok", nil)
+	defer ts.Close()
+
+	c := trakt.New("dfr-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("dfr-tok"))
+	err := c.DenyFollowRequest(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetUserFollowers(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/followers", "uf-key", []trakt.UserFollower{
+		{User: trakt.UserProfile{Username: "fan1"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("uf-key", trakt.WithBaseURL(ts.URL))
+	followers, err := c.GetUserFollowers(context.Background(), "sean")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(followers) != 1 {
+		t.Fatalf("len = %d, want 1", len(followers))
+	}
+}
+
+func TestGetUserFollowing(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/following", "ufo-key", []trakt.UserFollower{
+		{User: trakt.UserProfile{Username: "celeb1"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("ufo-key", trakt.WithBaseURL(ts.URL))
+	following, err := c.GetUserFollowing(context.Background(), "sean")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(following) != 1 {
+		t.Fatalf("len = %d, want 1", len(following))
+	}
+}
+
+func TestGetUpdatedMovieIDs(t *testing.T) {
+	ts := newTestServer(t, "/movies/updates/id/2024-01-01", "umi-key", []int{120, 121, 122})
+	defer ts.Close()
+
+	c := trakt.New("umi-key", trakt.WithBaseURL(ts.URL))
+	ids, _, err := c.GetUpdatedMovieIDs(context.Background(), "2024-01-01", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ids) != 3 {
+		t.Fatalf("len = %d, want 3", len(ids))
+	}
+	if ids[0] != 120 {
+		t.Errorf("ids[0] = %d, want 120", ids[0])
+	}
+}
+
+func TestGetUpdatedShowIDs(t *testing.T) {
+	ts := newTestServer(t, "/shows/updates/id/2024-06-01", "usi-key", []int{1388, 1389})
+	defer ts.Close()
+
+	c := trakt.New("usi-key", trakt.WithBaseURL(ts.URL))
+	ids, _, err := c.GetUpdatedShowIDs(context.Background(), "2024-06-01", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ids) != 2 {
+		t.Fatalf("len = %d, want 2", len(ids))
+	}
+}
+
+func TestGetHiddenItems(t *testing.T) {
+	ts := newAuthServer(t, http.MethodGet, "/users/hidden/recommendations", "hi-key", "hi-tok", []trakt.ListItem{
+		{Rank: 1, Type: "movie", Movie: &trakt.Movie{Title: "Hidden Movie"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("hi-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("hi-tok"))
+	items, _, err := c.GetHiddenItems(context.Background(), "recommendations", "", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+}
+
+func TestAddHiddenItems(t *testing.T) {
+	ts := newAuthServer(t, http.MethodPost, "/users/hidden/recommendations", "ahi-key", "ahi-tok", trakt.SyncResponse{
+		Added: &trakt.SyncCount{Movies: 1},
+	})
+	defer ts.Close()
+
+	c := trakt.New("ahi-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("ahi-tok"))
+	resp, err := c.AddHiddenItems(context.Background(), "recommendations", &trakt.SyncItems{
+		Movies: []trakt.SyncMovie{{IDs: trakt.IDs{Trakt: 120}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Added.Movies != 1 {
+		t.Errorf("Added.Movies = %d, want 1", resp.Added.Movies)
+	}
+}
+
+func TestRemoveHiddenItems(t *testing.T) {
+	ts := newAuthServer(t, http.MethodPost, "/users/hidden/recommendations/remove", "rhi-key", "rhi-tok", trakt.SyncResponse{
+		Deleted: &trakt.SyncCount{Movies: 1},
+	})
+	defer ts.Close()
+
+	c := trakt.New("rhi-key", trakt.WithBaseURL(ts.URL), trakt.WithAccessToken("rhi-tok"))
+	resp, err := c.RemoveHiddenItems(context.Background(), "recommendations", &trakt.SyncItems{
+		Movies: []trakt.SyncMovie{{IDs: trakt.IDs{Trakt: 120}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Deleted.Movies != 1 {
+		t.Errorf("Deleted.Movies = %d, want 1", resp.Deleted.Movies)
+	}
+}
+
+func TestGetUserWatching(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/watching", "uwt-key", trakt.WatchingItem{
+		Action: "watching", Type: "movie", Movie: &trakt.Movie{Title: "Inception"},
+	})
+	defer ts.Close()
+
+	c := trakt.New("uwt-key", trakt.WithBaseURL(ts.URL))
+	item, err := c.GetUserWatching(context.Background(), "sean")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if item.Movie.Title != "Inception" {
+		t.Errorf("Title = %q, want %q", item.Movie.Title, "Inception")
+	}
+}
+
+func TestGetUserWatched(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/watched/movies", "uwm-key", []trakt.WatchedItem{
+		{Plays: 5, Movie: &trakt.Movie{Title: "Inception"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("uwm-key", trakt.WithBaseURL(ts.URL))
+	items, err := c.GetUserWatched(context.Background(), "sean", "movies")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+	if items[0].Plays != 5 {
+		t.Errorf("Plays = %d, want 5", items[0].Plays)
+	}
+}
+
+func TestGetUserFavorites(t *testing.T) {
+	ts := newTestServer(t, "/users/sean/favorites/movies", "ufav-key", []trakt.FavoritesItem{
+		{Rank: 1, Type: "movie", Movie: &trakt.Movie{Title: "Inception"}},
+	})
+	defer ts.Close()
+
+	c := trakt.New("ufav-key", trakt.WithBaseURL(ts.URL))
+	items, _, err := c.GetUserFavorites(context.Background(), "sean", "movies", 1, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len = %d, want 1", len(items))
+	}
+}
