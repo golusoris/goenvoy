@@ -48,7 +48,6 @@ func New(apiKey string, opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc, apiKey: apiKey}
 }
 
-
 func (c *Client) get(ctx context.Context, method string, extra url.Values, v any) error {
 	params := url.Values{}
 	params.Set("method", method)

@@ -35,7 +35,6 @@ func New(opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc}
 }
 
-
 func (c *Client) get(ctx context.Context, path string, params url.Values, v any) error {
 	u := c.BaseURL() + path
 	if params != nil {

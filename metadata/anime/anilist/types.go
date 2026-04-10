@@ -282,11 +282,11 @@ type Trailer struct {
 // MediaDetailed extends Media with connection fields (studios, characters, staff, relations, etc.).
 type MediaDetailed struct {
 	Media
-	Studios           StudioConnection             `json:"studios"`
-	Characters        CharacterConnectionDetailed  `json:"characters"`
-	Staff             StaffConnectionDetailed      `json:"staff"`
-	Relations         MediaConnectionDetailed      `json:"relations"`
-	ExternalLinks     []ExternalLink               `json:"externalLinks"`
-	StreamingEpisodes []StreamingEpisode           `json:"streamingEpisodes"`
-	Trailer           *Trailer                     `json:"trailer"`
+	Studios           StudioConnection            `json:"studios"`
+	Characters        CharacterConnectionDetailed `json:"characters"`
+	Staff             StaffConnectionDetailed     `json:"staff"`
+	Relations         MediaConnectionDetailed     `json:"relations"`
+	ExternalLinks     []ExternalLink              `json:"externalLinks"`
+	StreamingEpisodes []StreamingEpisode          `json:"streamingEpisodes"`
+	Trailer           *Trailer                    `json:"trailer"`
 }

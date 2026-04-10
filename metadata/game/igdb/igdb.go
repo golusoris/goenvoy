@@ -43,7 +43,6 @@ func New(clientID, accessToken string, opts ...metadata.Option) *Client {
 	return c
 }
 
-
 // query sends a POST request to the given endpoint with an APICalypse query body.
 func (c *Client) query(ctx context.Context, endpoint, body string, v any) error {
 	u := c.BaseURL() + "/" + endpoint

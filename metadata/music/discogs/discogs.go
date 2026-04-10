@@ -45,7 +45,6 @@ func New(token string, opts ...metadata.Option) *Client {
 	return c
 }
 
-
 func (c *Client) get(ctx context.Context, path string, params url.Values, v any) error {
 	u := c.BaseURL() + path
 	if len(params) > 0 {

@@ -30,7 +30,6 @@ func New(apiToken string, opts ...metadata.Option) *Client {
 	return c
 }
 
-
 // APIError is returned when the API responds with a non-2xx status.
 type APIError struct {
 	StatusCode int    `json:"-"`

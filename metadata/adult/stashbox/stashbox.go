@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
 	"github.com/lusoris/goenvoy/metadata"
 )
-
 
 // GraphQL field fragments.
 const performerFields = `
@@ -89,7 +89,6 @@ func New(endpoint, apiKey string, opts ...metadata.Option) *Client {
 	})
 	return c
 }
-
 
 // GraphQLError represents an error returned by the GraphQL API.
 type GraphQLError struct {

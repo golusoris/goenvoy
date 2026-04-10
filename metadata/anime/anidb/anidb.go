@@ -28,8 +28,6 @@ func New(clientName string, clientVer int, opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc, clientName: clientName, clientVer: clientVer}
 }
 
-
-
 // APIError is returned when the AniDB API responds with an error.
 type APIError struct {
 	Code    string

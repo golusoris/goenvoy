@@ -55,7 +55,6 @@ func (c *Client) SetStoreURL(u string) { c.storeURL = strings.TrimRight(u, "/") 
 // SetWebAPIURL overrides the Steam Web API base URL (useful for testing).
 func (c *Client) SetWebAPIURL(u string) { c.webAPIURL = strings.TrimRight(u, "/") }
 
-
 func (c *Client) get(ctx context.Context, u string, v any) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {

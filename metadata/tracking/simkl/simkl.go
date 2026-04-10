@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	defaultBaseURL   = "https://api.simkl.com"
-	defaultCalURL    = "https://data.simkl.in"
-	defaultFilter    = "all"
+	defaultBaseURL = "https://api.simkl.com"
+	defaultCalURL  = "https://data.simkl.in"
+	defaultFilter  = "all"
 )
 
 // Client is a Simkl API client.
@@ -62,7 +62,6 @@ func New(clientID string, opts ...metadata.Option) *Client {
 		calBaseURL: defaultCalURL,
 	}
 }
-
 
 // APIError is returned when the API responds with a non-2xx status.
 type APIError struct {

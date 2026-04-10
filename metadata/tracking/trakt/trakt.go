@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	defaultBaseURL   = "https://api.trakt.tv"
-	apiVersion       = "2"
+	defaultBaseURL = "https://api.trakt.tv"
+	apiVersion     = "2"
 )
 
 // Client is a Trakt API v2 client.
@@ -62,7 +62,6 @@ func New(clientID string, opts ...metadata.Option) *Client {
 	bc := metadata.NewBaseClient(defaultBaseURL, "trakt", opts...)
 	return &Client{BaseClient: bc, clientID: clientID}
 }
-
 
 // APIError is returned when the API responds with a non-2xx status.
 type APIError struct {

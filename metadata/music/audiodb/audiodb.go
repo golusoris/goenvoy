@@ -36,7 +36,6 @@ func New(apiKey string, opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc, apiKey: apiKey}
 }
 
-
 // Response wrappers matching the API JSON structure.
 type artistsResp struct {
 	Artists []Artist `json:"artists"`

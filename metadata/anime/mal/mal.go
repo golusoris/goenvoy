@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	defaultBaseURL   = "https://api.myanimelist.net/v2"
-	defaultAuthURL   = "https://myanimelist.net/v1/oauth2"
+	defaultBaseURL = "https://api.myanimelist.net/v2"
+	defaultAuthURL = "https://myanimelist.net/v1/oauth2"
 )
 
 // Client is a MyAnimeList API v2 client.
@@ -67,7 +67,6 @@ func New(clientID string, opts ...metadata.Option) *Client {
 	bc := metadata.NewBaseClient(defaultBaseURL, "mal", opts...)
 	return &Client{BaseClient: bc, clientID: clientID, authURL: defaultAuthURL}
 }
-
 
 // APIError is returned when the API responds with a non-2xx status.
 type APIError struct {

@@ -42,7 +42,6 @@ func New(accessToken string, opts ...metadata.Option) *Client {
 	return c
 }
 
-
 func (c *Client) get(ctx context.Context, path string, v any) error {
 	u := c.BaseURL() + path
 

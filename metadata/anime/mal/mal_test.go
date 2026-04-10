@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lusoris/goenvoy/metadata/anime/mal"
 	"github.com/lusoris/goenvoy/metadata"
+	"github.com/lusoris/goenvoy/metadata/anime/mal"
 )
 
 func testClient(t *testing.T, handler http.HandlerFunc) *mal.Client {

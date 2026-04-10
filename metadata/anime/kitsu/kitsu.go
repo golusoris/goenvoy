@@ -58,7 +58,6 @@ func New(opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc, authURL: defaultAuthURL}
 }
 
-
 // APIError is returned when the Kitsu API responds with a non-2xx status code.
 type APIError struct {
 	StatusCode int

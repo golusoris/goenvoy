@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultBaseURL   = "https://graphql.anilist.co"
+	defaultBaseURL = "https://graphql.anilist.co"
 )
 
 // GraphQL field fragments reused across queries.
@@ -115,7 +115,6 @@ func NewWithToken(accessToken string, opts ...metadata.Option) *Client {
 	})
 	return c
 }
-
 
 type graphQLRequest struct {
 	Query     string         `json:"query"`

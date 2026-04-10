@@ -50,7 +50,6 @@ func NewWithToken(accessToken string, opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc, accessToken: accessToken}
 }
 
-
 func (c *Client) get(ctx context.Context, path string, v any) error {
 	u := c.BaseURL() + path
 

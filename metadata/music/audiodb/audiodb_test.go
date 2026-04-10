@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/lusoris/goenvoy/metadata/music/audiodb"
 	"github.com/lusoris/goenvoy/metadata"
+	"github.com/lusoris/goenvoy/metadata/music/audiodb"
 )
 
 func setup(t *testing.T, handler http.HandlerFunc) *audiodb.Client {

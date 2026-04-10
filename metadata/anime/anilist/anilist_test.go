@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/lusoris/goenvoy/metadata/anime/anilist"
 	"github.com/lusoris/goenvoy/metadata"
+	"github.com/lusoris/goenvoy/metadata/anime/anilist"
 )
 
 func setup(t *testing.T, handler http.HandlerFunc) *anilist.Client {

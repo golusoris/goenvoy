@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/lusoris/goenvoy/metadata/music/spotify"
 	"github.com/lusoris/goenvoy/metadata"
+	"github.com/lusoris/goenvoy/metadata/music/spotify"
 )
 
 func setup(t *testing.T, handler http.HandlerFunc) *spotify.Client {
