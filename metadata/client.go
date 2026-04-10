@@ -89,7 +89,7 @@ func (c *BaseClient) UserAgent() string { return c.userAgent }
 // body and status code. Auth, User-Agent, and Accept headers are applied
 // automatically. Use this for providers that need custom error handling while
 // still benefiting from shared HTTP plumbing.
-func (c *BaseClient) DoRaw(ctx context.Context, method, path string, body io.Reader) ([]byte, int, error) {
+func (c *BaseClient) DoRaw(ctx context.Context, method, path string, body io.Reader) (data []byte, statusCode int, err error) {
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, body)
 	if err != nil {
 		return nil, 0, fmt.Errorf("%s: create request: %w", c.pkgName, err)
@@ -118,7 +118,7 @@ func (c *BaseClient) DoRaw(ctx context.Context, method, path string, body io.Rea
 // DoRawURL is like [DoRaw] but accepts a fully-constructed URL instead of
 // a path relative to baseURL. Use for providers with query-param auth or
 // custom URL schemes.
-func (c *BaseClient) DoRawURL(ctx context.Context, method, rawURL string, body io.Reader) ([]byte, int, error) {
+func (c *BaseClient) DoRawURL(ctx context.Context, method, rawURL string, body io.Reader) (data []byte, statusCode int, err error) {
 	req, err := http.NewRequestWithContext(ctx, method, rawURL, body)
 	if err != nil {
 		return nil, 0, fmt.Errorf("%s: create request: %w", c.pkgName, err)
