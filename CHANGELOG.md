@@ -7,8 +7,15 @@ Each module is versioned independently following [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+## [v1.2.0] - 2026-04-10
+
 ### Added
+- **BaseClient** (`metadata`): Shared HTTP client (`BaseClient`) with `DoRaw`, `DoRawURL`, `DoJSON`, `Get`, auth injection, and functional options — eliminates ~2,480 lines of duplicated HTTP boilerplate across all 27 metadata providers.
 - **Letterboxd** (`metadata/video/letterboxd`): Social film discovery client with OAuth2 Bearer auth — 65 methods covering films, film collections, contributors, lists, log entries, members, comments, stories, search, news, and auth helpers — with 60 tests.
+
+### Changed
+- All 27 metadata providers now embed `*metadata.BaseClient` instead of maintaining independent HTTP plumbing.
+- **Restructured** `metadata/movie/` → `metadata/video/` — all 7 video provider modules (TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, Letterboxd, OpenSubtitles) moved to new import paths under `metadata/video/`.
 
 ## [v1.1.0] - 2026-04-09
 

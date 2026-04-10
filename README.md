@@ -101,7 +101,7 @@ goenvoy/
 │   ├── jackett/      # Jackett client
 │   └── nzbhydra/     # NZBHydra2 client
 ├── metadata/         # shared metadata types (Rating, Image, Person, ...)
-│   ├── movie/        # TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, Letterboxd, OpenSubtitles
+│   ├── video/        # TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, Letterboxd, OpenSubtitles
 │   ├── anime/        # AniList, Kitsu, AniDB, MAL
 │   ├── music/        # MusicBrainz, Last.fm, Discogs, TheAudioDB, Spotify, Deezer, ListenBrainz
 │   ├── tracking/     # Trakt, Simkl
