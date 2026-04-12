@@ -7,6 +7,19 @@ Each module is versioned independently following [Semantic Versioning](https://s
 
 ## [Unreleased]
 
+## [v1.3.0] - 2026-04-12
+
+### Added
+- **MobyGames** (`metadata/game/mobygames`): Game metadata client — genres, platforms, groups, search, game details, screenshots, covers, recent and random games.
+- **SteamGridDB** (`metadata/game/steamgriddb`): Custom game artwork client (grids, heroes, logos, icons) with bearer token auth.
+- **RetroAchievements** (`metadata/game/retroachievements`): Achievement and ROM hash data — game details, extended info, hashes, console IDs.
+- **ScreenScraper** (`metadata/game/screenscraper`): Comprehensive game metadata and media — game info, search, systems, genres, user info, infrastructure info. Supports both dev credentials and optional per-user auth via `WithUser`.
+- **Hasheous** (`metadata/game/hasheous`): Hash-based ROM identification — lookup by MD5, SHA1, SHA256, CRC, or multi-hash POST; platform listing.
+- **LaunchBox** (`metadata/game/launchbox`): LaunchBox XML database client — downloads and parses `Metadata.zip` into an in-memory store with game search, alternate names, images, and platform lookup.
+
+### Fixed
+- **arr** (`arr`): `NewBaseClient` now uses a cloned `http.DefaultTransport` instead of accepting the nil-transport default. This prevents `httptest.Server.Close()` — which calls `CloseIdleConnections` on the shared default transport — from breaking in-flight requests in other parallel tests.
+
 ## [v1.2.0] - 2026-04-10
 
 ### Added

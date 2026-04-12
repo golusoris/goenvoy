@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 
-A collection of Go client libraries for media automation, metadata, and download service APIs — **63 modules** covering 57+ services.
+A collection of Go client libraries for media automation, metadata, and download service APIs — **69 modules** covering 63+ services.
 
 Designed as a **multi-module monorepo** — import only what you need, from a single library to an entire category.
 
@@ -22,7 +22,7 @@ Designed as a **multi-module monorepo** — import only what you need, from a si
 | Category | Module | Services |
 |---|---|---|
 | **Arr Stack** | `github.com/lusoris/goenvoy/arr` | Sonarr, Radarr, Lidarr, Readarr, Whisparr (v2+v3), Prowlarr, Bazarr, Seerr, Autobrr, Mylar3, FlareSolverr, Jackett, NZBHydra2 |
-| **Metadata** | `github.com/lusoris/goenvoy/metadata` | TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, Letterboxd, AniList, Kitsu, AniDB, MAL, Trakt, Simkl, MusicBrainz, StashBox, TPDB, OpenSubtitles, Last.fm, Discogs, TheAudioDB, Open Library, Google Books, Spotify, Deezer, ListenBrainz, IGDB, RAWG, Steam |
+| **Metadata** | `github.com/lusoris/goenvoy/metadata` | TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, Letterboxd, AniList, Kitsu, AniDB, MAL, Trakt, Simkl, MusicBrainz, StashBox, TPDB, OpenSubtitles, Last.fm, Discogs, TheAudioDB, Open Library, Google Books, Spotify, Deezer, ListenBrainz, IGDB, RAWG, Steam, MobyGames, SteamGridDB, RetroAchievements, ScreenScraper, Hasheous, LaunchBox |
 | **Download Clients** | `github.com/lusoris/goenvoy/downloadclient` | qBittorrent, Transmission, Deluge, rTorrent, SABnzbd, NZBGet |
 | **Media Servers** | `github.com/lusoris/goenvoy/mediaserver` | Plex, Jellyfin, Emby, Tautulli, Audiobookshelf, Komga, Navidrome, Kavita, Stash, Tdarr |
 | **Anime** | `github.com/lusoris/goenvoy/anime` | Shoko Server |
@@ -107,7 +107,7 @@ goenvoy/
 │   ├── tracking/     # Trakt, Simkl
 │   ├── adult/        # StashBox, TPDB
 │   ├── book/         # Google Books, Open Library
-│   └── game/         # IGDB, RAWG, Steam
+│   └── game/         # IGDB, RAWG, Steam, MobyGames, SteamGridDB, RetroAchievements, ScreenScraper, Hasheous, LaunchBox
 ├── downloadclient/   # shared download types + Downloader interface
 │   ├── qbit/         # qBittorrent WebUI client
 │   ├── transmission/ # Transmission RPC client
