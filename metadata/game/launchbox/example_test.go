@@ -1,0 +1,22 @@
+package launchbox_test
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/lusoris/goenvoy/metadata/game/launchbox"
+)
+
+func Example() {
+	c := launchbox.New()
+
+	if err := c.Download(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+
+	games := c.SearchGames("Mario", "")
+	for _, g := range games {
+		fmt.Printf("%s (%s)\n", g.Name, g.Platform)
+	}
+}
