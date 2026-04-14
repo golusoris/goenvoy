@@ -20,6 +20,7 @@ a new ADR supersedes it (with a `Supersedes: ADR-NNNN` header in both directions
 | [0006](0006-httptest-only-tests.md) | `httptest`-only test policy — no live API calls | Accepted |
 | [0007](0007-oauth2-flows.md) | OAuth2 flow helpers — device / auth-code / PKCE / refresh | Accepted |
 | [0008](0008-non-rest-wire-protocols.md) | JSON-RPC / XML-RPC / GraphQL clients reuse REST-client patterns | Accepted |
+| [0009](0009-local-replace-directives.md) | Local `replace ../` directives in committed go.mod files | Accepted (cleanup deferred) |
 
 ## Template
 

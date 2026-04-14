@@ -2,7 +2,7 @@
 
 * Status: Accepted
 * Date: 2026-04-14 (retroactive)
-* Deciders: @kilian
+* Deciders: @lusoris
 
 ## Context
 

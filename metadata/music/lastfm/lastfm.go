@@ -63,18 +63,18 @@ func (c *Client) get(ctx context.Context, method string, extra url.Values, v any
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
-		return err
+		return fmt.Errorf("lastfm: build request: %w", err)
 	}
 
 	resp, err := c.HTTPClient().Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("lastfm: GET %s: %w", method, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("lastfm: read response: %w", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
@@ -87,7 +87,10 @@ func (c *Client) get(ctx context.Context, method string, extra url.Values, v any
 		return &lfmErr
 	}
 
-	return json.Unmarshal(body, v)
+	if err := json.Unmarshal(body, v); err != nil {
+		return fmt.Errorf("lastfm: decode response: %w", err)
+	}
+	return nil
 }
 
 // GetArtistInfo returns metadata for an artist.

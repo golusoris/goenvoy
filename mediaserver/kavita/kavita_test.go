@@ -19,6 +19,8 @@ func newTestServer(t *testing.T, handler http.HandlerFunc) *Client {
 }
 
 func TestAuthenticate(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/Plugin/authenticate" {
 			http.Error(w, "not found", http.StatusNotFound)
@@ -44,6 +46,8 @@ func TestAuthenticate(t *testing.T) {
 }
 
 func TestAutoAuthenticate(t *testing.T) {
+	t.Parallel()
+
 	calls := 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/Plugin/authenticate" {
@@ -73,6 +77,8 @@ func TestAutoAuthenticate(t *testing.T) {
 }
 
 func TestAuthorizationHeader(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Bearer test-token" {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -91,6 +97,8 @@ func TestAuthorizationHeader(t *testing.T) {
 }
 
 func TestGetLibraries(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode([]Library{{ID: 1, Name: "Comics"}, {ID: 2, Name: "Manga"}})
 	})
@@ -105,6 +113,8 @@ func TestGetLibraries(t *testing.T) {
 }
 
 func TestGetLibrary(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(Library{ID: 1, Name: "Manga"})
 	})
@@ -119,6 +129,8 @@ func TestGetLibrary(t *testing.T) {
 }
 
 func TestScanLibrary(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
@@ -129,6 +141,8 @@ func TestScanLibrary(t *testing.T) {
 }
 
 func TestGetSeries(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode([]Series{{ID: 1, Name: "One Piece", LibraryID: 1}})
 	})
@@ -143,6 +157,8 @@ func TestGetSeries(t *testing.T) {
 }
 
 func TestGetOneSeries(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(Series{ID: 1, Name: "Naruto"})
 	})
@@ -157,6 +173,8 @@ func TestGetOneSeries(t *testing.T) {
 }
 
 func TestGetVolumes(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode([]Volume{{ID: 1, Name: "Volume 1", SeriesID: 1}})
 	})
@@ -171,6 +189,8 @@ func TestGetVolumes(t *testing.T) {
 }
 
 func TestGetChapter(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(Chapter{ID: 1, Title: "Chapter 1", Number: "1"})
 	})
@@ -185,6 +205,8 @@ func TestGetChapter(t *testing.T) {
 }
 
 func TestGetCollections(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode([]Collection{{ID: 1, Title: "Favorites"}})
 	})
@@ -199,6 +221,8 @@ func TestGetCollections(t *testing.T) {
 }
 
 func TestGetReadingLists(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode([]ReadingList{{ID: 1, Title: "To Read"}})
 	})
@@ -213,6 +237,8 @@ func TestGetReadingLists(t *testing.T) {
 }
 
 func TestGetUsers(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode([]User{{ID: 1, Username: "admin", Email: "admin@example.com"}})
 	})
@@ -227,6 +253,8 @@ func TestGetUsers(t *testing.T) {
 }
 
 func TestGetServerInfo(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(ServerInfo{Version: "0.7.0", Os: "linux"})
 	})
@@ -241,6 +269,8 @@ func TestGetServerInfo(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(SearchResult{
 			Series: []Series{{ID: 1, Name: "Bleach"}},
@@ -257,6 +287,8 @@ func TestSearch(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 	})
@@ -276,6 +308,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	custom := &http.Client{}
 	c := New("http://localhost", "key", WithHTTPClient(custom))
 	if c.http != custom {

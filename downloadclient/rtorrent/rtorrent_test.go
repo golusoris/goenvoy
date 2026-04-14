@@ -106,6 +106,8 @@ func newXMLRPCServer(t *testing.T, wantMethod, response string) *httptest.Server
 }
 
 func TestGetTorrents(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "d.multicall2", xmlMulticallResponse())
 	defer ts.Close()
 
@@ -132,6 +134,8 @@ func TestGetTorrents(t *testing.T) {
 }
 
 func TestAddTorrentURL(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "load.start", xmlVoidResponse())
 	defer ts.Close()
 
@@ -142,6 +146,8 @@ func TestAddTorrentURL(t *testing.T) {
 }
 
 func TestRemoveTorrent(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "d.erase", xmlVoidResponse())
 	defer ts.Close()
 
@@ -152,6 +158,8 @@ func TestRemoveTorrent(t *testing.T) {
 }
 
 func TestStartTorrent(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "d.start", xmlVoidResponse())
 	defer ts.Close()
 
@@ -162,6 +170,8 @@ func TestStartTorrent(t *testing.T) {
 }
 
 func TestStopTorrent(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "d.stop", xmlVoidResponse())
 	defer ts.Close()
 
@@ -172,6 +182,8 @@ func TestStopTorrent(t *testing.T) {
 }
 
 func TestPauseTorrent(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "d.pause", xmlVoidResponse())
 	defer ts.Close()
 
@@ -182,6 +194,8 @@ func TestPauseTorrent(t *testing.T) {
 }
 
 func TestResumeTorrent(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "d.resume", xmlVoidResponse())
 	defer ts.Close()
 
@@ -192,6 +206,8 @@ func TestResumeTorrent(t *testing.T) {
 }
 
 func TestRecheckTorrent(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "d.check_hash", xmlVoidResponse())
 	defer ts.Close()
 
@@ -202,6 +218,8 @@ func TestRecheckTorrent(t *testing.T) {
 }
 
 func TestSetLabel(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "d.custom1.set", xmlVoidResponse())
 	defer ts.Close()
 
@@ -212,6 +230,8 @@ func TestSetLabel(t *testing.T) {
 }
 
 func TestGetSystemInfo(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		w.Header().Set("Content-Type", "text/xml")
@@ -245,6 +265,8 @@ func TestGetSystemInfo(t *testing.T) {
 }
 
 func TestGetDownloadRate(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "throttle.global_down.rate", xmlIntResponse(5000000))
 	defer ts.Close()
 
@@ -259,6 +281,8 @@ func TestGetDownloadRate(t *testing.T) {
 }
 
 func TestGetUploadRate(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "throttle.global_up.rate", xmlIntResponse(1000000))
 	defer ts.Close()
 
@@ -273,6 +297,8 @@ func TestGetUploadRate(t *testing.T) {
 }
 
 func TestSetDownloadLimit(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "throttle.global_down.max_rate.set", xmlVoidResponse())
 	defer ts.Close()
 
@@ -283,6 +309,8 @@ func TestSetDownloadLimit(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := newXMLRPCServer(t, "d.start", xmlFaultResponse("Could not find info-hash."))
 	defer ts.Close()
 
@@ -298,6 +326,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithAuth(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u, p, ok := r.BasicAuth()
 		if !ok || u != "admin" || p != "secret" {

@@ -26,6 +26,8 @@ func newTestClient(t *testing.T, handler http.HandlerFunc) *Client {
 }
 
 func TestSearch(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(SearchResponse{
 			TotalCount: 1,
@@ -53,6 +55,8 @@ func TestSearch(t *testing.T) {
 }
 
 func TestDownload(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(DownloadResponse{
 			Link:      "https://dl.opensubtitles.com/file/123",
@@ -72,6 +76,8 @@ func TestDownload(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(LoginResponse{
 			Token:  "jwt-token-123",
@@ -92,6 +98,8 @@ func TestLogin(t *testing.T) {
 }
 
 func TestSearchFeatures(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(FeaturesResponse{
 			TotalCount: 1,
@@ -116,6 +124,8 @@ func TestSearchFeatures(t *testing.T) {
 }
 
 func TestGetLanguages(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"data": []Language{{LanguageCode: "en", LanguageName: "English"}},
@@ -132,6 +142,8 @@ func TestGetLanguages(t *testing.T) {
 }
 
 func TestGetFormats(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"data": []SubtitleFormat{{FormatName: "SubRip", Extension: "srt"}},
@@ -148,6 +160,8 @@ func TestGetFormats(t *testing.T) {
 }
 
 func TestPopular(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(FeaturesResponse{
 			TotalCount: 1,
@@ -169,6 +183,8 @@ func TestPopular(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "rate limited", http.StatusTooManyRequests)
 	})
@@ -187,6 +203,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	custom := &http.Client{}
 	c := New("key", metadata.WithHTTPClient(custom))
 	if c.HTTPClient() != custom {
@@ -195,6 +213,8 @@ func TestWithHTTPClient(t *testing.T) {
 }
 
 func TestWithUserAgent(t *testing.T) {
+	t.Parallel()
+
 	c := New("key", metadata.WithUserAgent("myapp v2.0"))
 	if c.UserAgent() != "myapp v2.0" {
 		t.Fatal("user agent not set")

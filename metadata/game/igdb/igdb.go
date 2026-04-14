@@ -37,7 +37,7 @@ func New(clientID, accessToken string, opts ...metadata.Option) *Client {
 	bc := metadata.NewBaseClient(defaultBaseURL, "igdb", opts...)
 	c := &Client{BaseClient: bc, clientID: clientID, accessToken: accessToken}
 	bc.SetAuth(func(req *http.Request) {
-		req.Header.Set("Client-ID", clientID)
+		req.Header.Set("Client-Id", clientID)
 		req.Header.Set("Authorization", "Bearer "+accessToken)
 	})
 	return c
@@ -52,7 +52,7 @@ func (c *Client) query(ctx context.Context, endpoint, body string, v any) error 
 		return fmt.Errorf("igdb: create request: %w", err)
 	}
 
-	req.Header.Set("Client-ID", c.clientID)
+	req.Header.Set("Client-Id", c.clientID)
 	req.Header.Set("Authorization", "Bearer "+c.accessToken)
 	req.Header.Set("Content-Type", "text/plain")
 
@@ -71,7 +71,10 @@ func (c *Client) query(ctx context.Context, endpoint, body string, v any) error 
 		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(data)}
 	}
 
-	return json.Unmarshal(data, v)
+	if err := json.Unmarshal(data, v); err != nil {
+		return fmt.Errorf("igdb: decode response: %w", err)
+	}
+	return nil
 }
 
 // idsToString converts a slice of ints to a comma-separated string like "1,2,3".
@@ -101,7 +104,7 @@ func (c *Client) GetGame(ctx context.Context, id int) (*Game, error) {
 		return nil, err
 	}
 	if len(games) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // documented "not found" — caller checks nil
 	}
 	return &games[0], nil
 }
@@ -134,7 +137,7 @@ func (c *Client) GetPlatform(ctx context.Context, id int) (*Platform, error) {
 		return nil, err
 	}
 	if len(platforms) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // documented "not found" — caller checks nil
 	}
 	return &platforms[0], nil
 }
@@ -157,7 +160,7 @@ func (c *Client) GetGenre(ctx context.Context, id int) (*Genre, error) {
 		return nil, err
 	}
 	if len(genres) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // documented "not found" — caller checks nil
 	}
 	return &genres[0], nil
 }
@@ -180,7 +183,7 @@ func (c *Client) GetCompany(ctx context.Context, id int) (*Company, error) {
 		return nil, err
 	}
 	if len(companies) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // documented "not found" — caller checks nil
 	}
 	return &companies[0], nil
 }

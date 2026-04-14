@@ -50,6 +50,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *Client {
 }
 
 func TestGetAnime(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondResource(w, "1", "anime", map[string]any{
 			"slug":           "cowboy-bebop",
@@ -85,6 +87,8 @@ func TestGetAnime(t *testing.T) {
 }
 
 func TestSearchAnime(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("filter[text]") == "" {
 			http.Error(w, "missing filter", http.StatusBadRequest)
@@ -109,6 +113,8 @@ func TestSearchAnime(t *testing.T) {
 }
 
 func TestTrendingAnime(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondCollection(w, "anime", []map[string]any{
 			{"id": "100", "slug": "jjk-3", "canonicalTitle": "Jujutsu Kaisen Season 3"},
@@ -128,6 +134,8 @@ func TestTrendingAnime(t *testing.T) {
 }
 
 func TestGetAnimeEpisodes(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondCollection(w, "episodes", []map[string]any{
 			{
@@ -154,6 +162,8 @@ func TestGetAnimeEpisodes(t *testing.T) {
 }
 
 func TestGetManga(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondResource(w, "42", "manga", map[string]any{
 			"slug":           "guardian-dog",
@@ -181,6 +191,8 @@ func TestGetManga(t *testing.T) {
 }
 
 func TestSearchManga(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondCollection(w, "manga", []map[string]any{
 			{"id": "10", "slug": "one-piece", "canonicalTitle": "One Piece"},
@@ -200,6 +212,8 @@ func TestSearchManga(t *testing.T) {
 }
 
 func TestTrendingManga(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondCollection(w, "manga", []map[string]any{
 			{"id": "50", "slug": "solo-leveling", "canonicalTitle": "Solo Leveling"},
@@ -216,6 +230,8 @@ func TestTrendingManga(t *testing.T) {
 }
 
 func TestGetCharacter(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondResource(w, "7", "characters", map[string]any{
 			"slug":          "jet-black",
@@ -243,6 +259,8 @@ func TestGetCharacter(t *testing.T) {
 }
 
 func TestSearchCharacters(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondCollection(w, "characters", []map[string]any{
 			{"id": "1", "name": "Jet Black", "slug": "jet-black"},
@@ -260,6 +278,8 @@ func TestSearchCharacters(t *testing.T) {
 }
 
 func TestGetCategory(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondResource(w, "1", "categories", map[string]any{
 			"title":           "Middle School",
@@ -286,6 +306,8 @@ func TestGetCategory(t *testing.T) {
 }
 
 func TestGetCategories(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondCollection(w, "categories", []map[string]any{
 			{"id": "1", "title": "Middle School", "slug": "middle-school"},
@@ -303,6 +325,8 @@ func TestGetCategories(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondResource(w, "1", "users", map[string]any{
 			"name":           "vikhyat",
@@ -330,6 +354,8 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestSearchUsers(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondCollection(w, "users", []map[string]any{
 			{"id": "1", "name": "vikhyat", "slug": "vikhyat"},
@@ -346,6 +372,8 @@ func TestSearchUsers(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(`{"errors":[{"title":"Record not found","status":"404"}]}`))
@@ -366,6 +394,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestJSONAPIHeaders(t *testing.T) {
+	t.Parallel()
+
 	var gotAccept string
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		gotAccept = r.Header.Get("Accept")
@@ -382,6 +412,8 @@ func TestJSONAPIHeaders(t *testing.T) {
 }
 
 func TestWithUserAgent(t *testing.T) {
+	t.Parallel()
+
 	var gotUA string
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotUA = r.Header.Get("User-Agent")
@@ -402,6 +434,8 @@ func TestWithUserAgent(t *testing.T) {
 // OAuth2 tests.
 
 func TestAuthenticate(t *testing.T) {
+	t.Parallel()
+
 	authSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -455,6 +489,8 @@ func TestAuthenticate(t *testing.T) {
 }
 
 func TestRefreshToken(t *testing.T) {
+	t.Parallel()
+
 	authSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			t.Fatal(err)
@@ -487,6 +523,8 @@ func TestRefreshToken(t *testing.T) {
 }
 
 func TestRefreshTokenMissing(t *testing.T) {
+	t.Parallel()
+
 	c := New()
 	_, err := c.RefreshToken(context.Background())
 	if err == nil {
@@ -495,6 +533,8 @@ func TestRefreshTokenMissing(t *testing.T) {
 }
 
 func TestBearerTokenInHeader(t *testing.T) {
+	t.Parallel()
+
 	var gotAuth string
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		gotAuth = r.Header.Get("Authorization")
@@ -514,6 +554,8 @@ func TestBearerTokenInHeader(t *testing.T) {
 }
 
 func TestAuthenticateError(t *testing.T) {
+	t.Parallel()
+
 	authSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{"error":"invalid_grant","error_description":"Invalid credentials"}`))

@@ -28,6 +28,8 @@ func newTestServer(t *testing.T, wantPath, wantToken string, response any) *http
 }
 
 func TestGetLibraries(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/libraries", "test-token", map[string]any{
 		"libraries": []map[string]any{
 			{"id": "lib1", "name": "Audiobooks", "mediaType": "book"},
@@ -49,6 +51,8 @@ func TestGetLibraries(t *testing.T) {
 }
 
 func TestGetLibrary(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/libraries/lib1", "test-token", map[string]any{
 		"id": "lib1", "name": "Audiobooks", "mediaType": "book",
 	})
@@ -65,6 +69,8 @@ func TestGetLibrary(t *testing.T) {
 }
 
 func TestGetLibraryItems(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/libraries/lib1/items", "test-token", map[string]any{
 		"results": []map[string]any{
 			{"id": "item1", "libraryId": "lib1"},
@@ -86,6 +92,8 @@ func TestGetLibraryItems(t *testing.T) {
 }
 
 func TestGetItem(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/items/item1", "test-token", map[string]any{
 		"id": "item1", "libraryId": "lib1",
 	})
@@ -102,6 +110,8 @@ func TestGetItem(t *testing.T) {
 }
 
 func TestGetUsers(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/users", "test-token", []map[string]any{
 		{"id": "user1", "username": "admin", "type": "root"},
 	})
@@ -121,6 +131,8 @@ func TestGetUsers(t *testing.T) {
 }
 
 func TestGetMe(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/me", "test-token", map[string]any{
 		"id": "user1", "username": "admin", "type": "root",
 	})
@@ -137,6 +149,8 @@ func TestGetMe(t *testing.T) {
 }
 
 func TestGetServerInfo(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/server", "test-token", map[string]any{
 		"version": "2.5.0",
 		"isInit":  true,
@@ -154,6 +168,8 @@ func TestGetServerInfo(t *testing.T) {
 }
 
 func TestGetSessions(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/sessions", "test-token", map[string]any{
 		"sessions": []map[string]any{
 			{"id": "s1", "userId": "u1", "displayTitle": "Test Book"},
@@ -172,6 +188,8 @@ func TestGetSessions(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte("Forbidden"))
@@ -193,6 +211,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	custom := &http.Client{
 		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {

@@ -20,7 +20,7 @@ func newTestServer(t *testing.T, wantPath, wantMethod, wantKey string, response 
 		if r.Method != wantMethod {
 			t.Errorf("method = %q, want %q", r.Method, wantMethod)
 		}
-		if got := r.Header.Get("X-API-Token"); got != wantKey {
+		if got := r.Header.Get("X-Api-Token"); got != wantKey {
 			t.Errorf("X-API-Token = %q, want %q", got, wantKey)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -31,6 +31,8 @@ func newTestServer(t *testing.T, wantPath, wantMethod, wantKey string, response 
 }
 
 func TestGetFilters(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/filters", http.MethodGet, "test-key", []map[string]any{
 		{"id": 1, "name": "Movies", "enabled": true},
 		{"id": 2, "name": "TV", "enabled": false},
@@ -51,6 +53,8 @@ func TestGetFilters(t *testing.T) {
 }
 
 func TestSetFilterEnabled(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/filters/1/enabled", http.MethodPut, "test-key", nil)
 	defer ts.Close()
 
@@ -61,6 +65,8 @@ func TestSetFilterEnabled(t *testing.T) {
 }
 
 func TestGetIndexers(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/indexer", http.MethodGet, "test-key", []map[string]any{
 		{"id": 1, "name": "Indexer1", "enabled": true},
 	})
@@ -77,6 +83,8 @@ func TestGetIndexers(t *testing.T) {
 }
 
 func TestGetIRCNetworks(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/irc", http.MethodGet, "test-key", []map[string]any{
 		{"id": 1, "name": "irc.example.com", "healthy": true},
 	})
@@ -96,6 +104,8 @@ func TestGetIRCNetworks(t *testing.T) {
 }
 
 func TestGetFeeds(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/feeds", http.MethodGet, "test-key", []map[string]any{
 		{"id": 1, "name": "Feed1", "enabled": true},
 	})
@@ -112,6 +122,8 @@ func TestGetFeeds(t *testing.T) {
 }
 
 func TestGetDownloadClients(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/download_clients", http.MethodGet, "test-key", []map[string]any{
 		{"id": 1, "name": "qBittorrent", "type": "QBITTORRENT", "enabled": true},
 	})
@@ -131,6 +143,8 @@ func TestGetDownloadClients(t *testing.T) {
 }
 
 func TestGetNotifications(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/notification", http.MethodGet, "test-key", []map[string]any{
 		{"id": 1, "name": "Discord", "type": "DISCORD", "enabled": true},
 	})
@@ -147,6 +161,8 @@ func TestGetNotifications(t *testing.T) {
 }
 
 func TestGetConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/config", http.MethodGet, "test-key", map[string]any{
 		"log_level": "INFO",
 		"version":   "1.30.0",
@@ -164,6 +180,8 @@ func TestGetConfig(t *testing.T) {
 }
 
 func TestLiveness(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/healthz/liveness", http.MethodGet, "test-key", nil)
 	defer ts.Close()
 
@@ -174,6 +192,8 @@ func TestLiveness(t *testing.T) {
 }
 
 func TestReadiness(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/healthz/readiness", http.MethodGet, "test-key", nil)
 	defer ts.Close()
 
@@ -184,6 +204,8 @@ func TestReadiness(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("Unauthorized"))
@@ -205,6 +227,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	custom := &http.Client{
 		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
@@ -228,6 +252,8 @@ type roundTripFunc func(*http.Request) (*http.Response, error)
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func TestGetAPIKeys(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/keys", http.MethodGet, "test-key", []map[string]any{{"key": "abc"}})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -241,6 +267,8 @@ func TestGetAPIKeys(t *testing.T) {
 }
 
 func TestCreateAPIKey(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/keys", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -250,6 +278,8 @@ func TestCreateAPIKey(t *testing.T) {
 }
 
 func TestDeleteAPIKey(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/keys/abc123", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -259,6 +289,8 @@ func TestDeleteAPIKey(t *testing.T) {
 }
 
 func TestGetFilter(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/filters/1", http.MethodGet, "test-key", map[string]any{"id": 1, "name": "Movies"})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -272,6 +304,8 @@ func TestGetFilter(t *testing.T) {
 }
 
 func TestCreateFilter(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/filters", http.MethodPost, "test-key", map[string]any{"id": 1, "name": "New"})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -285,6 +319,8 @@ func TestCreateFilter(t *testing.T) {
 }
 
 func TestUpdateFilter(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/filters/1", http.MethodPut, "test-key", map[string]any{"id": 1, "name": "Updated"})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -298,6 +334,8 @@ func TestUpdateFilter(t *testing.T) {
 }
 
 func TestDuplicateFilter(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/filters/1/duplicate", http.MethodGet, "test-key", map[string]any{"id": 2, "name": "Copy"})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -311,6 +349,8 @@ func TestDuplicateFilter(t *testing.T) {
 }
 
 func TestDeleteFilter(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/filters/1", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -320,6 +360,8 @@ func TestDeleteFilter(t *testing.T) {
 }
 
 func TestGetFilterNotifications(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/filters/1/notifications", http.MethodGet, "test-key", []map[string]any{{"id": 1}})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -333,6 +375,8 @@ func TestGetFilterNotifications(t *testing.T) {
 }
 
 func TestUpdateFilterNotifications(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/filters/1/notifications", http.MethodPut, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -342,6 +386,8 @@ func TestUpdateFilterNotifications(t *testing.T) {
 }
 
 func TestGetIndexerSchema(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/indexer/schema", http.MethodGet, "test-key", []map[string]any{{"name": "test"}})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -355,6 +401,8 @@ func TestGetIndexerSchema(t *testing.T) {
 }
 
 func TestGetIndexerOptions(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/indexer/options", http.MethodGet, "test-key", []map[string]any{{"id": 1}})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -368,6 +416,8 @@ func TestGetIndexerOptions(t *testing.T) {
 }
 
 func TestCreateIndexer(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/indexer", http.MethodPost, "test-key", map[string]any{"id": 1, "name": "New"})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -381,6 +431,8 @@ func TestCreateIndexer(t *testing.T) {
 }
 
 func TestUpdateIndexer(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/indexer/1", http.MethodPut, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -390,6 +442,8 @@ func TestUpdateIndexer(t *testing.T) {
 }
 
 func TestDeleteIndexer(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/indexer/1", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -399,6 +453,8 @@ func TestDeleteIndexer(t *testing.T) {
 }
 
 func TestSetIndexerEnabled(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/indexer/1/enabled", http.MethodPatch, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -408,6 +464,8 @@ func TestSetIndexerEnabled(t *testing.T) {
 }
 
 func TestTestIndexerAPI(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/indexer/1/api/test", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -417,6 +475,8 @@ func TestTestIndexerAPI(t *testing.T) {
 }
 
 func TestRestartIRCNetwork(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/irc/network/1/restart", http.MethodGet, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -426,6 +486,8 @@ func TestRestartIRCNetwork(t *testing.T) {
 }
 
 func TestCreateIRCNetwork(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/irc", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -435,6 +497,8 @@ func TestCreateIRCNetwork(t *testing.T) {
 }
 
 func TestUpdateIRCNetwork(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/irc/network/1", http.MethodPut, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -444,6 +508,8 @@ func TestUpdateIRCNetwork(t *testing.T) {
 }
 
 func TestDeleteIRCNetwork(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/irc/network/1", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -453,6 +519,8 @@ func TestDeleteIRCNetwork(t *testing.T) {
 }
 
 func TestSendIRCCommand(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/irc/network/1/cmd", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -462,6 +530,8 @@ func TestSendIRCCommand(t *testing.T) {
 }
 
 func TestReprocessAnnounce(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/irc/network/1/channel/#test/announce/process", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -471,6 +541,8 @@ func TestReprocessAnnounce(t *testing.T) {
 }
 
 func TestSetFeedEnabled(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/feeds/1/enabled", http.MethodPatch, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -480,6 +552,8 @@ func TestSetFeedEnabled(t *testing.T) {
 }
 
 func TestCreateFeed(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/feeds", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -489,6 +563,8 @@ func TestCreateFeed(t *testing.T) {
 }
 
 func TestUpdateFeed(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/feeds/1", http.MethodPut, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -498,6 +574,8 @@ func TestUpdateFeed(t *testing.T) {
 }
 
 func TestDeleteFeed(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/feeds/1", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -507,6 +585,8 @@ func TestDeleteFeed(t *testing.T) {
 }
 
 func TestDeleteFeedCache(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/feeds/1/cache", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -516,6 +596,8 @@ func TestDeleteFeedCache(t *testing.T) {
 }
 
 func TestForceRunFeed(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/feeds/1/forcerun", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -525,6 +607,8 @@ func TestForceRunFeed(t *testing.T) {
 }
 
 func TestTestFeed(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/feeds/test", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -534,6 +618,8 @@ func TestTestFeed(t *testing.T) {
 }
 
 func TestGetFeedCaps(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/feeds/1/caps", http.MethodGet, "test-key", map[string]any{"caps": true})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -547,6 +633,8 @@ func TestGetFeedCaps(t *testing.T) {
 }
 
 func TestCreateDownloadClient(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/download_clients", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -556,6 +644,8 @@ func TestCreateDownloadClient(t *testing.T) {
 }
 
 func TestUpdateDownloadClient(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/download_clients", http.MethodPut, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -565,6 +655,8 @@ func TestUpdateDownloadClient(t *testing.T) {
 }
 
 func TestDeleteDownloadClient(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/download_clients/1", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -574,6 +666,8 @@ func TestDeleteDownloadClient(t *testing.T) {
 }
 
 func TestTestDownloadClient(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/download_clients/test", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -583,6 +677,8 @@ func TestTestDownloadClient(t *testing.T) {
 }
 
 func TestGetDownloadClientArrTags(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/download_clients/1/arr/tags", http.MethodGet, "test-key", []map[string]any{{"id": 1, "label": "tag1"}})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -596,6 +692,8 @@ func TestGetDownloadClientArrTags(t *testing.T) {
 }
 
 func TestCreateNotification(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/notification", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -605,6 +703,8 @@ func TestCreateNotification(t *testing.T) {
 }
 
 func TestUpdateNotification(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/notification/1", http.MethodPut, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -614,6 +714,8 @@ func TestUpdateNotification(t *testing.T) {
 }
 
 func TestDeleteNotification(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/notification/1", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -623,6 +725,8 @@ func TestDeleteNotification(t *testing.T) {
 }
 
 func TestTestNotification(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/notification/test", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -632,6 +736,8 @@ func TestTestNotification(t *testing.T) {
 }
 
 func TestUpdateConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/config", http.MethodPatch, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -641,6 +747,8 @@ func TestUpdateConfig(t *testing.T) {
 }
 
 func TestCreateAction(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/actions", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -650,6 +758,8 @@ func TestCreateAction(t *testing.T) {
 }
 
 func TestUpdateAction(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/actions/1", http.MethodPut, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -659,6 +769,8 @@ func TestUpdateAction(t *testing.T) {
 }
 
 func TestDeleteAction(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/actions/1", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -668,6 +780,8 @@ func TestDeleteAction(t *testing.T) {
 }
 
 func TestToggleActionEnabled(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/actions/1/toggleEnabled", http.MethodPatch, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -677,6 +791,8 @@ func TestToggleActionEnabled(t *testing.T) {
 }
 
 func TestGetLists(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/lists", http.MethodGet, "test-key", []map[string]any{{"id": 1, "name": "test"}})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -690,6 +806,8 @@ func TestGetLists(t *testing.T) {
 }
 
 func TestGetList(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/lists/1", http.MethodGet, "test-key", map[string]any{"id": 1, "name": "test"})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -703,6 +821,8 @@ func TestGetList(t *testing.T) {
 }
 
 func TestCreateList(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/lists", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -712,6 +832,8 @@ func TestCreateList(t *testing.T) {
 }
 
 func TestUpdateList(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/lists/1", http.MethodPut, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -721,6 +843,8 @@ func TestUpdateList(t *testing.T) {
 }
 
 func TestDeleteList(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/lists/1", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -730,6 +854,8 @@ func TestDeleteList(t *testing.T) {
 }
 
 func TestRefreshList(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/lists/1/refresh", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -739,6 +865,8 @@ func TestRefreshList(t *testing.T) {
 }
 
 func TestRefreshAllLists(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/lists/refresh", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -748,6 +876,8 @@ func TestRefreshAllLists(t *testing.T) {
 }
 
 func TestTestList(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/lists/test", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -757,6 +887,8 @@ func TestTestList(t *testing.T) {
 }
 
 func TestGetProxies(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/proxy", http.MethodGet, "test-key", []map[string]any{{"id": 1}})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -770,6 +902,8 @@ func TestGetProxies(t *testing.T) {
 }
 
 func TestGetProxy(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/proxy/1", http.MethodGet, "test-key", map[string]any{"id": 1, "name": "test"})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -783,6 +917,8 @@ func TestGetProxy(t *testing.T) {
 }
 
 func TestCreateProxy(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/proxy", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -792,6 +928,8 @@ func TestCreateProxy(t *testing.T) {
 }
 
 func TestUpdateProxy(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/proxy/1", http.MethodPut, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -801,6 +939,8 @@ func TestUpdateProxy(t *testing.T) {
 }
 
 func TestDeleteProxy(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/proxy/1", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -810,6 +950,8 @@ func TestDeleteProxy(t *testing.T) {
 }
 
 func TestTestProxy(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/proxy/test", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -819,6 +961,8 @@ func TestTestProxy(t *testing.T) {
 }
 
 func TestGetReleases(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release", http.MethodGet, "test-key", map[string]any{"data": []any{}, "count": 0})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -832,6 +976,8 @@ func TestGetReleases(t *testing.T) {
 }
 
 func TestGetRecentReleases(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/recent", http.MethodGet, "test-key", map[string]any{"data": []any{}, "count": 0})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -845,6 +991,8 @@ func TestGetRecentReleases(t *testing.T) {
 }
 
 func TestGetReleaseStats(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/stats", http.MethodGet, "test-key", map[string]any{"totalCount": 5})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -858,6 +1006,8 @@ func TestGetReleaseStats(t *testing.T) {
 }
 
 func TestGetReleaseIndexers(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/indexers", http.MethodGet, "test-key", []string{"idx1", "idx2"})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -871,6 +1021,8 @@ func TestGetReleaseIndexers(t *testing.T) {
 }
 
 func TestDeleteReleases(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -880,6 +1032,8 @@ func TestDeleteReleases(t *testing.T) {
 }
 
 func TestReplayReleaseAction(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/1/actions/2/retry", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -889,6 +1043,8 @@ func TestReplayReleaseAction(t *testing.T) {
 }
 
 func TestGetReleaseCleanupJobs(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/cleanup-jobs", http.MethodGet, "test-key", []map[string]any{{"id": 1}})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -902,6 +1058,8 @@ func TestGetReleaseCleanupJobs(t *testing.T) {
 }
 
 func TestGetReleaseCleanupJob(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/cleanup-jobs/1", http.MethodGet, "test-key", map[string]any{"id": 1})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -915,6 +1073,8 @@ func TestGetReleaseCleanupJob(t *testing.T) {
 }
 
 func TestCreateReleaseCleanupJob(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/cleanup-jobs", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -924,6 +1084,8 @@ func TestCreateReleaseCleanupJob(t *testing.T) {
 }
 
 func TestUpdateReleaseCleanupJob(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/cleanup-jobs/1", http.MethodPut, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -933,6 +1095,8 @@ func TestUpdateReleaseCleanupJob(t *testing.T) {
 }
 
 func TestDeleteReleaseCleanupJob(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/cleanup-jobs/1", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -942,6 +1106,8 @@ func TestDeleteReleaseCleanupJob(t *testing.T) {
 }
 
 func TestToggleReleaseCleanupJobEnabled(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/cleanup-jobs/1/enabled", http.MethodPatch, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -951,6 +1117,8 @@ func TestToggleReleaseCleanupJobEnabled(t *testing.T) {
 }
 
 func TestForceRunReleaseCleanupJob(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/cleanup-jobs/1/run", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -960,6 +1128,8 @@ func TestForceRunReleaseCleanupJob(t *testing.T) {
 }
 
 func TestGetReleaseDuplicateProfiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/profiles/duplicate", http.MethodGet, "test-key", []map[string]any{{"id": 1}})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -973,6 +1143,8 @@ func TestGetReleaseDuplicateProfiles(t *testing.T) {
 }
 
 func TestCreateReleaseDuplicateProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/profiles/duplicate", http.MethodPost, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -982,6 +1154,8 @@ func TestCreateReleaseDuplicateProfile(t *testing.T) {
 }
 
 func TestDeleteReleaseDuplicateProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/release/profiles/duplicate/1", http.MethodDelete, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -991,6 +1165,8 @@ func TestDeleteReleaseDuplicateProfile(t *testing.T) {
 }
 
 func TestGetLogFiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/logs/files", http.MethodGet, "test-key", map[string]any{"files": []map[string]any{{"name": "log1.txt"}}, "count": 1})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -1004,6 +1180,8 @@ func TestGetLogFiles(t *testing.T) {
 }
 
 func TestGetLogFile(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("log content"))
@@ -1020,6 +1198,8 @@ func TestGetLogFile(t *testing.T) {
 }
 
 func TestCheckForUpdates(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/updates/check", http.MethodGet, "test-key", nil)
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")
@@ -1029,6 +1209,8 @@ func TestCheckForUpdates(t *testing.T) {
 }
 
 func TestGetLatestRelease(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/updates/latest", http.MethodGet, "test-key", map[string]any{"tag_name": "v1.0.0"})
 	defer ts.Close()
 	c := autobrr.New(ts.URL, "test-key")

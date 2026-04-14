@@ -21,6 +21,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *openlibrary.Client {
 }
 
 func TestSearch(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("q"); got != "the lord of the rings" {
 			t.Errorf("q = %q, want the lord of the rings", got)
@@ -47,6 +49,8 @@ func TestSearch(t *testing.T) {
 }
 
 func TestSearchWithParams(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("author"); got != "tolkien" {
 			t.Errorf("author = %q, want tolkien", got)
@@ -73,6 +77,8 @@ func TestSearchWithParams(t *testing.T) {
 }
 
 func TestGetWork(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/works/OL27448W.json" {
 			t.Errorf("path = %q, want /works/OL27448W.json", r.URL.Path)
@@ -98,6 +104,8 @@ func TestGetWork(t *testing.T) {
 }
 
 func TestGetEdition(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/books/OL7353617M.json" {
 			t.Errorf("path = %q, want /books/OL7353617M.json", r.URL.Path)
@@ -124,6 +132,8 @@ func TestGetEdition(t *testing.T) {
 }
 
 func TestGetAuthor(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/authors/OL34184A.json" {
 			t.Errorf("path = %q, want /authors/OL34184A.json", r.URL.Path)
@@ -150,6 +160,8 @@ func TestGetAuthor(t *testing.T) {
 }
 
 func TestGetAuthorWorks(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/authors/OL34184A/works.json" {
 			t.Errorf("path = %q, want /authors/OL34184A/works.json", r.URL.Path)
@@ -176,6 +188,8 @@ func TestGetAuthorWorks(t *testing.T) {
 }
 
 func TestGetSubject(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/subjects/fantasy.json" {
 			t.Errorf("path = %q, want /subjects/fantasy.json", r.URL.Path)
@@ -203,6 +217,8 @@ func TestGetSubject(t *testing.T) {
 }
 
 func TestGetByISBN(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/isbn/9780618640157.json" {
 			t.Errorf("path = %q, want /isbn/9780618640157.json", r.URL.Path)
@@ -228,6 +244,8 @@ func TestGetByISBN(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte("not found"))
@@ -249,6 +267,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIErrorOnWork(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("server error"))
@@ -270,6 +290,8 @@ func TestAPIErrorOnWork(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	c := openlibrary.New()
 	if c == nil {
 		t.Fatal("expected non-nil client")

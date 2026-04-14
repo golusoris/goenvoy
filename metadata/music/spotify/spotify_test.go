@@ -20,6 +20,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *spotify.Client {
 }
 
 func TestAuthorizationHeader(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
 			t.Errorf("Authorization = %q, want Bearer test-token", got)
@@ -35,6 +37,8 @@ func TestAuthorizationHeader(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("q"); got != "coldplay" {
 			t.Errorf("q = %q, want coldplay", got)
@@ -87,6 +91,8 @@ func TestSearch(t *testing.T) {
 }
 
 func TestGetArtist(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/artists/4gzpq5DPGxSnKTe4SA8HAU" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -124,6 +130,8 @@ func TestGetArtist(t *testing.T) {
 }
 
 func TestGetArtistAlbums(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("limit") != "5" {
 			t.Errorf("limit = %q, want 5", r.URL.Query().Get("limit"))
@@ -154,6 +162,8 @@ func TestGetArtistAlbums(t *testing.T) {
 }
 
 func TestGetArtistTopTracks(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("market"); got != "US" {
 			t.Errorf("market = %q, want US", got)
@@ -180,6 +190,8 @@ func TestGetArtistTopTracks(t *testing.T) {
 }
 
 func TestGetRelatedArtists(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -203,6 +215,8 @@ func TestGetRelatedArtists(t *testing.T) {
 }
 
 func TestGetAlbum(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/albums/2ix8vWvvSp2Yo7rKMiWpkg" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -248,6 +262,8 @@ func TestGetAlbum(t *testing.T) {
 }
 
 func TestGetAlbumTracks(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("limit") != "20" {
 			t.Errorf("limit = %q, want 20", r.URL.Query().Get("limit"))
@@ -274,6 +290,8 @@ func TestGetAlbumTracks(t *testing.T) {
 }
 
 func TestGetTrack(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/tracks/3AJwUDP919kvQ9QcozQPxg" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -309,6 +327,8 @@ func TestGetTrack(t *testing.T) {
 }
 
 func TestGetAudioFeatures(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/audio-features/3AJwUDP919kvQ9QcozQPxg" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -349,6 +369,8 @@ func TestGetAudioFeatures(t *testing.T) {
 }
 
 func TestGetNewReleases(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("limit") != "5" {
 			t.Errorf("limit = %q, want 5", r.URL.Query().Get("limit"))
@@ -377,6 +399,8 @@ func TestGetNewReleases(t *testing.T) {
 }
 
 func TestGetCategories(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -403,6 +427,8 @@ func TestGetCategories(t *testing.T) {
 }
 
 func TestGetRecommendations(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("seed_artists"); got != "artist1" {
 			t.Errorf("seed_artists = %q, want artist1", got)
@@ -440,6 +466,8 @@ func TestGetRecommendations(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(`{"error":{"status":401,"message":"Invalid access token"}}`))
@@ -461,6 +489,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	custom := &http.Client{}
 	c := spotify.New("token", metadata.WithHTTPClient(custom))
 	// Verify the client was created without error.
@@ -470,6 +500,8 @@ func TestWithHTTPClient(t *testing.T) {
 }
 
 func TestAPIErrorFormat(t *testing.T) {
+	t.Parallel()
+
 	e := &spotify.APIError{StatusCode: 404, Status: "404 Not Found", Body: "not found"}
 	if got := e.Error(); got != "spotify: 404 Not Found: not found" {
 		t.Errorf("Error() = %q", got)
@@ -477,6 +509,8 @@ func TestAPIErrorFormat(t *testing.T) {
 }
 
 func TestSearchPath(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if !hasPrefix(r.URL.Path, "/search") {
 			t.Errorf("path = %q, want /search prefix", r.URL.Path)

@@ -2,7 +2,7 @@
 
 * Status: Accepted
 * Date: 2026-04-14 (retroactive, decision pre-dates this log)
-* Deciders: @kilian (Lusoris)
+* Deciders: @lusoris
 
 ## Context
 

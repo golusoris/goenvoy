@@ -37,6 +37,8 @@ func assertNoError(t *testing.T, err error) {
 }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	c := fanart.New("key")
 	if c == nil {
 		t.Fatal("expected non-nil client")
@@ -44,6 +46,8 @@ func TestNew(t *testing.T) {
 }
 
 func TestGetMovieImages(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/movies/120" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -84,6 +88,8 @@ func TestGetMovieImages(t *testing.T) {
 }
 
 func TestGetMovieImagesWithDisc(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respond(t, w, fanart.MovieImages{
 			Name: "Test Movie",
@@ -104,6 +110,8 @@ func TestGetMovieImagesWithDisc(t *testing.T) {
 }
 
 func TestGetShowImages(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/tv/75682" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -143,6 +151,8 @@ func TestGetShowImages(t *testing.T) {
 }
 
 func TestGetArtistImages(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/music/f4a31f0a-51dd-4fa7-986d-3095c40c5ed9" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -190,6 +200,8 @@ func TestGetArtistImages(t *testing.T) {
 }
 
 func TestGetAlbumImages(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/music/albums/9ba659df-5814-32f6-b95f-02b738698e7c" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -222,6 +234,8 @@ func TestGetAlbumImages(t *testing.T) {
 }
 
 func TestGetLabelImages(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/music/labels/e832b688-546b-45e3-83e5-9f8db5dcde1d" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -250,6 +264,8 @@ func TestGetLabelImages(t *testing.T) {
 }
 
 func TestGetLatestMovies(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/movies/latest" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -271,6 +287,8 @@ func TestGetLatestMovies(t *testing.T) {
 }
 
 func TestGetLatestMoviesWithDate(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("date") != "1609459200" {
 			t.Fatalf("unexpected date param: %s", r.URL.Query().Get("date"))
@@ -286,6 +304,8 @@ func TestGetLatestMoviesWithDate(t *testing.T) {
 }
 
 func TestGetLatestShows(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/tv/latest" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -306,6 +326,8 @@ func TestGetLatestShows(t *testing.T) {
 }
 
 func TestGetLatestArtists(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/music/latest" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -326,6 +348,8 @@ func TestGetLatestArtists(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
@@ -349,6 +373,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestOptions(t *testing.T) {
+	t.Parallel()
+
 	c := fanart.NewWithClientKey("key", "ck",
 		metadata.WithUserAgent("custom-agent"),
 		metadata.WithTimeout(60_000_000_000),
@@ -359,6 +385,8 @@ func TestOptions(t *testing.T) {
 }
 
 func TestNoClientKeyHeader(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Client-Key") != "" {
 			w.WriteHeader(http.StatusBadRequest)

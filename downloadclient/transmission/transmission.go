@@ -19,6 +19,8 @@ const (
 )
 
 // defaultTorrentFields are the fields requested for torrent queries.
+//
+//nolint:gochecknoglobals // immutable default field set, internal to package
 var defaultTorrentFields = []string{
 	"id", "name", "hashString", "status", "error", "errorString",
 	"addedDate", "doneDate", "eta", "isFinished", "isStalled",

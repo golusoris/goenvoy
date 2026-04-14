@@ -20,6 +20,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *retroachievements.Client {
 }
 
 func TestGetGame(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Errorf("method = %s, want GET", r.Method)
@@ -60,6 +62,8 @@ func TestGetGame(t *testing.T) {
 }
 
 func TestGetGameExtended(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/API_GetGameExtended.php" {
 			t.Errorf("path = %q, want /API_GetGameExtended.php", r.URL.Path)
@@ -108,6 +112,8 @@ func TestGetGameExtended(t *testing.T) {
 }
 
 func TestGetGameHashes(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/API_GetGameHashes.php" {
 			t.Errorf("path = %q, want /API_GetGameHashes.php", r.URL.Path)
@@ -136,6 +142,8 @@ func TestGetGameHashes(t *testing.T) {
 }
 
 func TestGetConsoleIDs(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/API_GetConsoleIDs.php" {
 			t.Errorf("path = %q, want /API_GetConsoleIDs.php", r.URL.Path)
@@ -169,6 +177,8 @@ func TestGetConsoleIDs(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{"error":"Invalid API key"}`))
@@ -182,7 +192,7 @@ func TestAPIError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 401 {
+	if apiErr.StatusCode != http.StatusUnauthorized {
 		t.Errorf("StatusCode = %d, want 401", apiErr.StatusCode)
 	}
 }

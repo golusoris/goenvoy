@@ -37,6 +37,8 @@ func assertNoError(t *testing.T, err error) {
 func intPtr(i int) *int { return &i }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	c := tvmaze.New()
 	if c == nil {
 		t.Fatal("expected non-nil client")
@@ -44,6 +46,8 @@ func TestNew(t *testing.T) {
 }
 
 func TestSearchShows(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/search/shows" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -67,6 +71,8 @@ func TestSearchShows(t *testing.T) {
 }
 
 func TestSearchShowSingle(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/singlesearch/shows" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -82,6 +88,8 @@ func TestSearchShowSingle(t *testing.T) {
 }
 
 func TestLookupShowByTheTVDB(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/lookup/shows" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -100,6 +108,8 @@ func TestLookupShowByTheTVDB(t *testing.T) {
 }
 
 func TestLookupShowByIMDB(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("imdb") != "tt1553656" {
 			t.Fatalf("unexpected imdb: %s", r.URL.Query().Get("imdb"))
@@ -115,6 +125,8 @@ func TestLookupShowByIMDB(t *testing.T) {
 }
 
 func TestLookupShowByTVRage(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("tvrage") != "25988" {
 			t.Fatalf("unexpected tvrage: %s", r.URL.Query().Get("tvrage"))
@@ -130,6 +142,8 @@ func TestLookupShowByTVRage(t *testing.T) {
 }
 
 func TestSearchPeople(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/search/people" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -150,6 +164,8 @@ func TestSearchPeople(t *testing.T) {
 }
 
 func TestGetShow(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -173,6 +189,8 @@ func TestGetShow(t *testing.T) {
 }
 
 func TestGetShowEpisodes(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/episodes" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -194,6 +212,8 @@ func TestGetShowEpisodes(t *testing.T) {
 }
 
 func TestGetEpisodeByNumber(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/episodebynumber" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -212,6 +232,8 @@ func TestGetEpisodeByNumber(t *testing.T) {
 }
 
 func TestGetEpisodesByDate(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/episodesbydate" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -232,6 +254,8 @@ func TestGetEpisodesByDate(t *testing.T) {
 }
 
 func TestGetShowSeasons(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/seasons" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -250,6 +274,8 @@ func TestGetShowSeasons(t *testing.T) {
 }
 
 func TestGetSeasonEpisodes(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/seasons/1/episodes" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -267,6 +293,8 @@ func TestGetSeasonEpisodes(t *testing.T) {
 }
 
 func TestGetShowCast(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/cast" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -293,6 +321,8 @@ func TestGetShowCast(t *testing.T) {
 }
 
 func TestGetShowCrew(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/crew" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -313,6 +343,8 @@ func TestGetShowCrew(t *testing.T) {
 }
 
 func TestGetShowAKAs(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/akas" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -333,6 +365,8 @@ func TestGetShowAKAs(t *testing.T) {
 }
 
 func TestGetShowImages(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/images" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -363,6 +397,8 @@ func TestGetShowImages(t *testing.T) {
 }
 
 func TestGetShowIndex(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -383,6 +419,8 @@ func TestGetShowIndex(t *testing.T) {
 }
 
 func TestGetEpisode(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/episodes/1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -398,6 +436,8 @@ func TestGetEpisode(t *testing.T) {
 }
 
 func TestGetPerson(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/people/1" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -421,6 +461,8 @@ func TestGetPerson(t *testing.T) {
 }
 
 func TestGetPersonCastCredits(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/people/1/castcredits" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -448,6 +490,8 @@ func TestGetPersonCastCredits(t *testing.T) {
 }
 
 func TestGetPersonCrewCredits(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/people/15/crewcredits" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -473,6 +517,8 @@ func TestGetPersonCrewCredits(t *testing.T) {
 }
 
 func TestGetSchedule(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/schedule" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -502,6 +548,8 @@ func TestGetSchedule(t *testing.T) {
 }
 
 func TestGetScheduleNoParams(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/schedule" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -520,6 +568,8 @@ func TestGetScheduleNoParams(t *testing.T) {
 }
 
 func TestGetWebSchedule(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/schedule/web" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -540,6 +590,8 @@ func TestGetWebSchedule(t *testing.T) {
 }
 
 func TestGetShowUpdates(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/updates/shows" {
 			t.Fatalf("unexpected path: %s", r.URL.Path)
@@ -561,6 +613,8 @@ func TestGetShowUpdates(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
@@ -573,7 +627,7 @@ func TestAPIError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 404 {
+	if apiErr.StatusCode != http.StatusNotFound {
 		t.Fatalf("got status %d", apiErr.StatusCode)
 	}
 }

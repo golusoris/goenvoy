@@ -2,7 +2,7 @@ package audiodb
 
 // Artist represents a TheAudioDB artist.
 type Artist struct {
-	IdArtist           string `json:"idArtist"`
+	IDArtist           string `json:"idArtist"`
 	StrArtist          string `json:"strArtist"`
 	StrArtistAlternate string `json:"strArtistAlternate"`
 	IntBornYear        string `json:"intBornYear"`
@@ -21,8 +21,8 @@ type Artist struct {
 
 // Album represents a TheAudioDB album.
 type Album struct {
-	IdAlbum          string `json:"idAlbum"`
-	IdArtist         string `json:"idArtist"`
+	IDAlbum          string `json:"idAlbum"`
+	IDArtist         string `json:"idArtist"`
 	StrAlbum         string `json:"strAlbum"`
 	StrArtist        string `json:"strArtist"`
 	IntYearReleased  string `json:"intYearReleased"`
@@ -38,9 +38,9 @@ type Album struct {
 
 // Track represents a TheAudioDB track.
 type Track struct {
-	IdTrack          string `json:"idTrack"`
-	IdAlbum          string `json:"idAlbum"`
-	IdArtist         string `json:"idArtist"`
+	IDTrack          string `json:"idTrack"`
+	IDAlbum          string `json:"idAlbum"`
+	IDArtist         string `json:"idArtist"`
 	StrTrack         string `json:"strTrack"`
 	StrAlbum         string `json:"strAlbum"`
 	StrArtist        string `json:"strArtist"`
@@ -53,7 +53,7 @@ type Track struct {
 
 // MusicVideo represents a TheAudioDB music video.
 type MusicVideo struct {
-	IdTrack          string `json:"idTrack"`
+	IDTrack          string `json:"idTrack"`
 	StrTrack         string `json:"strTrack"`
 	StrMusicVideo    string `json:"strMusicVideo"`
 	StrDescriptionEN string `json:"strDescriptionEN"`
@@ -67,9 +67,9 @@ type Discography struct {
 
 // Trending represents a trending entry from TheAudioDB.
 type Trending struct {
-	IdArtist      string `json:"idArtist"`
+	IDArtist      string `json:"idArtist"`
 	StrArtist     string `json:"strArtist"`
-	IdAlbum       string `json:"idAlbum"`
+	IDAlbum       string `json:"idAlbum"`
 	StrAlbum      string `json:"strAlbum"`
 	StrAlbumThumb string `json:"strAlbumThumb"`
 	IntChartPlace string `json:"intChartPlace"`

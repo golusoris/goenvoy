@@ -63,7 +63,10 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, v any)
 		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(data)}
 	}
 
-	return json.Unmarshal(data, v)
+	if err := json.Unmarshal(data, v); err != nil {
+		return fmt.Errorf("hasheous: decode response: %w", err)
+	}
+	return nil
 }
 
 func (c *Client) post(ctx context.Context, path string, params url.Values, body, v any) error {
@@ -98,7 +101,10 @@ func (c *Client) post(ctx context.Context, path string, params url.Values, body,
 		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(data)}
 	}
 
-	return json.Unmarshal(data, v)
+	if err := json.Unmarshal(data, v); err != nil {
+		return fmt.Errorf("hasheous: decode response: %w", err)
+	}
+	return nil
 }
 
 // LookupByHash performs a hash lookup using one or more hashes.

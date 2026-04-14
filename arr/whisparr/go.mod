@@ -2,6 +2,4 @@ module github.com/lusoris/goenvoy/arr/whisparr
 
 go 1.26.1
 
-require github.com/lusoris/goenvoy/arr v0.0.0
-
-replace github.com/lusoris/goenvoy/arr => ../
+require github.com/lusoris/goenvoy/arr v1.2.1

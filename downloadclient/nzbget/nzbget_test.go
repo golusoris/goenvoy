@@ -50,6 +50,8 @@ func newRPCServer(t *testing.T, wantMethod string, result any) *httptest.Server 
 }
 
 func TestListGroups(t *testing.T) {
+	t.Parallel()
+
 	result := []map[string]any{
 		{"NZBID": 1, "NZBName": "Ubuntu.nzb", "Status": "DOWNLOADING", "Category": "linux"},
 		{"NZBID": 2, "NZBName": "Fedora.nzb", "Status": "QUEUED", "Category": "linux"},
@@ -74,6 +76,8 @@ func TestListGroups(t *testing.T) {
 }
 
 func TestAppend(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "append", 42)
 	defer ts.Close()
 
@@ -88,6 +92,8 @@ func TestAppend(t *testing.T) {
 }
 
 func TestEditQueue(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "editqueue", true)
 	defer ts.Close()
 
@@ -102,6 +108,8 @@ func TestEditQueue(t *testing.T) {
 }
 
 func TestPauseDownload(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "pausedownload", true)
 	defer ts.Close()
 
@@ -112,6 +120,8 @@ func TestPauseDownload(t *testing.T) {
 }
 
 func TestResumeDownload(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "resumedownload", true)
 	defer ts.Close()
 
@@ -122,6 +132,8 @@ func TestResumeDownload(t *testing.T) {
 }
 
 func TestGetStatus(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"ServerPaused": false, "DownloadRate": 50000000,
 		"FreeDiskSpaceLo": 500000000, "ThreadCount": 4,
@@ -143,6 +155,8 @@ func TestGetStatus(t *testing.T) {
 }
 
 func TestGetVersion(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "version", "21.1")
 	defer ts.Close()
 
@@ -157,6 +171,8 @@ func TestGetVersion(t *testing.T) {
 }
 
 func TestGetHistory(t *testing.T) {
+	t.Parallel()
+
 	result := []map[string]any{
 		{"NZBID": 10, "Name": "Completed", "Status": "SUCCESS/ALL", "Category": "tv"},
 	}
@@ -177,6 +193,8 @@ func TestGetHistory(t *testing.T) {
 }
 
 func TestGetConfig(t *testing.T) {
+	t.Parallel()
+
 	result := []map[string]any{
 		{"Name": "MainDir", "Value": "/downloads"},
 		{"Name": "TempDir", "Value": "/tmp/nzbget"},
@@ -198,6 +216,8 @@ func TestGetConfig(t *testing.T) {
 }
 
 func TestGetLog(t *testing.T) {
+	t.Parallel()
+
 	result := []map[string]any{
 		{"ID": 1, "Kind": "INFO", "Text": "Starting download"},
 		{"ID": 2, "Kind": "WARNING", "Text": "Speed limited"},
@@ -219,6 +239,8 @@ func TestGetLog(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -249,6 +271,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestSetDownloadRate(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "rate", true)
 	defer ts.Close()
 
@@ -259,6 +283,8 @@ func TestSetDownloadRate(t *testing.T) {
 }
 
 func TestScanNZBDir(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "scan", true)
 	defer ts.Close()
 
@@ -269,6 +295,8 @@ func TestScanNZBDir(t *testing.T) {
 }
 
 func TestSetCategory(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "editqueue", true)
 	defer ts.Close()
 

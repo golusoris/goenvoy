@@ -18,7 +18,7 @@ func newGQLServer(t *testing.T, wantKey, dataField string, response any) *httpte
 			t.Errorf("method = %q, want POST", r.Method)
 		}
 		if wantKey != "" {
-			if got := r.Header.Get("ApiKey"); got != wantKey {
+			if got := r.Header.Get("Apikey"); got != wantKey {
 				t.Errorf("ApiKey = %q, want %q", got, wantKey)
 			}
 		}
@@ -29,6 +29,8 @@ func newGQLServer(t *testing.T, wantKey, dataField string, response any) *httpte
 }
 
 func TestFindScene(t *testing.T) {
+	t.Parallel()
+
 	scene := stash.Scene{
 		ID:        "1",
 		Title:     "Test Scene",
@@ -53,6 +55,8 @@ func TestFindScene(t *testing.T) {
 }
 
 func TestFindScenes(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Count  int           `json:"count"`
 		Scenes []stash.Scene `json:"scenes"`
@@ -77,6 +81,8 @@ func TestFindScenes(t *testing.T) {
 }
 
 func TestFindPerformer(t *testing.T) {
+	t.Parallel()
+
 	p := stash.Performer{
 		ID:       "p1",
 		Name:     "Test Performer",
@@ -101,6 +107,8 @@ func TestFindPerformer(t *testing.T) {
 }
 
 func TestFindPerformers(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Count      int               `json:"count"`
 		Performers []stash.Performer `json:"performers"`
@@ -128,6 +136,8 @@ func TestFindPerformers(t *testing.T) {
 }
 
 func TestFindStudio(t *testing.T) {
+	t.Parallel()
+
 	studio := stash.Studio{
 		ID:           "s1",
 		Name:         "Test Studio",
@@ -151,6 +161,8 @@ func TestFindStudio(t *testing.T) {
 }
 
 func TestFindStudios(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Count   int            `json:"count"`
 		Studios []stash.Studio `json:"studios"`
@@ -175,6 +187,8 @@ func TestFindStudios(t *testing.T) {
 }
 
 func TestFindTag(t *testing.T) {
+	t.Parallel()
+
 	tag := stash.Tag{
 		ID:          "t1",
 		Name:        "Test Tag",
@@ -198,6 +212,8 @@ func TestFindTag(t *testing.T) {
 }
 
 func TestFindTags(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Count int         `json:"count"`
 		Tags  []stash.Tag `json:"tags"`
@@ -222,6 +238,8 @@ func TestFindTags(t *testing.T) {
 }
 
 func TestFindGallery(t *testing.T) {
+	t.Parallel()
+
 	gallery := stash.Gallery{
 		ID:         "g1",
 		Title:      "Test Gallery",
@@ -245,6 +263,8 @@ func TestFindGallery(t *testing.T) {
 }
 
 func TestFindGalleries(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Count     int             `json:"count"`
 		Galleries []stash.Gallery `json:"galleries"`
@@ -269,6 +289,8 @@ func TestFindGalleries(t *testing.T) {
 }
 
 func TestFindImage(t *testing.T) {
+	t.Parallel()
+
 	img := stash.Image{
 		ID:    "i1",
 		Title: "Test Image",
@@ -291,6 +313,8 @@ func TestFindImage(t *testing.T) {
 }
 
 func TestFindImages(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Count  int           `json:"count"`
 		Images []stash.Image `json:"images"`
@@ -315,6 +339,8 @@ func TestFindImages(t *testing.T) {
 }
 
 func TestFindGroup(t *testing.T) {
+	t.Parallel()
+
 	group := stash.Group{
 		ID:       "m1",
 		Name:     "Test Movie",
@@ -339,6 +365,8 @@ func TestFindGroup(t *testing.T) {
 }
 
 func TestFindGroups(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Count  int           `json:"count"`
 		Groups []stash.Group `json:"groups"`
@@ -363,6 +391,8 @@ func TestFindGroups(t *testing.T) {
 }
 
 func TestFindSceneMarkers(t *testing.T) {
+	t.Parallel()
+
 	markers := struct {
 		Count        int                 `json:"count"`
 		SceneMarkers []stash.SceneMarker `json:"scene_markers"`
@@ -390,6 +420,8 @@ func TestFindSceneMarkers(t *testing.T) {
 }
 
 func TestGetStats(t *testing.T) {
+	t.Parallel()
+
 	stats := stash.Stats{
 		SceneCount:     100,
 		PerformerCount: 50,
@@ -413,6 +445,8 @@ func TestGetStats(t *testing.T) {
 }
 
 func TestGetVersion(t *testing.T) {
+	t.Parallel()
+
 	ver := stash.Version{Version: "0.25.1", Hash: "abc123", BuildType: "official"}
 	ts := newGQLServer(t, "key-17", "version", ver)
 	defer ts.Close()
@@ -428,6 +462,8 @@ func TestGetVersion(t *testing.T) {
 }
 
 func TestGetSystemStatus(t *testing.T) {
+	t.Parallel()
+
 	status := stash.SystemStatus{
 		Status: "OK",
 		OS:     "linux",
@@ -446,6 +482,8 @@ func TestGetSystemStatus(t *testing.T) {
 }
 
 func TestGraphQLError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"errors":[{"message":"scene not found"}]}`))
@@ -467,6 +505,8 @@ func TestGraphQLError(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("unauthorized"))
@@ -488,6 +528,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestNoAuthRequired(t *testing.T) {
+	t.Parallel()
+
 	scene := stash.Scene{ID: "1", Title: "No Auth Scene"}
 	ts := newGQLServer(t, "", "findScene", scene)
 	defer ts.Close()

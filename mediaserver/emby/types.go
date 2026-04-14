@@ -5,13 +5,13 @@ type AuthenticationResult struct {
 	User        *UserDto        `json:"User"`
 	SessionInfo *SessionInfoDto `json:"SessionInfo"`
 	AccessToken string          `json:"AccessToken"`
-	ServerId    string          `json:"ServerId"`
+	ServerID    string          `json:"ServerId"`
 }
 
 // UserDto represents a user.
 type UserDto struct {
 	Name                  string      `json:"Name"`
-	ServerId              string      `json:"ServerId"`
+	ServerID              string      `json:"ServerId"`
 	ID                    string      `json:"Id"`
 	HasPassword           bool        `json:"HasPassword"`
 	HasConfiguredPassword bool        `json:"HasConfiguredPassword"`
@@ -66,7 +66,7 @@ type PlayStateDto struct {
 // BaseItemDto represents a media item.
 type BaseItemDto struct {
 	Name              string            `json:"Name"`
-	ServerId          string            `json:"ServerId"`
+	ServerID          string            `json:"ServerId"`
 	ID                string            `json:"Id"`
 	Type              string            `json:"Type"`
 	Overview          string            `json:"Overview,omitempty"`

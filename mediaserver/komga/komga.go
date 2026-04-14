@@ -66,26 +66,29 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, v any)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
-		return err
+		return fmt.Errorf("komga: build request: %w", err)
 	}
 	req.SetBasicAuth(c.username, c.password)
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("komga: GET %s: %w", path, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("komga: read response: %w", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
 	}
 
-	return json.Unmarshal(body, v)
+	if err := json.Unmarshal(body, v); err != nil {
+		return fmt.Errorf("komga: decode response: %w", err)
+	}
+	return nil
 }
 
 // GetLibraries returns all libraries.

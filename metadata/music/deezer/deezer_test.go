@@ -20,6 +20,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *deezer.Client {
 }
 
 func TestSearch(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("q"); got != "eminem" {
 			t.Errorf("q = %q, want eminem", got)
@@ -58,6 +60,8 @@ func TestSearch(t *testing.T) {
 }
 
 func TestSearchAlbums(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Path; got != "/search/album" {
 			t.Errorf("path = %q, want /search/album", got)
@@ -84,6 +88,8 @@ func TestSearchAlbums(t *testing.T) {
 }
 
 func TestSearchArtists(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Path; got != "/search/artist" {
 			t.Errorf("path = %q, want /search/artist", got)
@@ -113,6 +119,8 @@ func TestSearchArtists(t *testing.T) {
 }
 
 func TestGetArtist(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/artist/27" {
 			t.Errorf("path = %q, want /artist/27", r.URL.Path)
@@ -148,6 +156,8 @@ func TestGetArtist(t *testing.T) {
 }
 
 func TestGetArtistTopTracks(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("limit"); got != "5" {
 			t.Errorf("limit = %q, want 5", got)
@@ -177,6 +187,8 @@ func TestGetArtistTopTracks(t *testing.T) {
 }
 
 func TestGetArtistAlbums(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/artist/27/albums" {
 			t.Errorf("path = %q, want /artist/27/albums", r.URL.Path)
@@ -203,6 +215,8 @@ func TestGetArtistAlbums(t *testing.T) {
 }
 
 func TestGetRelatedArtists(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/artist/27/related" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -228,6 +242,8 @@ func TestGetRelatedArtists(t *testing.T) {
 }
 
 func TestGetAlbum(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/album/302127" {
 			t.Errorf("path = %q, want /album/302127", r.URL.Path)
@@ -276,6 +292,8 @@ func TestGetAlbum(t *testing.T) {
 }
 
 func TestGetAlbumTracks(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/album/302127/tracks" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -302,6 +320,8 @@ func TestGetAlbumTracks(t *testing.T) {
 }
 
 func TestGetTrack(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/track/3135553" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -343,6 +363,8 @@ func TestGetTrack(t *testing.T) {
 }
 
 func TestGetGenres(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/genre" {
 			t.Errorf("path = %q, want /genre", r.URL.Path)
@@ -373,6 +395,8 @@ func TestGetGenres(t *testing.T) {
 }
 
 func TestGetChart(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/chart" {
 			t.Errorf("path = %q, want /chart", r.URL.Path)
@@ -424,6 +448,8 @@ func TestGetChart(t *testing.T) {
 }
 
 func TestDeezerAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		// Deezer returns 200 with error in body.
@@ -456,6 +482,8 @@ func TestDeezerAPIError(t *testing.T) {
 }
 
 func TestHTTPError(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("internal error"))
@@ -477,6 +505,8 @@ func TestHTTPError(t *testing.T) {
 }
 
 func TestWithAccessToken(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("access_token"); got != "my-token" {
 			t.Errorf("access_token = %q, want my-token", got)
@@ -507,6 +537,8 @@ func TestWithAccessToken(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	custom := &http.Client{}
 	c := deezer.New(metadata.WithHTTPClient(custom))
 	if c == nil {
@@ -515,6 +547,8 @@ func TestWithHTTPClient(t *testing.T) {
 }
 
 func TestAPIErrorFormat(t *testing.T) {
+	t.Parallel()
+
 	e := &deezer.APIError{Type: "DataException", Message: "no data", Code: 800}
 	if got := e.Error(); got != "deezer: DataException: no data (code 800)" {
 		t.Errorf("Error() = %q", got)

@@ -19,6 +19,8 @@ func newTestClient(t *testing.T, handler http.HandlerFunc) *Client {
 }
 
 func TestGetArtistInfo(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("api_key") != "test-key" {
 			http.Error(w, "bad key", http.StatusUnauthorized)
@@ -39,6 +41,8 @@ func TestGetArtistInfo(t *testing.T) {
 }
 
 func TestGetAlbumInfo(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"album": Album{Name: "OK Computer", Artist: "Radiohead"},
@@ -55,6 +59,8 @@ func TestGetAlbumInfo(t *testing.T) {
 }
 
 func TestGetTrackInfo(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"track": Track{Name: "Creep", Duration: "238"},
@@ -71,6 +77,8 @@ func TestGetTrackInfo(t *testing.T) {
 }
 
 func TestGetSimilarArtists(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"similarartists": map[string]any{
@@ -89,6 +97,8 @@ func TestGetSimilarArtists(t *testing.T) {
 }
 
 func TestGetTopAlbums(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"topalbums": map[string]any{
@@ -107,6 +117,8 @@ func TestGetTopAlbums(t *testing.T) {
 }
 
 func TestGetTopTracks(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"toptracks": map[string]any{
@@ -125,6 +137,8 @@ func TestGetTopTracks(t *testing.T) {
 }
 
 func TestGetChartTopArtists(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"artists": map[string]any{
@@ -143,6 +157,8 @@ func TestGetChartTopArtists(t *testing.T) {
 }
 
 func TestGetTopTags(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"toptags": map[string]any{
@@ -161,6 +177,8 @@ func TestGetTopTags(t *testing.T) {
 }
 
 func TestSearchArtist(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"results": map[string]any{
@@ -181,6 +199,8 @@ func TestSearchArtist(t *testing.T) {
 }
 
 func TestSearchAlbum(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"results": map[string]any{
@@ -201,6 +221,8 @@ func TestSearchAlbum(t *testing.T) {
 }
 
 func TestSearchTrack(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"results": map[string]any{
@@ -221,6 +243,8 @@ func TestSearchTrack(t *testing.T) {
 }
 
 func TestLastFMError(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{
 			"error":   6,
@@ -235,6 +259,8 @@ func TestLastFMError(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 	})
@@ -253,6 +279,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	custom := &http.Client{}
 	c := New("key", metadata.WithHTTPClient(custom))
 	if c.HTTPClient() != custom {

@@ -65,7 +65,10 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, v any)
 		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
 	}
 
-	return json.Unmarshal(body, v)
+	if err := json.Unmarshal(body, v); err != nil {
+		return fmt.Errorf("googlebooks: decode response: %w", err)
+	}
+	return nil
 }
 
 func (c *Client) post(ctx context.Context, path string, params url.Values) error {

@@ -43,6 +43,8 @@ func newLoginServer(t *testing.T) *httptest.Server {
 }
 
 func TestLogin(t *testing.T) {
+	t.Parallel()
+
 	ts := newLoginServer(t)
 	defer ts.Close()
 
@@ -53,6 +55,8 @@ func TestLogin(t *testing.T) {
 }
 
 func TestLogout(t *testing.T) {
+	t.Parallel()
+
 	ts := newLoginServer(t)
 	defer ts.Close()
 
@@ -64,6 +68,8 @@ func TestLogout(t *testing.T) {
 }
 
 func TestVersion(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("v4.6.7"))
 	}))
@@ -80,6 +86,8 @@ func TestVersion(t *testing.T) {
 }
 
 func TestWebAPIVersion(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("2.10.5"))
 	}))
@@ -96,6 +104,8 @@ func TestWebAPIVersion(t *testing.T) {
 }
 
 func TestGetBuildInfo(t *testing.T) {
+	t.Parallel()
+
 	info := qbit.BuildInfo{Qt: "6.7.2", Libtorrent: "2.0.10.0", Boost: "1.86", OpenSSL: "3.3.1", Bitness: 64}
 	ts := newTestServer(t, "/api/v2/app/buildInfo", info)
 	defer ts.Close()
@@ -114,6 +124,8 @@ func TestGetBuildInfo(t *testing.T) {
 }
 
 func TestGetPreferences(t *testing.T) {
+	t.Parallel()
+
 	prefs := qbit.Preferences{SavePath: "/downloads", DlLimit: 5000000, QueueingEnabled: true}
 	ts := newTestServer(t, "/api/v2/app/preferences", prefs)
 	defer ts.Close()
@@ -132,6 +144,8 @@ func TestGetPreferences(t *testing.T) {
 }
 
 func TestDefaultSavePath(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("/downloads/complete"))
 	}))
@@ -148,6 +162,8 @@ func TestDefaultSavePath(t *testing.T) {
 }
 
 func TestListTorrents(t *testing.T) {
+	t.Parallel()
+
 	torrents := []qbit.Torrent{
 		{Hash: "abc123", Name: "Ubuntu 24.04", State: "downloading", Progress: 0.45, Size: 4000000000},
 		{Hash: "def456", Name: "Fedora 40", State: "seeding", Progress: 1.0, Size: 2000000000},
@@ -172,6 +188,8 @@ func TestListTorrents(t *testing.T) {
 }
 
 func TestListTorrentsWithOptions(t *testing.T) {
+	t.Parallel()
+
 	torrents := []qbit.Torrent{{Hash: "abc123", Name: "Test", Category: "movies"}}
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("filter"); got != "downloading" {
@@ -196,6 +214,8 @@ func TestListTorrentsWithOptions(t *testing.T) {
 }
 
 func TestGetTorrentProperties(t *testing.T) {
+	t.Parallel()
+
 	props := qbit.TorrentProperties{SavePath: "/data/movies", TotalSize: 50000000, Seeds: 42, Peers: 10}
 	ts := newTestServer(t, "/api/v2/torrents/properties", props)
 	defer ts.Close()
@@ -214,6 +234,8 @@ func TestGetTorrentProperties(t *testing.T) {
 }
 
 func TestGetTorrentTrackers(t *testing.T) {
+	t.Parallel()
+
 	trackers := []qbit.Tracker{{URL: "udp://tracker.example.com:1337", Status: 2, NumPeers: 150}}
 	ts := newTestServer(t, "/api/v2/torrents/trackers", trackers)
 	defer ts.Close()
@@ -232,6 +254,8 @@ func TestGetTorrentTrackers(t *testing.T) {
 }
 
 func TestGetTorrentFiles(t *testing.T) {
+	t.Parallel()
+
 	files := []qbit.TorrentFile{{Index: 0, Name: "movie.mkv", Size: 5000000000, Progress: 0.8, Priority: 1}}
 	ts := newTestServer(t, "/api/v2/torrents/files", files)
 	defer ts.Close()
@@ -250,6 +274,8 @@ func TestGetTorrentFiles(t *testing.T) {
 }
 
 func TestAddTorrentURLs(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q, want POST", r.Method)
@@ -276,6 +302,8 @@ func TestAddTorrentURLs(t *testing.T) {
 }
 
 func TestDeleteTorrents(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q, want POST", r.Method)
@@ -298,6 +326,8 @@ func TestDeleteTorrents(t *testing.T) {
 }
 
 func TestPauseTorrents(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/torrents/pause" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -313,6 +343,8 @@ func TestPauseTorrents(t *testing.T) {
 }
 
 func TestResumeTorrents(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/torrents/resume" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -328,6 +360,8 @@ func TestResumeTorrents(t *testing.T) {
 }
 
 func TestGetTransferInfo(t *testing.T) {
+	t.Parallel()
+
 	info := qbit.TransferInfo{
 		DlInfoSpeed: 5000000, UpInfoSpeed: 1000000, DHTNodes: 450,
 		ConnectionStatus: "connected", FreeSpaceOnDisk: 500000000000,
@@ -349,6 +383,8 @@ func TestGetTransferInfo(t *testing.T) {
 }
 
 func TestListCategories(t *testing.T) {
+	t.Parallel()
+
 	cats := map[string]*qbit.Category{
 		"movies": {Name: "movies", SavePath: "/data/movies"},
 		"tv":     {Name: "tv", SavePath: "/data/tv"},
@@ -370,6 +406,8 @@ func TestListCategories(t *testing.T) {
 }
 
 func TestListTags(t *testing.T) {
+	t.Parallel()
+
 	tags := []string{"4k", "remux", "web-dl"}
 	ts := newTestServer(t, "/api/v2/torrents/tags", tags)
 	defer ts.Close()
@@ -388,6 +426,8 @@ func TestListTags(t *testing.T) {
 }
 
 func TestGetSyncMainData(t *testing.T) {
+	t.Parallel()
+
 	data := qbit.SyncMainData{
 		RID:        1,
 		FullUpdate: true,
@@ -411,6 +451,8 @@ func TestGetSyncMainData(t *testing.T) {
 }
 
 func TestGetLog(t *testing.T) {
+	t.Parallel()
+
 	logs := []qbit.LogEntry{
 		{ID: 1, Message: "qBittorrent started", Timestamp: 1700000000, Type: 1},
 		{ID: 2, Message: "Torrent added", Timestamp: 1700000060, Type: 2},
@@ -432,6 +474,8 @@ func TestGetLog(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte("Forbidden"))
@@ -453,6 +497,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestRecheckTorrents(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/torrents/recheck" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -468,6 +514,8 @@ func TestRecheckTorrents(t *testing.T) {
 }
 
 func TestCreateCategory(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/torrents/createCategory" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -487,6 +535,8 @@ func TestCreateCategory(t *testing.T) {
 }
 
 func TestGetPeerLog(t *testing.T) {
+	t.Parallel()
+
 	logs := []qbit.PeerLogEntry{
 		{ID: 1, IP: "192.168.1.100", Timestamp: 1700000000, Blocked: false},
 	}
@@ -507,6 +557,8 @@ func TestGetPeerLog(t *testing.T) {
 }
 
 func TestSetGlobalDownloadLimit(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/transfer/setDownloadLimit" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -526,6 +578,8 @@ func TestSetGlobalDownloadLimit(t *testing.T) {
 }
 
 func TestGetTorrentWebSeeds(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/webseeds", []qbit.WebSeed{{URL: "http://example.com"}})
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -539,6 +593,8 @@ func TestGetTorrentWebSeeds(t *testing.T) {
 }
 
 func TestReannounceTorrents(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/reannounce", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -548,6 +604,8 @@ func TestReannounceTorrents(t *testing.T) {
 }
 
 func TestSetTorrentLocation(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/setLocation", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -557,6 +615,8 @@ func TestSetTorrentLocation(t *testing.T) {
 }
 
 func TestRenameTorrent(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/rename", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -566,6 +626,8 @@ func TestRenameTorrent(t *testing.T) {
 }
 
 func TestSetTorrentCategory(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/setCategory", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -575,6 +637,8 @@ func TestSetTorrentCategory(t *testing.T) {
 }
 
 func TestAddTorrentTags(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/addTags", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -584,6 +648,8 @@ func TestAddTorrentTags(t *testing.T) {
 }
 
 func TestRemoveTorrentTags(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/removeTags", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -593,6 +659,8 @@ func TestRemoveTorrentTags(t *testing.T) {
 }
 
 func TestGetGlobalDownloadLimit(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/transfer/downloadLimit", int64(5000000))
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -606,6 +674,8 @@ func TestGetGlobalDownloadLimit(t *testing.T) {
 }
 
 func TestGetGlobalUploadLimit(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/transfer/uploadLimit", int64(3000000))
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -619,6 +689,8 @@ func TestGetGlobalUploadLimit(t *testing.T) {
 }
 
 func TestSetGlobalUploadLimit(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/transfer/setUploadLimit", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -628,6 +700,8 @@ func TestSetGlobalUploadLimit(t *testing.T) {
 }
 
 func TestSetPreferences(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/app/setPreferences", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -637,6 +711,8 @@ func TestSetPreferences(t *testing.T) {
 }
 
 func TestShutdown(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/app/shutdown", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -646,6 +722,8 @@ func TestShutdown(t *testing.T) {
 }
 
 func TestGetSpeedLimitsMode(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/v2/transfer/speedLimitsMode" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -664,6 +742,8 @@ func TestGetSpeedLimitsMode(t *testing.T) {
 }
 
 func TestToggleSpeedLimitsMode(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/transfer/toggleSpeedLimitsMode", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -673,6 +753,8 @@ func TestToggleSpeedLimitsMode(t *testing.T) {
 }
 
 func TestBanPeers(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/transfer/banPeers", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -682,6 +764,8 @@ func TestBanPeers(t *testing.T) {
 }
 
 func TestGetSyncTorrentPeers(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/sync/torrentPeers", qbit.SyncTorrentPeers{RID: 1, FullData: true})
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -695,6 +779,8 @@ func TestGetSyncTorrentPeers(t *testing.T) {
 }
 
 func TestGetTorrentPieceStates(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/pieceStates", []int{0, 1, 2})
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -708,6 +794,8 @@ func TestGetTorrentPieceStates(t *testing.T) {
 }
 
 func TestGetTorrentPieceHashes(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/pieceHashes", []string{"hash1", "hash2"})
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -721,6 +809,8 @@ func TestGetTorrentPieceHashes(t *testing.T) {
 }
 
 func TestSetFilePriority(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/filePrio", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -730,6 +820,8 @@ func TestSetFilePriority(t *testing.T) {
 }
 
 func TestSetTorrentDownloadLimit(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/setDownloadLimit", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -739,6 +831,8 @@ func TestSetTorrentDownloadLimit(t *testing.T) {
 }
 
 func TestSetTorrentUploadLimit(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/setUploadLimit", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -748,6 +842,8 @@ func TestSetTorrentUploadLimit(t *testing.T) {
 }
 
 func TestSetShareLimits(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/setShareLimits", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -757,6 +853,8 @@ func TestSetShareLimits(t *testing.T) {
 }
 
 func TestIncreasePriority(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/increasePrio", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -766,6 +864,8 @@ func TestIncreasePriority(t *testing.T) {
 }
 
 func TestDecreasePriority(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/decreasePrio", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -775,6 +875,8 @@ func TestDecreasePriority(t *testing.T) {
 }
 
 func TestTopPriority(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/topPrio", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -784,6 +886,8 @@ func TestTopPriority(t *testing.T) {
 }
 
 func TestBottomPriority(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/bottomPrio", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -793,6 +897,8 @@ func TestBottomPriority(t *testing.T) {
 }
 
 func TestSetForceStart(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/setForceStart", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -802,6 +908,8 @@ func TestSetForceStart(t *testing.T) {
 }
 
 func TestSetSuperSeeding(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/setSuperSeeding", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -811,6 +919,8 @@ func TestSetSuperSeeding(t *testing.T) {
 }
 
 func TestSetAutoManagement(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/setAutoManagement", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -820,6 +930,8 @@ func TestSetAutoManagement(t *testing.T) {
 }
 
 func TestToggleSequentialDownload(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/toggleSequentialDownload", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -829,6 +941,8 @@ func TestToggleSequentialDownload(t *testing.T) {
 }
 
 func TestToggleFirstLastPiecePrio(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/toggleFirstLastPiecePrio", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -838,6 +952,8 @@ func TestToggleFirstLastPiecePrio(t *testing.T) {
 }
 
 func TestAddTrackers(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/addTrackers", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -847,6 +963,8 @@ func TestAddTrackers(t *testing.T) {
 }
 
 func TestEditTracker(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/editTracker", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -856,6 +974,8 @@ func TestEditTracker(t *testing.T) {
 }
 
 func TestRemoveTrackers(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/removeTrackers", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -865,6 +985,8 @@ func TestRemoveTrackers(t *testing.T) {
 }
 
 func TestEditCategory(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/editCategory", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -874,6 +996,8 @@ func TestEditCategory(t *testing.T) {
 }
 
 func TestRemoveCategories(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/removeCategories", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -883,6 +1007,8 @@ func TestRemoveCategories(t *testing.T) {
 }
 
 func TestCreateTags(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/createTags", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -892,6 +1018,8 @@ func TestCreateTags(t *testing.T) {
 }
 
 func TestDeleteTags(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/deleteTags", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -901,6 +1029,8 @@ func TestDeleteTags(t *testing.T) {
 }
 
 func TestRenameFile(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/renameFile", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)
@@ -910,6 +1040,8 @@ func TestRenameFile(t *testing.T) {
 }
 
 func TestRenameFolder(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v2/torrents/renameFolder", nil)
 	defer ts.Close()
 	c := qbit.New(ts.URL)

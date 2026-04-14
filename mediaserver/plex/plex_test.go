@@ -33,6 +33,8 @@ func newTestServer(t *testing.T, wantPath, wantToken string, response any) *http
 }
 
 func TestGetIdentity(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/identity" {
 			t.Errorf("path = %q, want /identity", r.URL.Path)
@@ -59,6 +61,8 @@ func TestGetIdentity(t *testing.T) {
 }
 
 func TestGetLibraries(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/library/sections", "lib-token", plex.MediaContainer{
 		Directory: []plex.Directory{
 			{Key: "/library/sections/1", Title: "Movies", Type: "movie"},
@@ -84,6 +88,8 @@ func TestGetLibraries(t *testing.T) {
 }
 
 func TestGetLibraryContents(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/library/sections/1/all" {
 			t.Errorf("path = %q, want /library/sections/1/all", r.URL.Path)
@@ -123,6 +129,8 @@ func TestGetLibraryContents(t *testing.T) {
 }
 
 func TestGetMetadata(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/library/metadata/1244", "meta-token", plex.MediaContainer{
 		Metadata: []plex.Metadata{{
 			RatingKey: "1244",
@@ -159,6 +167,8 @@ func TestGetMetadata(t *testing.T) {
 }
 
 func TestGetMetadataNotFound(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/library/metadata/99999", "nf-token", plex.MediaContainer{
 		Metadata: []plex.Metadata{},
 	})
@@ -172,6 +182,8 @@ func TestGetMetadataNotFound(t *testing.T) {
 }
 
 func TestGetOnDeck(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/library/onDeck", "deck-token", plex.MediaContainer{
 		Metadata: []plex.Metadata{
 			{RatingKey: "55", Title: "Episode 5", ViewOffset: 120000},
@@ -193,6 +205,8 @@ func TestGetOnDeck(t *testing.T) {
 }
 
 func TestGetRecentlyAdded(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/library/recentlyAdded", "recent-token", plex.MediaContainer{
 		Metadata: []plex.Metadata{
 			{RatingKey: "100", Title: "New Movie", Year: 2024},
@@ -214,6 +228,8 @@ func TestGetRecentlyAdded(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/search" {
 			t.Errorf("path = %q, want /search", r.URL.Path)
@@ -244,6 +260,8 @@ func TestSearch(t *testing.T) {
 }
 
 func TestGetSessions(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/status/sessions", "sess-token", plex.MediaContainer{
 		Metadata: []plex.Metadata{{
 			RatingKey: "1244",
@@ -272,6 +290,8 @@ func TestGetSessions(t *testing.T) {
 }
 
 func TestRefreshLibrary(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/library/sections/1/refresh", "refresh-token", plex.MediaContainer{})
 	defer ts.Close()
 
@@ -282,6 +302,8 @@ func TestRefreshLibrary(t *testing.T) {
 }
 
 func TestMarkWatched(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/:/scrobble" {
 			t.Errorf("path = %q, want /:/scrobble", r.URL.Path)
@@ -301,6 +323,8 @@ func TestMarkWatched(t *testing.T) {
 }
 
 func TestMarkUnwatched(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/:/unscrobble" {
 			t.Errorf("path = %q, want /:/unscrobble", r.URL.Path)
@@ -317,6 +341,8 @@ func TestMarkUnwatched(t *testing.T) {
 }
 
 func TestGetServerInfo(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/", "info-token", plex.MediaContainer{
 		FriendlyName:      "My Plex Server",
 		MachineIdentifier: "abc123",
@@ -339,6 +365,8 @@ func TestGetServerInfo(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("Unauthorized"))
@@ -354,12 +382,14 @@ func TestAPIError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected *plex.APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 401 {
+	if apiErr.StatusCode != http.StatusUnauthorized {
 		t.Errorf("StatusCode = %d, want 401", apiErr.StatusCode)
 	}
 }
 
 func TestAPIErrorMessage(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		err  plex.APIError
@@ -370,6 +400,7 @@ func TestAPIErrorMessage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := tt.err.Error(); got != tt.want {
 				t.Errorf("Error() = %q, want %q", got, tt.want)
 			}
@@ -378,6 +409,8 @@ func TestAPIErrorMessage(t *testing.T) {
 }
 
 func TestContextCancellation(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/library/sections", "cancel-token", plex.MediaContainer{})
 	defer ts.Close()
 
@@ -392,6 +425,8 @@ func TestContextCancellation(t *testing.T) {
 }
 
 func TestWithOptions(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("X-Plex-Product"); got != "MyApp" {
 			t.Errorf("X-Plex-Product = %q, want MyApp", got)
