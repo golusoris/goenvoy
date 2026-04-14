@@ -110,6 +110,8 @@ func setup(t *testing.T) *launchbox.Client {
 }
 
 func TestDownloadAndGameCount(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t)
 	if c.GameCount() != 3 {
 		t.Errorf("GameCount = %d, want 3", c.GameCount())
@@ -117,6 +119,8 @@ func TestDownloadAndGameCount(t *testing.T) {
 }
 
 func TestGetGameByID(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t)
 
 	game := c.GetGameByID(1)
@@ -139,6 +143,8 @@ func TestGetGameByID(t *testing.T) {
 }
 
 func TestSearchGames(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t)
 
 	// Search by name.
@@ -164,6 +170,8 @@ func TestSearchGames(t *testing.T) {
 }
 
 func TestGetAlternateNames(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t)
 
 	names := c.GetAlternateNames(1)
@@ -179,6 +187,8 @@ func TestGetAlternateNames(t *testing.T) {
 }
 
 func TestGetImages(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t)
 
 	images := c.GetImages(1)
@@ -191,6 +201,8 @@ func TestGetImages(t *testing.T) {
 }
 
 func TestGetPlatforms(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t)
 
 	platforms := c.GetPlatforms()
@@ -203,6 +215,8 @@ func TestGetPlatforms(t *testing.T) {
 }
 
 func TestDownloadError(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("server error"))
@@ -219,7 +233,7 @@ func TestDownloadError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("error type = %T, want *launchbox.APIError", err)
 	}
-	if apiErr.StatusCode != 500 {
+	if apiErr.StatusCode != http.StatusInternalServerError {
 		t.Errorf("StatusCode = %d, want 500", apiErr.StatusCode)
 	}
 }

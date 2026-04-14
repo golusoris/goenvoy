@@ -82,7 +82,7 @@ func (c *Client) do(ctx context.Context, method, path string, reqBody any) ([]by
 		return nil, fmt.Errorf("autobrr: create request: %w", err)
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("X-API-Token", c.apiKey)
+	req.Header.Set("X-Api-Token", c.apiKey)
 	if reqBody != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}

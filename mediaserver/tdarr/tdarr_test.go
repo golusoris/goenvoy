@@ -43,8 +43,10 @@ func newPostServer(t *testing.T, wantPath string, resp any) *httptest.Server {
 }
 
 func TestAPIKeyHeader(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if got := r.Header.Get("x-api-key"); got != "secret-key" {
+		if got := r.Header.Get("X-Api-Key"); got != "secret-key" {
 			t.Errorf("x-api-key = %q, want secret-key", got)
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -60,6 +62,8 @@ func TestAPIKeyHeader(t *testing.T) {
 }
 
 func TestGetStatus(t *testing.T) {
+	t.Parallel()
+
 	ts := newGetServer(t, "/api/v2/status", tdarr.Status{
 		Status: "good", Os: "linux", Version: "2.17.01",
 	})
@@ -76,8 +80,10 @@ func TestGetStatus(t *testing.T) {
 }
 
 func TestGetNodes(t *testing.T) {
+	t.Parallel()
+
 	nodes := map[string]tdarr.Node{
-		"node1": {Id: "node1", Name: "Main", Port: 8266},
+		"node1": {ID: "node1", Name: "Main", Port: 8266},
 	}
 	ts := newGetServer(t, "/api/v2/get-nodes", nodes)
 	defer ts.Close()
@@ -95,8 +101,10 @@ func TestGetNodes(t *testing.T) {
 }
 
 func TestSearchDB(t *testing.T) {
+	t.Parallel()
+
 	files := []tdarr.DBFile{
-		{Id: "f1", File: "/media/movie.mkv", Codec: "h264"},
+		{ID: "f1", File: "/media/movie.mkv", Codec: "h264"},
 	}
 	ts := newPostServer(t, "/api/v2/search-db", files)
 	defer ts.Close()
@@ -115,6 +123,8 @@ func TestSearchDB(t *testing.T) {
 }
 
 func TestCrudDB(t *testing.T) {
+	t.Parallel()
+
 	docs := []map[string]any{{"_id": "doc1", "name": "test"}}
 	ts := newPostServer(t, "/api/v2/cruddb", docs)
 	defer ts.Close()
@@ -130,6 +140,8 @@ func TestCrudDB(t *testing.T) {
 }
 
 func TestGetResStats(t *testing.T) {
+	t.Parallel()
+
 	ts := newPostServer(t, "/api/v2/get-res-stats", tdarr.ResStats{
 		Pie: map[string]int{"1080p": 50, "720p": 30},
 	})
@@ -146,6 +158,8 @@ func TestGetResStats(t *testing.T) {
 }
 
 func TestGetDBStatuses(t *testing.T) {
+	t.Parallel()
+
 	ts := newPostServer(t, "/api/v2/get-db-statuses", tdarr.DBStatuses{
 		Table1Count: 100, Table2Count: 50,
 	})
@@ -162,6 +176,8 @@ func TestGetDBStatuses(t *testing.T) {
 }
 
 func TestScanFiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newPostServer(t, "/api/v2/scan-files", nil)
 	defer ts.Close()
 
@@ -172,6 +188,8 @@ func TestScanFiles(t *testing.T) {
 }
 
 func TestCancelWorkerItem(t *testing.T) {
+	t.Parallel()
+
 	ts := newPostServer(t, "/api/v2/cancel-worker-item", nil)
 	defer ts.Close()
 
@@ -182,6 +200,8 @@ func TestCancelWorkerItem(t *testing.T) {
 }
 
 func TestKillWorker(t *testing.T) {
+	t.Parallel()
+
 	ts := newPostServer(t, "/api/v2/kill-worker", nil)
 	defer ts.Close()
 
@@ -192,6 +212,8 @@ func TestKillWorker(t *testing.T) {
 }
 
 func TestGetServerLog(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		_, _ = w.Write([]byte("log line 1\nlog line 2"))
@@ -209,6 +231,8 @@ func TestGetServerLog(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("Unauthorized"))
@@ -230,6 +254,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	ts := newGetServer(t, "/api/v2/status", tdarr.Status{Status: "ok"})
 	defer ts.Close()
 

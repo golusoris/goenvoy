@@ -20,6 +20,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *googlebooks.Client {
 }
 
 func TestSearch(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("q"); got != "flowers for algernon" {
 			t.Errorf("q = %q, want flowers for algernon", got)
@@ -33,7 +35,7 @@ func TestSearch(t *testing.T) {
 			TotalItems: 1,
 			Items: []googlebooks.Volume{
 				{
-					Id:   "abc123",
+					ID:   "abc123",
 					Kind: "books#volume",
 					VolumeInfo: &googlebooks.VolumeInfo{
 						Title:   "Flowers for Algernon",
@@ -57,6 +59,8 @@ func TestSearch(t *testing.T) {
 }
 
 func TestSearchWithParams(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("q"); got != "science fiction" {
 			t.Errorf("q = %q, want science fiction", got)
@@ -74,8 +78,8 @@ func TestSearchWithParams(t *testing.T) {
 		json.NewEncoder(w).Encode(googlebooks.VolumesResponse{
 			TotalItems: 2,
 			Items: []googlebooks.Volume{
-				{Id: "a", VolumeInfo: &googlebooks.VolumeInfo{Title: "Book A"}},
-				{Id: "b", VolumeInfo: &googlebooks.VolumeInfo{Title: "Book B"}},
+				{ID: "a", VolumeInfo: &googlebooks.VolumeInfo{Title: "Book A"}},
+				{ID: "b", VolumeInfo: &googlebooks.VolumeInfo{Title: "Book B"}},
 			},
 		})
 	})
@@ -98,13 +102,15 @@ func TestSearchWithParams(t *testing.T) {
 }
 
 func TestGetVolume(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/volumes/abc123" {
 			t.Errorf("path = %q, want /volumes/abc123", r.URL.Path)
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(googlebooks.Volume{
-			Id:   "abc123",
+			ID:   "abc123",
 			Kind: "books#volume",
 			VolumeInfo: &googlebooks.VolumeInfo{
 				Title:     "Flowers for Algernon",
@@ -126,8 +132,8 @@ func TestGetVolume(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if vol.Id != "abc123" {
-		t.Errorf("Id = %q, want abc123", vol.Id)
+	if vol.ID != "abc123" {
+		t.Errorf("ID = %q, want abc123", vol.ID)
 	}
 	if vol.VolumeInfo.PageCount != 311 {
 		t.Errorf("PageCount = %d, want 311", vol.VolumeInfo.PageCount)
@@ -141,6 +147,8 @@ func TestGetVolume(t *testing.T) {
 }
 
 func TestAPIKeyIsSent(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("key"); got != "test-key" {
 			t.Errorf("key = %q, want test-key", got)
@@ -156,6 +164,8 @@ func TestAPIKeyIsSent(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte(`{"error":{"code":403,"message":"forbidden"}}`))
@@ -177,6 +187,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIErrorOnGetVolume(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte("not found"))
@@ -198,6 +210,8 @@ func TestAPIErrorOnGetVolume(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	c := googlebooks.New("key")
 	if c == nil {
 		t.Fatal("expected non-nil client")
@@ -205,6 +219,8 @@ func TestNew(t *testing.T) {
 }
 
 func TestGetUserBookshelves(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/users/user123/bookshelves" {
 			t.Errorf("path = %q, want /users/user123/bookshelves", r.URL.Path)
@@ -235,6 +251,8 @@ func TestGetUserBookshelves(t *testing.T) {
 }
 
 func TestGetUserBookshelf(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/users/user123/bookshelves/0" {
 			t.Errorf("path = %q, want /users/user123/bookshelves/0", r.URL.Path)
@@ -261,6 +279,8 @@ func TestGetUserBookshelf(t *testing.T) {
 }
 
 func TestGetUserBookshelfVolumes(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/users/user123/bookshelves/0/volumes" {
 			t.Errorf("path = %q, want /users/user123/bookshelves/0/volumes", r.URL.Path)
@@ -272,7 +292,7 @@ func TestGetUserBookshelfVolumes(t *testing.T) {
 		json.NewEncoder(w).Encode(googlebooks.VolumesResponse{
 			TotalItems: 1,
 			Items: []googlebooks.Volume{
-				{Id: "vol1", VolumeInfo: &googlebooks.VolumeInfo{Title: "Test Book"}},
+				{ID: "vol1", VolumeInfo: &googlebooks.VolumeInfo{Title: "Test Book"}},
 			},
 		})
 	})
@@ -290,6 +310,8 @@ func TestGetUserBookshelfVolumes(t *testing.T) {
 }
 
 func TestGetVolumeAssociatedList(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/volumes/vol1/associated" {
 			t.Errorf("path = %q, want /volumes/vol1/associated", r.URL.Path)
@@ -301,7 +323,7 @@ func TestGetVolumeAssociatedList(t *testing.T) {
 		json.NewEncoder(w).Encode(googlebooks.VolumesResponse{
 			TotalItems: 1,
 			Items: []googlebooks.Volume{
-				{Id: "vol2", VolumeInfo: &googlebooks.VolumeInfo{Title: "Related Book"}},
+				{ID: "vol2", VolumeInfo: &googlebooks.VolumeInfo{Title: "Related Book"}},
 			},
 		})
 	})
@@ -319,6 +341,8 @@ func TestGetVolumeAssociatedList(t *testing.T) {
 }
 
 func TestGetMyLibraryBookshelves(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/mylibrary/bookshelves" {
 			t.Errorf("path = %q, want /mylibrary/bookshelves", r.URL.Path)
@@ -345,6 +369,8 @@ func TestGetMyLibraryBookshelves(t *testing.T) {
 }
 
 func TestGetMyLibraryBookshelf(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/mylibrary/bookshelves/2" {
 			t.Errorf("path = %q, want /mylibrary/bookshelves/2", r.URL.Path)
@@ -369,6 +395,8 @@ func TestGetMyLibraryBookshelf(t *testing.T) {
 }
 
 func TestGetMyLibraryBookshelfVolumes(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/mylibrary/bookshelves/2/volumes" {
 			t.Errorf("path = %q, want /mylibrary/bookshelves/2/volumes", r.URL.Path)
@@ -380,7 +408,7 @@ func TestGetMyLibraryBookshelfVolumes(t *testing.T) {
 		json.NewEncoder(w).Encode(googlebooks.VolumesResponse{
 			TotalItems: 10,
 			Items: []googlebooks.Volume{
-				{Id: "vol1", VolumeInfo: &googlebooks.VolumeInfo{Title: "My Book"}},
+				{ID: "vol1", VolumeInfo: &googlebooks.VolumeInfo{Title: "My Book"}},
 			},
 		})
 	})
@@ -395,6 +423,8 @@ func TestGetMyLibraryBookshelfVolumes(t *testing.T) {
 }
 
 func TestAddVolumeToBookshelf(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q, want POST", r.Method)
@@ -415,6 +445,8 @@ func TestAddVolumeToBookshelf(t *testing.T) {
 }
 
 func TestRemoveVolumeFromBookshelf(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q, want POST", r.Method)
@@ -435,6 +467,8 @@ func TestRemoveVolumeFromBookshelf(t *testing.T) {
 }
 
 func TestClearBookshelf(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q, want POST", r.Method)
@@ -452,6 +486,8 @@ func TestClearBookshelf(t *testing.T) {
 }
 
 func TestGetMyLibraryAnnotations(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/mylibrary/annotations" {
 			t.Errorf("path = %q, want /mylibrary/annotations", r.URL.Path)
@@ -489,6 +525,8 @@ func TestGetMyLibraryAnnotations(t *testing.T) {
 }
 
 func TestGetMyLibraryReadingPositions(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/mylibrary/readingpositions/vol1" {
 			t.Errorf("path = %q, want /mylibrary/readingpositions/vol1", r.URL.Path)
@@ -514,6 +552,8 @@ func TestGetMyLibraryReadingPositions(t *testing.T) {
 }
 
 func TestGetSeries(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/series/get" {
 			t.Errorf("path = %q, want /series/get", r.URL.Path)
@@ -547,6 +587,8 @@ func TestGetSeries(t *testing.T) {
 }
 
 func TestGetSeriesMembers(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/series/membership/get" {
 			t.Errorf("path = %q, want /series/membership/get", r.URL.Path)
@@ -558,8 +600,8 @@ func TestGetSeriesMembers(t *testing.T) {
 		json.NewEncoder(w).Encode(googlebooks.VolumesResponse{
 			TotalItems: 7,
 			Items: []googlebooks.Volume{
-				{Id: "hp1", VolumeInfo: &googlebooks.VolumeInfo{Title: "Philosopher's Stone"}},
-				{Id: "hp2", VolumeInfo: &googlebooks.VolumeInfo{Title: "Chamber of Secrets"}},
+				{ID: "hp1", VolumeInfo: &googlebooks.VolumeInfo{Title: "Philosopher's Stone"}},
+				{ID: "hp2", VolumeInfo: &googlebooks.VolumeInfo{Title: "Chamber of Secrets"}},
 			},
 		})
 	})
@@ -577,6 +619,8 @@ func TestGetSeriesMembers(t *testing.T) {
 }
 
 func TestPostError(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(`{"error":{"code":401,"message":"unauthorized"}}`))

@@ -30,6 +30,8 @@ func newTestServer(t *testing.T, wantPath string, response any) *httptest.Server
 }
 
 func TestLookupArtist(t *testing.T) {
+	t.Parallel()
+
 	artist := musicbrainz.Artist{
 		ID:       "5b11f4ce-a62d-471e-81fc-a69a8278c7da",
 		Name:     "Nirvana",
@@ -58,6 +60,8 @@ func TestLookupArtist(t *testing.T) {
 }
 
 func TestLookupRelease(t *testing.T) {
+	t.Parallel()
+
 	release := musicbrainz.Release{
 		ID:     "b84ee12a-09ef-421b-82de-0441a926375b",
 		Title:  "Nevermind",
@@ -81,6 +85,8 @@ func TestLookupRelease(t *testing.T) {
 }
 
 func TestLookupReleaseGroup(t *testing.T) {
+	t.Parallel()
+
 	rg := musicbrainz.ReleaseGroup{
 		ID:               "1b022e01-4da6-387b-8658-8678046e4cef",
 		Title:            "Nevermind",
@@ -104,6 +110,8 @@ func TestLookupReleaseGroup(t *testing.T) {
 }
 
 func TestLookupRecording(t *testing.T) {
+	t.Parallel()
+
 	rec := musicbrainz.Recording{
 		ID:     "87ec0c32-6035-476e-a7a6-8543b4bfbb65",
 		Title:  "Smells Like Teen Spirit",
@@ -126,6 +134,8 @@ func TestLookupRecording(t *testing.T) {
 }
 
 func TestLookupLabel(t *testing.T) {
+	t.Parallel()
+
 	label := musicbrainz.Label{
 		ID:   "50c384a2-0b44-401b-b893-8181571d90e7",
 		Name: "DGC Records",
@@ -145,6 +155,8 @@ func TestLookupLabel(t *testing.T) {
 }
 
 func TestLookupWork(t *testing.T) {
+	t.Parallel()
+
 	work := musicbrainz.Work{ID: "abc-123", Title: "Bohemian Rhapsody", Type: "Song"}
 	ts := newTestServer(t, "/work/abc-123", work)
 	defer ts.Close()
@@ -160,6 +172,8 @@ func TestLookupWork(t *testing.T) {
 }
 
 func TestLookupArea(t *testing.T) {
+	t.Parallel()
+
 	area := musicbrainz.Area{ID: "area-1", Name: "United Kingdom", ISO31661Codes: []string{"GB"}}
 	ts := newTestServer(t, "/area/area-1", area)
 	defer ts.Close()
@@ -175,6 +189,8 @@ func TestLookupArea(t *testing.T) {
 }
 
 func TestLookupEvent(t *testing.T) {
+	t.Parallel()
+
 	event := musicbrainz.Event{ID: "evt-1", Name: "Live Aid"}
 	ts := newTestServer(t, "/event/evt-1", event)
 	defer ts.Close()
@@ -190,6 +206,8 @@ func TestLookupEvent(t *testing.T) {
 }
 
 func TestLookupGenre(t *testing.T) {
+	t.Parallel()
+
 	genre := musicbrainz.Genre{ID: "genre-1", Name: "rock"}
 	ts := newTestServer(t, "/genre/genre-1", genre)
 	defer ts.Close()
@@ -205,6 +223,8 @@ func TestLookupGenre(t *testing.T) {
 }
 
 func TestLookupInstrument(t *testing.T) {
+	t.Parallel()
+
 	inst := musicbrainz.Instrument{ID: "inst-1", Name: "guitar", Type: "String instrument"}
 	ts := newTestServer(t, "/instrument/inst-1", inst)
 	defer ts.Close()
@@ -220,6 +240,8 @@ func TestLookupInstrument(t *testing.T) {
 }
 
 func TestLookupPlace(t *testing.T) {
+	t.Parallel()
+
 	place := musicbrainz.Place{
 		ID:          "place-1",
 		Name:        "Abbey Road Studios",
@@ -243,6 +265,8 @@ func TestLookupPlace(t *testing.T) {
 }
 
 func TestSearchArtists(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Created string               `json:"created"`
 		Count   int                  `json:"count"`
@@ -274,6 +298,8 @@ func TestSearchArtists(t *testing.T) {
 }
 
 func TestSearchReleases(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Created  string                `json:"created"`
 		Count    int                   `json:"count"`
@@ -300,6 +326,8 @@ func TestSearchReleases(t *testing.T) {
 }
 
 func TestSearchRecordings(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Created    string                  `json:"created"`
 		Count      int                     `json:"count"`
@@ -323,6 +351,8 @@ func TestSearchRecordings(t *testing.T) {
 }
 
 func TestSearchReleaseGroups(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Created       string                     `json:"created"`
 		Count         int                        `json:"count"`
@@ -346,6 +376,8 @@ func TestSearchReleaseGroups(t *testing.T) {
 }
 
 func TestSearchLabels(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Created string              `json:"created"`
 		Count   int                 `json:"count"`
@@ -369,6 +401,8 @@ func TestSearchLabels(t *testing.T) {
 }
 
 func TestBrowseReleasesByArtist(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		ReleaseCount  int                   `json:"release-count"`
 		ReleaseOffset int                   `json:"release-offset"`
@@ -394,6 +428,8 @@ func TestBrowseReleasesByArtist(t *testing.T) {
 }
 
 func TestBrowseReleaseGroupsByArtist(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		ReleaseGroupCount  int                        `json:"release-group-count"`
 		ReleaseGroupOffset int                        `json:"release-group-offset"`
@@ -416,6 +452,8 @@ func TestBrowseReleaseGroupsByArtist(t *testing.T) {
 }
 
 func TestBrowseRecordingsByArtist(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		RecordingCount  int                     `json:"recording-count"`
 		RecordingOffset int                     `json:"recording-offset"`
@@ -438,6 +476,8 @@ func TestBrowseRecordingsByArtist(t *testing.T) {
 }
 
 func TestLookupByISRC(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Recordings []musicbrainz.Recording `json:"recordings"`
 	}{
@@ -460,6 +500,8 @@ func TestLookupByISRC(t *testing.T) {
 }
 
 func TestLookupByDiscID(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Releases []musicbrainz.Release `json:"releases"`
 	}{
@@ -479,6 +521,8 @@ func TestLookupByDiscID(t *testing.T) {
 }
 
 func TestListGenres(t *testing.T) {
+	t.Parallel()
+
 	genres := []musicbrainz.Genre{{ID: "g1", Name: "rock"}, {ID: "g2", Name: "jazz"}}
 	ts := newTestServer(t, "/genre/all", genres)
 	defer ts.Close()
@@ -494,6 +538,8 @@ func TestListGenres(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Not Found"})
@@ -518,6 +564,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIErrorRawBody(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		_, _ = w.Write([]byte("service unavailable"))
@@ -539,6 +587,8 @@ func TestAPIErrorRawBody(t *testing.T) {
 }
 
 func TestLookupSeries(t *testing.T) {
+	t.Parallel()
+
 	series := musicbrainz.Series{ID: "s1", Name: "BBC Proms", Type: "Festival"}
 	ts := newTestServer(t, "/series/s1", series)
 	defer ts.Close()
@@ -554,6 +604,8 @@ func TestLookupSeries(t *testing.T) {
 }
 
 func TestLookupURL(t *testing.T) {
+	t.Parallel()
+
 	u := musicbrainz.URLEntity{ID: "url-1", Resource: "https://example.com"}
 	ts := newTestServer(t, "/url/url-1", u)
 	defer ts.Close()
@@ -569,6 +621,8 @@ func TestLookupURL(t *testing.T) {
 }
 
 func TestBrowseWorksByArtist(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		WorkCount  int                `json:"work-count"`
 		WorkOffset int                `json:"work-offset"`

@@ -32,6 +32,8 @@ func newServer(t *testing.T, wantMode string, response any) *httptest.Server {
 }
 
 func TestGetQueue(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"queue": map[string]any{
 			"status": "Downloading", "speed": "5.0 M", "paused": false,
@@ -62,6 +64,8 @@ func TestGetQueue(t *testing.T) {
 }
 
 func TestAddURL(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"status":  true,
 		"nzo_ids": []string{"SABnzbd_nzo_xyz"},
@@ -80,6 +84,8 @@ func TestAddURL(t *testing.T) {
 }
 
 func TestPause(t *testing.T) {
+	t.Parallel()
+
 	ts := newServer(t, "pause", map[string]any{"status": "ok"})
 	defer ts.Close()
 
@@ -90,6 +96,8 @@ func TestPause(t *testing.T) {
 }
 
 func TestResume(t *testing.T) {
+	t.Parallel()
+
 	ts := newServer(t, "resume", map[string]any{"status": "ok"})
 	defer ts.Close()
 
@@ -100,6 +108,8 @@ func TestResume(t *testing.T) {
 }
 
 func TestGetHistory(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"history": map[string]any{
 			"total_size": "10.5 GB", "noofslots": 1,
@@ -132,6 +142,8 @@ func TestGetHistory(t *testing.T) {
 }
 
 func TestGetVersion(t *testing.T) {
+	t.Parallel()
+
 	ts := newServer(t, "version", map[string]any{"version": "4.2.1"})
 	defer ts.Close()
 
@@ -146,6 +158,8 @@ func TestGetVersion(t *testing.T) {
 }
 
 func TestGetServerStats(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"total": 107374182400, "day": 5368709120, "week": 26843545600, "month": 85899345920,
 	}
@@ -163,6 +177,8 @@ func TestGetServerStats(t *testing.T) {
 }
 
 func TestGetWarnings(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"warnings": []string{"disk space low", "connection timeout"},
 	}
@@ -183,6 +199,8 @@ func TestGetWarnings(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"status": false,
 		"error":  "API Key Required",
@@ -208,6 +226,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestDeleteItem(t *testing.T) {
+	t.Parallel()
+
 	ts := newServer(t, "queue", map[string]any{"status": true})
 	defer ts.Close()
 
@@ -218,6 +238,8 @@ func TestDeleteItem(t *testing.T) {
 }
 
 func TestDeleteHistory(t *testing.T) {
+	t.Parallel()
+
 	ts := newServer(t, "history", map[string]any{"status": true})
 	defer ts.Close()
 
@@ -228,6 +250,8 @@ func TestDeleteHistory(t *testing.T) {
 }
 
 func TestSetCategory(t *testing.T) {
+	t.Parallel()
+
 	ts := newServer(t, "change_cat", map[string]any{"status": true})
 	defer ts.Close()
 

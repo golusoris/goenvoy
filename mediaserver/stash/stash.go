@@ -217,7 +217,7 @@ func (c *Client) Query(ctx context.Context, query string, variables map[string]a
 
 	req.Header.Set("Content-Type", "application/json")
 	if c.apiKey != "" {
-		req.Header.Set("ApiKey", c.apiKey)
+		req.Header.Set("Apikey", c.apiKey)
 	}
 	req.Header.Set("User-Agent", c.userAgent)
 

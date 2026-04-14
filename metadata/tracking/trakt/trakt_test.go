@@ -18,10 +18,10 @@ func newTestServer(t *testing.T, wantPath, wantKey string, response any) *httpte
 		if r.URL.Path != wantPath {
 			t.Errorf("path = %q, want %q", r.URL.Path, wantPath)
 		}
-		if got := r.Header.Get("trakt-api-key"); got != wantKey {
+		if got := r.Header.Get("Trakt-Api-Key"); got != wantKey {
 			t.Errorf("trakt-api-key = %q, want %q", got, wantKey)
 		}
-		if got := r.Header.Get("trakt-api-version"); got != "2" {
+		if got := r.Header.Get("Trakt-Api-Version"); got != "2" {
 			t.Errorf("trakt-api-version = %q, want %q", got, "2")
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -34,6 +34,8 @@ func newTestServer(t *testing.T, wantPath, wantKey string, response any) *httpte
 }
 
 func TestGetMovie(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight", "test-key", trakt.Movie{
 		Title:   "The Dark Knight",
 		Year:    2008,
@@ -63,6 +65,8 @@ func TestGetMovie(t *testing.T) {
 }
 
 func TestGetShow(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad", "show-key", trakt.Show{
 		Title:         "Breaking Bad",
 		Year:          2008,
@@ -89,6 +93,8 @@ func TestGetShow(t *testing.T) {
 }
 
 func TestGetEpisode(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/1/episodes/1", "ep-key", trakt.Episode{
 		Season:  1,
 		Number:  1,
@@ -112,6 +118,8 @@ func TestGetEpisode(t *testing.T) {
 }
 
 func TestTrendingMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/trending", "trend-key", []trakt.TrendingMovie{
 		{Watchers: 85, Movie: trakt.Movie{Title: "Oppenheimer", Year: 2023, IDs: trakt.IDs{Trakt: 717468}}},
 		{Watchers: 72, Movie: trakt.Movie{Title: "Barbie", Year: 2023, IDs: trakt.IDs{Trakt: 488552}}},
@@ -141,6 +149,8 @@ func TestTrendingMovies(t *testing.T) {
 }
 
 func TestPopularShows(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/popular", "pop-key", []trakt.Show{
 		{Title: "Game of Thrones", Year: 2011, IDs: trakt.IDs{Trakt: 1390, Slug: "game-of-thrones"}},
 	})
@@ -160,6 +170,8 @@ func TestPopularShows(t *testing.T) {
 }
 
 func TestSearchText(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/search/movie", "search-key", []trakt.SearchResult{
 		{
 			Type:  "movie",
@@ -186,6 +198,8 @@ func TestSearchText(t *testing.T) {
 }
 
 func TestSearchByID(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/search/imdb/tt0468569", "id-key", []trakt.SearchResult{
 		{
 			Type:  "movie",
@@ -209,6 +223,8 @@ func TestSearchByID(t *testing.T) {
 }
 
 func TestGetMovieRatings(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight/ratings", "rate-key", trakt.Ratings{
 		Rating: 9.0, Votes: 42000,
 		Distribution: trakt.Distribution{Ten: 20000, Nine: 12000, Eight: 5000, Seven: 3000, Six: 1000, Five: 500, Four: 200, Three: 100, Two: 100, One: 100},
@@ -232,6 +248,8 @@ func TestGetMovieRatings(t *testing.T) {
 }
 
 func TestGetMoviePeople(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight/people", "ppl-key", trakt.People{
 		Cast: []trakt.CastMember{
 			{Characters: []string{"Bruce Wayne"}, Person: trakt.Person{Name: "Christian Bale", IDs: trakt.IDs{Trakt: 1}}},
@@ -257,6 +275,8 @@ func TestGetMoviePeople(t *testing.T) {
 }
 
 func TestGetShowSeasons(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons", "season-key", []trakt.Season{
 		{Number: 0, Title: "Specials", IDs: trakt.IDs{Trakt: 3962}},
 		{Number: 1, Title: "Season 1", IDs: trakt.IDs{Trakt: 3963}, EpisodeCount: 7},
@@ -278,6 +298,8 @@ func TestGetShowSeasons(t *testing.T) {
 }
 
 func TestCalendarMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/calendars/all/movies/2024-01-01/7", "cal-key", []trakt.CalendarMovie{
 		{Released: "2024-01-03", Movie: trakt.Movie{Title: "Migration", Year: 2023, IDs: trakt.IDs{Trakt: 123}}},
 	})
@@ -297,6 +319,8 @@ func TestCalendarMovies(t *testing.T) {
 }
 
 func TestGenres(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/genres/movies", "genre-key", []trakt.Genre{
 		{Name: "Action", Slug: "action"},
 		{Name: "Adventure", Slug: "adventure"},
@@ -318,6 +342,8 @@ func TestGenres(t *testing.T) {
 }
 
 func TestGetPerson(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/people/bryan-cranston", "person-key", trakt.Person{
 		Name:     "Bryan Cranston",
 		IDs:      trakt.IDs{Trakt: 297891, Slug: "bryan-cranston", IMDb: "nm0186505", TMDb: 17419},
@@ -340,6 +366,8 @@ func TestGetPerson(t *testing.T) {
 }
 
 func TestGetMovieStats(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight/stats", "stat-key", trakt.Stats{
 		Watchers: 100000, Plays: 150000, Collectors: 80000, Votes: 42000,
 	})
@@ -359,6 +387,8 @@ func TestGetMovieStats(t *testing.T) {
 }
 
 func TestGetMovieStudios(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight/studios", "studio-key", []trakt.Studio{
 		{Name: "Warner Bros. Pictures", Country: "us", IDs: trakt.IDs{Trakt: 174}},
 		{Name: "Legendary Pictures", Country: "us", IDs: trakt.IDs{Trakt: 923}},
@@ -379,6 +409,8 @@ func TestGetMovieStudios(t *testing.T) {
 }
 
 func TestAnticipatedMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/anticipated", "anti-key", []trakt.AnticipatedMovie{
 		{ListCount: 5000, Movie: trakt.Movie{Title: "Dune: Part Two", Year: 2024, IDs: trakt.IDs{Trakt: 800100}}},
 	})
@@ -398,6 +430,8 @@ func TestAnticipatedMovies(t *testing.T) {
 }
 
 func TestBoxOfficeMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/boxoffice", "box-key", []trakt.BoxOfficeMovie{
 		{Revenue: 100000000, Movie: trakt.Movie{Title: "Inside Out 2", Year: 2024, IDs: trakt.IDs{Trakt: 900123}}},
 	})
@@ -417,6 +451,8 @@ func TestBoxOfficeMovies(t *testing.T) {
 }
 
 func TestGetMovieTranslations(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight/translations/de", "trans-key", []trakt.MovieTranslation{
 		{Title: "The Dark Knight", Overview: "Batman erhebt sich...", Language: "de", Country: "de"},
 	})
@@ -436,6 +472,8 @@ func TestGetMovieTranslations(t *testing.T) {
 }
 
 func TestNetworks(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/networks", "net-key", []trakt.Network{
 		{Name: "HBO", IDs: trakt.IDs{Trakt: 8}},
 		{Name: "Netflix", IDs: trakt.IDs{Trakt: 213}},
@@ -456,6 +494,8 @@ func TestNetworks(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -476,7 +516,7 @@ func TestAPIError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected *trakt.APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 401 {
+	if apiErr.StatusCode != http.StatusUnauthorized {
 		t.Errorf("StatusCode = %d, want 401", apiErr.StatusCode)
 	}
 	if apiErr.Error_ != "Unauthorized" {
@@ -488,6 +528,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIErrorNonJSON(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadGateway)
 		_, _ = w.Write([]byte("<html>Bad Gateway</html>"))
@@ -504,7 +546,7 @@ func TestAPIErrorNonJSON(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected *trakt.APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 502 {
+	if apiErr.StatusCode != http.StatusBadGateway {
 		t.Errorf("StatusCode = %d, want 502", apiErr.StatusCode)
 	}
 	if apiErr.RawBody != "<html>Bad Gateway</html>" {
@@ -513,6 +555,8 @@ func TestAPIErrorNonJSON(t *testing.T) {
 }
 
 func TestAPIErrorMessage(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		err  trakt.APIError
@@ -525,6 +569,7 @@ func TestAPIErrorMessage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := tt.err.Error(); got != tt.want {
 				t.Errorf("Error() = %q, want %q", got, tt.want)
 			}
@@ -533,6 +578,8 @@ func TestAPIErrorMessage(t *testing.T) {
 }
 
 func TestMostPlayedMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/played/weekly", "played-key", []trakt.PlayedMovie{
 		{WatcherCount: 5000, PlayCount: 8000, Movie: trakt.Movie{Title: "The Shawshank Redemption", Year: 1994, IDs: trakt.IDs{Trakt: 120}}},
 	})
@@ -567,7 +614,7 @@ func TestGetDeviceCode(t *testing.T) {
 		if r.URL.Path != "/oauth/device/code" {
 			t.Errorf("path = %q, want /oauth/device/code", r.URL.Path)
 		}
-		if got := r.Header.Get("trakt-api-key"); got != "cid" {
+		if got := r.Header.Get("Trakt-Api-Key"); got != "cid" {
 			t.Errorf("trakt-api-key = %q, want %q", got, "cid")
 		}
 		var body map[string]string
@@ -756,6 +803,8 @@ func TestNoBearerTokenWhenEmpty(t *testing.T) {
 }
 
 func TestGetEpisodeRatings(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/episodes/16/ratings", "erat-key", trakt.Ratings{
 		Rating: 9.9, Votes: 30000,
 	})
@@ -772,6 +821,8 @@ func TestGetEpisodeRatings(t *testing.T) {
 }
 
 func TestCalendarShows(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/calendars/all/shows/2024-03-01/7", "calshow-key", []trakt.CalendarShow{
 		{
 			FirstAired: "2024-03-04",
@@ -795,6 +846,8 @@ func TestCalendarShows(t *testing.T) {
 }
 
 func TestContextCancellation(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/test", "cancel-key", trakt.Movie{Title: "Test"})
 	defer ts.Close()
 
@@ -818,7 +871,7 @@ func newAuthServer(t *testing.T, wantMethod, wantPath, wantKey, wantToken string
 		if r.URL.Path != wantPath {
 			t.Errorf("path = %q, want %q", r.URL.Path, wantPath)
 		}
-		if got := r.Header.Get("trakt-api-key"); got != wantKey {
+		if got := r.Header.Get("Trakt-Api-Key"); got != wantKey {
 			t.Errorf("trakt-api-key = %q, want %q", got, wantKey)
 		}
 		if got := r.Header.Get("Authorization"); got != "Bearer "+wantToken {
@@ -836,6 +889,8 @@ func newAuthServer(t *testing.T, wantMethod, wantPath, wantKey, wantToken string
 // Tests for existing untested methods.
 
 func TestGetMovieAliases(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight/aliases", "alias-key", []trakt.Alias{
 		{Title: "Il Cavaliere Oscuro", Country: "it"},
 	})
@@ -855,6 +910,8 @@ func TestGetMovieAliases(t *testing.T) {
 }
 
 func TestGetMovieReleases(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight/releases/us", "rel-key", []trakt.MovieRelease{
 		{Country: "us", Certification: "PG-13", ReleaseDate: "2008-07-18", ReleaseType: "theatrical"},
 	})
@@ -874,6 +931,8 @@ func TestGetMovieReleases(t *testing.T) {
 }
 
 func TestGetMovieReleasesAllCountries(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight/releases", "relall-key", []trakt.MovieRelease{
 		{Country: "us"},
 		{Country: "gb"},
@@ -891,6 +950,8 @@ func TestGetMovieReleasesAllCountries(t *testing.T) {
 }
 
 func TestPopularMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/popular", "pop-key", []trakt.Movie{
 		{Title: "Inception", Year: 2010, IDs: trakt.IDs{Trakt: 16662}},
 	})
@@ -913,6 +974,8 @@ func TestPopularMovies(t *testing.T) {
 }
 
 func TestMostWatchedMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/watched/weekly", "mw-key", []trakt.PlayedMovie{
 		{WatcherCount: 500, Movie: trakt.Movie{Title: "Fight Club"}},
 	})
@@ -929,6 +992,8 @@ func TestMostWatchedMovies(t *testing.T) {
 }
 
 func TestGetShowAliases(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/aliases", "sa-key", []trakt.Alias{
 		{Title: "Totál Szívás", Country: "hu"},
 	})
@@ -945,6 +1010,8 @@ func TestGetShowAliases(t *testing.T) {
 }
 
 func TestGetShowTranslations(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/translations/de", "st-key", []trakt.ShowTranslation{
 		{Title: "Breaking Bad", Overview: "Ein Chemielehrer...", Language: "de"},
 	})
@@ -964,6 +1031,8 @@ func TestGetShowTranslations(t *testing.T) {
 }
 
 func TestGetShowPeople(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/people", "sp-key", trakt.People{
 		Cast: []trakt.CastMember{{Characters: []string{"Walter White"}, Person: trakt.Person{Name: "Bryan Cranston"}}},
 	})
@@ -983,6 +1052,8 @@ func TestGetShowPeople(t *testing.T) {
 }
 
 func TestGetShowRatings(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/ratings", "sr-key", trakt.Ratings{Rating: 9.4, Votes: 80000})
 	defer ts.Close()
 
@@ -997,6 +1068,8 @@ func TestGetShowRatings(t *testing.T) {
 }
 
 func TestGetShowStats(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/stats", "ss-key", trakt.Stats{
 		Watchers: 50000, Plays: 200000, Collectors: 30000, Comments: 500, Lists: 10000, Votes: 80000,
 	})
@@ -1013,6 +1086,8 @@ func TestGetShowStats(t *testing.T) {
 }
 
 func TestGetShowStudios(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/studios", "stu-key", []trakt.Studio{
 		{Name: "Sony Pictures Television", IDs: trakt.IDs{Trakt: 1}},
 	})
@@ -1029,6 +1104,8 @@ func TestGetShowStudios(t *testing.T) {
 }
 
 func TestTrendingShows(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/trending", "ts-key", []trakt.TrendingShow{
 		{Watchers: 100, Show: trakt.Show{Title: "Shogun", Year: 2024}},
 	})
@@ -1048,6 +1125,8 @@ func TestTrendingShows(t *testing.T) {
 }
 
 func TestMostPlayedShows(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/played/weekly", "mps-key", []trakt.PlayedShow{
 		{WatcherCount: 200, Show: trakt.Show{Title: "House of the Dragon"}},
 	})
@@ -1064,6 +1143,8 @@ func TestMostPlayedShows(t *testing.T) {
 }
 
 func TestMostWatchedShows(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/watched/monthly", "mws-key", []trakt.PlayedShow{
 		{WatcherCount: 300, Show: trakt.Show{Title: "The Bear"}},
 	})
@@ -1080,6 +1161,8 @@ func TestMostWatchedShows(t *testing.T) {
 }
 
 func TestAnticipatedShows(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/anticipated", "as-key", []trakt.AnticipatedShow{
 		{ListCount: 5000, Show: trakt.Show{Title: "The Last of Us"}},
 	})
@@ -1096,6 +1179,8 @@ func TestAnticipatedShows(t *testing.T) {
 }
 
 func TestGetSeasonEpisodes(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5", "se-key", []trakt.Episode{
 		{Season: 5, Number: 1, Title: "Live Free or Die"},
 		{Season: 5, Number: 16, Title: "Felina"},
@@ -1116,6 +1201,8 @@ func TestGetSeasonEpisodes(t *testing.T) {
 }
 
 func TestGetEpisodeStats(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/episodes/16/stats", "es-key", trakt.Stats{
 		Watchers: 10000, Plays: 50000,
 	})
@@ -1132,6 +1219,8 @@ func TestGetEpisodeStats(t *testing.T) {
 }
 
 func TestCalendarNewShows(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/calendars/all/shows/new/2024-01-01/30", "cns-key", []trakt.CalendarShow{
 		{FirstAired: "2024-01-15", Show: trakt.Show{Title: "New Show"}},
 	})
@@ -1148,6 +1237,8 @@ func TestCalendarNewShows(t *testing.T) {
 }
 
 func TestCalendarSeasonPremieres(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/calendars/all/shows/premieres/2024-03-01/14", "csp-key", []trakt.CalendarShow{
 		{FirstAired: "2024-03-10", Show: trakt.Show{Title: "Premiere Show"}},
 	})
@@ -1164,6 +1255,8 @@ func TestCalendarSeasonPremieres(t *testing.T) {
 }
 
 func TestCertifications(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/certifications/movies", "cert-key", []trakt.Certification{
 		{Name: "PG-13", Slug: "pg-13", Description: "Parents Strongly Cautioned"},
 	})
@@ -1183,6 +1276,8 @@ func TestCertifications(t *testing.T) {
 }
 
 func TestCountries(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/countries/movies", "co-key", []trakt.Country{
 		{Name: "United States", Code: "us"},
 	})
@@ -1202,6 +1297,8 @@ func TestCountries(t *testing.T) {
 }
 
 func TestLanguages(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/languages/movies", "lang-key", []trakt.Language{
 		{Name: "English", Code: "en"},
 	})
@@ -1223,6 +1320,8 @@ func TestLanguages(t *testing.T) {
 // Tests for new user-authenticated methods.
 
 func TestGetUpdatedMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/updates/2024-01-01", "upd-key", []trakt.UpdatedMovie{
 		{UpdatedAt: "2024-01-02T10:00:00.000Z", Movie: trakt.Movie{Title: "Updated Film", IDs: trakt.IDs{Trakt: 1}}},
 	})
@@ -1245,6 +1344,8 @@ func TestGetUpdatedMovies(t *testing.T) {
 }
 
 func TestGetUpdatedShows(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/updates/2024-06-01", "upds-key", []trakt.UpdatedShow{
 		{UpdatedAt: "2024-06-02T08:00:00.000Z", Show: trakt.Show{Title: "Updated Show"}},
 	})
@@ -1264,6 +1365,8 @@ func TestGetUpdatedShows(t *testing.T) {
 }
 
 func TestGetProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/users/me", "prof-key", "user-tok", trakt.UserProfile{
 		Username: "sean", Name: "Sean Rudford", VIP: true, JoinedAt: "2010-09-25T17:49:25.000Z",
 	})
@@ -1284,6 +1387,8 @@ func TestGetProfile(t *testing.T) {
 }
 
 func TestGetUserStats(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/users/me/stats", "stats-key", "user-tok", trakt.UserStats{
 		Movies:   trakt.UserMovieStats{Plays: 500, Watched: 480, Minutes: 60000},
 		Episodes: trakt.UserEpisodeStats{Plays: 5000, Watched: 4500, Minutes: 200000},
@@ -1305,6 +1410,8 @@ func TestGetUserStats(t *testing.T) {
 }
 
 func TestGetWatchlist(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/sync/watchlist/movies", "wl-key", "wl-tok", []trakt.WatchlistItem{
 		{Rank: 1, ListedAt: "2024-01-01T00:00:00.000Z", Type: "movie", Movie: &trakt.Movie{Title: "Dune: Part Three", IDs: trakt.IDs{Trakt: 1}}},
 	})
@@ -1328,6 +1435,8 @@ func TestGetWatchlist(t *testing.T) {
 }
 
 func TestGetWatchlistAll(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/sync/watchlist", "wla-key", "wla-tok", []trakt.WatchlistItem{
 		{Rank: 1, Type: "movie"},
 		{Rank: 2, Type: "show"},
@@ -1346,6 +1455,8 @@ func TestGetWatchlistAll(t *testing.T) {
 }
 
 func TestAddToWatchlist(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/sync/watchlist", "aw-key", "aw-tok", trakt.SyncResponse{
 		Added: &trakt.SyncCount{Movies: 1},
 	})
@@ -1365,6 +1476,8 @@ func TestAddToWatchlist(t *testing.T) {
 }
 
 func TestRemoveFromWatchlist(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/sync/watchlist/remove", "rw-key", "rw-tok", trakt.SyncResponse{
 		Deleted: &trakt.SyncCount{Movies: 1},
 	})
@@ -1384,6 +1497,8 @@ func TestRemoveFromWatchlist(t *testing.T) {
 }
 
 func TestGetCollection(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/sync/collection/movies", "gc-key", "gc-tok", []trakt.CollectionItem{
 		{CollectedAt: "2024-01-01T00:00:00.000Z", Movie: &trakt.Movie{Title: "Inception"}},
 	})
@@ -1404,6 +1519,8 @@ func TestGetCollection(t *testing.T) {
 }
 
 func TestAddToCollection(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/sync/collection", "ac-key", "ac-tok", trakt.SyncResponse{
 		Added: &trakt.SyncCount{Movies: 2, Shows: 1},
 	})
@@ -1424,6 +1541,8 @@ func TestAddToCollection(t *testing.T) {
 }
 
 func TestRemoveFromCollection(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/sync/collection/remove", "rc-key", "rc-tok", trakt.SyncResponse{
 		Deleted: &trakt.SyncCount{Movies: 1},
 	})
@@ -1443,6 +1562,8 @@ func TestRemoveFromCollection(t *testing.T) {
 }
 
 func TestGetHistory(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/sync/history/movies", "gh-key", "gh-tok", []trakt.HistoryItem{
 		{ID: 123, WatchedAt: "2024-01-15T20:00:00.000Z", Action: "watch", Type: "movie", Movie: &trakt.Movie{Title: "Oppenheimer"}},
 	})
@@ -1463,6 +1584,8 @@ func TestGetHistory(t *testing.T) {
 }
 
 func TestGetHistoryAll(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/sync/history", "gha-key", "gha-tok", []trakt.HistoryItem{
 		{ID: 1, Type: "movie"},
 		{ID: 2, Type: "episode"},
@@ -1481,6 +1604,8 @@ func TestGetHistoryAll(t *testing.T) {
 }
 
 func TestAddToHistory(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/sync/history", "ah-key", "ah-tok", trakt.SyncResponse{
 		Added: &trakt.SyncCount{Movies: 1, Episodes: 3},
 	})
@@ -1500,6 +1625,8 @@ func TestAddToHistory(t *testing.T) {
 }
 
 func TestRemoveFromHistory(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/sync/history/remove", "rh-key", "rh-tok", trakt.SyncResponse{
 		Deleted: &trakt.SyncCount{Episodes: 2},
 	})
@@ -1519,6 +1646,8 @@ func TestRemoveFromHistory(t *testing.T) {
 }
 
 func TestGetRatings(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/sync/ratings/movies", "gr-key", "gr-tok", []trakt.RatedItem{
 		{RatedAt: "2024-01-01T00:00:00.000Z", Rating: 10, Type: "movie", Movie: &trakt.Movie{Title: "The Shawshank Redemption"}},
 	})
@@ -1539,6 +1668,8 @@ func TestGetRatings(t *testing.T) {
 }
 
 func TestGetRatingsAll(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/sync/ratings", "gra-key", "gra-tok", []trakt.RatedItem{
 		{Rating: 8, Type: "movie"},
 		{Rating: 9, Type: "show"},
@@ -1557,6 +1688,8 @@ func TestGetRatingsAll(t *testing.T) {
 }
 
 func TestAddRatings(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/sync/ratings", "ar-key", "ar-tok", trakt.SyncResponse{
 		Added: &trakt.SyncCount{Movies: 1},
 	})
@@ -1576,6 +1709,8 @@ func TestAddRatings(t *testing.T) {
 }
 
 func TestRemoveRatings(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/sync/ratings/remove", "rr-key", "rr-tok", trakt.SyncResponse{
 		Deleted: &trakt.SyncCount{Movies: 1},
 	})
@@ -1595,6 +1730,8 @@ func TestRemoveRatings(t *testing.T) {
 }
 
 func TestGetUserLists(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/users/me/lists", "ul-key", "ul-tok", []trakt.UserList{
 		{Name: "Marvel", Description: "MCU films", Privacy: "public", ItemCount: 30, IDs: trakt.IDs{Trakt: 55}},
 	})
@@ -1615,6 +1752,8 @@ func TestGetUserLists(t *testing.T) {
 }
 
 func TestCreateList(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/users/me/lists", "cl-key", "cl-tok", trakt.UserList{
 		Name: "Horror", Privacy: "private", IDs: trakt.IDs{Trakt: 100},
 	})
@@ -1632,6 +1771,8 @@ func TestCreateList(t *testing.T) {
 }
 
 func TestUpdateList(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPut, "/users/me/lists/horror", "upl-key", "upl-tok", nil)
 	defer ts.Close()
 
@@ -1644,6 +1785,8 @@ func TestUpdateList(t *testing.T) {
 }
 
 func TestDeleteList(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodDelete, "/users/me/lists/horror", "dl-key", "dl-tok", nil)
 	defer ts.Close()
 
@@ -1656,6 +1799,8 @@ func TestDeleteList(t *testing.T) {
 }
 
 func TestGetListItems(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/users/me/lists/marvel/items", "gli-key", "gli-tok", []trakt.ListItem{
 		{Rank: 1, Type: "movie", Movie: &trakt.Movie{Title: "Iron Man"}},
 		{Rank: 2, Type: "movie", Movie: &trakt.Movie{Title: "The Avengers"}},
@@ -1677,6 +1822,8 @@ func TestGetListItems(t *testing.T) {
 }
 
 func TestAddListItems(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/users/me/lists/marvel/items", "ali-key", "ali-tok", trakt.SyncResponse{
 		Added: &trakt.SyncCount{Movies: 1},
 	})
@@ -1696,6 +1843,8 @@ func TestAddListItems(t *testing.T) {
 }
 
 func TestRemoveListItems(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/users/me/lists/marvel/items/remove", "rli-key", "rli-tok", trakt.SyncResponse{
 		Deleted: &trakt.SyncCount{Movies: 1},
 	})
@@ -1715,6 +1864,8 @@ func TestRemoveListItems(t *testing.T) {
 }
 
 func TestScrobbleStart(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/scrobble/start", "ss-key", "ss-tok", trakt.ScrobbleResponse{
 		ID: 1, Action: "start", Movie: &trakt.Movie{Title: "Inception"},
 	})
@@ -1738,6 +1889,8 @@ func TestScrobbleStart(t *testing.T) {
 }
 
 func TestScrobblePause(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/scrobble/pause", "sp-key", "sp-tok", trakt.ScrobbleResponse{
 		ID: 2, Action: "pause",
 	})
@@ -1758,6 +1911,8 @@ func TestScrobblePause(t *testing.T) {
 }
 
 func TestScrobbleStop(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/scrobble/stop", "st-key", "st-tok", trakt.ScrobbleResponse{
 		ID: 3, Action: "scrobble",
 	})
@@ -1778,6 +1933,8 @@ func TestScrobbleStop(t *testing.T) {
 }
 
 func TestCheckin(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/checkin", "ci-key", "ci-tok", trakt.CheckinResponse{
 		ID: 10, WatchedAt: "2024-06-15T20:00:00.000Z", Movie: &trakt.Movie{Title: "Interstellar"},
 	})
@@ -1801,6 +1958,8 @@ func TestCheckin(t *testing.T) {
 }
 
 func TestCancelCheckin(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodDelete, "/checkin", "cc-key", "cc-tok", nil)
 	defer ts.Close()
 
@@ -1813,6 +1972,8 @@ func TestCancelCheckin(t *testing.T) {
 }
 
 func TestGetMovieRecommendations(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/recommendations/movies", "mr-key", "mr-tok", []trakt.Movie{
 		{Title: "Arrival", Year: 2016, IDs: trakt.IDs{Trakt: 212691}},
 		{Title: "Ex Machina", Year: 2014, IDs: trakt.IDs{Trakt: 184309}},
@@ -1837,6 +1998,8 @@ func TestGetMovieRecommendations(t *testing.T) {
 }
 
 func TestGetShowRecommendations(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/recommendations/shows", "sr-key", "sr-tok", []trakt.Show{
 		{Title: "Severance", Year: 2022, IDs: trakt.IDs{Trakt: 168110}},
 	})
@@ -1859,6 +2022,8 @@ func TestGetShowRecommendations(t *testing.T) {
 // Tests for new methods.
 
 func TestHideMovieRecommendation(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodDelete, "/recommendations/movies/inception-2010", "hm-key", "hm-tok", nil)
 	defer ts.Close()
 
@@ -1871,6 +2036,8 @@ func TestHideMovieRecommendation(t *testing.T) {
 }
 
 func TestHideShowRecommendation(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodDelete, "/recommendations/shows/breaking-bad", "hs-key", "hs-tok", nil)
 	defer ts.Close()
 
@@ -1883,6 +2050,8 @@ func TestHideShowRecommendation(t *testing.T) {
 }
 
 func TestMostCollectedMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/collected/weekly", "mc-key", []trakt.PlayedMovie{
 		{CollectedCount: 5000, Movie: trakt.Movie{Title: "Inception", IDs: trakt.IDs{Trakt: 16662}}},
 	})
@@ -1902,6 +2071,8 @@ func TestMostCollectedMovies(t *testing.T) {
 }
 
 func TestMostCollectedShows(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/collected/monthly", "mcs-key", []trakt.PlayedShow{
 		{CollectedCount: 3000, Show: trakt.Show{Title: "Breaking Bad"}},
 	})
@@ -1918,6 +2089,8 @@ func TestMostCollectedShows(t *testing.T) {
 }
 
 func TestGetMovieComments(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight/comments/newest", "mcom-key", []trakt.Comment{
 		{ID: 1, Comment: "Great movie!", Spoiler: false, Likes: 10},
 	})
@@ -1937,6 +2110,8 @@ func TestGetMovieComments(t *testing.T) {
 }
 
 func TestGetMovieRelated(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight/related", "mrel-key", []trakt.Movie{
 		{Title: "Batman Begins", Year: 2005, IDs: trakt.IDs{Trakt: 119}},
 	})
@@ -1956,6 +2131,8 @@ func TestGetMovieRelated(t *testing.T) {
 }
 
 func TestGetMovieLists(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight/lists/personal/popular", "mlist-key", []trakt.UserList{
 		{Name: "Best Superhero Movies", ItemCount: 50, IDs: trakt.IDs{Trakt: 1}},
 	})
@@ -1975,6 +2152,8 @@ func TestGetMovieLists(t *testing.T) {
 }
 
 func TestGetMovieWatching(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/the-dark-knight/watching", "mw-key", []trakt.WatchingItem{
 		{Action: "watching", Type: "movie"},
 	})
@@ -1991,6 +2170,8 @@ func TestGetMovieWatching(t *testing.T) {
 }
 
 func TestGetShowComments(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/comments/newest", "scom-key", []trakt.Comment{
 		{ID: 2, Comment: "Best show ever"},
 	})
@@ -2007,6 +2188,8 @@ func TestGetShowComments(t *testing.T) {
 }
 
 func TestGetShowRelated(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/related", "srel-key", []trakt.Show{
 		{Title: "Better Call Saul", Year: 2015},
 	})
@@ -2026,6 +2209,8 @@ func TestGetShowRelated(t *testing.T) {
 }
 
 func TestGetShowLists(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/lists", "slist-key", []trakt.UserList{
 		{Name: "Top Drama", IDs: trakt.IDs{Trakt: 2}},
 	})
@@ -2042,6 +2227,8 @@ func TestGetShowLists(t *testing.T) {
 }
 
 func TestGetShowWatching(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/watching", "sw-key", []trakt.WatchingItem{
 		{Action: "watching", Type: "episode"},
 	})
@@ -2058,6 +2245,8 @@ func TestGetShowWatching(t *testing.T) {
 }
 
 func TestGetShowWatchedProgress(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/shows/breaking-bad/progress/watched", "swp-key", "swp-tok", trakt.WatchedProgress{
 		Aired: 62, Completed: 60, Seasons: []trakt.SeasonProgress{{Number: 1, Aired: 7, Completed: 7}},
 	})
@@ -2078,6 +2267,8 @@ func TestGetShowWatchedProgress(t *testing.T) {
 }
 
 func TestGetShowCollectionProgress(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/shows/breaking-bad/progress/collection", "scp-key", "scp-tok", trakt.CollectionProgress{
 		Aired: 62, Completed: 50,
 	})
@@ -2095,6 +2286,8 @@ func TestGetShowCollectionProgress(t *testing.T) {
 }
 
 func TestGetSeasonComments(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/comments/newest", "secom-key", []trakt.Comment{
 		{ID: 10, Comment: "Best season"},
 	})
@@ -2111,6 +2304,8 @@ func TestGetSeasonComments(t *testing.T) {
 }
 
 func TestGetSeasonRatings(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/ratings", "serat-key", trakt.Ratings{Rating: 9.8, Votes: 15000})
 	defer ts.Close()
 
@@ -2125,6 +2320,8 @@ func TestGetSeasonRatings(t *testing.T) {
 }
 
 func TestGetSeasonStats(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/stats", "sest-key", trakt.Stats{Watchers: 20000, Plays: 80000})
 	defer ts.Close()
 
@@ -2139,6 +2336,8 @@ func TestGetSeasonStats(t *testing.T) {
 }
 
 func TestGetSeasonWatching(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/watching", "sew-key", []trakt.WatchingItem{
 		{Action: "watching", Type: "episode"},
 	})
@@ -2155,6 +2354,8 @@ func TestGetSeasonWatching(t *testing.T) {
 }
 
 func TestGetSeasonPeople(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/people", "sep-key", trakt.People{
 		Cast: []trakt.CastMember{{Characters: []string{"Walter White"}, Person: trakt.Person{Name: "Bryan Cranston"}}},
 	})
@@ -2171,6 +2372,8 @@ func TestGetSeasonPeople(t *testing.T) {
 }
 
 func TestGetSeasonLists(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/lists", "sel-key", []trakt.UserList{
 		{Name: "Best Seasons", IDs: trakt.IDs{Trakt: 3}},
 	})
@@ -2187,6 +2390,8 @@ func TestGetSeasonLists(t *testing.T) {
 }
 
 func TestGetEpisodeTranslations(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/1/episodes/1/translations/de", "ept-key", []trakt.EpisodeTranslation{
 		{Title: "Pilot", Overview: "Ein Lehrer...", Language: "de"},
 	})
@@ -2206,6 +2411,8 @@ func TestGetEpisodeTranslations(t *testing.T) {
 }
 
 func TestGetEpisodeComments(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/episodes/16/comments", "epc-key", []trakt.Comment{
 		{ID: 20, Comment: "Perfect ending"},
 	})
@@ -2222,6 +2429,8 @@ func TestGetEpisodeComments(t *testing.T) {
 }
 
 func TestGetEpisodeLists(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/episodes/16/lists", "epl-key", []trakt.UserList{
 		{Name: "Best Finales", IDs: trakt.IDs{Trakt: 4}},
 	})
@@ -2238,6 +2447,8 @@ func TestGetEpisodeLists(t *testing.T) {
 }
 
 func TestGetEpisodePeople(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/episodes/16/people", "epp-key", trakt.People{
 		Cast: []trakt.CastMember{{Characters: []string{"Walter White"}, Person: trakt.Person{Name: "Bryan Cranston"}}},
 	})
@@ -2254,6 +2465,8 @@ func TestGetEpisodePeople(t *testing.T) {
 }
 
 func TestGetEpisodeWatching(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/breaking-bad/seasons/5/episodes/16/watching", "epw-key", []trakt.WatchingItem{
 		{Action: "watching", Type: "episode"},
 	})
@@ -2270,6 +2483,8 @@ func TestGetEpisodeWatching(t *testing.T) {
 }
 
 func TestGetPersonMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/people/bryan-cranston/movies", "pm-key", trakt.PersonMovieCredits{
 		Cast: []trakt.PersonMovieCast{
 			{Characters: []string{"Walter White"}, Movie: trakt.Movie{Title: "Breaking Bad Movie"}},
@@ -2288,6 +2503,8 @@ func TestGetPersonMovies(t *testing.T) {
 }
 
 func TestGetPersonShows(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/people/bryan-cranston/shows", "ps-key", trakt.PersonShowCredits{
 		Cast: []trakt.PersonShowCast{
 			{Characters: []string{"Walter White"}, Show: trakt.Show{Title: "Breaking Bad"}},
@@ -2306,6 +2523,8 @@ func TestGetPersonShows(t *testing.T) {
 }
 
 func TestGetPersonLists(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/people/bryan-cranston/lists", "pl-key", []trakt.UserList{
 		{Name: "Great Actors", IDs: trakt.IDs{Trakt: 5}},
 	})
@@ -2322,6 +2541,8 @@ func TestGetPersonLists(t *testing.T) {
 }
 
 func TestMyCalendarMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/calendars/my/movies/2024-01-01/7", "mycm-key", "mycm-tok", []trakt.CalendarMovie{
 		{Released: "2024-01-05", Movie: trakt.Movie{Title: "My Movie"}},
 	})
@@ -2339,6 +2560,8 @@ func TestMyCalendarMovies(t *testing.T) {
 }
 
 func TestMyCalendarShows(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/calendars/my/shows/2024-01-01/7", "mycs-key", "mycs-tok", []trakt.CalendarShow{
 		{FirstAired: "2024-01-03", Show: trakt.Show{Title: "My Show"}},
 	})
@@ -2356,6 +2579,8 @@ func TestMyCalendarShows(t *testing.T) {
 }
 
 func TestMyCalendarNewShows(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/calendars/my/shows/new/2024-01-01/30", "mycns-key", "mycns-tok", []trakt.CalendarShow{
 		{FirstAired: "2024-01-15", Show: trakt.Show{Title: "New Premiere"}},
 	})
@@ -2373,6 +2598,8 @@ func TestMyCalendarNewShows(t *testing.T) {
 }
 
 func TestMyCalendarSeasonPremieres(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/calendars/my/shows/premieres/2024-03-01/14", "mycsp-key", "mycsp-tok", []trakt.CalendarShow{
 		{FirstAired: "2024-03-10", Show: trakt.Show{Title: "Season Premiere"}},
 	})
@@ -2390,6 +2617,8 @@ func TestMyCalendarSeasonPremieres(t *testing.T) {
 }
 
 func TestMyCalendarDVD(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/calendars/my/dvd/2024-01-01/30", "mydvd-key", "mydvd-tok", []trakt.CalendarDVDMovie{
 		{Released: "2024-01-20", Movie: trakt.Movie{Title: "DVD Release"}},
 	})
@@ -2407,6 +2636,8 @@ func TestMyCalendarDVD(t *testing.T) {
 }
 
 func TestCalendarDVD(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/calendars/all/dvd/2024-01-01/30", "dvd-key", []trakt.CalendarDVDMovie{
 		{Released: "2024-01-20", Movie: trakt.Movie{Title: "DVD Release"}},
 	})
@@ -2423,6 +2654,8 @@ func TestCalendarDVD(t *testing.T) {
 }
 
 func TestGetComment(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/comments/417", "gc-key", trakt.Comment{
 		ID: 417, Comment: "Amazing film!", Likes: 5,
 	})
@@ -2442,6 +2675,8 @@ func TestGetComment(t *testing.T) {
 }
 
 func TestPostComment(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/comments", "pc-key", "pc-tok", trakt.Comment{
 		ID: 500, Comment: "Great movie!", Spoiler: false,
 	})
@@ -2462,6 +2697,8 @@ func TestPostComment(t *testing.T) {
 }
 
 func TestDeleteComment(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodDelete, "/comments/500", "dc-key", "dc-tok", nil)
 	defer ts.Close()
 
@@ -2474,6 +2711,8 @@ func TestDeleteComment(t *testing.T) {
 }
 
 func TestGetCommentReplies(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/comments/417/replies", "cr-key", []trakt.Comment{
 		{ID: 418, Comment: "I agree!", ParentID: 417},
 	})
@@ -2493,6 +2732,8 @@ func TestGetCommentReplies(t *testing.T) {
 }
 
 func TestPostCommentReply(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/comments/417/replies", "pcr-key", "pcr-tok", trakt.Comment{
 		ID: 419, Comment: "Thanks!", ParentID: 417,
 	})
@@ -2510,6 +2751,8 @@ func TestPostCommentReply(t *testing.T) {
 }
 
 func TestGetCommentItem(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/comments/417/item", "ci-key", trakt.CommentItem{
 		Type:    "movie",
 		Comment: trakt.Comment{ID: 417},
@@ -2531,6 +2774,8 @@ func TestGetCommentItem(t *testing.T) {
 }
 
 func TestLikeComment(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/comments/417/like", "lc-key", "lc-tok", nil)
 	defer ts.Close()
 
@@ -2543,6 +2788,8 @@ func TestLikeComment(t *testing.T) {
 }
 
 func TestUnlikeComment(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodDelete, "/comments/417/like", "ulc-key", "ulc-tok", nil)
 	defer ts.Close()
 
@@ -2555,6 +2802,8 @@ func TestUnlikeComment(t *testing.T) {
 }
 
 func TestTrendingComments(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/comments/trending/reviews/movies", "tc-key", []trakt.CommentItem{
 		{Type: "movie", Comment: trakt.Comment{ID: 1, Comment: "Trending review"}},
 	})
@@ -2571,6 +2820,8 @@ func TestTrendingComments(t *testing.T) {
 }
 
 func TestRecentComments(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/comments/recent", "rc-key", []trakt.CommentItem{
 		{Type: "show", Comment: trakt.Comment{ID: 2, Comment: "Recent comment"}},
 	})
@@ -2587,6 +2838,8 @@ func TestRecentComments(t *testing.T) {
 }
 
 func TestUpdatedComments(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/comments/updates", "uc-key", []trakt.CommentItem{
 		{Type: "movie", Comment: trakt.Comment{ID: 3}},
 	})
@@ -2603,6 +2856,8 @@ func TestUpdatedComments(t *testing.T) {
 }
 
 func TestGetNotes(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/notes", "gn-key", "gn-tok", []trakt.NoteItem{
 		{Type: "movie", Note: trakt.Note{ID: 1, Notes: "Watch again"}, Movie: &trakt.Movie{Title: "Inception"}},
 	})
@@ -2623,6 +2878,8 @@ func TestGetNotes(t *testing.T) {
 }
 
 func TestGetNote(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/notes/1", "gn1-key", "gn1-tok", trakt.NoteItem{
 		Type: "movie", Note: trakt.Note{ID: 1, Notes: "Watch again"},
 	})
@@ -2640,6 +2897,8 @@ func TestGetNote(t *testing.T) {
 }
 
 func TestAddNote(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/notes", "an-key", "an-tok", trakt.NoteItem{
 		Type: "movie", Note: trakt.Note{ID: 2, Notes: "New note"},
 	})
@@ -2660,6 +2919,8 @@ func TestAddNote(t *testing.T) {
 }
 
 func TestUpdateNote(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPut, "/notes/2", "un-key", "un-tok", nil)
 	defer ts.Close()
 
@@ -2672,6 +2933,8 @@ func TestUpdateNote(t *testing.T) {
 }
 
 func TestDeleteNote(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodDelete, "/notes/2", "dn-key", "dn-tok", nil)
 	defer ts.Close()
 
@@ -2684,6 +2947,8 @@ func TestDeleteNote(t *testing.T) {
 }
 
 func TestGetLastActivities(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/sync/last_activities", "la-key", "la-tok", trakt.LastActivities{
 		All:    "2024-06-15T20:00:00.000Z",
 		Movies: trakt.LastActivityTimes{WatchedAt: "2024-06-14T10:00:00.000Z"},
@@ -2702,6 +2967,8 @@ func TestGetLastActivities(t *testing.T) {
 }
 
 func TestGetPlaybackProgress(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/sync/playback/movies", "pp-key", "pp-tok", []trakt.PlaybackProgress{
 		{ID: 1, Progress: 45.5, Type: "movie", Movie: &trakt.Movie{Title: "Inception"}},
 	})
@@ -2722,6 +2989,8 @@ func TestGetPlaybackProgress(t *testing.T) {
 }
 
 func TestRemovePlaybackItem(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodDelete, "/sync/playback/1", "rpi-key", "rpi-tok", nil)
 	defer ts.Close()
 
@@ -2734,6 +3003,8 @@ func TestRemovePlaybackItem(t *testing.T) {
 }
 
 func TestGetWatched(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/sync/watched/movies", "gw-key", "gw-tok", []trakt.WatchedItem{
 		{Plays: 3, LastWatchedAt: "2024-06-01T00:00:00.000Z", Movie: &trakt.Movie{Title: "Inception"}},
 	})
@@ -2754,6 +3025,8 @@ func TestGetWatched(t *testing.T) {
 }
 
 func TestGetFavorites(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/sync/favorites/movies", "fav-key", "fav-tok", []trakt.FavoritesItem{
 		{Rank: 1, Type: "movie", Movie: &trakt.Movie{Title: "Inception"}},
 	})
@@ -2771,6 +3044,8 @@ func TestGetFavorites(t *testing.T) {
 }
 
 func TestAddToFavorites(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/sync/favorites", "af-key", "af-tok", trakt.SyncResponse{
 		Added: &trakt.SyncCount{Movies: 1},
 	})
@@ -2790,6 +3065,8 @@ func TestAddToFavorites(t *testing.T) {
 }
 
 func TestRemoveFromFavorites(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/sync/favorites/remove", "rf-key", "rf-tok", trakt.SyncResponse{
 		Deleted: &trakt.SyncCount{Movies: 1},
 	})
@@ -2809,6 +3086,8 @@ func TestRemoveFromFavorites(t *testing.T) {
 }
 
 func TestGetUserProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean", "up-key", trakt.UserProfile{
 		Username: "sean", Name: "Sean Rudford", VIP: true,
 	})
@@ -2825,6 +3104,8 @@ func TestGetUserProfile(t *testing.T) {
 }
 
 func TestGetUserWatchlist(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/watchlist/movies", "uw-key", []trakt.WatchlistItem{
 		{Rank: 1, Type: "movie", Movie: &trakt.Movie{Title: "Dune"}},
 	})
@@ -2841,6 +3122,8 @@ func TestGetUserWatchlist(t *testing.T) {
 }
 
 func TestGetUserListsByUsername(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/lists", "ulb-key", []trakt.UserList{
 		{Name: "Favorites", IDs: trakt.IDs{Trakt: 1}},
 	})
@@ -2857,6 +3140,8 @@ func TestGetUserListsByUsername(t *testing.T) {
 }
 
 func TestGetUserListByUsername(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/lists/favorites", "ulb1-key", trakt.UserList{
 		Name: "Favorites", IDs: trakt.IDs{Trakt: 1},
 	})
@@ -2873,6 +3158,8 @@ func TestGetUserListByUsername(t *testing.T) {
 }
 
 func TestGetUserListItemsByUsername(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/lists/favorites/items", "uli-key", []trakt.ListItem{
 		{Rank: 1, Type: "movie", Movie: &trakt.Movie{Title: "Inception"}},
 	})
@@ -2889,6 +3176,8 @@ func TestGetUserListItemsByUsername(t *testing.T) {
 }
 
 func TestGetUserRatings(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/ratings/movies", "urr-key", []trakt.RatedItem{
 		{Rating: 10, Type: "movie", Movie: &trakt.Movie{Title: "Inception"}},
 	})
@@ -2905,6 +3194,8 @@ func TestGetUserRatings(t *testing.T) {
 }
 
 func TestGetUserHistory(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/history/movies", "uh-key", []trakt.HistoryItem{
 		{ID: 1, Type: "movie", Movie: &trakt.Movie{Title: "Inception"}},
 	})
@@ -2921,6 +3212,8 @@ func TestGetUserHistory(t *testing.T) {
 }
 
 func TestGetUserCollection(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/collection/movies", "ucol-key", []trakt.CollectionItem{
 		{Movie: &trakt.Movie{Title: "Inception"}},
 	})
@@ -2937,6 +3230,8 @@ func TestGetUserCollection(t *testing.T) {
 }
 
 func TestGetUserStatsByUsername(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/stats", "ust-key", trakt.UserStats{
 		Movies: trakt.UserMovieStats{Plays: 100},
 	})
@@ -2953,6 +3248,8 @@ func TestGetUserStatsByUsername(t *testing.T) {
 }
 
 func TestGetFollowers(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/users/me/followers", "gf-key", "gf-tok", []trakt.UserFollower{
 		{FollowedAt: "2024-01-01T00:00:00.000Z", User: trakt.UserProfile{Username: "fan1"}},
 	})
@@ -2973,6 +3270,8 @@ func TestGetFollowers(t *testing.T) {
 }
 
 func TestGetFollowing(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/users/me/following", "gfo-key", "gfo-tok", []trakt.UserFollower{
 		{User: trakt.UserProfile{Username: "celeb1"}},
 	})
@@ -2990,6 +3289,8 @@ func TestGetFollowing(t *testing.T) {
 }
 
 func TestFollowUser(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/users/sean/follow", "fu-key", "fu-tok", nil)
 	defer ts.Close()
 
@@ -3002,6 +3303,8 @@ func TestFollowUser(t *testing.T) {
 }
 
 func TestUnfollowUser(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodDelete, "/users/sean/follow", "uu-key", "uu-tok", nil)
 	defer ts.Close()
 
@@ -3014,6 +3317,8 @@ func TestUnfollowUser(t *testing.T) {
 }
 
 func TestGetFollowRequests(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/users/requests", "fr-key", "fr-tok", []trakt.FollowRequest{
 		{ID: 1, RequestedAt: "2024-01-01T00:00:00.000Z", User: trakt.UserProfile{Username: "newuser"}},
 	})
@@ -3034,6 +3339,8 @@ func TestGetFollowRequests(t *testing.T) {
 }
 
 func TestApproveFollowRequest(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/users/requests/1", "afr-key", "afr-tok", nil)
 	defer ts.Close()
 
@@ -3046,6 +3353,8 @@ func TestApproveFollowRequest(t *testing.T) {
 }
 
 func TestDenyFollowRequest(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodDelete, "/users/requests/1", "dfr-key", "dfr-tok", nil)
 	defer ts.Close()
 
@@ -3058,6 +3367,8 @@ func TestDenyFollowRequest(t *testing.T) {
 }
 
 func TestGetUserFollowers(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/followers", "uf-key", []trakt.UserFollower{
 		{User: trakt.UserProfile{Username: "fan1"}},
 	})
@@ -3074,6 +3385,8 @@ func TestGetUserFollowers(t *testing.T) {
 }
 
 func TestGetUserFollowing(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/following", "ufo-key", []trakt.UserFollower{
 		{User: trakt.UserProfile{Username: "celeb1"}},
 	})
@@ -3090,6 +3403,8 @@ func TestGetUserFollowing(t *testing.T) {
 }
 
 func TestGetUpdatedMovieIDs(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/movies/updates/id/2024-01-01", "umi-key", []int{120, 121, 122})
 	defer ts.Close()
 
@@ -3107,6 +3422,8 @@ func TestGetUpdatedMovieIDs(t *testing.T) {
 }
 
 func TestGetUpdatedShowIDs(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/shows/updates/id/2024-06-01", "usi-key", []int{1388, 1389})
 	defer ts.Close()
 
@@ -3121,6 +3438,8 @@ func TestGetUpdatedShowIDs(t *testing.T) {
 }
 
 func TestGetHiddenItems(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodGet, "/users/hidden/recommendations", "hi-key", "hi-tok", []trakt.ListItem{
 		{Rank: 1, Type: "movie", Movie: &trakt.Movie{Title: "Hidden Movie"}},
 	})
@@ -3138,6 +3457,8 @@ func TestGetHiddenItems(t *testing.T) {
 }
 
 func TestAddHiddenItems(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/users/hidden/recommendations", "ahi-key", "ahi-tok", trakt.SyncResponse{
 		Added: &trakt.SyncCount{Movies: 1},
 	})
@@ -3157,6 +3478,8 @@ func TestAddHiddenItems(t *testing.T) {
 }
 
 func TestRemoveHiddenItems(t *testing.T) {
+	t.Parallel()
+
 	ts := newAuthServer(t, http.MethodPost, "/users/hidden/recommendations/remove", "rhi-key", "rhi-tok", trakt.SyncResponse{
 		Deleted: &trakt.SyncCount{Movies: 1},
 	})
@@ -3176,6 +3499,8 @@ func TestRemoveHiddenItems(t *testing.T) {
 }
 
 func TestGetUserWatching(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/watching", "uwt-key", trakt.WatchingItem{
 		Action: "watching", Type: "movie", Movie: &trakt.Movie{Title: "Inception"},
 	})
@@ -3192,6 +3517,8 @@ func TestGetUserWatching(t *testing.T) {
 }
 
 func TestGetUserWatched(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/watched/movies", "uwm-key", []trakt.WatchedItem{
 		{Plays: 5, Movie: &trakt.Movie{Title: "Inception"}},
 	})
@@ -3211,6 +3538,8 @@ func TestGetUserWatched(t *testing.T) {
 }
 
 func TestGetUserFavorites(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/users/sean/favorites/movies", "ufav-key", []trakt.FavoritesItem{
 		{Rank: 1, Type: "movie", Movie: &trakt.Movie{Title: "Inception"}},
 	})

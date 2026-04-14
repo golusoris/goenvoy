@@ -49,7 +49,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, v any) error
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
-			return err
+			return fmt.Errorf("opensubtitles: marshal request: %w", err)
 		}
 		bodyReader = bytes.NewReader(b)
 	}
@@ -75,7 +75,9 @@ func (c *Client) do(ctx context.Context, method, path string, body, v any) error
 	}
 
 	if v != nil {
-		return json.Unmarshal(respBody, v)
+		if err := json.Unmarshal(respBody, v); err != nil {
+			return fmt.Errorf("opensubtitles: decode response: %w", err)
+		}
 	}
 	return nil
 }

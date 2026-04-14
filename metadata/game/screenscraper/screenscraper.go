@@ -113,7 +113,10 @@ func (c *Client) get(ctx context.Context, endpoint string, params url.Values, v 
 		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(data)}
 	}
 
-	return json.Unmarshal(data, v)
+	if err := json.Unmarshal(data, v); err != nil {
+		return fmt.Errorf("screenscraper: decode response: %w", err)
+	}
+	return nil
 }
 
 // GameInfoOptions holds parameters for looking up a game.

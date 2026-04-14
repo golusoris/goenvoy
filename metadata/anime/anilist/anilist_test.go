@@ -45,6 +45,8 @@ func decodeRequest(t *testing.T, r *http.Request) map[string]any {
 }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	c := anilist.New()
 	if c == nil {
 		t.Fatal("expected non-nil client")
@@ -52,6 +54,8 @@ func TestNew(t *testing.T) {
 }
 
 func TestQuery(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Fatalf("expected POST, got %s", r.Method)
@@ -80,6 +84,8 @@ func TestQuery(t *testing.T) {
 }
 
 func TestGetMedia(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
@@ -113,6 +119,8 @@ func TestGetMedia(t *testing.T) {
 }
 
 func TestGetMediaByMalID(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
@@ -139,6 +147,8 @@ func TestGetMediaByMalID(t *testing.T) {
 }
 
 func TestSearchMedia(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
@@ -180,6 +190,8 @@ func TestSearchMedia(t *testing.T) {
 }
 
 func TestGetCharacter(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
@@ -208,6 +220,8 @@ func TestGetCharacter(t *testing.T) {
 }
 
 func TestSearchCharacters(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondGraphQL(t, w, map[string]any{
 			"Page": map[string]any{
@@ -227,6 +241,8 @@ func TestSearchCharacters(t *testing.T) {
 }
 
 func TestGetStaff(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondGraphQL(t, w, map[string]any{
 			"Staff": map[string]any{
@@ -248,6 +264,8 @@ func TestGetStaff(t *testing.T) {
 }
 
 func TestSearchStaff(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondGraphQL(t, w, map[string]any{
 			"Page": map[string]any{
@@ -267,6 +285,8 @@ func TestSearchStaff(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
@@ -289,6 +309,8 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetUserByName(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
@@ -311,6 +333,8 @@ func TestGetUserByName(t *testing.T) {
 }
 
 func TestGetGenres(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondGraphQL(t, w, map[string]any{
 			"GenreCollection": []string{"Action", "Comedy", "Drama"},
@@ -328,6 +352,8 @@ func TestGetGenres(t *testing.T) {
 }
 
 func TestGetTags(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		respondGraphQL(t, w, map[string]any{
 			"MediaTagCollection": []any{
@@ -347,6 +373,8 @@ func TestGetTags(t *testing.T) {
 }
 
 func TestGraphQLError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(map[string]any{
@@ -371,6 +399,8 @@ func TestGraphQLError(t *testing.T) {
 }
 
 func TestHTTPError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("Internal Server Error"))
@@ -384,12 +414,14 @@ func TestHTTPError(t *testing.T) {
 	if !errors.As(err, &httpErr) {
 		t.Fatalf("expected HTTPError, got %T: %v", err, err)
 	}
-	if httpErr.StatusCode != 500 {
+	if httpErr.StatusCode != http.StatusInternalServerError {
 		t.Fatalf("got status %d", httpErr.StatusCode)
 	}
 }
 
 func TestWithAccessToken(t *testing.T) {
+	t.Parallel()
+
 	var gotAuth string
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		gotAuth = r.Header.Get("Authorization")
@@ -417,6 +449,8 @@ func TestWithAccessToken(t *testing.T) {
 }
 
 func TestNoAccessTokenHeader(t *testing.T) {
+	t.Parallel()
+
 	var gotAuth string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotAuth = r.Header.Get("Authorization")

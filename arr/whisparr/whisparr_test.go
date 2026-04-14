@@ -92,6 +92,8 @@ func newV3MethodTestServer(t *testing.T, method, wantPath string) *httptest.Serv
 }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	_, err := whisparr.New("http://localhost:6969", "abc123")
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
@@ -99,6 +101,8 @@ func TestNew(t *testing.T) {
 }
 
 func TestNewInvalidURL(t *testing.T) {
+	t.Parallel()
+
 	_, err := whisparr.New("://bad", "key")
 	if err == nil {
 		t.Fatal("New() with bad URL should fail")
@@ -106,6 +110,8 @@ func TestNewInvalidURL(t *testing.T) {
 }
 
 func TestNewV3(t *testing.T) {
+	t.Parallel()
+
 	_, err := whisparr.NewV3("http://localhost:6969", "abc123")
 	if err != nil {
 		t.Fatalf("NewV3() error = %v", err)
@@ -113,6 +119,8 @@ func TestNewV3(t *testing.T) {
 }
 
 func TestNewV3InvalidURL(t *testing.T) {
+	t.Parallel()
+
 	_, err := whisparr.NewV3("://bad", "key")
 	if err == nil {
 		t.Fatal("NewV3() with bad URL should fail")
@@ -120,6 +128,8 @@ func TestNewV3InvalidURL(t *testing.T) {
 }
 
 func TestGetAllSeries(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/series", `[{"id":1,"title":"Test Site","monitored":true}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -133,6 +143,8 @@ func TestGetAllSeries(t *testing.T) {
 }
 
 func TestGetSeries(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/series/1", `{"id":1,"title":"Site A"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -146,6 +158,8 @@ func TestGetSeries(t *testing.T) {
 }
 
 func TestAddSeries(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -168,6 +182,8 @@ func TestAddSeries(t *testing.T) {
 }
 
 func TestDeleteSeries(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s, want DELETE", r.Method)
@@ -182,6 +198,8 @@ func TestDeleteSeries(t *testing.T) {
 }
 
 func TestLookupSeries(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/series/lookup?term=test", `[{"id":1,"title":"Found"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -195,6 +213,8 @@ func TestLookupSeries(t *testing.T) {
 }
 
 func TestGetEpisodes(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/episode?seriesId=1", `[{"id":1,"title":"Ep 1","actors":[{"name":"Jane","gender":"female"}]}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -211,6 +231,8 @@ func TestGetEpisodes(t *testing.T) {
 }
 
 func TestGetEpisodeFiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/episodefile?seriesId=1", `[{"id":1,"size":1024}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -224,6 +246,8 @@ func TestGetEpisodeFiles(t *testing.T) {
 }
 
 func TestV2SendCommand(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/command", `{"id":1,"name":"RefreshSeries","status":"queued"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -236,6 +260,8 @@ func TestV2SendCommand(t *testing.T) {
 }
 
 func TestV2GetSystemStatus(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/system/status", `{"appName":"Whisparr","version":"2.2.0"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -249,6 +275,8 @@ func TestV2GetSystemStatus(t *testing.T) {
 }
 
 func TestV2GetHealth(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/health", `[{"type":"warning","message":"test"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -262,6 +290,8 @@ func TestV2GetHealth(t *testing.T) {
 }
 
 func TestV2GetTags(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/tag", `[{"id":1,"label":"hd"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -275,6 +305,8 @@ func TestV2GetTags(t *testing.T) {
 }
 
 func TestV2GetQualityProfiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/qualityprofile", `[{"id":1,"name":"Any"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -288,6 +320,8 @@ func TestV2GetQualityProfiles(t *testing.T) {
 }
 
 func TestV2GetRootFolders(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/rootfolder", `[{"id":1,"path":"/data"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -301,6 +335,8 @@ func TestV2GetRootFolders(t *testing.T) {
 }
 
 func TestV3GetAllMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/movie", `[{"id":1,"title":"Scene 1","stashId":"abc","itemType":"scene"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -314,6 +350,8 @@ func TestV3GetAllMovies(t *testing.T) {
 }
 
 func TestV3GetMovie(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/movie/1", `{"id":1,"title":"Movie A","code":"ABC-123"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -327,6 +365,8 @@ func TestV3GetMovie(t *testing.T) {
 }
 
 func TestV3AddMovie(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -349,6 +389,8 @@ func TestV3AddMovie(t *testing.T) {
 }
 
 func TestV3DeleteMovie(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s, want DELETE", r.Method)
@@ -363,6 +405,8 @@ func TestV3DeleteMovie(t *testing.T) {
 }
 
 func TestV3LookupScene(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/lookup/scene?term=test", `[{"id":1,"title":"Found"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -376,6 +420,8 @@ func TestV3LookupScene(t *testing.T) {
 }
 
 func TestV3GetPerformers(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/performer", `[{"id":1,"name":"Jane Doe","gender":"female","stashId":"xyz"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -392,6 +438,8 @@ func TestV3GetPerformers(t *testing.T) {
 }
 
 func TestV3AddPerformer(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -414,6 +462,8 @@ func TestV3AddPerformer(t *testing.T) {
 }
 
 func TestV3DeletePerformer(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s, want DELETE", r.Method)
@@ -428,6 +478,8 @@ func TestV3DeletePerformer(t *testing.T) {
 }
 
 func TestV3GetStudios(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/studio", `[{"id":1,"title":"Studio X","stashId":"s1"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -441,6 +493,8 @@ func TestV3GetStudios(t *testing.T) {
 }
 
 func TestV3AddStudio(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -463,6 +517,8 @@ func TestV3AddStudio(t *testing.T) {
 }
 
 func TestV3DeleteStudio(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s, want DELETE", r.Method)
@@ -477,6 +533,8 @@ func TestV3DeleteStudio(t *testing.T) {
 }
 
 func TestV3GetCredits(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/credit?movieId=1", `[{"id":1,"personName":"Jane","type":"cast"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -490,6 +548,8 @@ func TestV3GetCredits(t *testing.T) {
 }
 
 func TestV3GetMoviesByPerformer(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/movie/listbyperformerforeignid?performerForeignId=abc", `[{"id":1,"title":"Scene 1"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -503,6 +563,8 @@ func TestV3GetMoviesByPerformer(t *testing.T) {
 }
 
 func TestV3GetSystemStatus(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/system/status", `{"appName":"Whisparr","version":"3.3.3"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -516,6 +578,8 @@ func TestV3GetSystemStatus(t *testing.T) {
 }
 
 func TestV3GetImportExclusions(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/exclusions", `[{"id":1,"movieTitle":"Excluded"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -529,6 +593,8 @@ func TestV3GetImportExclusions(t *testing.T) {
 }
 
 func TestV2ErrorResponse(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{"message":"Unauthorized"}`))
@@ -542,6 +608,8 @@ func TestV2ErrorResponse(t *testing.T) {
 }
 
 func TestV3ErrorResponse(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{"message":"Unauthorized"}`))
@@ -557,6 +625,8 @@ func TestV3ErrorResponse(t *testing.T) {
 // V2 untested methods.
 
 func TestUpdateSeries(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %s, want PUT", r.Method)
@@ -578,6 +648,8 @@ func TestUpdateSeries(t *testing.T) {
 }
 
 func TestGetEpisode(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/episode/5", `{"id":5,"title":"Scene 5"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -591,6 +663,8 @@ func TestGetEpisode(t *testing.T) {
 }
 
 func TestDeleteEpisodeFile(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s, want DELETE", r.Method)
@@ -605,6 +679,8 @@ func TestDeleteEpisodeFile(t *testing.T) {
 }
 
 func TestV2GetCalendar(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/calendar?start=2026-01-01&end=2026-01-31&unmonitored=false", `[{"id":1,"title":"Upcoming"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -618,6 +694,8 @@ func TestV2GetCalendar(t *testing.T) {
 }
 
 func TestV2Parse(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/parse?title=test+scene", `{"title":"test scene"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -631,6 +709,8 @@ func TestV2Parse(t *testing.T) {
 }
 
 func TestV2GetDiskSpace(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/diskspace", `[{"path":"/data","freeSpace":1000}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -644,6 +724,8 @@ func TestV2GetDiskSpace(t *testing.T) {
 }
 
 func TestV2GetQueue(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/queue?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -657,6 +739,8 @@ func TestV2GetQueue(t *testing.T) {
 }
 
 func TestV2CreateTag(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -676,6 +760,8 @@ func TestV2CreateTag(t *testing.T) {
 }
 
 func TestV2GetHistory(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/history?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -689,6 +775,8 @@ func TestV2GetHistory(t *testing.T) {
 }
 
 func TestV2UpdateSeasonPass(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -706,6 +794,8 @@ func TestV2UpdateSeasonPass(t *testing.T) {
 // V3 untested methods.
 
 func TestV3UpdateMovie(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %s, want PUT", r.Method)
@@ -727,6 +817,8 @@ func TestV3UpdateMovie(t *testing.T) {
 }
 
 func TestV3LookupMovie(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/lookup/movie?term=test", `[{"id":1,"title":"Found"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -740,6 +832,8 @@ func TestV3LookupMovie(t *testing.T) {
 }
 
 func TestV3GetMoviesByStudio(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/movie/listbystudioforeignid?studioForeignId=s1", `[{"id":1,"title":"Scene 1"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -753,6 +847,8 @@ func TestV3GetMoviesByStudio(t *testing.T) {
 }
 
 func TestV3GetMovieFile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/moviefile/1", `{"id":1,"size":2048}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -766,6 +862,8 @@ func TestV3GetMovieFile(t *testing.T) {
 }
 
 func TestV3DeleteMovieFile(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s, want DELETE", r.Method)
@@ -780,6 +878,8 @@ func TestV3DeleteMovieFile(t *testing.T) {
 }
 
 func TestV3EditMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %s, want PUT", r.Method)
@@ -795,6 +895,8 @@ func TestV3EditMovies(t *testing.T) {
 }
 
 func TestV3DeleteMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %s, want DELETE", r.Method)
@@ -810,6 +912,8 @@ func TestV3DeleteMovies(t *testing.T) {
 }
 
 func TestV3GetPerformer(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/performer/1", `{"id":1,"name":"Jane"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -823,6 +927,8 @@ func TestV3GetPerformer(t *testing.T) {
 }
 
 func TestV3UpdatePerformer(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %s, want PUT", r.Method)
@@ -844,6 +950,8 @@ func TestV3UpdatePerformer(t *testing.T) {
 }
 
 func TestV3GetStudio(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/studio/1", `{"id":1,"title":"Studio A"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -857,6 +965,8 @@ func TestV3GetStudio(t *testing.T) {
 }
 
 func TestV3UpdateStudio(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %s, want PUT", r.Method)
@@ -878,6 +988,8 @@ func TestV3UpdateStudio(t *testing.T) {
 }
 
 func TestV3GetCalendar(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/calendar?start=2026-01-01&end=2026-01-31&unmonitored=false", `[{"id":1,"title":"Upcoming"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -891,6 +1003,8 @@ func TestV3GetCalendar(t *testing.T) {
 }
 
 func TestV3SendCommand(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/command", `{"id":1,"name":"RefreshMovie","status":"queued"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -903,6 +1017,8 @@ func TestV3SendCommand(t *testing.T) {
 }
 
 func TestV3Parse(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/parse?title=test+movie", `{"title":"test movie"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -916,6 +1032,8 @@ func TestV3Parse(t *testing.T) {
 }
 
 func TestV3GetHealth(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/health", `[{"type":"warning","message":"test"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -929,6 +1047,8 @@ func TestV3GetHealth(t *testing.T) {
 }
 
 func TestV3GetDiskSpace(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/diskspace", `[{"path":"/data","freeSpace":1000}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -942,6 +1062,8 @@ func TestV3GetDiskSpace(t *testing.T) {
 }
 
 func TestV3GetQueue(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/queue?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -955,6 +1077,8 @@ func TestV3GetQueue(t *testing.T) {
 }
 
 func TestV3GetQualityProfiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/qualityprofile", `[{"id":1,"name":"Any"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -968,6 +1092,8 @@ func TestV3GetQualityProfiles(t *testing.T) {
 }
 
 func TestV3GetTags(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/tag", `[{"id":1,"label":"hd"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -981,6 +1107,8 @@ func TestV3GetTags(t *testing.T) {
 }
 
 func TestV3CreateTag(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -1000,6 +1128,8 @@ func TestV3CreateTag(t *testing.T) {
 }
 
 func TestV3GetRootFolders(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/rootfolder", `[{"id":1,"path":"/data"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -1013,6 +1143,8 @@ func TestV3GetRootFolders(t *testing.T) {
 }
 
 func TestV3GetHistory(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/history?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -1028,6 +1160,8 @@ func TestV3GetHistory(t *testing.T) {
 // V2 Extended Tests.
 
 func TestV2GetAutoTags(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/autotagging", `[{"id":1,"name":"test"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1041,6 +1175,8 @@ func TestV2GetAutoTags(t *testing.T) {
 }
 
 func TestV2GetAutoTag(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/autotagging/1", `{"id":1,"name":"test"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1054,6 +1190,8 @@ func TestV2GetAutoTag(t *testing.T) {
 }
 
 func TestV2CreateAutoTag(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/autotagging", `{"id":1,"name":"test"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1064,6 +1202,8 @@ func TestV2CreateAutoTag(t *testing.T) {
 }
 
 func TestV2UpdateAutoTag(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/autotagging/1", `{"id":1,"name":"updated"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1074,6 +1214,8 @@ func TestV2UpdateAutoTag(t *testing.T) {
 }
 
 func TestV2DeleteAutoTag(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1083,6 +1225,8 @@ func TestV2DeleteAutoTag(t *testing.T) {
 }
 
 func TestV2GetAutoTagSchema(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/autotagging/schema", `[{"name":"test"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1096,6 +1240,8 @@ func TestV2GetAutoTagSchema(t *testing.T) {
 }
 
 func TestV2GetBackups(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/system/backup", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1109,6 +1255,8 @@ func TestV2GetBackups(t *testing.T) {
 }
 
 func TestV2DeleteBackup(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1118,6 +1266,8 @@ func TestV2DeleteBackup(t *testing.T) {
 }
 
 func TestV2RestoreBackup(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/system/backup/restore/1", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1127,6 +1277,8 @@ func TestV2RestoreBackup(t *testing.T) {
 }
 
 func TestV2GetBlocklist(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/blocklist?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1140,6 +1292,8 @@ func TestV2GetBlocklist(t *testing.T) {
 }
 
 func TestV2DeleteBlocklistItem(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1149,6 +1303,8 @@ func TestV2DeleteBlocklistItem(t *testing.T) {
 }
 
 func TestV2BulkDeleteBlocklist(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1158,6 +1314,8 @@ func TestV2BulkDeleteBlocklist(t *testing.T) {
 }
 
 func TestV2GetCalendarByID(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/calendar/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1171,6 +1329,8 @@ func TestV2GetCalendarByID(t *testing.T) {
 }
 
 func TestV2GetCommands(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/command", `[{"id":1,"name":"test"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1184,6 +1344,8 @@ func TestV2GetCommands(t *testing.T) {
 }
 
 func TestV2GetCommand(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/command/1", `{"id":1,"name":"test"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1197,6 +1359,8 @@ func TestV2GetCommand(t *testing.T) {
 }
 
 func TestV2DeleteCommand(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1206,6 +1370,8 @@ func TestV2DeleteCommand(t *testing.T) {
 }
 
 func TestV2GetCustomFilters(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/customfilter", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1219,6 +1385,8 @@ func TestV2GetCustomFilters(t *testing.T) {
 }
 
 func TestV2GetCustomFilter(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/customfilter/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1232,6 +1400,8 @@ func TestV2GetCustomFilter(t *testing.T) {
 }
 
 func TestV2CreateCustomFilter(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/customfilter", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1242,6 +1412,8 @@ func TestV2CreateCustomFilter(t *testing.T) {
 }
 
 func TestV2UpdateCustomFilter(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/customfilter/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1252,6 +1424,8 @@ func TestV2UpdateCustomFilter(t *testing.T) {
 }
 
 func TestV2DeleteCustomFilter(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1261,6 +1435,8 @@ func TestV2DeleteCustomFilter(t *testing.T) {
 }
 
 func TestV2GetCustomFormats(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/customformat", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1274,6 +1450,8 @@ func TestV2GetCustomFormats(t *testing.T) {
 }
 
 func TestV2GetCustomFormat(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/customformat/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1287,6 +1465,8 @@ func TestV2GetCustomFormat(t *testing.T) {
 }
 
 func TestV2CreateCustomFormat(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/customformat", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1297,6 +1477,8 @@ func TestV2CreateCustomFormat(t *testing.T) {
 }
 
 func TestV2UpdateCustomFormat(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/customformat/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1307,6 +1489,8 @@ func TestV2UpdateCustomFormat(t *testing.T) {
 }
 
 func TestV2DeleteCustomFormat(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1316,6 +1500,8 @@ func TestV2DeleteCustomFormat(t *testing.T) {
 }
 
 func TestV2GetCustomFormatSchema(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/customformat/schema", `[{"name":"test"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1329,6 +1515,8 @@ func TestV2GetCustomFormatSchema(t *testing.T) {
 }
 
 func TestV2GetWantedMissing(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/wanted/missing?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1342,6 +1530,8 @@ func TestV2GetWantedMissing(t *testing.T) {
 }
 
 func TestV2GetWantedMissingByID(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/wanted/missing/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1355,6 +1545,8 @@ func TestV2GetWantedMissingByID(t *testing.T) {
 }
 
 func TestV2GetWantedCutoff(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/wanted/cutoff?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1368,6 +1560,8 @@ func TestV2GetWantedCutoff(t *testing.T) {
 }
 
 func TestV2GetWantedCutoffByID(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/wanted/cutoff/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1381,6 +1575,8 @@ func TestV2GetWantedCutoffByID(t *testing.T) {
 }
 
 func TestV2GetDelayProfiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/delayprofile", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1394,6 +1590,8 @@ func TestV2GetDelayProfiles(t *testing.T) {
 }
 
 func TestV2GetDelayProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/delayprofile/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1407,6 +1605,8 @@ func TestV2GetDelayProfile(t *testing.T) {
 }
 
 func TestV2CreateDelayProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/delayprofile", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1417,6 +1617,8 @@ func TestV2CreateDelayProfile(t *testing.T) {
 }
 
 func TestV2UpdateDelayProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/delayprofile/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1427,6 +1629,8 @@ func TestV2UpdateDelayProfile(t *testing.T) {
 }
 
 func TestV2DeleteDelayProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1436,6 +1640,8 @@ func TestV2DeleteDelayProfile(t *testing.T) {
 }
 
 func TestV2ReorderDelayProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/delayprofile/reorder/1?after=2", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1446,6 +1652,8 @@ func TestV2ReorderDelayProfile(t *testing.T) {
 }
 
 func TestV2GetDownloadClients(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/downloadclient", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1459,6 +1667,8 @@ func TestV2GetDownloadClients(t *testing.T) {
 }
 
 func TestV2GetDownloadClient(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/downloadclient/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1472,6 +1682,8 @@ func TestV2GetDownloadClient(t *testing.T) {
 }
 
 func TestV2CreateDownloadClient(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/downloadclient", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1482,6 +1694,8 @@ func TestV2CreateDownloadClient(t *testing.T) {
 }
 
 func TestV2UpdateDownloadClient(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/downloadclient/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1492,6 +1706,8 @@ func TestV2UpdateDownloadClient(t *testing.T) {
 }
 
 func TestV2DeleteDownloadClient(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1501,6 +1717,8 @@ func TestV2DeleteDownloadClient(t *testing.T) {
 }
 
 func TestV2GetDownloadClientSchema(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/downloadclient/schema", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1514,6 +1732,8 @@ func TestV2GetDownloadClientSchema(t *testing.T) {
 }
 
 func TestV2TestDownloadClient(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/downloadclient/test", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1523,6 +1743,8 @@ func TestV2TestDownloadClient(t *testing.T) {
 }
 
 func TestV2TestAllDownloadClients(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/downloadclient/testall", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1532,6 +1754,8 @@ func TestV2TestAllDownloadClients(t *testing.T) {
 }
 
 func TestV2BulkUpdateDownloadClients(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/downloadclient/bulk", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1542,6 +1766,8 @@ func TestV2BulkUpdateDownloadClients(t *testing.T) {
 }
 
 func TestV2BulkDeleteDownloadClients(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1551,6 +1777,8 @@ func TestV2BulkDeleteDownloadClients(t *testing.T) {
 }
 
 func TestV2DownloadClientAction(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/downloadclient/action/testAction", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1560,6 +1788,8 @@ func TestV2DownloadClientAction(t *testing.T) {
 }
 
 func TestV2GetDownloadClientConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/downloadclient", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1573,6 +1803,8 @@ func TestV2GetDownloadClientConfig(t *testing.T) {
 }
 
 func TestV2UpdateDownloadClientConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/downloadclient/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1583,6 +1815,8 @@ func TestV2UpdateDownloadClientConfig(t *testing.T) {
 }
 
 func TestV2UpdateEpisode(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/episode/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1593,6 +1827,8 @@ func TestV2UpdateEpisode(t *testing.T) {
 }
 
 func TestV2MonitorEpisodes(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/episode/monitor", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1603,6 +1839,8 @@ func TestV2MonitorEpisodes(t *testing.T) {
 }
 
 func TestV2GetEpisodeFile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/episodefile/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1616,6 +1854,8 @@ func TestV2GetEpisodeFile(t *testing.T) {
 }
 
 func TestV2UpdateEpisodeFile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/episodefile/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1626,6 +1866,8 @@ func TestV2UpdateEpisodeFile(t *testing.T) {
 }
 
 func TestV2EditEpisodeFiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/episodefile/editor", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1635,6 +1877,8 @@ func TestV2EditEpisodeFiles(t *testing.T) {
 }
 
 func TestV2BulkDeleteEpisodeFiles(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1644,6 +1888,8 @@ func TestV2BulkDeleteEpisodeFiles(t *testing.T) {
 }
 
 func TestV2BulkUpdateEpisodeFiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/episodefile/bulk", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1654,6 +1900,8 @@ func TestV2BulkUpdateEpisodeFiles(t *testing.T) {
 }
 
 func TestV2BrowseFileSystem(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/filesystem?path=%2Fdata", `{"directories":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1664,6 +1912,8 @@ func TestV2BrowseFileSystem(t *testing.T) {
 }
 
 func TestV2GetHostConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/host", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1677,6 +1927,8 @@ func TestV2GetHostConfig(t *testing.T) {
 }
 
 func TestV2UpdateHostConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/host/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1687,6 +1939,8 @@ func TestV2UpdateHostConfig(t *testing.T) {
 }
 
 func TestV2GetHistorySince(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/history/since?date=2024-01-01", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1700,6 +1954,8 @@ func TestV2GetHistorySince(t *testing.T) {
 }
 
 func TestV2GetHistorySeries(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/history/series?seriesId=1", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1713,6 +1969,8 @@ func TestV2GetHistorySeries(t *testing.T) {
 }
 
 func TestV2MarkHistoryFailed(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/history/failed/1", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1722,6 +1980,8 @@ func TestV2MarkHistoryFailed(t *testing.T) {
 }
 
 func TestV2GetImportLists(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/importlist", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1735,6 +1995,8 @@ func TestV2GetImportLists(t *testing.T) {
 }
 
 func TestV2GetImportList(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/importlist/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1748,6 +2010,8 @@ func TestV2GetImportList(t *testing.T) {
 }
 
 func TestV2CreateImportList(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/importlist", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1758,6 +2022,8 @@ func TestV2CreateImportList(t *testing.T) {
 }
 
 func TestV2UpdateImportList(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/importlist/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1768,6 +2034,8 @@ func TestV2UpdateImportList(t *testing.T) {
 }
 
 func TestV2DeleteImportList(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1777,6 +2045,8 @@ func TestV2DeleteImportList(t *testing.T) {
 }
 
 func TestV2GetImportListSchema(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/importlist/schema", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1790,6 +2060,8 @@ func TestV2GetImportListSchema(t *testing.T) {
 }
 
 func TestV2TestImportList(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/importlist/test", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1799,6 +2071,8 @@ func TestV2TestImportList(t *testing.T) {
 }
 
 func TestV2TestAllImportLists(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/importlist/testall", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1808,6 +2082,8 @@ func TestV2TestAllImportLists(t *testing.T) {
 }
 
 func TestV2GetImportListConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/importlist", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1821,6 +2097,8 @@ func TestV2GetImportListConfig(t *testing.T) {
 }
 
 func TestV2UpdateImportListConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/importlist/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1831,6 +2109,8 @@ func TestV2UpdateImportListConfig(t *testing.T) {
 }
 
 func TestV2GetImportListExclusions(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/importlistexclusion", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1844,6 +2124,8 @@ func TestV2GetImportListExclusions(t *testing.T) {
 }
 
 func TestV2GetImportListExclusion(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/importlistexclusion/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1857,6 +2139,8 @@ func TestV2GetImportListExclusion(t *testing.T) {
 }
 
 func TestV2CreateImportListExclusion(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/importlistexclusion", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1867,6 +2151,8 @@ func TestV2CreateImportListExclusion(t *testing.T) {
 }
 
 func TestV2UpdateImportListExclusion(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/importlistexclusion/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1877,6 +2163,8 @@ func TestV2UpdateImportListExclusion(t *testing.T) {
 }
 
 func TestV2DeleteImportListExclusion(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1886,6 +2174,8 @@ func TestV2DeleteImportListExclusion(t *testing.T) {
 }
 
 func TestV2GetIndexers(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/indexer", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1899,6 +2189,8 @@ func TestV2GetIndexers(t *testing.T) {
 }
 
 func TestV2GetIndexer(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/indexer/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1912,6 +2204,8 @@ func TestV2GetIndexer(t *testing.T) {
 }
 
 func TestV2CreateIndexer(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/indexer", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1922,6 +2216,8 @@ func TestV2CreateIndexer(t *testing.T) {
 }
 
 func TestV2UpdateIndexer(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/indexer/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1932,6 +2228,8 @@ func TestV2UpdateIndexer(t *testing.T) {
 }
 
 func TestV2DeleteIndexer(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1941,6 +2239,8 @@ func TestV2DeleteIndexer(t *testing.T) {
 }
 
 func TestV2GetIndexerSchema(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/indexer/schema", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1954,6 +2254,8 @@ func TestV2GetIndexerSchema(t *testing.T) {
 }
 
 func TestV2TestIndexer(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/indexer/test", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1963,6 +2265,8 @@ func TestV2TestIndexer(t *testing.T) {
 }
 
 func TestV2TestAllIndexers(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/indexer/testall", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1972,6 +2276,8 @@ func TestV2TestAllIndexers(t *testing.T) {
 }
 
 func TestV2GetIndexerConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/indexer", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1985,6 +2291,8 @@ func TestV2GetIndexerConfig(t *testing.T) {
 }
 
 func TestV2UpdateIndexerConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/indexer/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -1995,6 +2303,8 @@ func TestV2UpdateIndexerConfig(t *testing.T) {
 }
 
 func TestV2GetLanguages(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/language", `[{"id":1,"name":"English"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2008,6 +2318,8 @@ func TestV2GetLanguages(t *testing.T) {
 }
 
 func TestV2GetLanguage(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/language/1", `{"id":1,"name":"English"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2021,6 +2333,8 @@ func TestV2GetLanguage(t *testing.T) {
 }
 
 func TestV2GetLanguageProfiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/languageprofile", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2034,6 +2348,8 @@ func TestV2GetLanguageProfiles(t *testing.T) {
 }
 
 func TestV2GetLanguageProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/languageprofile/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2047,6 +2363,8 @@ func TestV2GetLanguageProfile(t *testing.T) {
 }
 
 func TestV2CreateLanguageProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/languageprofile", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2057,6 +2375,8 @@ func TestV2CreateLanguageProfile(t *testing.T) {
 }
 
 func TestV2UpdateLanguageProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/languageprofile/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2067,6 +2387,8 @@ func TestV2UpdateLanguageProfile(t *testing.T) {
 }
 
 func TestV2DeleteLanguageProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2076,6 +2398,8 @@ func TestV2DeleteLanguageProfile(t *testing.T) {
 }
 
 func TestV2GetLocalization(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/localization", `{"key":"value"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2089,6 +2413,8 @@ func TestV2GetLocalization(t *testing.T) {
 }
 
 func TestV2GetLogs(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/log?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2102,6 +2428,8 @@ func TestV2GetLogs(t *testing.T) {
 }
 
 func TestV2GetLogFiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/log/file", `[{"filename":"test.log"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2115,6 +2443,8 @@ func TestV2GetLogFiles(t *testing.T) {
 }
 
 func TestV2GetManualImport(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/manualimport?folder=%2Fdata", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2128,6 +2458,8 @@ func TestV2GetManualImport(t *testing.T) {
 }
 
 func TestV2GetMediaManagementConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/mediamanagement", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2141,6 +2473,8 @@ func TestV2GetMediaManagementConfig(t *testing.T) {
 }
 
 func TestV2UpdateMediaManagementConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/mediamanagement/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2151,6 +2485,8 @@ func TestV2UpdateMediaManagementConfig(t *testing.T) {
 }
 
 func TestV2GetMetadata(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/metadata", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2164,6 +2500,8 @@ func TestV2GetMetadata(t *testing.T) {
 }
 
 func TestV2GetMetadataByID(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/metadata/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2177,6 +2515,8 @@ func TestV2GetMetadataByID(t *testing.T) {
 }
 
 func TestV2CreateMetadata(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/metadata", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2187,6 +2527,8 @@ func TestV2CreateMetadata(t *testing.T) {
 }
 
 func TestV2DeleteMetadata(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2196,6 +2538,8 @@ func TestV2DeleteMetadata(t *testing.T) {
 }
 
 func TestV2GetNamingConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/naming", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2209,6 +2553,8 @@ func TestV2GetNamingConfig(t *testing.T) {
 }
 
 func TestV2UpdateNamingConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/naming/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2219,6 +2565,8 @@ func TestV2UpdateNamingConfig(t *testing.T) {
 }
 
 func TestV2GetNotifications(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/notification", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2232,6 +2580,8 @@ func TestV2GetNotifications(t *testing.T) {
 }
 
 func TestV2GetNotification(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/notification/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2245,6 +2595,8 @@ func TestV2GetNotification(t *testing.T) {
 }
 
 func TestV2CreateNotification(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/notification", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2255,6 +2607,8 @@ func TestV2CreateNotification(t *testing.T) {
 }
 
 func TestV2DeleteNotification(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2264,6 +2618,8 @@ func TestV2DeleteNotification(t *testing.T) {
 }
 
 func TestV2GetQualityDefinitions(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/qualitydefinition", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2277,6 +2633,8 @@ func TestV2GetQualityDefinitions(t *testing.T) {
 }
 
 func TestV2GetQualityDefinition(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/qualitydefinition/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2290,6 +2648,8 @@ func TestV2GetQualityDefinition(t *testing.T) {
 }
 
 func TestV2UpdateQualityDefinition(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/qualitydefinition/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2300,6 +2660,8 @@ func TestV2UpdateQualityDefinition(t *testing.T) {
 }
 
 func TestV2GetQualityProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/qualityprofile/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2313,6 +2675,8 @@ func TestV2GetQualityProfile(t *testing.T) {
 }
 
 func TestV2CreateQualityProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/qualityprofile", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2323,6 +2687,8 @@ func TestV2CreateQualityProfile(t *testing.T) {
 }
 
 func TestV2DeleteQualityProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2332,6 +2698,8 @@ func TestV2DeleteQualityProfile(t *testing.T) {
 }
 
 func TestV2DeleteQueueItem(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2341,6 +2709,8 @@ func TestV2DeleteQueueItem(t *testing.T) {
 }
 
 func TestV2GrabQueueItem(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/queue/grab/1", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2350,6 +2720,8 @@ func TestV2GrabQueueItem(t *testing.T) {
 }
 
 func TestV2GetQueueDetails(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/queue/details", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2363,6 +2735,8 @@ func TestV2GetQueueDetails(t *testing.T) {
 }
 
 func TestV2GetQueueStatus(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/queue/status", `{"totalCount":5}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2376,6 +2750,8 @@ func TestV2GetQueueStatus(t *testing.T) {
 }
 
 func TestV2SearchReleases(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/release?episodeId=1", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2389,6 +2765,8 @@ func TestV2SearchReleases(t *testing.T) {
 }
 
 func TestV2GrabRelease(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/release", `{"guid":"abc"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2399,6 +2777,8 @@ func TestV2GrabRelease(t *testing.T) {
 }
 
 func TestV2GetReleaseProfiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/releaseprofile", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2412,6 +2792,8 @@ func TestV2GetReleaseProfiles(t *testing.T) {
 }
 
 func TestV2GetReleaseProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/releaseprofile/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2425,6 +2807,8 @@ func TestV2GetReleaseProfile(t *testing.T) {
 }
 
 func TestV2CreateReleaseProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/releaseprofile", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2435,6 +2819,8 @@ func TestV2CreateReleaseProfile(t *testing.T) {
 }
 
 func TestV2DeleteReleaseProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2444,6 +2830,8 @@ func TestV2DeleteReleaseProfile(t *testing.T) {
 }
 
 func TestV2GetRemotePathMappings(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/remotepathmapping", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2457,6 +2845,8 @@ func TestV2GetRemotePathMappings(t *testing.T) {
 }
 
 func TestV2GetRemotePathMapping(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/remotepathmapping/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2470,6 +2860,8 @@ func TestV2GetRemotePathMapping(t *testing.T) {
 }
 
 func TestV2CreateRemotePathMapping(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/remotepathmapping", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2480,6 +2872,8 @@ func TestV2CreateRemotePathMapping(t *testing.T) {
 }
 
 func TestV2DeleteRemotePathMapping(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2489,6 +2883,8 @@ func TestV2DeleteRemotePathMapping(t *testing.T) {
 }
 
 func TestV2GetRenamePreview(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/rename?seriesId=1", `[{"episodeFileId":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2502,6 +2898,8 @@ func TestV2GetRenamePreview(t *testing.T) {
 }
 
 func TestV2GetRootFolder(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/rootfolder/1", `{"id":1,"path":"/data"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2515,6 +2913,8 @@ func TestV2GetRootFolder(t *testing.T) {
 }
 
 func TestV2CreateRootFolder(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/rootfolder", `{"id":1,"path":"/data"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2525,6 +2925,8 @@ func TestV2CreateRootFolder(t *testing.T) {
 }
 
 func TestV2DeleteRootFolder(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2534,6 +2936,8 @@ func TestV2DeleteRootFolder(t *testing.T) {
 }
 
 func TestV2EditSeries(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/series/editor", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2543,6 +2947,8 @@ func TestV2EditSeries(t *testing.T) {
 }
 
 func TestV2DeleteSeriesBulk(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2552,6 +2958,8 @@ func TestV2DeleteSeriesBulk(t *testing.T) {
 }
 
 func TestV2ImportSeries(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/series/import", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2561,6 +2969,8 @@ func TestV2ImportSeries(t *testing.T) {
 }
 
 func TestV2GetSystemRoutes(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/system/routes", `[{"path":"/api/v3/test"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2574,6 +2984,8 @@ func TestV2GetSystemRoutes(t *testing.T) {
 }
 
 func TestV2Shutdown(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/system/shutdown", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2583,6 +2995,8 @@ func TestV2Shutdown(t *testing.T) {
 }
 
 func TestV2Restart(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/system/restart", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2592,6 +3006,8 @@ func TestV2Restart(t *testing.T) {
 }
 
 func TestV2GetTag(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/tag/1", `{"id":1,"label":"test"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2605,6 +3021,8 @@ func TestV2GetTag(t *testing.T) {
 }
 
 func TestV2UpdateTag(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/tag/1", `{"id":1,"label":"updated"}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2615,6 +3033,8 @@ func TestV2UpdateTag(t *testing.T) {
 }
 
 func TestV2DeleteTag(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2624,6 +3044,8 @@ func TestV2DeleteTag(t *testing.T) {
 }
 
 func TestV2GetTagDetails(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/tag/detail", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2637,6 +3059,8 @@ func TestV2GetTagDetails(t *testing.T) {
 }
 
 func TestV2GetTagDetail(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/tag/detail/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2650,6 +3074,8 @@ func TestV2GetTagDetail(t *testing.T) {
 }
 
 func TestV2GetTasks(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/system/task", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2663,6 +3089,8 @@ func TestV2GetTasks(t *testing.T) {
 }
 
 func TestV2GetTask(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/system/task/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2676,6 +3104,8 @@ func TestV2GetTask(t *testing.T) {
 }
 
 func TestV2GetUIConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/ui", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2689,6 +3119,8 @@ func TestV2GetUIConfig(t *testing.T) {
 }
 
 func TestV2UpdateUIConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/config/ui/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2699,6 +3131,8 @@ func TestV2UpdateUIConfig(t *testing.T) {
 }
 
 func TestV2GetUpdates(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2TestServer(t, "/api/v3/update", `[{"version":"2.0.0"}]`)
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -2714,6 +3148,8 @@ func TestV2GetUpdates(t *testing.T) {
 // V3 Extended Tests.
 
 func TestV3GetAlternativeTitles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/alttitle?movieId=1", `[{"id":1,"title":"Alt"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2727,6 +3163,8 @@ func TestV3GetAlternativeTitles(t *testing.T) {
 }
 
 func TestV3GetAlternativeTitle(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/alttitle/1", `{"id":1,"title":"Alt"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2740,6 +3178,8 @@ func TestV3GetAlternativeTitle(t *testing.T) {
 }
 
 func TestV3GetAutoTags(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/autotagging", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2753,6 +3193,8 @@ func TestV3GetAutoTags(t *testing.T) {
 }
 
 func TestV3GetAutoTag(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/autotagging/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2766,6 +3208,8 @@ func TestV3GetAutoTag(t *testing.T) {
 }
 
 func TestV3CreateAutoTag(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/autotagging", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2776,6 +3220,8 @@ func TestV3CreateAutoTag(t *testing.T) {
 }
 
 func TestV3DeleteAutoTag(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2785,6 +3231,8 @@ func TestV3DeleteAutoTag(t *testing.T) {
 }
 
 func TestV3GetBackups(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/system/backup", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2798,6 +3246,8 @@ func TestV3GetBackups(t *testing.T) {
 }
 
 func TestV3DeleteBackup(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2807,6 +3257,8 @@ func TestV3DeleteBackup(t *testing.T) {
 }
 
 func TestV3GetBlocklist(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/blocklist?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2820,6 +3272,8 @@ func TestV3GetBlocklist(t *testing.T) {
 }
 
 func TestV3DeleteBlocklistItem(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2829,6 +3283,8 @@ func TestV3DeleteBlocklistItem(t *testing.T) {
 }
 
 func TestV3GetBlocklistMovie(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/blocklist/movie?movieId=1", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2842,6 +3298,8 @@ func TestV3GetBlocklistMovie(t *testing.T) {
 }
 
 func TestV3GetCalendarByID(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/calendar/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2855,6 +3313,8 @@ func TestV3GetCalendarByID(t *testing.T) {
 }
 
 func TestV3GetCommands(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/command", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2868,6 +3328,8 @@ func TestV3GetCommands(t *testing.T) {
 }
 
 func TestV3GetCommand(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/command/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2881,6 +3343,8 @@ func TestV3GetCommand(t *testing.T) {
 }
 
 func TestV3DeleteCommand(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2890,6 +3354,8 @@ func TestV3DeleteCommand(t *testing.T) {
 }
 
 func TestV3GetCredit(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/credit/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2903,6 +3369,8 @@ func TestV3GetCredit(t *testing.T) {
 }
 
 func TestV3GetCustomFilters(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/customfilter", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2916,6 +3384,8 @@ func TestV3GetCustomFilters(t *testing.T) {
 }
 
 func TestV3GetCustomFilter(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/customfilter/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2929,6 +3399,8 @@ func TestV3GetCustomFilter(t *testing.T) {
 }
 
 func TestV3CreateCustomFilter(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/customfilter", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2939,6 +3411,8 @@ func TestV3CreateCustomFilter(t *testing.T) {
 }
 
 func TestV3DeleteCustomFilter(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2948,6 +3422,8 @@ func TestV3DeleteCustomFilter(t *testing.T) {
 }
 
 func TestV3GetCustomFormats(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/customformat", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2961,6 +3437,8 @@ func TestV3GetCustomFormats(t *testing.T) {
 }
 
 func TestV3CreateCustomFormat(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/customformat", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2971,6 +3449,8 @@ func TestV3CreateCustomFormat(t *testing.T) {
 }
 
 func TestV3DeleteCustomFormat(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2980,6 +3460,8 @@ func TestV3DeleteCustomFormat(t *testing.T) {
 }
 
 func TestV3GetDelayProfiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/delayprofile", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -2993,6 +3475,8 @@ func TestV3GetDelayProfiles(t *testing.T) {
 }
 
 func TestV3CreateDelayProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/delayprofile", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3003,6 +3487,8 @@ func TestV3CreateDelayProfile(t *testing.T) {
 }
 
 func TestV3DeleteDelayProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3012,6 +3498,8 @@ func TestV3DeleteDelayProfile(t *testing.T) {
 }
 
 func TestV3GetDownloadClients(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/downloadclient", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3025,6 +3513,8 @@ func TestV3GetDownloadClients(t *testing.T) {
 }
 
 func TestV3CreateDownloadClient(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/downloadclient", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3035,6 +3525,8 @@ func TestV3CreateDownloadClient(t *testing.T) {
 }
 
 func TestV3DeleteDownloadClient(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3044,6 +3536,8 @@ func TestV3DeleteDownloadClient(t *testing.T) {
 }
 
 func TestV3GetDownloadClientConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/config/downloadclient", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3057,6 +3551,8 @@ func TestV3GetDownloadClientConfig(t *testing.T) {
 }
 
 func TestV3GetExtraFiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/extrafile?movieId=1", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3070,6 +3566,8 @@ func TestV3GetExtraFiles(t *testing.T) {
 }
 
 func TestV3BrowseFileSystem(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/filesystem?path=%2Fdata", `{"directories":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3080,6 +3578,8 @@ func TestV3BrowseFileSystem(t *testing.T) {
 }
 
 func TestV3GetHealthByID(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/health/1", `{"source":"test","type":"warning","message":"msg"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3093,6 +3593,8 @@ func TestV3GetHealthByID(t *testing.T) {
 }
 
 func TestV3GetHistorySince(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/history/since?date=2024-01-01", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3106,6 +3608,8 @@ func TestV3GetHistorySince(t *testing.T) {
 }
 
 func TestV3GetHistoryMovie(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/history/movie?movieId=1", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3119,6 +3623,8 @@ func TestV3GetHistoryMovie(t *testing.T) {
 }
 
 func TestV3MarkHistoryFailed(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/history/failed/1", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3128,6 +3634,8 @@ func TestV3MarkHistoryFailed(t *testing.T) {
 }
 
 func TestV3GetHostConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/config/host", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3141,6 +3649,8 @@ func TestV3GetHostConfig(t *testing.T) {
 }
 
 func TestV3GetImportLists(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/importlist", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3154,6 +3664,8 @@ func TestV3GetImportLists(t *testing.T) {
 }
 
 func TestV3CreateImportList(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/importlist", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3164,6 +3676,8 @@ func TestV3CreateImportList(t *testing.T) {
 }
 
 func TestV3DeleteImportList(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3173,6 +3687,8 @@ func TestV3DeleteImportList(t *testing.T) {
 }
 
 func TestV3GetImportListMovies(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/importlist/movie", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3186,6 +3702,8 @@ func TestV3GetImportListMovies(t *testing.T) {
 }
 
 func TestV3GetImportExclusion(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/exclusions/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3199,6 +3717,8 @@ func TestV3GetImportExclusion(t *testing.T) {
 }
 
 func TestV3CreateImportExclusion(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/exclusions", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3209,6 +3729,8 @@ func TestV3CreateImportExclusion(t *testing.T) {
 }
 
 func TestV3DeleteImportExclusion(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3218,6 +3740,8 @@ func TestV3DeleteImportExclusion(t *testing.T) {
 }
 
 func TestV3GetIndexers(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/indexer", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3231,6 +3755,8 @@ func TestV3GetIndexers(t *testing.T) {
 }
 
 func TestV3CreateIndexer(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/indexer", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3241,6 +3767,8 @@ func TestV3CreateIndexer(t *testing.T) {
 }
 
 func TestV3DeleteIndexer(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3250,6 +3778,8 @@ func TestV3DeleteIndexer(t *testing.T) {
 }
 
 func TestV3GetIndexerConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/config/indexer", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3263,6 +3793,8 @@ func TestV3GetIndexerConfig(t *testing.T) {
 }
 
 func TestV3GetIndexerFlags(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/indexerflag", `[{"id":1,"name":"freeleech"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3276,6 +3808,8 @@ func TestV3GetIndexerFlags(t *testing.T) {
 }
 
 func TestV3GetLocalization(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/localization", `{"key":"value"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3289,6 +3823,8 @@ func TestV3GetLocalization(t *testing.T) {
 }
 
 func TestV3GetLogs(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/log?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3302,6 +3838,8 @@ func TestV3GetLogs(t *testing.T) {
 }
 
 func TestV3GetLogFiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/log/file", `[{"filename":"test.log"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3315,6 +3853,8 @@ func TestV3GetLogFiles(t *testing.T) {
 }
 
 func TestV3GetManualImport(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/manualimport?folder=%2Fdata", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3328,6 +3868,8 @@ func TestV3GetManualImport(t *testing.T) {
 }
 
 func TestV3GetMediaManagementConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/config/mediamanagement", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3341,6 +3883,8 @@ func TestV3GetMediaManagementConfig(t *testing.T) {
 }
 
 func TestV3GetMetadata(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/metadata", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3354,6 +3898,8 @@ func TestV3GetMetadata(t *testing.T) {
 }
 
 func TestV3CreateMetadata(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/metadata", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3364,6 +3910,8 @@ func TestV3CreateMetadata(t *testing.T) {
 }
 
 func TestV3DeleteMetadata(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3373,6 +3921,8 @@ func TestV3DeleteMetadata(t *testing.T) {
 }
 
 func TestV3GetMovieFiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/moviefile?movieId=1", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3386,6 +3936,8 @@ func TestV3GetMovieFiles(t *testing.T) {
 }
 
 func TestV3UpdateMovieFile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/moviefile/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3396,6 +3948,8 @@ func TestV3UpdateMovieFile(t *testing.T) {
 }
 
 func TestV3EditMovieFiles(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/moviefile/editor", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3405,6 +3959,8 @@ func TestV3EditMovieFiles(t *testing.T) {
 }
 
 func TestV3BulkDeleteMovieFiles(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3414,6 +3970,8 @@ func TestV3BulkDeleteMovieFiles(t *testing.T) {
 }
 
 func TestV3LookupMovieByTMDB(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/lookup/movie/tmdb?tmdbId=123", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3427,6 +3985,8 @@ func TestV3LookupMovieByTMDB(t *testing.T) {
 }
 
 func TestV3LookupMovieByIMDB(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/lookup/movie/imdb?imdbId=tt123", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3440,6 +4000,8 @@ func TestV3LookupMovieByIMDB(t *testing.T) {
 }
 
 func TestV3GetNamingConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/config/naming", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3453,6 +4015,8 @@ func TestV3GetNamingConfig(t *testing.T) {
 }
 
 func TestV3GetNotifications(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/notification", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3466,6 +4030,8 @@ func TestV3GetNotifications(t *testing.T) {
 }
 
 func TestV3CreateNotification(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/notification", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3476,6 +4042,8 @@ func TestV3CreateNotification(t *testing.T) {
 }
 
 func TestV3DeleteNotification(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3485,6 +4053,8 @@ func TestV3DeleteNotification(t *testing.T) {
 }
 
 func TestV3EditPerformers(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/performer/editor", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3494,6 +4064,8 @@ func TestV3EditPerformers(t *testing.T) {
 }
 
 func TestV3DeletePerformersBulk(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3503,6 +4075,8 @@ func TestV3DeletePerformersBulk(t *testing.T) {
 }
 
 func TestV3EditStudios(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/studio/editor", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3512,6 +4086,8 @@ func TestV3EditStudios(t *testing.T) {
 }
 
 func TestV3DeleteStudiosBulk(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3521,6 +4097,8 @@ func TestV3DeleteStudiosBulk(t *testing.T) {
 }
 
 func TestV3GetQualityDefinitions(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/qualitydefinition", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3534,6 +4112,8 @@ func TestV3GetQualityDefinitions(t *testing.T) {
 }
 
 func TestV3GetQualityProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/qualityprofile/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3547,6 +4127,8 @@ func TestV3GetQualityProfile(t *testing.T) {
 }
 
 func TestV3CreateQualityProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/qualityprofile", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3557,6 +4139,8 @@ func TestV3CreateQualityProfile(t *testing.T) {
 }
 
 func TestV3DeleteQualityProfile(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3566,6 +4150,8 @@ func TestV3DeleteQualityProfile(t *testing.T) {
 }
 
 func TestV3DeleteQueueItem(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3575,6 +4161,8 @@ func TestV3DeleteQueueItem(t *testing.T) {
 }
 
 func TestV3GrabQueueItem(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/queue/grab/1", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3584,6 +4172,8 @@ func TestV3GrabQueueItem(t *testing.T) {
 }
 
 func TestV3GetQueueDetails(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/queue/details", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3597,6 +4187,8 @@ func TestV3GetQueueDetails(t *testing.T) {
 }
 
 func TestV3GetQueueStatus(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/queue/status", `{"totalCount":5}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3610,6 +4202,8 @@ func TestV3GetQueueStatus(t *testing.T) {
 }
 
 func TestV3SearchReleases(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/release?movieId=1", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3623,6 +4217,8 @@ func TestV3SearchReleases(t *testing.T) {
 }
 
 func TestV3GrabRelease(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/release", `{"guid":"abc"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3633,6 +4229,8 @@ func TestV3GrabRelease(t *testing.T) {
 }
 
 func TestV3GetRemotePathMappings(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/remotepathmapping", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3646,6 +4244,8 @@ func TestV3GetRemotePathMappings(t *testing.T) {
 }
 
 func TestV3CreateRemotePathMapping(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/remotepathmapping", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3656,6 +4256,8 @@ func TestV3CreateRemotePathMapping(t *testing.T) {
 }
 
 func TestV3DeleteRemotePathMapping(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3665,6 +4267,8 @@ func TestV3DeleteRemotePathMapping(t *testing.T) {
 }
 
 func TestV3GetRenamePreview(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/rename?movieId=1", `[{"movieFileId":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3678,6 +4282,8 @@ func TestV3GetRenamePreview(t *testing.T) {
 }
 
 func TestV3GetRootFolder(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/rootfolder/1", `{"id":1,"path":"/data"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3691,6 +4297,8 @@ func TestV3GetRootFolder(t *testing.T) {
 }
 
 func TestV3CreateRootFolder(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/rootfolder", `{"id":1,"path":"/data"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3701,6 +4309,8 @@ func TestV3CreateRootFolder(t *testing.T) {
 }
 
 func TestV3DeleteRootFolder(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3710,6 +4320,8 @@ func TestV3DeleteRootFolder(t *testing.T) {
 }
 
 func TestV3GetSystemRoutes(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/system/routes", `[{"path":"/api/v3/test"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3723,6 +4335,8 @@ func TestV3GetSystemRoutes(t *testing.T) {
 }
 
 func TestV3Shutdown(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/system/shutdown", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3732,6 +4346,8 @@ func TestV3Shutdown(t *testing.T) {
 }
 
 func TestV3Restart(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/system/restart", `{}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3741,6 +4357,8 @@ func TestV3Restart(t *testing.T) {
 }
 
 func TestV3GetTag(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/tag/1", `{"id":1,"label":"test"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3754,6 +4372,8 @@ func TestV3GetTag(t *testing.T) {
 }
 
 func TestV3UpdateTag(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/tag/1", `{"id":1,"label":"updated"}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3764,6 +4384,8 @@ func TestV3UpdateTag(t *testing.T) {
 }
 
 func TestV3DeleteTag(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3773,6 +4395,8 @@ func TestV3DeleteTag(t *testing.T) {
 }
 
 func TestV3GetTagDetails(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/tag/detail", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3786,6 +4410,8 @@ func TestV3GetTagDetails(t *testing.T) {
 }
 
 func TestV3GetTasks(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/system/task", `[{"id":1}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3799,6 +4425,8 @@ func TestV3GetTasks(t *testing.T) {
 }
 
 func TestV3GetUIConfig(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/config/ui", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3812,6 +4440,8 @@ func TestV3GetUIConfig(t *testing.T) {
 }
 
 func TestV3GetUpdates(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/update", `[{"version":"3.0.0"}]`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3825,6 +4455,8 @@ func TestV3GetUpdates(t *testing.T) {
 }
 
 func TestV3GetWantedMissing(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/wanted/missing?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3838,6 +4470,8 @@ func TestV3GetWantedMissing(t *testing.T) {
 }
 
 func TestV3GetWantedMissingByID(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/wanted/missing/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3851,6 +4485,8 @@ func TestV3GetWantedMissingByID(t *testing.T) {
 }
 
 func TestV3GetWantedCutoff(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/wanted/cutoff?page=1&pageSize=10", `{"page":1,"pageSize":10,"totalRecords":0,"records":[]}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3864,6 +4500,8 @@ func TestV3GetWantedCutoff(t *testing.T) {
 }
 
 func TestV3GetWantedCutoffByID(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3TestServer(t, "/api/v3/wanted/cutoff/1", `{"id":1}`)
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3879,6 +4517,8 @@ func TestV3GetWantedCutoffByID(t *testing.T) {
 // ---------- V2 Ping / HeadPing / UploadBackup ----------.
 
 func TestV2Ping(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2MethodTestServer(t, http.MethodGet, "/ping")
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -3888,6 +4528,8 @@ func TestV2Ping(t *testing.T) {
 }
 
 func TestV2HeadPing(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2MethodTestServer(t, http.MethodHead, "/ping")
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -3897,6 +4539,8 @@ func TestV2HeadPing(t *testing.T) {
 }
 
 func TestV2UploadBackup(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -3923,6 +4567,8 @@ func TestV2UploadBackup(t *testing.T) {
 }
 
 func TestV2GetLogFileContent(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2RawTestServer(t, http.MethodGet, "/api/v3/log/file/whisparr.txt", "log content")
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -3936,6 +4582,8 @@ func TestV2GetLogFileContent(t *testing.T) {
 }
 
 func TestV2GetUpdateLogFileContent(t *testing.T) {
+	t.Parallel()
+
 	ts := newV2RawTestServer(t, http.MethodGet, "/api/v3/log/file/update/update.txt", "update log")
 	defer ts.Close()
 	c, _ := whisparr.New(ts.URL, "test-key")
@@ -3951,6 +4599,8 @@ func TestV2GetUpdateLogFileContent(t *testing.T) {
 // ---------- V3 Ping / HeadPing / UploadBackup ----------.
 
 func TestV3Ping(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3MethodTestServer(t, http.MethodGet, "/ping")
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3960,6 +4610,8 @@ func TestV3Ping(t *testing.T) {
 }
 
 func TestV3HeadPing(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3MethodTestServer(t, http.MethodHead, "/ping")
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -3969,6 +4621,8 @@ func TestV3HeadPing(t *testing.T) {
 }
 
 func TestV3UploadBackup(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -3995,6 +4649,8 @@ func TestV3UploadBackup(t *testing.T) {
 }
 
 func TestV3GetLogFileContent(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3RawTestServer(t, http.MethodGet, "/api/v3/log/file/whisparr.txt", "log content")
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")
@@ -4008,6 +4664,8 @@ func TestV3GetLogFileContent(t *testing.T) {
 }
 
 func TestV3GetUpdateLogFileContent(t *testing.T) {
+	t.Parallel()
+
 	ts := newV3RawTestServer(t, http.MethodGet, "/api/v3/log/file/update/update.txt", "update log")
 	defer ts.Close()
 	c, _ := whisparr.NewV3(ts.URL, "test-key")

@@ -2,7 +2,7 @@ package mylar
 
 // Comic represents a comic series in Mylar3.
 type Comic struct {
-	Id          string `json:"id"`
+	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Status      string `json:"status"`
 	Year        string `json:"year"`
@@ -14,38 +14,38 @@ type Comic struct {
 
 // Issue represents a single comic issue.
 type Issue struct {
-	Id          string `json:"id"`
+	ID          string `json:"id"`
 	IssueName   string `json:"issueName"`
 	IssueNumber string `json:"issueNumber"`
 	Status      string `json:"status"`
-	ComicId     string `json:"comicId"`
+	ComicID     string `json:"comicId"`
 	ReleaseDate string `json:"releaseDate"`
 }
 
 // Upcoming represents an upcoming comic issue.
 type Upcoming struct {
-	Id          string `json:"id"`
+	ID          string `json:"id"`
 	IssueName   string `json:"issueName"`
 	IssueNumber string `json:"issueNumber"`
 	Status      string `json:"status"`
-	ComicId     string `json:"comicId"`
+	ComicID     string `json:"comicId"`
 	ReleaseDate string `json:"releaseDate"`
 	ComicName   string `json:"comicName"`
 }
 
 // WantedIssue represents a wanted comic issue.
 type WantedIssue struct {
-	Id          string `json:"id"`
+	ID          string `json:"id"`
 	IssueName   string `json:"issueName"`
 	IssueNumber string `json:"issueNumber"`
 	Status      string `json:"status"`
-	ComicId     string `json:"comicId"`
+	ComicID     string `json:"comicId"`
 	ReleaseDate string `json:"releaseDate"`
 }
 
 // HistoryEntry represents an entry in the download history.
 type HistoryEntry struct {
-	Id          string `json:"id"`
+	ID          string `json:"id"`
 	ComicName   string `json:"comicName"`
 	IssueNumber string `json:"issueNumber"`
 	Date        string `json:"date"`
@@ -62,7 +62,7 @@ type LogEntry struct {
 
 // SearchResult represents a comic found via search.
 type SearchResult struct {
-	Id        string `json:"id"`
+	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Year      string `json:"year"`
 	Publisher string `json:"publisher"`
@@ -79,7 +79,7 @@ type VersionInfo struct {
 
 // StoryArc represents a story arc containing issues.
 type StoryArc struct {
-	Id        string  `json:"id"`
+	ID        string  `json:"id"`
 	Name      string  `json:"name"`
 	Publisher string  `json:"publisher"`
 	Issues    []Issue `json:"issues"`
@@ -87,14 +87,14 @@ type StoryArc struct {
 
 // ReadList represents a reading list.
 type ReadList struct {
-	Id     string  `json:"id"`
+	ID     string  `json:"id"`
 	Name   string  `json:"name"`
 	Issues []Issue `json:"issues"`
 }
 
 // Provider represents a search provider.
 type Provider struct {
-	Id      string `json:"id"`
+	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Type    string `json:"type"`
 	Enabled bool   `json:"enabled"`

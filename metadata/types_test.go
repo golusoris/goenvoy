@@ -8,6 +8,8 @@ import (
 )
 
 func TestRatingJSON(t *testing.T) {
+	t.Parallel()
+
 	r := metadata.Rating{Source: "imdb", Value: 8.7, Votes: 100000}
 
 	data, err := json.Marshal(r)
@@ -26,6 +28,8 @@ func TestRatingJSON(t *testing.T) {
 }
 
 func TestExternalIDJSON(t *testing.T) {
+	t.Parallel()
+
 	eid := metadata.ExternalID{Source: "tmdb", ID: "550"}
 
 	data, err := json.Marshal(eid)
@@ -44,6 +48,8 @@ func TestExternalIDJSON(t *testing.T) {
 }
 
 func TestImageTypeConstants(t *testing.T) {
+	t.Parallel()
+
 	types := []metadata.ImageType{
 		metadata.ImageTypePoster,
 		metadata.ImageTypeBackdrop,
@@ -64,6 +70,8 @@ func TestImageTypeConstants(t *testing.T) {
 }
 
 func TestMediaTypeConstants(t *testing.T) {
+	t.Parallel()
+
 	types := []metadata.MediaType{
 		metadata.MediaTypeMovie,
 		metadata.MediaTypeSeries,
@@ -83,6 +91,8 @@ func TestMediaTypeConstants(t *testing.T) {
 }
 
 func TestSearchResultJSON(t *testing.T) {
+	t.Parallel()
+
 	sr := metadata.SearchResult{
 		Title:     "Inception",
 		Year:      2010,

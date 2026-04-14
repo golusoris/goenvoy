@@ -23,6 +23,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *screenscraper.Client {
 }
 
 func TestGetGameInfo(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Errorf("method = %s, want GET", r.Method)
@@ -87,6 +89,8 @@ func TestGetGameInfo(t *testing.T) {
 }
 
 func TestSearchGames(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("recherche"); got != "sonic" {
 			t.Errorf("recherche = %q, want sonic", got)
@@ -118,6 +122,8 @@ func TestSearchGames(t *testing.T) {
 }
 
 func TestGetSystems(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/systemesListe.php" {
 			t.Errorf("path = %q, want /systemesListe.php", r.URL.Path)
@@ -146,6 +152,8 @@ func TestGetSystems(t *testing.T) {
 }
 
 func TestGetGenres(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/genresListe.php" {
 			t.Errorf("path = %q, want /genresListe.php", r.URL.Path)
@@ -174,6 +182,8 @@ func TestGetGenres(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte(`API closed`))
@@ -187,7 +197,7 @@ func TestAPIError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 403 {
+	if apiErr.StatusCode != http.StatusForbidden {
 		t.Errorf("StatusCode = %d, want 403", apiErr.StatusCode)
 	}
 }

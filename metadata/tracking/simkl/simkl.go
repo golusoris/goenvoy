@@ -66,7 +66,7 @@ func New(clientID string, opts ...metadata.Option) *Client {
 // APIError is returned when the API responds with a non-2xx status.
 type APIError struct {
 	StatusCode int    `json:"-"`
-	Error_     string `json:"error"`
+	Error_     string `json:"error"` //nolint:revive // field name conflicts with Error() method below
 	Code       int    `json:"code"`
 	Message    string `json:"message"`
 	// RawBody holds the raw response body when the error could not be parsed as JSON.
@@ -100,7 +100,7 @@ func (c *Client) doGet(ctx context.Context, baseURL, path string, params url.Val
 		return fmt.Errorf("simkl: create request: %w", err)
 	}
 
-	req.Header.Set("simkl-api-key", c.clientID)
+	req.Header.Set("Simkl-Api-Key", c.clientID)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent())
 
@@ -468,7 +468,7 @@ func (c *Client) post(ctx context.Context, path string, body, dst any) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("simkl-api-key", c.clientID)
+	req.Header.Set("Simkl-Api-Key", c.clientID)
 	req.Header.Set("User-Agent", c.UserAgent())
 
 	c.mu.RLock()
@@ -533,7 +533,7 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (string,
 	for {
 		select {
 		case <-ctx.Done():
-			return "", ctx.Err()
+			return "", fmt.Errorf("simkl: device poll: %w", ctx.Err())
 		case <-ticker.C:
 			if time.Now().After(deadline) {
 				return "", errors.New("simkl: device code expired")
@@ -600,7 +600,7 @@ func (c *Client) del(ctx context.Context, path string) error {
 	}
 
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("simkl-api-key", c.clientID)
+	req.Header.Set("Simkl-Api-Key", c.clientID)
 	req.Header.Set("User-Agent", c.UserAgent())
 
 	c.mu.RLock()
@@ -897,7 +897,7 @@ func (c *Client) CheckIfWatched(ctx context.Context, items []WatchedCheckItem, e
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("simkl-api-key", c.clientID)
+	req.Header.Set("Simkl-Api-Key", c.clientID)
 	req.Header.Set("User-Agent", c.UserAgent())
 
 	c.mu.RLock()

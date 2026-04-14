@@ -8,6 +8,8 @@ import (
 )
 
 func TestSeriesJSON(t *testing.T) {
+	t.Parallel()
+
 	s := anime.Series{
 		ID:   1,
 		Name: "My Anime",
@@ -40,6 +42,8 @@ func TestSeriesJSON(t *testing.T) {
 }
 
 func TestEpisodeJSON(t *testing.T) {
+	t.Parallel()
+
 	e := anime.Episode{
 		ID:       1,
 		SeriesID: 10,

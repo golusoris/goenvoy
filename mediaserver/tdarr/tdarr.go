@@ -78,7 +78,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, v any) error
 	}
 	req.Header.Set("Accept", "application/json")
 	if c.apiKey != "" {
-		req.Header.Set("x-api-key", c.apiKey)
+		req.Header.Set("X-Api-Key", c.apiKey)
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -110,7 +110,7 @@ func (c *Client) doText(ctx context.Context, method, path string) (string, error
 		return "", fmt.Errorf("tdarr: create request: %w", err)
 	}
 	if c.apiKey != "" {
-		req.Header.Set("x-api-key", c.apiKey)
+		req.Header.Set("X-Api-Key", c.apiKey)
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -182,8 +182,8 @@ func (c *Client) CrudDB(ctx context.Context, collection, mode, docID string) ([]
 }
 
 // GetResStats returns resolution statistics for a library.
-func (c *Client) GetResStats(ctx context.Context, libraryId string) (*ResStats, error) {
-	body := map[string]any{"data": map[string]string{"libraryId": libraryId}}
+func (c *Client) GetResStats(ctx context.Context, libraryID string) (*ResStats, error) {
+	body := map[string]any{"data": map[string]string{"libraryId": libraryID}}
 	var out ResStats
 	if err := c.do(ctx, http.MethodPost, "/api/v2/get-res-stats", body, &out); err != nil {
 		return nil, err
@@ -192,8 +192,8 @@ func (c *Client) GetResStats(ctx context.Context, libraryId string) (*ResStats, 
 }
 
 // GetDBStatuses returns database table counts for a library.
-func (c *Client) GetDBStatuses(ctx context.Context, libraryId string) (*DBStatuses, error) {
-	body := map[string]any{"data": map[string]string{"libraryId": libraryId}}
+func (c *Client) GetDBStatuses(ctx context.Context, libraryID string) (*DBStatuses, error) {
+	body := map[string]any{"data": map[string]string{"libraryId": libraryID}}
 	var out DBStatuses
 	if err := c.do(ctx, http.MethodPost, "/api/v2/get-db-statuses", body, &out); err != nil {
 		return nil, err
@@ -202,10 +202,10 @@ func (c *Client) GetDBStatuses(ctx context.Context, libraryId string) (*DBStatus
 }
 
 // ScanFiles triggers a file scan for a library.
-func (c *Client) ScanFiles(ctx context.Context, libraryId, folderPath string) error {
+func (c *Client) ScanFiles(ctx context.Context, libraryID, folderPath string) error {
 	req := ScanFilesRequest{
 		Data: &ScanFilesData{
-			LibraryId:  libraryId,
+			LibraryID:  libraryID,
 			FolderPath: folderPath,
 		},
 	}
@@ -213,14 +213,14 @@ func (c *Client) ScanFiles(ctx context.Context, libraryId, folderPath string) er
 }
 
 // CancelWorkerItem cancels the current item being processed by a worker.
-func (c *Client) CancelWorkerItem(ctx context.Context, nodeId, workerId string) error {
-	body := map[string]any{"data": map[string]string{"nodeId": nodeId, "workerId": workerId}}
+func (c *Client) CancelWorkerItem(ctx context.Context, nodeID, workerID string) error {
+	body := map[string]any{"data": map[string]string{"nodeId": nodeID, "workerId": workerID}}
 	return c.do(ctx, http.MethodPost, "/api/v2/cancel-worker-item", body, nil)
 }
 
 // KillWorker terminates a worker on a node.
-func (c *Client) KillWorker(ctx context.Context, nodeId, workerId string) error {
-	body := map[string]any{"data": map[string]string{"nodeId": nodeId, "workerId": workerId}}
+func (c *Client) KillWorker(ctx context.Context, nodeID, workerID string) error {
+	body := map[string]any{"data": map[string]string{"nodeId": nodeID, "workerId": workerID}}
 	return c.do(ctx, http.MethodPost, "/api/v2/kill-worker", body, nil)
 }
 

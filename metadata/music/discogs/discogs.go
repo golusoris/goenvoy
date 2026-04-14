@@ -53,7 +53,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, v any)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
-		return err
+		return fmt.Errorf("discogs: build request: %w", err)
 	}
 	req.Header.Set("Authorization", "Discogs token="+c.token)
 	req.Header.Set("User-Agent", c.UserAgent())
@@ -61,20 +61,23 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, v any)
 
 	resp, err := c.HTTPClient().Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("discogs: GET %s: %w", path, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("discogs: read response: %w", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
 	}
 
-	return json.Unmarshal(body, v)
+	if err := json.Unmarshal(body, v); err != nil {
+		return fmt.Errorf("discogs: decode response: %w", err)
+	}
+	return nil
 }
 
 func (c *Client) doJSON(ctx context.Context, method, path string, payload, v any) error {
@@ -91,7 +94,7 @@ func (c *Client) doJSON(ctx context.Context, method, path string, payload, v any
 
 	req, err := http.NewRequestWithContext(ctx, method, u, bodyReader)
 	if err != nil {
-		return err
+		return fmt.Errorf("discogs: build request: %w", err)
 	}
 	req.Header.Set("Authorization", "Discogs token="+c.token)
 	req.Header.Set("User-Agent", c.UserAgent())
@@ -102,13 +105,13 @@ func (c *Client) doJSON(ctx context.Context, method, path string, payload, v any
 
 	resp, err := c.HTTPClient().Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("discogs: %s %s: %w", method, path, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("discogs: read response: %w", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
@@ -116,7 +119,9 @@ func (c *Client) doJSON(ctx context.Context, method, path string, payload, v any
 	}
 
 	if v != nil && len(body) > 0 {
-		return json.Unmarshal(body, v)
+		if err := json.Unmarshal(body, v); err != nil {
+			return fmt.Errorf("discogs: decode response: %w", err)
+		}
 	}
 	return nil
 }
@@ -675,20 +680,20 @@ func (c *Client) DownloadExport(ctx context.Context, exportID int) ([]byte, erro
 	u := c.BaseURL() + fmt.Sprintf("/inventory/export/%d/download", exportID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("discogs: build request: %w", err)
 	}
 	req.Header.Set("Authorization", "Discogs token="+c.token)
 	req.Header.Set("User-Agent", c.UserAgent())
 
 	resp, err := c.HTTPClient().Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("discogs: GET export: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("discogs: read export: %w", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {

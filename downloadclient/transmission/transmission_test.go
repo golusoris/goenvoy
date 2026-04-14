@@ -40,6 +40,8 @@ func newRPCServer(t *testing.T, wantMethod string, response any) *httptest.Serve
 }
 
 func TestGetTorrents(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"torrents": []map[string]any{
 			{"id": 1, "name": "Ubuntu 24.04", "status": 6, "percentDone": 1.0, "totalSize": 4000000000},
@@ -66,6 +68,8 @@ func TestGetTorrents(t *testing.T) {
 }
 
 func TestGetTorrentsWithIDs(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"torrents": []map[string]any{
 			{"id": 5, "name": "Specific", "percentDone": 0.75},
@@ -88,6 +92,8 @@ func TestGetTorrentsWithIDs(t *testing.T) {
 }
 
 func TestAddTorrentURL(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"torrent-added": map[string]any{
 			"id": 10, "name": "New Torrent", "hashString": "abc123def456",
@@ -113,6 +119,8 @@ func TestAddTorrentURL(t *testing.T) {
 }
 
 func TestStartTorrents(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "torrent-start", nil)
 	defer ts.Close()
 
@@ -123,6 +131,8 @@ func TestStartTorrents(t *testing.T) {
 }
 
 func TestStopTorrents(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "torrent-stop", nil)
 	defer ts.Close()
 
@@ -133,6 +143,8 @@ func TestStopTorrents(t *testing.T) {
 }
 
 func TestRemoveTorrents(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "torrent-remove", nil)
 	defer ts.Close()
 
@@ -143,6 +155,8 @@ func TestRemoveTorrents(t *testing.T) {
 }
 
 func TestVerifyTorrents(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "torrent-verify", nil)
 	defer ts.Close()
 
@@ -153,6 +167,8 @@ func TestVerifyTorrents(t *testing.T) {
 }
 
 func TestReannounceTorrents(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "torrent-reannounce", nil)
 	defer ts.Close()
 
@@ -163,6 +179,8 @@ func TestReannounceTorrents(t *testing.T) {
 }
 
 func TestMoveTorrents(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "torrent-set-location", nil)
 	defer ts.Close()
 
@@ -173,6 +191,8 @@ func TestMoveTorrents(t *testing.T) {
 }
 
 func TestGetSession(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"version": "4.0.5", "rpc-version": 18, "download-dir": "/downloads",
 		"peer-port": 51413, "dht-enabled": true,
@@ -194,6 +214,8 @@ func TestGetSession(t *testing.T) {
 }
 
 func TestGetSessionStats(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"activeTorrentCount": 5, "downloadSpeed": 50000, "uploadSpeed": 10000,
 		"torrentCount": 100,
@@ -215,6 +237,8 @@ func TestGetSessionStats(t *testing.T) {
 }
 
 func TestGetFreeSpace(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{"path": "/downloads", "size-bytes": 500000000000}
 	ts := newRPCServer(t, "free-space", result)
 	defer ts.Close()
@@ -230,6 +254,8 @@ func TestGetFreeSpace(t *testing.T) {
 }
 
 func TestTestPort(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{"port-is-open": true}
 	ts := newRPCServer(t, "port-test", result)
 	defer ts.Close()
@@ -245,6 +271,8 @@ func TestTestPort(t *testing.T) {
 }
 
 func TestSessionIDNegotiation(t *testing.T) {
+	t.Parallel()
+
 	attempt := 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		attempt++
@@ -276,6 +304,8 @@ func TestSessionIDNegotiation(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]any{"result": "no such torrent", "arguments": map[string]any{}}
@@ -298,6 +328,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestHTTPError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("server error"))
@@ -319,6 +351,8 @@ func TestHTTPError(t *testing.T) {
 }
 
 func TestSetTorrentLabels(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "torrent-set", nil)
 	defer ts.Close()
 

@@ -66,7 +66,7 @@ func New(clientID string, opts ...metadata.Option) *Client {
 // APIError is returned when the API responds with a non-2xx status.
 type APIError struct {
 	StatusCode  int    `json:"-"`
-	Error_      string `json:"error"`
+	Error_      string `json:"error"` //nolint:revive // field name conflicts with Error() method below
 	Description string `json:"error_description"`
 	// RawBody holds the raw response body when the error could not be parsed as JSON.
 	RawBody string `json:"-"`
@@ -120,8 +120,8 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 		return nil, fmt.Errorf("trakt: create request: %w", err)
 	}
 
-	req.Header.Set("trakt-api-key", c.clientID)
-	req.Header.Set("trakt-api-version", apiVersion)
+	req.Header.Set("Trakt-Api-Key", c.clientID)
+	req.Header.Set("Trakt-Api-Version", apiVersion)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent())
@@ -1898,8 +1898,8 @@ func (c *Client) post(ctx context.Context, path string, body, dst any) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("trakt-api-key", c.clientID)
-	req.Header.Set("trakt-api-version", apiVersion)
+	req.Header.Set("Trakt-Api-Key", c.clientID)
+	req.Header.Set("Trakt-Api-Version", apiVersion)
 	req.Header.Set("User-Agent", c.UserAgent())
 
 	c.mu.RLock()
@@ -1943,8 +1943,8 @@ func (c *Client) del(ctx context.Context, path string) error {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("trakt-api-key", c.clientID)
-	req.Header.Set("trakt-api-version", apiVersion)
+	req.Header.Set("Trakt-Api-Key", c.clientID)
+	req.Header.Set("Trakt-Api-Version", apiVersion)
 	req.Header.Set("User-Agent", c.UserAgent())
 
 	c.mu.RLock()
@@ -1988,8 +1988,8 @@ func (c *Client) put(ctx context.Context, path string, body any) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("trakt-api-key", c.clientID)
-	req.Header.Set("trakt-api-version", apiVersion)
+	req.Header.Set("Trakt-Api-Key", c.clientID)
+	req.Header.Set("Trakt-Api-Version", apiVersion)
 	req.Header.Set("User-Agent", c.UserAgent())
 
 	c.mu.RLock()
@@ -2050,7 +2050,7 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (*Token,
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			return nil, fmt.Errorf("trakt: device poll: %w", ctx.Err())
 		case <-ticker.C:
 			if time.Now().After(deadline) {
 				return nil, errors.New("trakt: device code expired")

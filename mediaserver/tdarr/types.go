@@ -9,7 +9,7 @@ type Status struct {
 
 // Node represents a Tdarr processing node.
 type Node struct {
-	Id       string            `json:"_id"`
+	ID       string            `json:"_id"`
 	Name     string            `json:"name"`
 	Address  string            `json:"address"`
 	Port     int               `json:"port"`
@@ -19,7 +19,7 @@ type Node struct {
 
 // Worker represents a transcoding worker on a node.
 type Worker struct {
-	Id         string  `json:"id"`
+	ID         string  `json:"id"`
 	File       string  `json:"file"`
 	Percentage float64 `json:"percentage"`
 	ETA        string  `json:"ETA"`
@@ -29,7 +29,7 @@ type Worker struct {
 
 // DBFile represents a media file entry in the Tdarr database.
 type DBFile struct {
-	Id                     string  `json:"_id"`
+	ID                     string  `json:"_id"`
 	File                   string  `json:"file"`
 	Codec                  string  `json:"codec"`
 	Container              string  `json:"container"`
@@ -39,7 +39,7 @@ type DBFile struct {
 	HealthCheck            string  `json:"healthCheck"`
 	Bitrate                int64   `json:"bitrate"`
 	Duration               float64 `json:"duration"`
-	LibraryId              string  `json:"libraryId"`
+	LibraryID              string  `json:"libraryId"`
 }
 
 // SearchDBRequest is the request body for the search-db endpoint.
@@ -97,6 +97,6 @@ type ScanFilesRequest struct {
 
 // ScanFilesData holds the scan parameters.
 type ScanFilesData struct {
-	LibraryId  string `json:"libraryId"`
+	LibraryID  string `json:"libraryId"`
 	FolderPath string `json:"folderPath,omitempty"`
 }

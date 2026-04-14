@@ -1,75 +1,174 @@
+# golangci-lint v2 config for goenvoy — applies to every module.
 version: "2"
 
+run:
+  timeout: 5m
+  go: "1.26"
+  tests: true
+  allow-parallel-runners: true
+
 linters:
-  default: standard
+  default: none
   enable:
-    # Bug detection
-    - bodyclose
-    - durationcheck
-    - errcheck
-    - errorlint
-    - gosec
+    # correctness
     - govet
-    - nilerr
-    - noctx
     - staticcheck
-
-    # Style & consistency
-    - godoclint
-    - godot
-    - misspell
-    - nakedret
-    - nolintlint
-    - revive
-    - unconvert
+    - errcheck
+    - ineffassign
     - unused
-    - whitespace
-
-    # Performance
+    - gocritic
+    - revive
+    - bodyclose
+    - errorlint
+    - wrapcheck
+    - nilerr
+    - nilnil
+    - nilnesserr
+    - exhaustive
     - copyloopvar
     - intrange
+    - predeclared
+    - reassign
+    - recvcheck
+    - nakedret
+    - musttag
+    - contextcheck
+    - fatcontext
+    - containedctx
+    - noctx
+    # security
+    - gosec
+    - bidichk
+    - asciicheck
+    # complexity
+    - gocyclo
+    - funlen
+    - gocognit
+    - cyclop
+    # style / hygiene
+    - misspell
+    - godot
+    - godoclint
+    - whitespace
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - dupword
+    - canonicalheader
+    - importas
     - perfsprint
     - prealloc
-
-    # Code quality
-    - errname
-    - goconst
-    - gocritic
-    - gocyclo
-    - ineffassign
-    - unparam
-    - wastedassign
+    - makezero
+    # project discipline (the pure-stdlib gate)
+    - forbidigo
+    - depguard
+    - gochecknoinits
+    - gochecknoglobals
+    - nolintlint
+    # test hygiene
+    - paralleltest
+    - tparallel
+    - thelper
+    - usetesting
+    - testifylint
+    # supply-chain
+    - gomoddirectives
+    - gomodguard
 
   settings:
+    gocyclo:
+      min-complexity: 18
+    funlen:
+      lines: 120
+      statements: 60
+    gocognit:
+      min-complexity: 30
+    cyclop:
+      max-complexity: 18
+    gosec:
+      excludes:
+        - G104  # errors handled via wrapcheck/errcheck instead
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+        - shadow
+
+    revive:
+      rules:
+        - name: exported
+          arguments: ["checkPrivateReceivers"]
+        - name: indent-error-flow
+        - name: unused-parameter
+        - name: unused-receiver
+        - name: package-comments
+        - name: var-naming
+
     godot:
       scope: toplevel
       period: true
+
     goconst:
       min-len: 2
       min-occurrences: 3
-    gocritic:
-      enabled-tags:
-        - diagnostic
-        - performance
-        - style
-    gocyclo:
-      min-complexity: 20
+
     misspell:
       locale: US
+
     nakedret:
       max-func-lines: 30
+
     nolintlint:
       allow-unused: false
       require-explanation: true
       require-specific: true
-    revive:
+
+# The pure-stdlib gate. Every import outside stdlib + golang.org/x
+    # + intra-monorepo (github.com/lusoris/goenvoy/*) is blocked with a
+    # pointer to ADR-0001.
+    depguard:
       rules:
-        - name: exported
-          arguments:
-            - "checkPrivateReceivers"
-        - name: indent-error-flow
-        - name: unused-parameter
-        - name: unused-receiver
+        stdlib-only:
+          list-mode: lax
+          files: ["$all"]
+          allow:
+            - $gostd
+            - golang.org/x/
+            - github.com/lusoris/goenvoy/
+          deny:
+            - pkg: "github.com/"
+              desc: "goenvoy is pure stdlib (ADR-0001). External deps require a new ADR."
+            - pkg: "gopkg.in/"
+              desc: "goenvoy is pure stdlib (ADR-0001)."
+
+    gomodguard:
+      blocked:
+        modules:
+          - github.com/stretchr/testify:
+              recommendations: ["standard library testing"]
+              reason: "No test deps outside stdlib (ADR-0001)."
+
+    # Intra-monorepo errors don't need re-wrapping at the consumer.
+    # Module boundaries (HTTP, decode) still wrap via fmt.Errorf("<mod>: <op>: %w", err).
+    wrapcheck:
+      ignore-package-globs:
+        - github.com/lusoris/goenvoy/*
+
+    forbidigo:
+      forbid:
+        - pattern: 'fmt\.Print(ln|f)?\('
+          msg: "No fmt.Print* in library code. Return errors, don't print."
+        - pattern: 'os\.Exit\('
+          msg: "No os.Exit in library code."
+        - pattern: 'panic\('
+          msg: "No panics in library code — return an error."
+        - pattern: 'InsecureSkipVerify:\s*true'
+          msg: "InsecureSkipVerify: true needs a //nolint:gosec // <reason> justification."
+      exclude-godoc-examples: true
+
+    importas:
+      no-unaliased: true
 
   exclusions:
     presets:
@@ -81,15 +180,38 @@ linters:
           - goconst
           - errcheck
           - gosec
+          - funlen
+          - gocyclo
+          - gocognit
+          - cyclop
+          - forbidigo    # tests may print for debugging
+          - wrapcheck
+          - noctx
+          - containedctx
       - path: doc\.go
         linters:
           - godoclint
+      - path: example_test\.go
+        linters:
+          - forbidigo
+          - wrapcheck
+          - gosec
 
 formatters:
   enable:
-    - gofmt
+    - gofumpt
+    - gci
     - goimports
   settings:
+    gofumpt:
+      module-path: github.com/lusoris/goenvoy
+      extra-rules: true
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/lusoris/goenvoy)
+      custom-order: true
     goimports:
       local-prefixes:
         - github.com/lusoris/goenvoy

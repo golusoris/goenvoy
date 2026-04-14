@@ -40,6 +40,8 @@ type SessionStatus struct {
 }
 
 // defaultTorrentFields are the keys requested from Deluge torrent status.
+//
+//nolint:gochecknoglobals // immutable default field set, internal to package
 var defaultTorrentFields = []string{
 	"hash", "name", "state", "progress", "save_path",
 	"total_size", "total_done", "total_uploaded",

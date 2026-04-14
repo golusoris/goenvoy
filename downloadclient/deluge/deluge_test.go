@@ -58,6 +58,8 @@ func loginServer(t *testing.T) *httptest.Server {
 }
 
 func TestLogin(t *testing.T) {
+	t.Parallel()
+
 	ts := loginServer(t)
 	defer ts.Close()
 
@@ -68,6 +70,8 @@ func TestLogin(t *testing.T) {
 }
 
 func TestLoginFailed(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -91,6 +95,8 @@ func TestLoginFailed(t *testing.T) {
 }
 
 func TestGetTorrentsStatus(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"abc123": map[string]any{
 			"hash": "abc123", "name": "Ubuntu", "state": "Seeding",
@@ -118,6 +124,8 @@ func TestGetTorrentsStatus(t *testing.T) {
 }
 
 func TestGetTorrentStatus(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"hash": "abc123", "name": "Ubuntu", "state": "Seeding", "progress": 100.0,
 	}
@@ -135,6 +143,8 @@ func TestGetTorrentStatus(t *testing.T) {
 }
 
 func TestAddTorrentURL(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "core.add_torrent_url", "abc123def456")
 	defer ts.Close()
 
@@ -149,6 +159,8 @@ func TestAddTorrentURL(t *testing.T) {
 }
 
 func TestRemoveTorrent(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "core.remove_torrent", true)
 	defer ts.Close()
 
@@ -159,6 +171,8 @@ func TestRemoveTorrent(t *testing.T) {
 }
 
 func TestPauseTorrent(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "core.pause_torrent", nil)
 	defer ts.Close()
 
@@ -169,6 +183,8 @@ func TestPauseTorrent(t *testing.T) {
 }
 
 func TestResumeTorrent(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "core.resume_torrent", nil)
 	defer ts.Close()
 
@@ -179,6 +195,8 @@ func TestResumeTorrent(t *testing.T) {
 }
 
 func TestForceRecheck(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "core.force_recheck", nil)
 	defer ts.Close()
 
@@ -189,6 +207,8 @@ func TestForceRecheck(t *testing.T) {
 }
 
 func TestGetVersion(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "daemon.info", "2.1.1")
 	defer ts.Close()
 
@@ -203,6 +223,8 @@ func TestGetVersion(t *testing.T) {
 }
 
 func TestGetSessionStatus(t *testing.T) {
+	t.Parallel()
+
 	result := map[string]any{
 		"payload_download_rate": 50000, "payload_upload_rate": 10000,
 		"dht_nodes": 200,
@@ -221,6 +243,8 @@ func TestGetSessionStatus(t *testing.T) {
 }
 
 func TestGetFreeSpace(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "core.get_free_space", 500000000000)
 	defer ts.Close()
 
@@ -235,6 +259,8 @@ func TestGetFreeSpace(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -265,6 +291,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestConnected(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "web.connected", true)
 	defer ts.Close()
 
@@ -279,6 +307,8 @@ func TestConnected(t *testing.T) {
 }
 
 func TestSetTorrentLabel(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "label.set_torrent", nil)
 	defer ts.Close()
 
@@ -289,6 +319,8 @@ func TestSetTorrentLabel(t *testing.T) {
 }
 
 func TestMoveTorrent(t *testing.T) {
+	t.Parallel()
+
 	ts := newRPCServer(t, "core.move_storage", nil)
 	defer ts.Close()
 

@@ -76,7 +76,10 @@ func (c *Client) get(ctx context.Context, u string, v any) error {
 		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
 	}
 
-	return json.Unmarshal(body, v)
+	if err := json.Unmarshal(body, v); err != nil {
+		return fmt.Errorf("steam: decode response: %w", err)
+	}
+	return nil
 }
 
 func (c *Client) webAPIKeyParam() string {

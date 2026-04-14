@@ -35,6 +35,8 @@ func assertNoError(t *testing.T, err error) {
 }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	c := omdb.New("key")
 	if c == nil {
 		t.Fatal("expected non-nil client")
@@ -42,6 +44,8 @@ func TestNew(t *testing.T) {
 }
 
 func TestGetByIMDbID(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("i") != "tt0111161" {
 			t.Fatalf("unexpected i param: %s", r.URL.Query().Get("i"))
@@ -76,6 +80,8 @@ func TestGetByIMDbID(t *testing.T) {
 }
 
 func TestGetByIMDbIDWithPlot(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("plot") != "full" {
 			t.Fatalf("unexpected plot param: %s", r.URL.Query().Get("plot"))
@@ -95,6 +101,8 @@ func TestGetByIMDbIDWithPlot(t *testing.T) {
 }
 
 func TestGetByTitle(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("t") != "Inception" {
 			t.Fatalf("unexpected t param: %s", r.URL.Query().Get("t"))
@@ -116,6 +124,8 @@ func TestGetByTitle(t *testing.T) {
 }
 
 func TestGetByTitleWithFilters(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("y") != "2010" {
 			t.Fatalf("unexpected y param: %s", r.URL.Query().Get("y"))
@@ -137,6 +147,8 @@ func TestGetByTitleWithFilters(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("s") != "Batman" {
 			t.Fatalf("unexpected s param: %s", r.URL.Query().Get("s"))
@@ -162,6 +174,8 @@ func TestSearch(t *testing.T) {
 }
 
 func TestSearchWithFilters(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("y") != "2005" {
 			t.Fatalf("unexpected y param: %s", r.URL.Query().Get("y"))
@@ -187,6 +201,8 @@ func TestSearchWithFilters(t *testing.T) {
 }
 
 func TestGetSeason(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("i") != "tt0944947" {
 			t.Fatalf("unexpected i param: %s", r.URL.Query().Get("i"))
@@ -223,6 +239,8 @@ func TestGetSeason(t *testing.T) {
 }
 
 func TestGetEpisode(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("Season") != "1" {
 			t.Fatalf("unexpected Season param: %s", r.URL.Query().Get("Season"))
@@ -250,6 +268,8 @@ func TestGetEpisode(t *testing.T) {
 }
 
 func TestAPIErrorResponse(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"Response":"False","Error":"Movie not found!"}`))
@@ -269,6 +289,8 @@ func TestAPIErrorResponse(t *testing.T) {
 }
 
 func TestHTTPError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 	})
@@ -287,6 +309,8 @@ func TestHTTPError(t *testing.T) {
 }
 
 func TestOptions(t *testing.T) {
+	t.Parallel()
+
 	c := omdb.New("key",
 		metadata.WithUserAgent("custom-agent"),
 		metadata.WithTimeout(60_000_000_000),

@@ -20,6 +20,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *rawg.Client {
 }
 
 func TestSearchGames(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Errorf("method = %s, want GET", r.Method)
@@ -65,6 +67,8 @@ func TestSearchGames(t *testing.T) {
 }
 
 func TestGetGame(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/3498" {
 			t.Errorf("path = %q, want /games/3498", r.URL.Path)
@@ -96,6 +100,8 @@ func TestGetGame(t *testing.T) {
 }
 
 func TestGetGameBySlug(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/grand-theft-auto-v" {
 			t.Errorf("path = %q, want /games/grand-theft-auto-v", r.URL.Path)
@@ -118,6 +124,8 @@ func TestGetGameBySlug(t *testing.T) {
 }
 
 func TestGetGameScreenshots(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/3498/screenshots" {
 			t.Errorf("path = %q, want /games/3498/screenshots", r.URL.Path)
@@ -148,6 +156,8 @@ func TestGetGameScreenshots(t *testing.T) {
 }
 
 func TestGetGameTrailers(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/3498/movies" {
 			t.Errorf("path = %q, want /games/3498/movies", r.URL.Path)
@@ -174,6 +184,8 @@ func TestGetGameTrailers(t *testing.T) {
 }
 
 func TestGetGameAdditions(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/3498/additions" {
 			t.Errorf("path = %q, want /games/3498/additions", r.URL.Path)
@@ -198,6 +210,8 @@ func TestGetGameAdditions(t *testing.T) {
 }
 
 func TestGetGameSeries(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/3498/game-series" {
 			t.Errorf("path = %q, want /games/3498/game-series", r.URL.Path)
@@ -219,6 +233,8 @@ func TestGetGameSeries(t *testing.T) {
 }
 
 func TestGetPlatforms(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/platforms" {
 			t.Errorf("path = %q, want /platforms", r.URL.Path)
@@ -246,6 +262,8 @@ func TestGetPlatforms(t *testing.T) {
 }
 
 func TestGetPlatform(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/platforms/4" {
 			t.Errorf("path = %q, want /platforms/4", r.URL.Path)
@@ -269,6 +287,8 @@ func TestGetPlatform(t *testing.T) {
 }
 
 func TestGetGenres(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/genres" {
 			t.Errorf("path = %q, want /genres", r.URL.Path)
@@ -295,6 +315,8 @@ func TestGetGenres(t *testing.T) {
 }
 
 func TestGetPublishers(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/publishers" {
 			t.Errorf("path = %q, want /publishers", r.URL.Path)
@@ -316,6 +338,8 @@ func TestGetPublishers(t *testing.T) {
 }
 
 func TestGetDevelopers(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/developers" {
 			t.Errorf("path = %q, want /developers", r.URL.Path)
@@ -337,6 +361,8 @@ func TestGetDevelopers(t *testing.T) {
 }
 
 func TestGetTags(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/tags" {
 			t.Errorf("path = %q, want /tags", r.URL.Path)
@@ -358,6 +384,8 @@ func TestGetTags(t *testing.T) {
 }
 
 func TestGetStores(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/stores" {
 			t.Errorf("path = %q, want /stores", r.URL.Path)
@@ -384,6 +412,8 @@ func TestGetStores(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte("invalid key"))
@@ -408,6 +438,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIErrorString(t *testing.T) {
+	t.Parallel()
+
 	e := &rawg.APIError{StatusCode: 403, Status: "403 Forbidden", Body: "invalid key"}
 	want := "rawg: 403 Forbidden: invalid key"
 	if got := e.Error(); got != want {
@@ -416,6 +448,8 @@ func TestAPIErrorString(t *testing.T) {
 }
 
 func TestAPIKeyInQueryParams(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("key"); got != "test-key" {
 			t.Errorf("key = %q, want test-key", got)
@@ -431,6 +465,8 @@ func TestAPIKeyInQueryParams(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	custom := &http.Client{}
 	c := rawg.New("key", metadata.WithHTTPClient(custom))
 	if c == nil {
@@ -439,6 +475,8 @@ func TestWithHTTPClient(t *testing.T) {
 }
 
 func TestEndpointPaths(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		wantPath string
@@ -480,6 +518,7 @@ func TestEndpointPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path != tt.wantPath {
 					t.Errorf("path = %q, want %q", r.URL.Path, tt.wantPath)

@@ -20,6 +20,8 @@ func newTestClient(t *testing.T, handler http.HandlerFunc) *Client {
 }
 
 func TestGetRelease(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") != "Discogs token=test-token" {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -38,6 +40,8 @@ func TestGetRelease(t *testing.T) {
 }
 
 func TestGetArtist(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(Artist{ID: 125246, Name: "Nirvana"})
 	})
@@ -52,6 +56,8 @@ func TestGetArtist(t *testing.T) {
 }
 
 func TestGetArtistReleases(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(SearchResponse{
 			Pagination: Pagination{Page: 1, Pages: 1, Items: 1},
@@ -69,6 +75,8 @@ func TestGetArtistReleases(t *testing.T) {
 }
 
 func TestGetLabel(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(Label{ID: 1, Name: "Planet E"})
 	})
@@ -83,6 +91,8 @@ func TestGetLabel(t *testing.T) {
 }
 
 func TestGetMasterRelease(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(MasterRelease{ID: 1000, Title: "Nevermind", Year: 1991})
 	})
@@ -97,6 +107,8 @@ func TestGetMasterRelease(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(SearchResponse{
 			Pagination: Pagination{Page: 1, Pages: 1, Items: 1},
@@ -114,6 +126,8 @@ func TestSearch(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "not found", http.StatusNotFound)
 	})
@@ -132,6 +146,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	custom := &http.Client{}
 	c := New("token", metadata.WithHTTPClient(custom))
 	if c.HTTPClient() != custom {
@@ -140,6 +156,8 @@ func TestWithHTTPClient(t *testing.T) {
 }
 
 func TestWithUserAgent(t *testing.T) {
+	t.Parallel()
+
 	c := New("token", metadata.WithUserAgent("myapp/2.0"))
 	if c.UserAgent() != "myapp/2.0" {
 		t.Fatal("user agent not set")
@@ -149,6 +167,8 @@ func TestWithUserAgent(t *testing.T) {
 // Release Ratings.
 
 func TestGetReleaseRatingByUser(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/releases/249504/rating/testuser" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -165,6 +185,8 @@ func TestGetReleaseRatingByUser(t *testing.T) {
 }
 
 func TestUpdateReleaseRating(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %q, want PUT", r.Method)
@@ -181,6 +203,8 @@ func TestUpdateReleaseRating(t *testing.T) {
 }
 
 func TestDeleteReleaseRating(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %q, want DELETE", r.Method)
@@ -193,6 +217,8 @@ func TestDeleteReleaseRating(t *testing.T) {
 }
 
 func TestGetCommunityReleaseRating(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(CommunityRating{ReleaseID: 249504, Rating: Rating{Count: 100, Average: 4.5}})
 	})
@@ -206,6 +232,8 @@ func TestGetCommunityReleaseRating(t *testing.T) {
 }
 
 func TestGetReleaseStats(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(ReleaseStats{NumHave: 1000, NumWant: 500})
 	})
@@ -221,6 +249,8 @@ func TestGetReleaseStats(t *testing.T) {
 // User Identity.
 
 func TestGetIdentity(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(Identity{ID: 1, Username: "testuser"})
 	})
@@ -234,6 +264,8 @@ func TestGetIdentity(t *testing.T) {
 }
 
 func TestGetProfile(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/users/testuser" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -250,6 +282,8 @@ func TestGetProfile(t *testing.T) {
 }
 
 func TestEditProfile(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q, want POST", r.Method)
@@ -266,6 +300,8 @@ func TestEditProfile(t *testing.T) {
 }
 
 func TestGetUserSubmissions(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(SubmissionsResponse{
 			Pagination: Pagination{Page: 1, Pages: 1, Items: 1},
@@ -281,6 +317,8 @@ func TestGetUserSubmissions(t *testing.T) {
 }
 
 func TestGetUserContributions(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(ContributionsResponse{
 			Pagination:    Pagination{Page: 1, Pages: 1, Items: 1},
@@ -299,6 +337,8 @@ func TestGetUserContributions(t *testing.T) {
 // User Collection.
 
 func TestGetCollectionFolders(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(CollectionFoldersResponse{
 			Folders: []CollectionFolder{{ID: 0, Name: "All", Count: 100}},
@@ -314,6 +354,8 @@ func TestGetCollectionFolders(t *testing.T) {
 }
 
 func TestCreateCollectionFolder(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q", r.Method)
@@ -331,6 +373,8 @@ func TestCreateCollectionFolder(t *testing.T) {
 }
 
 func TestGetCollectionFolder(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/users/testuser/collection/folders/1" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -347,6 +391,8 @@ func TestGetCollectionFolder(t *testing.T) {
 }
 
 func TestEditCollectionFolder(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q", r.Method)
@@ -363,6 +409,8 @@ func TestEditCollectionFolder(t *testing.T) {
 }
 
 func TestDeleteCollectionFolder(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %q", r.Method)
@@ -375,6 +423,8 @@ func TestDeleteCollectionFolder(t *testing.T) {
 }
 
 func TestGetCollectionItemsByRelease(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(CollectionItemsResponse{
 			Pagination: Pagination{Items: 1},
@@ -391,6 +441,8 @@ func TestGetCollectionItemsByRelease(t *testing.T) {
 }
 
 func TestGetCollectionItemsByFolder(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(CollectionItemsResponse{
 			Pagination: Pagination{Items: 2},
@@ -407,6 +459,8 @@ func TestGetCollectionItemsByFolder(t *testing.T) {
 }
 
 func TestAddToCollectionFolder(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q", r.Method)
@@ -424,6 +478,8 @@ func TestAddToCollectionFolder(t *testing.T) {
 }
 
 func TestChangeRatingOfRelease(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q", r.Method)
@@ -436,6 +492,8 @@ func TestChangeRatingOfRelease(t *testing.T) {
 }
 
 func TestDeleteInstanceFromFolder(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %q", r.Method)
@@ -448,6 +506,8 @@ func TestDeleteInstanceFromFolder(t *testing.T) {
 }
 
 func TestGetCollectionCustomFields(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(CustomFieldsResponse{
 			Fields: []CustomField{{ID: 1, Name: "Media Condition", Type: "dropdown"}},
@@ -463,6 +523,8 @@ func TestGetCollectionCustomFields(t *testing.T) {
 }
 
 func TestEditFieldsInstance(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q", r.Method)
@@ -475,6 +537,8 @@ func TestEditFieldsInstance(t *testing.T) {
 }
 
 func TestGetCollectionValue(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(CollectionValue{Maximum: "$1000", Median: "$500", Minimum: "$100"})
 	})
@@ -490,6 +554,8 @@ func TestGetCollectionValue(t *testing.T) {
 // User Wantlist.
 
 func TestGetWantlist(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(WantlistResponse{
 			Pagination: Pagination{Items: 1},
@@ -506,6 +572,8 @@ func TestGetWantlist(t *testing.T) {
 }
 
 func TestAddToWantlist(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("method = %q", r.Method)
@@ -523,6 +591,8 @@ func TestAddToWantlist(t *testing.T) {
 }
 
 func TestEditWantlistItem(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q", r.Method)
@@ -539,6 +609,8 @@ func TestEditWantlistItem(t *testing.T) {
 }
 
 func TestDeleteFromWantlist(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %q", r.Method)
@@ -553,6 +625,8 @@ func TestDeleteFromWantlist(t *testing.T) {
 // User Lists.
 
 func TestGetUserLists(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(UserListsResponse{
 			Pagination: Pagination{Items: 1},
@@ -569,6 +643,8 @@ func TestGetUserLists(t *testing.T) {
 }
 
 func TestGetList(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/lists/123" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -590,6 +666,8 @@ func TestGetList(t *testing.T) {
 // Marketplace.
 
 func TestGetInventory(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(InventoryResponse{
 			Pagination: Pagination{Items: 1},
@@ -606,6 +684,8 @@ func TestGetInventory(t *testing.T) {
 }
 
 func TestGetListing(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(Listing{ID: 1, Status: "For Sale", Condition: "Near Mint (NM or M-)"})
 	})
@@ -619,6 +699,8 @@ func TestGetListing(t *testing.T) {
 }
 
 func TestCreateListing(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q", r.Method)
@@ -643,6 +725,8 @@ func TestCreateListing(t *testing.T) {
 }
 
 func TestEditListing(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q", r.Method)
@@ -655,6 +739,8 @@ func TestEditListing(t *testing.T) {
 }
 
 func TestDeleteListing(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("method = %q", r.Method)
@@ -667,6 +753,8 @@ func TestDeleteListing(t *testing.T) {
 }
 
 func TestGetOrder(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(Order{ID: "1-1", Status: "Payment Received"})
 	})
@@ -680,6 +768,8 @@ func TestGetOrder(t *testing.T) {
 }
 
 func TestEditOrder(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q", r.Method)
@@ -696,6 +786,8 @@ func TestEditOrder(t *testing.T) {
 }
 
 func TestListOrders(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(OrdersResponse{
 			Pagination: Pagination{Items: 1},
@@ -712,6 +804,8 @@ func TestListOrders(t *testing.T) {
 }
 
 func TestGetOrderMessages(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(OrderMessagesResponse{
 			Pagination: Pagination{Items: 1},
@@ -728,6 +822,8 @@ func TestGetOrderMessages(t *testing.T) {
 }
 
 func TestAddOrderMessage(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q", r.Method)
@@ -744,6 +840,8 @@ func TestAddOrderMessage(t *testing.T) {
 }
 
 func TestGetFee(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.URL.Path, "/marketplace/fee/") {
 			t.Errorf("path = %q", r.URL.Path)
@@ -760,6 +858,8 @@ func TestGetFee(t *testing.T) {
 }
 
 func TestGetFeeWithCurrency(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.URL.Path, "EUR") {
 			t.Errorf("path = %q", r.URL.Path)
@@ -776,6 +876,8 @@ func TestGetFeeWithCurrency(t *testing.T) {
 }
 
 func TestGetPriceSuggestions(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(PriceSuggestions{
 			Mint:     &SuggestedPrice{Value: 50.00, Currency: "USD"},
@@ -792,6 +894,8 @@ func TestGetPriceSuggestions(t *testing.T) {
 }
 
 func TestGetMarketplaceReleaseStats(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(MarketplaceReleaseStats{
 			NumForSale:  10,
@@ -810,6 +914,8 @@ func TestGetMarketplaceReleaseStats(t *testing.T) {
 // Inventory Export.
 
 func TestExportInventory(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q", r.Method)
@@ -822,6 +928,8 @@ func TestExportInventory(t *testing.T) {
 }
 
 func TestGetRecentExports(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(ExportsResponse{
 			Pagination: Pagination{Items: 1},
@@ -838,6 +946,8 @@ func TestGetRecentExports(t *testing.T) {
 }
 
 func TestGetExport(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(Export{ID: 1, Status: "success", Filename: "export.csv"})
 	})
@@ -851,6 +961,8 @@ func TestGetExport(t *testing.T) {
 }
 
 func TestDownloadExport(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Write([]byte("csv,data,here"))
 	})
@@ -866,6 +978,8 @@ func TestDownloadExport(t *testing.T) {
 // doJSON / post / put / del errors.
 
 func TestPostError(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte(`{"message":"forbidden"}`))
@@ -884,6 +998,8 @@ func TestPostError(t *testing.T) {
 }
 
 func TestPutError(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("unauthorized"))
@@ -899,6 +1015,8 @@ func TestPutError(t *testing.T) {
 }
 
 func TestDeleteError(t *testing.T) {
+	t.Parallel()
+
 	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("not found"))

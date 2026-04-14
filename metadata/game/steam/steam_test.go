@@ -23,6 +23,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *steam.Client {
 }
 
 func TestGetAppDetails(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("appids"); got != "730" {
 			t.Errorf("appids = %q, want 730", got)
@@ -72,6 +74,8 @@ func TestGetAppDetails(t *testing.T) {
 }
 
 func TestGetAppDetailsNotFound(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -91,6 +95,8 @@ func TestGetAppDetailsNotFound(t *testing.T) {
 }
 
 func TestGetMultipleAppDetails(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		ids := r.URL.Query().Get("appids")
 		if !strings.Contains(ids, "730") || !strings.Contains(ids, "440") {
@@ -125,6 +131,8 @@ func TestGetMultipleAppDetails(t *testing.T) {
 }
 
 func TestGetFeatured(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasSuffix(r.URL.Path, "/featured") {
 			t.Errorf("path = %q, want /featured", r.URL.Path)
@@ -158,6 +166,8 @@ func TestGetFeatured(t *testing.T) {
 }
 
 func TestGetFeaturedCategories(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"0":{"id":"cat_newreleases","name":"New Releases"},"status":1}`))
@@ -176,6 +186,8 @@ func TestGetFeaturedCategories(t *testing.T) {
 }
 
 func TestGetAppList(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.URL.Path, "GetAppList") {
 			t.Errorf("path = %q, want to contain GetAppList", r.URL.Path)
@@ -208,6 +220,8 @@ func TestGetAppList(t *testing.T) {
 }
 
 func TestGetCurrentPlayers(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("appid"); got != "730" {
 			t.Errorf("appid = %q, want 730", got)
@@ -231,6 +245,8 @@ func TestGetCurrentPlayers(t *testing.T) {
 }
 
 func TestGetAppNews(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("appid"); got != "730" {
 			t.Errorf("appid = %q, want 730", got)
@@ -281,6 +297,8 @@ func TestGetAppNews(t *testing.T) {
 }
 
 func TestGetGlobalAchievements(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("gameid"); got != "730" {
 			t.Errorf("gameid = %q, want 730", got)
@@ -312,6 +330,8 @@ func TestGetGlobalAchievements(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(`{"error":"internal server error"}`))
@@ -331,6 +351,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithAPIKey(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("key"); got != "test-key" {
 			t.Errorf("key = %q, want test-key", got)
@@ -351,6 +373,8 @@ func TestWithAPIKey(t *testing.T) {
 }
 
 func TestGetMultipleAppDetailsPartialSuccess(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{

@@ -21,6 +21,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *hasheous.Client {
 }
 
 func TestLookupByHash(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -85,6 +87,8 @@ func TestLookupByHash(t *testing.T) {
 }
 
 func TestLookupBySHA1(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/Lookup/ByHash/sha1/deadbeef" {
 			t.Errorf("path = %q, want /Lookup/ByHash/sha1/deadbeef", r.URL.Path)
@@ -106,6 +110,8 @@ func TestLookupBySHA1(t *testing.T) {
 }
 
 func TestLookupByMD5(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/Lookup/ByHash/md5/abc123md5" {
 			t.Errorf("path = %q", r.URL.Path)
@@ -124,6 +130,8 @@ func TestLookupByMD5(t *testing.T) {
 }
 
 func TestGetPlatforms(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/Lookup/Platforms" {
 			t.Errorf("path = %q, want /Lookup/Platforms", r.URL.Path)
@@ -151,6 +159,8 @@ func TestGetPlatforms(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(`{"detail":"not found"}`))
@@ -165,7 +175,7 @@ func TestAPIError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("error type = %T, want *hasheous.APIError", err)
 	}
-	if apiErr.StatusCode != 404 {
+	if apiErr.StatusCode != http.StatusNotFound {
 		t.Errorf("StatusCode = %d, want 404", apiErr.StatusCode)
 	}
 }

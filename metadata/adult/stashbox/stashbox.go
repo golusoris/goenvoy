@@ -85,7 +85,7 @@ func New(endpoint, apiKey string, opts ...metadata.Option) *Client {
 	bc := metadata.NewBaseClient(endpoint, "stashbox", opts...)
 	c := &Client{BaseClient: bc, apiKey: apiKey}
 	bc.SetAuth(func(req *http.Request) {
-		req.Header.Set("ApiKey", apiKey)
+		req.Header.Set("Apikey", apiKey)
 	})
 	return c
 }
@@ -135,7 +135,7 @@ func (c *Client) Query(ctx context.Context, query string, variables map[string]a
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("ApiKey", c.apiKey)
+	req.Header.Set("Apikey", c.apiKey)
 	req.Header.Set("User-Agent", c.UserAgent())
 
 	resp, err := c.HTTPClient().Do(req)

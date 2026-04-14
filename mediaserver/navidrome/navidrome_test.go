@@ -25,6 +25,8 @@ func newTestServer(t *testing.T, handler http.HandlerFunc) *Client {
 }
 
 func TestPing(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("u") != "admin" {
 			http.Error(w, "bad auth", http.StatusUnauthorized)
@@ -39,6 +41,8 @@ func TestPing(t *testing.T) {
 }
 
 func TestGetArtists(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		subsonicJSON(t, w, &responseBody{
 			Artists: &ArtistsID3{
@@ -57,6 +61,8 @@ func TestGetArtists(t *testing.T) {
 }
 
 func TestGetArtist(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		subsonicJSON(t, w, &responseBody{
 			Artist: &ArtistID3{ID: "1", Name: "Radiohead", AlbumCount: 9},
@@ -73,6 +79,8 @@ func TestGetArtist(t *testing.T) {
 }
 
 func TestGetAlbum(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		subsonicJSON(t, w, &responseBody{
 			Album: &AlbumID3{ID: "a1", Name: "OK Computer", SongCount: 12},
@@ -89,6 +97,8 @@ func TestGetAlbum(t *testing.T) {
 }
 
 func TestGetAlbumList2(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		subsonicJSON(t, w, &responseBody{
 			AlbumList2: &AlbumList2{Album: []AlbumID3{{ID: "a1", Name: "Abbey Road"}}},
@@ -105,6 +115,8 @@ func TestGetAlbumList2(t *testing.T) {
 }
 
 func TestGetSong(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		subsonicJSON(t, w, &responseBody{
 			Song: &Song{ID: "s1", Title: "Paranoid Android"},
@@ -121,6 +133,8 @@ func TestGetSong(t *testing.T) {
 }
 
 func TestGetRandomSongs(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		subsonicJSON(t, w, &responseBody{
 			RandomSongs: &Songs{Song: []Song{{ID: "s1", Title: "Creep"}}},
@@ -137,6 +151,8 @@ func TestGetRandomSongs(t *testing.T) {
 }
 
 func TestSearch3(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		subsonicJSON(t, w, &responseBody{
 			SearchResult: &SearchResult3{
@@ -157,6 +173,8 @@ func TestSearch3(t *testing.T) {
 }
 
 func TestGetPlaylists(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		subsonicJSON(t, w, &responseBody{
 			Playlists: &Playlists{Playlist: []Playlist{{ID: "p1", Name: "Favorites"}}},
@@ -173,6 +191,8 @@ func TestGetPlaylists(t *testing.T) {
 }
 
 func TestGetPlaylist(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		subsonicJSON(t, w, &responseBody{
 			Playlist: &Playlist{ID: "p1", Name: "Road Trip", SongCount: 20},
@@ -189,6 +209,8 @@ func TestGetPlaylist(t *testing.T) {
 }
 
 func TestGetGenres(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		subsonicJSON(t, w, &responseBody{
 			Genres: &Genres{Genre: []Genre{{Value: "Rock", SongCount: 100, AlbumCount: 20}}},
@@ -205,6 +227,8 @@ func TestGetGenres(t *testing.T) {
 }
 
 func TestGetScanStatus(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		subsonicJSON(t, w, &responseBody{
 			ScanStatus: &ScanStatus{Scanning: false, Count: 5000},
@@ -221,6 +245,8 @@ func TestGetScanStatus(t *testing.T) {
 }
 
 func TestGetStarred2(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		subsonicJSON(t, w, &responseBody{
 			Starred2: &Starred2{
@@ -239,6 +265,8 @@ func TestGetStarred2(t *testing.T) {
 }
 
 func TestSubsonicError(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		json.NewEncoder(w).Encode(subsonicResponse{
 			Response: responseBody{
@@ -263,6 +291,8 @@ func TestSubsonicError(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
 	})
@@ -281,6 +311,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	custom := &http.Client{}
 	c := New("http://localhost", "u", "p", WithHTTPClient(custom))
 	if c.http != custom {

@@ -8,6 +8,8 @@ import (
 )
 
 func TestTransferStatusJSON(t *testing.T) {
+	t.Parallel()
+
 	ts := downloadclient.TransferStatus{
 		ID:              "abc123",
 		Name:            "ubuntu.iso",
@@ -37,6 +39,8 @@ func TestTransferStatusJSON(t *testing.T) {
 }
 
 func TestClientInfoJSON(t *testing.T) {
+	t.Parallel()
+
 	ci := downloadclient.ClientInfo{
 		Name:    "qBittorrent",
 		Version: "4.6.0",
@@ -58,6 +62,8 @@ func TestClientInfoJSON(t *testing.T) {
 }
 
 func TestTransferStateConstants(t *testing.T) {
+	t.Parallel()
+
 	states := []downloadclient.TransferState{
 		downloadclient.TransferStateDownloading,
 		downloadclient.TransferStatePaused,

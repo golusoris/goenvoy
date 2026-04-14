@@ -23,7 +23,7 @@ func newGQLServer(t *testing.T, wantKey, dataField string, response any) *httpte
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q, want POST", r.Method)
 		}
-		if got := r.Header.Get("ApiKey"); got != wantKey {
+		if got := r.Header.Get("Apikey"); got != wantKey {
 			t.Errorf("ApiKey = %q, want %q", got, wantKey)
 		}
 		var req gqlRequest
@@ -37,6 +37,8 @@ func newGQLServer(t *testing.T, wantKey, dataField string, response any) *httpte
 }
 
 func TestFindPerformer(t *testing.T) {
+	t.Parallel()
+
 	p := stashbox.Performer{
 		ID:      "abc-123",
 		Name:    "Test Performer",
@@ -61,6 +63,8 @@ func TestFindPerformer(t *testing.T) {
 }
 
 func TestQueryPerformers(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Count      int                  `json:"count"`
 		Performers []stashbox.Performer `json:"performers"`
@@ -85,6 +89,8 @@ func TestQueryPerformers(t *testing.T) {
 }
 
 func TestSearchPerformers(t *testing.T) {
+	t.Parallel()
+
 	performers := []stashbox.Performer{{ID: "sp1", Name: "Searched Performer"}}
 	ts := newGQLServer(t, "key-3", "searchPerformer", performers)
 	defer ts.Close()
@@ -103,6 +109,8 @@ func TestSearchPerformers(t *testing.T) {
 }
 
 func TestFindScene(t *testing.T) {
+	t.Parallel()
+
 	s := stashbox.Scene{
 		ID:       "scene-1",
 		Title:    "Test Scene",
@@ -127,6 +135,8 @@ func TestFindScene(t *testing.T) {
 }
 
 func TestQueryScenes(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Count  int              `json:"count"`
 		Scenes []stashbox.Scene `json:"scenes"`
@@ -151,6 +161,8 @@ func TestQueryScenes(t *testing.T) {
 }
 
 func TestSearchScenes(t *testing.T) {
+	t.Parallel()
+
 	scenes := []stashbox.Scene{{ID: "ss1", Title: "Found Scene"}}
 	ts := newGQLServer(t, "key-6", "searchScene", scenes)
 	defer ts.Close()
@@ -166,6 +178,8 @@ func TestSearchScenes(t *testing.T) {
 }
 
 func TestFindScenesByFingerprints(t *testing.T) {
+	t.Parallel()
+
 	scenes := [][]stashbox.Scene{
 		{{ID: "fp-1", Title: "Fingerprint Match"}},
 	}
@@ -187,6 +201,8 @@ func TestFindScenesByFingerprints(t *testing.T) {
 }
 
 func TestFindStudio(t *testing.T) {
+	t.Parallel()
+
 	studio := stashbox.Studio{
 		ID:     "studio-1",
 		Name:   "Test Studio",
@@ -209,6 +225,8 @@ func TestFindStudio(t *testing.T) {
 }
 
 func TestQueryStudios(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Count   int               `json:"count"`
 		Studios []stashbox.Studio `json:"studios"`
@@ -233,6 +251,8 @@ func TestQueryStudios(t *testing.T) {
 }
 
 func TestSearchStudios(t *testing.T) {
+	t.Parallel()
+
 	studios := []stashbox.Studio{{ID: "ss1", Name: "Searched Studio"}}
 	ts := newGQLServer(t, "key-10", "searchStudio", studios)
 	defer ts.Close()
@@ -248,6 +268,8 @@ func TestSearchStudios(t *testing.T) {
 }
 
 func TestFindTag(t *testing.T) {
+	t.Parallel()
+
 	tag := stashbox.Tag{
 		ID:          "tag-1",
 		Name:        "Test Tag",
@@ -271,6 +293,8 @@ func TestFindTag(t *testing.T) {
 }
 
 func TestQueryTags(t *testing.T) {
+	t.Parallel()
+
 	resp := struct {
 		Count int            `json:"count"`
 		Tags  []stashbox.Tag `json:"tags"`
@@ -295,6 +319,8 @@ func TestQueryTags(t *testing.T) {
 }
 
 func TestSearchTags(t *testing.T) {
+	t.Parallel()
+
 	tags := []stashbox.Tag{{ID: "st1", Name: "Searched Tag"}}
 	ts := newGQLServer(t, "key-13", "searchTag", tags)
 	defer ts.Close()
@@ -310,6 +336,8 @@ func TestSearchTags(t *testing.T) {
 }
 
 func TestListSites(t *testing.T) {
+	t.Parallel()
+
 	sites := []stashbox.Site{
 		{ID: "site-1", Name: "Test Site", URL: "https://example.com"},
 		{ID: "site-2", Name: "Other Site", URL: "https://other.com", ValidTypes: []string{"SCENE"}},
@@ -331,6 +359,8 @@ func TestListSites(t *testing.T) {
 }
 
 func TestGetConfig(t *testing.T) {
+	t.Parallel()
+
 	cfg := stashbox.Config{
 		Host:          "https://stashdb.org",
 		RequireInvite: true,
@@ -353,6 +383,8 @@ func TestGetConfig(t *testing.T) {
 }
 
 func TestGraphQLError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"errors":[{"message":"performer not found"}]}`))
@@ -374,6 +406,8 @@ func TestGraphQLError(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("unauthorized"))
@@ -395,6 +429,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithCustomHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	p := stashbox.Performer{ID: "p1", Name: "Custom"}
 	ts := newGQLServer(t, "custom-key", "findPerformer", p)
 	defer ts.Close()

@@ -67,7 +67,10 @@ func (c *Client) get(ctx context.Context, path string, v any) error {
 		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
 	}
 
-	return json.Unmarshal(body, v)
+	if err := json.Unmarshal(body, v); err != nil {
+		return fmt.Errorf("spotify: decode response: %w", err)
+	}
+	return nil
 }
 
 // Search searches for artists, albums, and/or tracks.

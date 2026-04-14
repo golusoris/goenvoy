@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -53,24 +54,24 @@ func New(baseURL, apiKey string, opts ...Option) *Client {
 func (c *Client) Authenticate(ctx context.Context) error {
 	body, err := json.Marshal(map[string]string{"apiKey": c.apiKey})
 	if err != nil {
-		return err
+		return fmt.Errorf("kavita: marshal auth body: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/Plugin/authenticate", bytes.NewReader(body))
 	if err != nil {
-		return err
+		return fmt.Errorf("kavita: build auth request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("kavita: send auth request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	rb, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("kavita: read auth response: %w", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
@@ -81,7 +82,7 @@ func (c *Client) Authenticate(ctx context.Context) error {
 		Token string `json:"token"`
 	}
 	if err := json.Unmarshal(rb, &result); err != nil {
-		return err
+		return fmt.Errorf("kavita: decode auth response: %w", err)
 	}
 	c.mu.Lock()
 	c.token = result.Token
@@ -118,7 +119,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, v any) error
 
 	rb, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("kavita: read response: %w", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
@@ -128,7 +129,10 @@ func (c *Client) do(ctx context.Context, method, path string, body, v any) error
 	if v == nil {
 		return nil
 	}
-	return json.Unmarshal(rb, v)
+	if err := json.Unmarshal(rb, v); err != nil {
+		return fmt.Errorf("kavita: decode response: %w", err)
+	}
+	return nil
 }
 
 func (c *Client) getToken() string {
@@ -142,20 +146,24 @@ func (c *Client) send(ctx context.Context, method, path string, body any) (*http
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("kavita: marshal request body: %w", err)
 		}
 		reqBody = bytes.NewReader(b)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("kavita: build request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+c.getToken())
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	return c.http.Do(req)
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("kavita: %s %s: %w", method, path, err)
+	}
+	return resp, nil
 }
 
 // GetLibraries returns all libraries.

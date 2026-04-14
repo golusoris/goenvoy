@@ -31,6 +31,8 @@ func newTestServer(t *testing.T, wantPath, wantAPIKey string, response any) *htt
 }
 
 func TestLogin(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q, want POST", r.Method)
@@ -62,6 +64,8 @@ func TestLogin(t *testing.T) {
 }
 
 func TestLoginError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -78,12 +82,14 @@ func TestLoginError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected *shoko.APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 401 {
+	if apiErr.StatusCode != http.StatusUnauthorized {
 		t.Errorf("StatusCode = %d, want 401", apiErr.StatusCode)
 	}
 }
 
 func TestGetSeries(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Series/1", "my-key", shoko.Series{
 		IDs:  shoko.SeriesIDs{ID: 1, AniDB: 16498},
 		Name: "Frieren: Beyond Journey\u0027s End",
@@ -108,6 +114,8 @@ func TestGetSeries(t *testing.T) {
 }
 
 func TestListSeries(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Series", "list-key", []shoko.Series{
 		{IDs: shoko.SeriesIDs{ID: 1}, Name: "Series One", Size: 12},
 		{IDs: shoko.SeriesIDs{ID: 2}, Name: "Series Two", Size: 24},
@@ -128,6 +136,8 @@ func TestListSeries(t *testing.T) {
 }
 
 func TestSearchSeries(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("search"); got != "frieren" {
 			t.Errorf("search = %q, want frieren", got)
@@ -156,6 +166,8 @@ func TestSearchSeries(t *testing.T) {
 }
 
 func TestGetSeriesAniDB(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Series/1/AniDB", "anidb-key", shoko.AniDBAnime{
 		ID:    16498,
 		Type:  "TV",
@@ -177,6 +189,8 @@ func TestGetSeriesAniDB(t *testing.T) {
 }
 
 func TestGetSeriesTags(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Series/1/Tags", "tag-key", []shoko.Tag{
 		{Name: "fantasy", Weight: 600, Source: "AniDB"},
 		{Name: "adventure", Weight: 400, Source: "AniDB"},
@@ -200,6 +214,8 @@ func TestGetSeriesTags(t *testing.T) {
 }
 
 func TestGetSeriesEpisodes(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Series/1/Episode", "ep-key", []shoko.Episode{
 		{IDs: shoko.EpisodeIDs{ID: 10, AniDB: 280000}, Name: "The Journey Begins"},
 		{IDs: shoko.EpisodeIDs{ID: 11, AniDB: 280001}, Name: "It Didn\u0027t Have to Be Magic"},
@@ -220,6 +236,8 @@ func TestGetSeriesEpisodes(t *testing.T) {
 }
 
 func TestGetAniDBAnime(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Series/AniDB/16498", "anime-key", shoko.AniDBAnime{
 		ID:      16498,
 		ShokoID: 1,
@@ -243,6 +261,8 @@ func TestGetAniDBAnime(t *testing.T) {
 }
 
 func TestGetSeriesByAniDBID(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Series/AniDB/16498/Series", "lookup-key", shoko.Series{
 		IDs:  shoko.SeriesIDs{ID: 1, AniDB: 16498},
 		Name: "Frieren",
@@ -261,6 +281,8 @@ func TestGetSeriesByAniDBID(t *testing.T) {
 }
 
 func TestGetAniDBRelations(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Series/AniDB/16498/Relations", "rel-key", []shoko.AniDBRelation{
 		{RelatedID: 16499, Type: "Sequel"},
 	})
@@ -280,6 +302,8 @@ func TestGetAniDBRelations(t *testing.T) {
 }
 
 func TestGetEpisode(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Episode/10", "ep2-key", shoko.Episode{
 		IDs:  shoko.EpisodeIDs{ID: 10, ParentSeries: 1, AniDB: 280000},
 		Name: "The Journey Begins",
@@ -300,6 +324,8 @@ func TestGetEpisode(t *testing.T) {
 }
 
 func TestGetAniDBEpisode(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Episode/AniDB/280000", "aep-key", shoko.AniDBEpisode{
 		ID:            280000,
 		AnimeID:       16498,
@@ -323,6 +349,8 @@ func TestGetAniDBEpisode(t *testing.T) {
 }
 
 func TestGetFile(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/File/100", "file-key", shoko.File{
 		ID:   100,
 		Size: 1400000000,
@@ -347,6 +375,8 @@ func TestGetFile(t *testing.T) {
 }
 
 func TestListManagedFolders(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/ManagedFolder", "mf-key", []shoko.ManagedFolder{
 		{ID: 1, Path: "/anime", FileCount: 500},
 		{ID: 2, Path: "/movies", FileCount: 200},
@@ -370,6 +400,8 @@ func TestListManagedFolders(t *testing.T) {
 }
 
 func TestGetDashboardStats(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Dashboard/Stats", "dash-key", shoko.DashboardStats{
 		SeriesCount:     150,
 		FileCount:       3000,
@@ -391,6 +423,8 @@ func TestGetDashboardStats(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
@@ -407,7 +441,7 @@ func TestAPIError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected *shoko.APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 403 {
+	if apiErr.StatusCode != http.StatusForbidden {
 		t.Errorf("StatusCode = %d, want 403", apiErr.StatusCode)
 	}
 	if apiErr.Title != "Forbidden" {
@@ -416,6 +450,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIErrorNonJSON(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadGateway)
 		_, _ = w.Write([]byte("<html>Bad Gateway</html>"))
@@ -431,7 +467,7 @@ func TestAPIErrorNonJSON(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected *shoko.APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 502 {
+	if apiErr.StatusCode != http.StatusBadGateway {
 		t.Errorf("StatusCode = %d, want 502", apiErr.StatusCode)
 	}
 	if apiErr.RawBody != "<html>Bad Gateway</html>" {
@@ -440,6 +476,8 @@ func TestAPIErrorNonJSON(t *testing.T) {
 }
 
 func TestAPIErrorMessage(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		err  shoko.APIError
@@ -451,6 +489,7 @@ func TestAPIErrorMessage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := tt.err.Error(); got != tt.want {
 				t.Errorf("Error() = %q, want %q", got, tt.want)
 			}
@@ -459,6 +498,8 @@ func TestAPIErrorMessage(t *testing.T) {
 }
 
 func TestRunImport(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Action/RunImport", "import-key", nil)
 	defer ts.Close()
 
@@ -469,6 +510,8 @@ func TestRunImport(t *testing.T) {
 }
 
 func TestContextCancellation(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Series/1", "cancel-key", shoko.Series{})
 	defer ts.Close()
 
@@ -483,6 +526,8 @@ func TestContextCancellation(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/api/v3/Series/1", "custom-key", shoko.Series{
 		IDs:  shoko.SeriesIDs{ID: 1},
 		Name: "Test",
