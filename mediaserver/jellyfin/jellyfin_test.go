@@ -24,6 +24,8 @@ func newTestServer(t *testing.T, wantPath string, response any) *httptest.Server
 }
 
 func TestAuthenticateByName(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %q, want POST", r.Method)
@@ -45,7 +47,7 @@ func TestAuthenticateByName(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(jellyfin.AuthenticationResult{
 			AccessToken: "test-token-123",
-			ServerId:    "server-1",
+			ServerID:    "server-1",
 		})
 	}))
 	defer ts.Close()
@@ -57,6 +59,8 @@ func TestAuthenticateByName(t *testing.T) {
 }
 
 func TestAuthenticationError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -73,12 +77,14 @@ func TestAuthenticationError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected *jellyfin.APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 401 {
+	if apiErr.StatusCode != http.StatusUnauthorized {
 		t.Errorf("StatusCode = %d, want 401", apiErr.StatusCode)
 	}
 }
 
 func TestGetPublicSystemInfo(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/System/Info/Public", jellyfin.PublicSystemInfo{
 		ServerName:   "My Jellyfin Server",
 		Version:      "10.8.13",
@@ -101,6 +107,8 @@ func TestGetPublicSystemInfo(t *testing.T) {
 }
 
 func TestGetSystemInfo(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/System/Info", jellyfin.SystemInfo{
 		ServerName:                 "My Server",
 		Version:                    "10.8.13",
@@ -121,6 +129,8 @@ func TestGetSystemInfo(t *testing.T) {
 }
 
 func TestPing(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/System/Ping", "")
 	defer ts.Close()
 
@@ -131,6 +141,8 @@ func TestPing(t *testing.T) {
 }
 
 func TestGetUsers(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/Users", []jellyfin.UserDto{
 		{Name: "admin", ID: "user-1", HasPassword: true},
 		{Name: "guest", ID: "user-2", HasPassword: false},
@@ -151,10 +163,12 @@ func TestGetUsers(t *testing.T) {
 }
 
 func TestGetCurrentUser(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/Users/Me", jellyfin.UserDto{
 		Name:        "admin",
 		ID:          "user-1",
-		ServerId:    "server-1",
+		ServerID:    "server-1",
 		HasPassword: true,
 	})
 	defer ts.Close()
@@ -170,6 +184,8 @@ func TestGetCurrentUser(t *testing.T) {
 }
 
 func TestGetSessions(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/Sessions", []jellyfin.SessionInfoDto{
 		{
 			ID:         "session-1",
@@ -196,6 +212,8 @@ func TestGetSessions(t *testing.T) {
 }
 
 func TestGetItems(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/Items", jellyfin.ItemsResult{
 		Items: []jellyfin.BaseItemDto{
 			{ID: "item-1", Name: "Inception", Type: "Movie"},
@@ -223,6 +241,8 @@ func TestGetItems(t *testing.T) {
 }
 
 func TestGetItemsByParent(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/Items" {
 			t.Errorf("path = %q, want /Items", r.URL.Path)
@@ -256,6 +276,8 @@ func TestGetItemsByParent(t *testing.T) {
 }
 
 func TestGetItem(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/Items/item-1", jellyfin.BaseItemDto{
 		ID:           "item-1",
 		Name:         "The Matrix",
@@ -279,6 +301,8 @@ func TestGetItem(t *testing.T) {
 }
 
 func TestGetUserViews(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/UserViews" {
 			t.Errorf("path = %q, want /UserViews", r.URL.Path)
@@ -311,6 +335,8 @@ func TestGetUserViews(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte("{\"message\":\"Access denied\"}"))
@@ -326,7 +352,7 @@ func TestAPIError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected *jellyfin.APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 403 {
+	if apiErr.StatusCode != http.StatusForbidden {
 		t.Errorf("StatusCode = %d, want 403", apiErr.StatusCode)
 	}
 	if apiErr.Message != "Access denied" {
@@ -335,6 +361,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIErrorMessage(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		err  jellyfin.APIError
@@ -346,6 +374,7 @@ func TestAPIErrorMessage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := tt.err.Error(); got != tt.want {
 				t.Errorf("Error() = %q, want %q", got, tt.want)
 			}
@@ -354,6 +383,8 @@ func TestAPIErrorMessage(t *testing.T) {
 }
 
 func TestContextCancellation(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "/Users", []jellyfin.UserDto{})
 	defer ts.Close()
 
@@ -368,6 +399,8 @@ func TestContextCancellation(t *testing.T) {
 }
 
 func TestWithOptions(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
 		if !strings.Contains(auth, `DeviceId="my-device-123"`) {

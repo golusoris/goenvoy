@@ -210,7 +210,7 @@ type DownloadClientResource struct {
 type DevelopmentConfigResource struct {
 	ID                 int    `json:"id"`
 	ConsoleLogLevel    string `json:"consoleLogLevel,omitempty"`
-	LogSql             bool   `json:"logSql"`
+	LogSQL             bool   `json:"logSql"`
 	LogIndexerResponse bool   `json:"logIndexerResponse"`
 	LogRotate          int    `json:"logRotate"`
 	FilterSentryEvents bool   `json:"filterSentryEvents"`

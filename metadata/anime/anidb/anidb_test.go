@@ -105,6 +105,8 @@ func getTestAnime(t *testing.T) *Anime {
 }
 
 func TestGetAnimeMetadata(t *testing.T) {
+	t.Parallel()
+
 	anime := getTestAnime(t)
 	if anime.ID != 1 {
 		t.Errorf("ID = %d, want 1", anime.ID)
@@ -130,6 +132,8 @@ func TestGetAnimeMetadata(t *testing.T) {
 }
 
 func TestGetAnimeTitles(t *testing.T) {
+	t.Parallel()
+
 	anime := getTestAnime(t)
 	if len(anime.Titles) != 2 {
 		t.Fatalf("Titles count = %d, want 2", len(anime.Titles))
@@ -146,6 +150,8 @@ func TestGetAnimeTitles(t *testing.T) {
 }
 
 func TestGetAnimeRelations(t *testing.T) {
+	t.Parallel()
+
 	anime := getTestAnime(t)
 	if len(anime.RelatedAnime) != 1 {
 		t.Fatalf("RelatedAnime count = %d, want 1", len(anime.RelatedAnime))
@@ -171,6 +177,8 @@ func TestGetAnimeRelations(t *testing.T) {
 }
 
 func TestGetAnimeRatings(t *testing.T) {
+	t.Parallel()
+
 	anime := getTestAnime(t)
 	if anime.Ratings.Permanent.Value != "8.16" {
 		t.Errorf("Permanent.Value = %q, want %q", anime.Ratings.Permanent.Value, "8.16")
@@ -196,6 +204,8 @@ func TestGetAnimeRatings(t *testing.T) {
 }
 
 func TestGetAnimeTagsAndCharacters(t *testing.T) {
+	t.Parallel()
+
 	anime := getTestAnime(t)
 	if len(anime.Tags) != 1 {
 		t.Fatalf("Tags count = %d, want 1", len(anime.Tags))
@@ -224,6 +234,8 @@ func TestGetAnimeTagsAndCharacters(t *testing.T) {
 }
 
 func TestGetAnimeEpisodes(t *testing.T) {
+	t.Parallel()
+
 	anime := getTestAnime(t)
 	if len(anime.Episodes) != 1 {
 		t.Fatalf("Episodes count = %d, want 1", len(anime.Episodes))
@@ -240,6 +252,8 @@ func TestGetAnimeEpisodes(t *testing.T) {
 }
 
 func TestHotAnime(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		serveXML(w, `<hotanime>
   <anime id="8556" restricted="false">
@@ -286,6 +300,8 @@ func TestHotAnime(t *testing.T) {
 }
 
 func TestRandomRecommendation(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		serveXML(w, `<randomrecommendation>
   <recommendation>
@@ -327,6 +343,8 @@ func TestRandomRecommendation(t *testing.T) {
 }
 
 func TestRandomSimilar(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		serveXML(w, `<randomsimilar>
   <similar>
@@ -364,6 +382,8 @@ func TestRandomSimilar(t *testing.T) {
 }
 
 func TestMainPageEndpoint(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		serveXML(w, `<main>
   <hotanime>
@@ -418,6 +438,8 @@ func TestMainPageEndpoint(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		serveXML(w, `<error code="302">client version missing or invalid</error>`)
 	})
@@ -439,6 +461,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestHTTPError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	})
@@ -457,6 +481,8 @@ func TestHTTPError(t *testing.T) {
 }
 
 func TestRequestParams(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if q.Get("client") != "testclient" {
@@ -484,6 +510,8 @@ func TestRequestParams(t *testing.T) {
 }
 
 func TestWithUserAgent(t *testing.T) {
+	t.Parallel()
+
 	var gotUA string
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotUA = r.Header.Get("User-Agent")
@@ -499,6 +527,8 @@ func TestWithUserAgent(t *testing.T) {
 }
 
 func TestBannedError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		serveXML(w, `<error>Banned</error>`)
 	})

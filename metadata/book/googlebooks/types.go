@@ -10,7 +10,7 @@ type VolumesResponse struct {
 // Volume represents a Google Books volume.
 type Volume struct {
 	Kind       string      `json:"kind"`
-	Id         string      `json:"id"`
+	ID         string      `json:"id"`
 	SelfLink   string      `json:"selfLink"`
 	VolumeInfo *VolumeInfo `json:"volumeInfo"`
 	SaleInfo   *SaleInfo   `json:"saleInfo,omitempty"`

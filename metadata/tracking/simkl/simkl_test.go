@@ -19,7 +19,7 @@ func newTestServer(t *testing.T, wantPath, wantKey string, response any) *httpte
 			t.Errorf("path = %q, want %q", r.URL.Path, wantPath)
 		}
 		if wantKey != "" {
-			if got := r.Header.Get("simkl-api-key"); got != wantKey {
+			if got := r.Header.Get("Simkl-Api-Key"); got != wantKey {
 				t.Errorf("simkl-api-key = %q, want %q", got, wantKey)
 			}
 		}
@@ -29,6 +29,8 @@ func newTestServer(t *testing.T, wantPath, wantKey string, response any) *httpte
 }
 
 func TestGetMovie(t *testing.T) {
+	t.Parallel()
+
 	movie := simkl.Movie{
 		Title:    "The Dark Knight",
 		Year:     2008,
@@ -57,6 +59,8 @@ func TestGetMovie(t *testing.T) {
 }
 
 func TestTrendingMovies(t *testing.T) {
+	t.Parallel()
+
 	movies := []simkl.TrendingMovie{
 		{Title: "Movie 1", Rank: 1, IDs: simkl.IDs{Simkl: 1}},
 		{Title: "Movie 2", Rank: 2, IDs: simkl.IDs{Simkl: 2}},
@@ -78,6 +82,8 @@ func TestTrendingMovies(t *testing.T) {
 }
 
 func TestGetShow(t *testing.T) {
+	t.Parallel()
+
 	show := simkl.Show{
 		Title:         "Breaking Bad",
 		Year:          2008,
@@ -102,6 +108,8 @@ func TestGetShow(t *testing.T) {
 }
 
 func TestGetShowEpisodes(t *testing.T) {
+	t.Parallel()
+
 	eps := []simkl.Episode{
 		{Title: "Pilot", Season: 1, Episode: 1},
 		{Title: "Cat's in the Bag", Season: 1, Episode: 2},
@@ -123,6 +131,8 @@ func TestGetShowEpisodes(t *testing.T) {
 }
 
 func TestTrendingShows(t *testing.T) {
+	t.Parallel()
+
 	shows := []simkl.TrendingShow{{Title: "Show 1", Rank: 1, IDs: simkl.IDs{SimklID: 1}}}
 	ts := newTestServer(t, "/tv/trending", "ts-key", shows)
 	defer ts.Close()
@@ -138,6 +148,8 @@ func TestTrendingShows(t *testing.T) {
 }
 
 func TestShowGenres(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.GenreItem{{Title: "Drama Show", Year: 2024, Rank: 1}}
 	ts := newTestServer(t, "/tv/genres/drama", "sg-key", items)
 	defer ts.Close()
@@ -156,6 +168,8 @@ func TestShowGenres(t *testing.T) {
 }
 
 func TestShowPremieres(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.PremiereItem{{Title: "New Show", Year: 2024}}
 	ts := newTestServer(t, "/tv/premieres/new", "sp-key", items)
 	defer ts.Close()
@@ -171,6 +185,8 @@ func TestShowPremieres(t *testing.T) {
 }
 
 func TestAiringShows(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.AiringItem{{Title: "Airing Show", Year: 2024}}
 	ts := newTestServer(t, "/tv/airing", "as-key", items)
 	defer ts.Close()
@@ -186,6 +202,8 @@ func TestAiringShows(t *testing.T) {
 }
 
 func TestBestShows(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.BestItem{{Title: "Best Show", Year: 2024, Ratings: &simkl.Ratings{Simkl: &simkl.RatingScore{Rating: 9.5, Votes: 1000}}}}
 	ts := newTestServer(t, "/tv/best/all", "bs-key", items)
 	defer ts.Close()
@@ -204,6 +222,8 @@ func TestBestShows(t *testing.T) {
 }
 
 func TestGetAnime(t *testing.T) {
+	t.Parallel()
+
 	anime := simkl.Anime{
 		Title:     "Attack on Titan",
 		Year:      2013,
@@ -228,6 +248,8 @@ func TestGetAnime(t *testing.T) {
 }
 
 func TestGetAnimeEpisodes(t *testing.T) {
+	t.Parallel()
+
 	eps := []simkl.Episode{{Title: "To You, 2000 Years Later", Season: 1, Episode: 1}}
 	ts := newTestServer(t, "/anime/episodes/38", "ae-key", eps)
 	defer ts.Close()
@@ -243,6 +265,8 @@ func TestGetAnimeEpisodes(t *testing.T) {
 }
 
 func TestTrendingAnime(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.TrendingAnime{{Title: "Trending Anime", Rank: 1}}
 	ts := newTestServer(t, "/anime/trending/today", "ta-key", items)
 	defer ts.Close()
@@ -258,6 +282,8 @@ func TestTrendingAnime(t *testing.T) {
 }
 
 func TestAnimePremieres(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.PremiereItem{{Title: "New Anime", Year: 2024}}
 	ts := newTestServer(t, "/anime/premieres/new", "ap-key", items)
 	defer ts.Close()
@@ -273,6 +299,8 @@ func TestAnimePremieres(t *testing.T) {
 }
 
 func TestAiringAnime(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.AiringItem{{Title: "Airing Anime", Episode: &simkl.EpisodeMinimal{Title: "ep1", Episode: 5}}}
 	ts := newTestServer(t, "/anime/airing", "aa-key", items)
 	defer ts.Close()
@@ -291,6 +319,8 @@ func TestAiringAnime(t *testing.T) {
 }
 
 func TestBestAnime(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.BestItem{{Title: "Best Anime", Year: 2020}}
 	ts := newTestServer(t, "/anime/best/voted", "ba-key", items)
 	defer ts.Close()
@@ -306,6 +336,8 @@ func TestBestAnime(t *testing.T) {
 }
 
 func TestSearchByID(t *testing.T) {
+	t.Parallel()
+
 	results := []simkl.SearchIDResult{
 		{Title: "Found Show", Type: "tv", IDs: simkl.IDs{Simkl: 100, Slug: "found-show"}},
 	}
@@ -326,6 +358,8 @@ func TestSearchByID(t *testing.T) {
 }
 
 func TestSearchText(t *testing.T) {
+	t.Parallel()
+
 	results := []simkl.SearchResult{
 		{Title: "Breaking Bad", Type: "tv", Year: 2008, IDs: simkl.IDs{Simkl: 1388}},
 	}
@@ -346,6 +380,8 @@ func TestSearchText(t *testing.T) {
 }
 
 func TestCalendarShows(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.CalendarShow{{Title: "Cal Show", Date: "2024-06-01"}}
 	ts := newTestServer(t, "/calendar/tv.json", "", items)
 	defer ts.Close()
@@ -365,6 +401,8 @@ func TestCalendarShows(t *testing.T) {
 }
 
 func TestCalendarAnime(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.CalendarAnime{{Title: "Cal Anime", Date: "2024-06-02"}}
 	ts := newTestServer(t, "/calendar/anime.json", "", items)
 	defer ts.Close()
@@ -381,6 +419,8 @@ func TestCalendarAnime(t *testing.T) {
 }
 
 func TestCalendarMovies(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.CalendarMovie{{Title: "Cal Movie", ReleaseDate: "2024-07-01"}}
 	ts := newTestServer(t, "/calendar/movie_release.json", "", items)
 	defer ts.Close()
@@ -397,6 +437,8 @@ func TestCalendarMovies(t *testing.T) {
 }
 
 func TestCalendarShowsMonth(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.CalendarShow{{Title: "June Show", Date: "2024-06-15"}}
 	ts := newTestServer(t, "/calendar/2024/6/tv.json", "", items)
 	defer ts.Close()
@@ -413,6 +455,8 @@ func TestCalendarShowsMonth(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusPreconditionFailed)
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -454,7 +498,7 @@ func TestGetDeviceCode(t *testing.T) {
 		if r.URL.Path != "/oauth/pin" {
 			t.Errorf("path = %q, want /oauth/pin", r.URL.Path)
 		}
-		if got := r.Header.Get("simkl-api-key"); got != "cid" {
+		if got := r.Header.Get("Simkl-Api-Key"); got != "cid" {
 			t.Errorf("simkl-api-key = %q, want %q", got, "cid")
 		}
 		var body map[string]string
@@ -568,6 +612,8 @@ func TestNoBearerTokenWhenEmpty(t *testing.T) {
 }
 
 func TestAPIErrorRawBody(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("internal error"))
@@ -589,6 +635,8 @@ func TestAPIErrorRawBody(t *testing.T) {
 }
 
 func TestAnimeGenres(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.GenreItem{{Title: "Action Anime", Year: 2024}}
 	ts := newTestServer(t, "/anime/genres/action", "ag-key", items)
 	defer ts.Close()
@@ -604,6 +652,8 @@ func TestAnimeGenres(t *testing.T) {
 }
 
 func TestWithCustomHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	movie := simkl.Movie{Title: "Custom", Year: 2024, IDs: simkl.IDs{Simkl: 1}}
 	ts := newTestServer(t, "/movies/1", "custom-key", movie)
 	defer ts.Close()
@@ -629,7 +679,7 @@ func newPostTestServer(t *testing.T, wantPath, wantKey string, response any) *ht
 			t.Errorf("method = %q, want POST", r.Method)
 		}
 		if wantKey != "" {
-			if got := r.Header.Get("simkl-api-key"); got != wantKey {
+			if got := r.Header.Get("Simkl-Api-Key"); got != wantKey {
 				t.Errorf("simkl-api-key = %q, want %q", got, wantKey)
 			}
 		}
@@ -648,7 +698,7 @@ func newDeleteTestServer(t *testing.T, wantPath, wantKey string) *httptest.Serve
 			t.Errorf("method = %q, want %q", r.Method, http.MethodDelete)
 		}
 		if wantKey != "" {
-			if got := r.Header.Get("simkl-api-key"); got != wantKey {
+			if got := r.Header.Get("Simkl-Api-Key"); got != wantKey {
 				t.Errorf("simkl-api-key = %q, want %q", got, wantKey)
 			}
 		}
@@ -659,6 +709,8 @@ func newDeleteTestServer(t *testing.T, wantPath, wantKey string) *httptest.Serve
 // Ratings.
 
 func TestGetRatingByID(t *testing.T) {
+	t.Parallel()
+
 	info := simkl.RatingInfo{
 		Title: "Inception",
 		Year:  2010,
@@ -683,6 +735,8 @@ func TestGetRatingByID(t *testing.T) {
 }
 
 func TestGetWatchlistRatings(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.RatingInfo{
 		{Title: "R1", IDs: simkl.IDs{Simkl: 1}},
 		{Title: "R2", IDs: simkl.IDs{Simkl: 2}},
@@ -706,6 +760,8 @@ func TestGetWatchlistRatings(t *testing.T) {
 // Random search.
 
 func TestSearchRandom(t *testing.T) {
+	t.Parallel()
+
 	result := simkl.RandomResult{
 		Title: "Random Movie",
 		Year:  2020,
@@ -731,6 +787,8 @@ func TestSearchRandom(t *testing.T) {
 // Movie genres & best.
 
 func TestMovieGenres(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.GenreItem{{Title: "Genre Movie", Year: 2024}}
 	ts := newTestServer(t, "/movies/genres/action", "mg-key", items)
 	defer ts.Close()
@@ -749,6 +807,8 @@ func TestMovieGenres(t *testing.T) {
 }
 
 func TestBestMovies(t *testing.T) {
+	t.Parallel()
+
 	items := []simkl.BestItem{{Title: "Best Movie", Year: 2024}}
 	ts := newTestServer(t, "/movies/best/all", "bm-key", items)
 	defer ts.Close()
@@ -769,6 +829,8 @@ func TestBestMovies(t *testing.T) {
 // Scrobble.
 
 func TestScrobbleStart(t *testing.T) {
+	t.Parallel()
+
 	resp := simkl.ScrobbleResponse{Action: "start", Result: "success"}
 	ts := newPostTestServer(t, "/scrobble/start", "sc-key", resp)
 	defer ts.Close()
@@ -787,6 +849,8 @@ func TestScrobbleStart(t *testing.T) {
 }
 
 func TestScrobblePause(t *testing.T) {
+	t.Parallel()
+
 	resp := simkl.ScrobbleResponse{Action: "pause", Result: "success"}
 	ts := newPostTestServer(t, "/scrobble/pause", "sp-key", resp)
 	defer ts.Close()
@@ -805,6 +869,8 @@ func TestScrobblePause(t *testing.T) {
 }
 
 func TestScrobbleStop(t *testing.T) {
+	t.Parallel()
+
 	resp := simkl.ScrobbleResponse{Action: "stop", Result: "success"}
 	ts := newPostTestServer(t, "/scrobble/stop", "ss-key", resp)
 	defer ts.Close()
@@ -824,6 +890,8 @@ func TestScrobbleStop(t *testing.T) {
 }
 
 func TestScrobbleCheckin(t *testing.T) {
+	t.Parallel()
+
 	resp := simkl.ScrobbleResponse{Action: "checkin", Result: "success"}
 	ts := newPostTestServer(t, "/scrobble/checkin", "ci-key", resp)
 	defer ts.Close()
@@ -844,6 +912,8 @@ func TestScrobbleCheckin(t *testing.T) {
 // Sync.
 
 func TestGetLastActivity(t *testing.T) {
+	t.Parallel()
+
 	activity := simkl.LastActivity{
 		AllItems: "2024-01-01T00:00:00Z",
 		TVShows:  &simkl.ActivityTimestamps{All: "2024-01-01T00:00:00Z"},
@@ -866,6 +936,8 @@ func TestGetLastActivity(t *testing.T) {
 }
 
 func TestGetAllItems(t *testing.T) {
+	t.Parallel()
+
 	resp := simkl.WatchlistResponse{
 		Shows: []simkl.WatchlistItem{
 			{Status: "watching", Show: &simkl.ShowShort{Title: "Test Show"}},
@@ -889,6 +961,8 @@ func TestGetAllItems(t *testing.T) {
 }
 
 func TestGetAllItemsNoFilter(t *testing.T) {
+	t.Parallel()
+
 	resp := simkl.WatchlistResponse{
 		Movies: []simkl.WatchlistItem{
 			{Status: "completed", Movie: &simkl.MovieShort{Title: "Good Film"}},
@@ -909,6 +983,8 @@ func TestGetAllItemsNoFilter(t *testing.T) {
 }
 
 func TestAddToHistory(t *testing.T) {
+	t.Parallel()
+
 	resp := simkl.SyncResponse{Added: &simkl.SyncCount{Movies: 1}}
 	ts := newPostTestServer(t, "/sync/history", "ah-key", resp)
 	defer ts.Close()
@@ -927,6 +1003,8 @@ func TestAddToHistory(t *testing.T) {
 }
 
 func TestRemoveFromHistory(t *testing.T) {
+	t.Parallel()
+
 	resp := simkl.SyncResponse{Deleted: &simkl.SyncCount{Shows: 2}}
 	ts := newPostTestServer(t, "/sync/history/remove", "rh-key", resp)
 	defer ts.Close()
@@ -945,6 +1023,8 @@ func TestRemoveFromHistory(t *testing.T) {
 }
 
 func TestGetSyncRatings(t *testing.T) {
+	t.Parallel()
+
 	resp := simkl.WatchlistResponse{
 		Movies: []simkl.WatchlistItem{
 			{UserRating: 9, Movie: &simkl.MovieShort{Title: "Rated Movie"}},
@@ -968,6 +1048,8 @@ func TestGetSyncRatings(t *testing.T) {
 }
 
 func TestAddRatings(t *testing.T) {
+	t.Parallel()
+
 	resp := simkl.SyncResponse{Added: &simkl.SyncCount{Movies: 1}}
 	ts := newPostTestServer(t, "/sync/ratings", "ar-key", resp)
 	defer ts.Close()
@@ -986,6 +1068,8 @@ func TestAddRatings(t *testing.T) {
 }
 
 func TestRemoveRatings(t *testing.T) {
+	t.Parallel()
+
 	resp := simkl.SyncResponse{Deleted: &simkl.SyncCount{Movies: 1}}
 	ts := newPostTestServer(t, "/sync/ratings/remove", "rr-key", resp)
 	defer ts.Close()
@@ -1004,6 +1088,8 @@ func TestRemoveRatings(t *testing.T) {
 }
 
 func TestAddToList(t *testing.T) {
+	t.Parallel()
+
 	resp := simkl.SyncResponse{Added: &simkl.SyncCount{Shows: 1}}
 	ts := newPostTestServer(t, "/sync/add-to-list", "al-key", resp)
 	defer ts.Close()
@@ -1022,6 +1108,8 @@ func TestAddToList(t *testing.T) {
 }
 
 func TestGetPlaybacks(t *testing.T) {
+	t.Parallel()
+
 	sessions := []simkl.PlaybackSession{
 		{ID: 123, Progress: 45.5, Type: "movie", Movie: &simkl.MovieShort{Title: "Paused Movie"}},
 	}
@@ -1046,6 +1134,8 @@ func TestGetPlaybacks(t *testing.T) {
 }
 
 func TestDeletePlayback(t *testing.T) {
+	t.Parallel()
+
 	ts := newDeleteTestServer(t, "/sync/playback/456", "dp-key")
 	defer ts.Close()
 
@@ -1058,6 +1148,8 @@ func TestDeletePlayback(t *testing.T) {
 }
 
 func TestCheckIfWatched(t *testing.T) {
+	t.Parallel()
+
 	results := []simkl.WatchedCheckResult{
 		{Title: "Inception", Year: 2010, Result: true, List: "completed", IDs: simkl.IDs{Simkl: 42}},
 		{Title: "Unknown", Year: 2000, Result: false, IDs: simkl.IDs{Simkl: 99}},
@@ -1088,6 +1180,8 @@ func TestCheckIfWatched(t *testing.T) {
 // Users.
 
 func TestGetUserStats(t *testing.T) {
+	t.Parallel()
+
 	stats := simkl.UserStats{
 		Total:  &simkl.MediaStats{Completed: 200, Total: 250},
 		Movies: &simkl.MediaStats{Completed: 100},
@@ -1109,6 +1203,8 @@ func TestGetUserStats(t *testing.T) {
 }
 
 func TestGetUserSettings(t *testing.T) {
+	t.Parallel()
+
 	settings := simkl.UserSettings{
 		User:    simkl.UserAccount{Name: "testuser"},
 		Account: simkl.AccountDetails{ID: 42, Timezone: "UTC"},
@@ -1131,6 +1227,8 @@ func TestGetUserSettings(t *testing.T) {
 }
 
 func TestGetLastWatchedArts(t *testing.T) {
+	t.Parallel()
+
 	art := simkl.LastWatchedArt{
 		Title:  "Breaking Bad",
 		Poster: "/poster.jpg",
@@ -1153,6 +1251,8 @@ func TestGetLastWatchedArts(t *testing.T) {
 // Error cases for new methods.
 
 func TestDeletePlaybackError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"error":"not found"}`))
@@ -1175,6 +1275,8 @@ func TestDeletePlaybackError(t *testing.T) {
 }
 
 func TestScrobblePostAuthHeader(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
 		if auth != "Bearer scrobble-tok" {
@@ -1199,6 +1301,8 @@ func TestScrobblePostAuthHeader(t *testing.T) {
 }
 
 func TestDeleteAuthHeader(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
 		if auth != "Bearer del-tok" {

@@ -99,7 +99,10 @@ func (c *Client) do(req *http.Request, v any) error {
 	}
 
 	if v != nil {
-		return json.Unmarshal(body, v)
+		if err := json.Unmarshal(body, v); err != nil {
+			return fmt.Errorf("listenbrainz: decode response: %w", err)
+		}
+		return nil
 	}
 
 	return nil

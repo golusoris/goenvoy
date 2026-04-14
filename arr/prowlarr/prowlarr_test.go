@@ -1238,15 +1238,15 @@ func TestGetDevelopmentConfigByID(t *testing.T) {
 
 func TestUpdateDevelopmentConfig(t *testing.T) {
 	t.Parallel()
-	want := prowlarr.DevelopmentConfigResource{ID: 1, LogSql: true}
+	want := prowlarr.DevelopmentConfigResource{ID: 1, LogSQL: true}
 	srv := newTestServer(t, http.MethodPut, "/api/v1/config/development/1", want)
 	defer srv.Close()
 	c, _ := prowlarr.New(srv.URL, "test-key")
-	got, err := c.UpdateDevelopmentConfig(context.Background(), &prowlarr.DevelopmentConfigResource{ID: 1, LogSql: true})
+	got, err := c.UpdateDevelopmentConfig(context.Background(), &prowlarr.DevelopmentConfigResource{ID: 1, LogSQL: true})
 	if err != nil {
 		t.Fatalf("UpdateDevelopmentConfig: %v", err)
 	}
-	if !got.LogSql {
+	if !got.LogSQL {
 		t.Error("expected LogSQL=true")
 	}
 }
@@ -1564,7 +1564,7 @@ func TestGetSystemRoutes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetSystemRoutes: %v", err)
 	}
-	if got[0].Method != "GET" {
+	if got[0].Method != http.MethodGet {
 		t.Errorf("Method = %q, want %q", got[0].Method, "GET")
 	}
 }

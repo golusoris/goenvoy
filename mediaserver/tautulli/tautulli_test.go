@@ -40,6 +40,8 @@ func newTestServer(t *testing.T, wantCmd, wantKey string, data any) *httptest.Se
 }
 
 func TestGetActivity(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "get_activity", "test-key", map[string]any{
 		"stream_count": "2",
 		"sessions":     []any{},
@@ -57,6 +59,8 @@ func TestGetActivity(t *testing.T) {
 }
 
 func TestGetHistory(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "get_history", "test-key", map[string]any{
 		"recordsTotal":    100,
 		"recordsFiltered": 10,
@@ -76,6 +80,8 @@ func TestGetHistory(t *testing.T) {
 }
 
 func TestGetLibraries(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "get_libraries", "test-key", []map[string]any{
 		{"section_id": "1", "section_name": "Movies", "section_type": "movie"},
 		{"section_id": "2", "section_name": "TV Shows", "section_type": "show"},
@@ -96,6 +102,8 @@ func TestGetLibraries(t *testing.T) {
 }
 
 func TestGetLibrary(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "get_library", "test-key", map[string]any{
 		"section_id":   "1",
 		"section_name": "Movies",
@@ -115,6 +123,8 @@ func TestGetLibrary(t *testing.T) {
 }
 
 func TestGetUsers(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "get_users", "test-key", []map[string]any{
 		{"user_id": "133788", "username": "JonSnow"},
 	})
@@ -134,6 +144,8 @@ func TestGetUsers(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "get_user", "test-key", map[string]any{
 		"user_id":       133788,
 		"username":      "JonSnow",
@@ -152,6 +164,8 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetServerInfo(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "get_server_info", "test-key", map[string]any{
 		"pms_name":    "Winterfell-Server",
 		"pms_version": "1.20.0.3133",
@@ -169,6 +183,8 @@ func TestGetServerInfo(t *testing.T) {
 }
 
 func TestGetTautulliInfo(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "get_tautulli_info", "test-key", map[string]any{
 		"tautulli_version": "v2.8.1",
 	})
@@ -185,6 +201,8 @@ func TestGetTautulliInfo(t *testing.T) {
 }
 
 func TestGetMetadata(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "get_metadata", "test-key", map[string]any{
 		"title":      "The Red Woman",
 		"media_type": "episode",
@@ -203,6 +221,8 @@ func TestGetMetadata(t *testing.T) {
 }
 
 func TestGetRecentlyAdded(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "get_recently_added", "test-key", map[string]any{
 		"recently_added": []map[string]any{
 			{"title": "Deadpool", "media_type": "movie"},
@@ -221,6 +241,8 @@ func TestGetRecentlyAdded(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "search", "test-key", map[string]any{
 		"results_count": 5,
 	})
@@ -237,6 +259,8 @@ func TestSearch(t *testing.T) {
 }
 
 func TestServerStatus(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "server_status", "test-key", map[string]any{
 		"connected": true,
 	})
@@ -253,6 +277,8 @@ func TestServerStatus(t *testing.T) {
 }
 
 func TestTerminateSession(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "terminate_session", "test-key", nil)
 	defer ts.Close()
 
@@ -263,6 +289,8 @@ func TestTerminateSession(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("Invalid API key"))
@@ -284,6 +312,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIErrorResult(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		resp := apiResp{}
 		resp.Response.Result = "error"
@@ -305,6 +335,8 @@ func TestAPIErrorResult(t *testing.T) {
 }
 
 func TestGetGeoIPLookup(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "get_geoip_lookup", "test-key", map[string]any{
 		"city":    "Mountain View",
 		"country": "United States",
@@ -322,6 +354,8 @@ func TestGetGeoIPLookup(t *testing.T) {
 }
 
 func TestGetUserWatchTimeStats(t *testing.T) {
+	t.Parallel()
+
 	ts := newTestServer(t, "get_user_watch_time_stats", "test-key", []map[string]any{
 		{"query_days": 7, "total_plays": 3, "total_time": 15694},
 	})
@@ -341,6 +375,8 @@ func TestGetUserWatchTimeStats(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	custom := &http.Client{
 		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {

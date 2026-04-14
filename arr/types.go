@@ -557,7 +557,7 @@ type HostConfigResource struct {
 	LogLevel                  string `json:"logLevel"`
 	ConsoleLogLevel           string `json:"consoleLogLevel"`
 	Branch                    string `json:"branch"`
-	ApiKey                    string `json:"apiKey"`
+	APIKey                    string `json:"apiKey"`
 	SslCertPath               string `json:"sslCertPath"`
 	SslCertPassword           string `json:"sslCertPassword"`
 	URLBase                   string `json:"urlBase"`

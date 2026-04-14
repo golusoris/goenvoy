@@ -70,7 +70,7 @@ func New(baseURL, username, password string, opts ...Option) *Client {
 func (c *Client) authParams() (url.Values, error) {
 	salt := make([]byte, saltLength)
 	if _, err := rand.Read(salt); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("navidrome: generate salt: %w", err)
 	}
 	s := hex.EncodeToString(salt)
 	h := md5.Sum([]byte(c.password + s)) //nolint:gosec // required by Subsonic API protocol
@@ -101,18 +101,18 @@ func (c *Client) get(ctx context.Context, endpoint string, extra url.Values) (*r
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("navidrome: build request: %w", err)
 	}
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("navidrome: GET %s: %w", endpoint, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("navidrome: read response: %w", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
@@ -121,7 +121,7 @@ func (c *Client) get(ctx context.Context, endpoint string, extra url.Values) (*r
 
 	var sr subsonicResponse
 	if err := json.Unmarshal(body, &sr); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("navidrome: decode response: %w", err)
 	}
 
 	if sr.Response.Status != "ok" {

@@ -635,7 +635,7 @@ func TestHTTPError(t *testing.T) {
 func TestRequestHeaders(t *testing.T) {
 	t.Parallel()
 	c := testClient(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("X-MAL-CLIENT-ID") != "test-client-id" {
+		if r.Header.Get("X-Mal-Client-Id") != "test-client-id" {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -837,7 +837,7 @@ func TestBearerTokenOverClientID(t *testing.T) {
 	var gotAuth, gotClientID string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotAuth = r.Header.Get("Authorization")
-		gotClientID = r.Header.Get("X-MAL-CLIENT-ID")
+		gotClientID = r.Header.Get("X-Mal-Client-Id")
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"id": 1}`))
 	}))
@@ -862,7 +862,7 @@ func TestClientIDFallback(t *testing.T) {
 	var gotAuth, gotClientID string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotAuth = r.Header.Get("Authorization")
-		gotClientID = r.Header.Get("X-MAL-CLIENT-ID")
+		gotClientID = r.Header.Get("X-Mal-Client-Id")
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"id": 1}`))
 	}))

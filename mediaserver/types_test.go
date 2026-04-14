@@ -8,6 +8,8 @@ import (
 )
 
 func TestServerInfoJSON(t *testing.T) {
+	t.Parallel()
+
 	si := mediaserver.ServerInfo{
 		Name:      "My Server",
 		Version:   "10.8.0",
@@ -31,6 +33,8 @@ func TestServerInfoJSON(t *testing.T) {
 }
 
 func TestLibraryJSON(t *testing.T) {
+	t.Parallel()
+
 	lib := mediaserver.Library{
 		ID:        "1",
 		Name:      "Movies",
@@ -54,6 +58,8 @@ func TestLibraryJSON(t *testing.T) {
 }
 
 func TestSessionJSON(t *testing.T) {
+	t.Parallel()
+
 	sess := mediaserver.Session{
 		ID:       "sess-1",
 		UserName: "admin",

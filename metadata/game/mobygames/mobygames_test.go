@@ -20,6 +20,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *mobygames.Client {
 }
 
 func TestSearchGames(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Errorf("method = %s, want GET", r.Method)
@@ -57,6 +59,8 @@ func TestSearchGames(t *testing.T) {
 }
 
 func TestGetGame(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/123" {
 			t.Errorf("path = %q, want /games/123", r.URL.Path)
@@ -84,6 +88,8 @@ func TestGetGame(t *testing.T) {
 }
 
 func TestGetGenres(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/genres" {
 			t.Errorf("path = %q, want /genres", r.URL.Path)
@@ -107,6 +113,8 @@ func TestGetGenres(t *testing.T) {
 }
 
 func TestGetPlatforms(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/platforms" {
 			t.Errorf("path = %q, want /platforms", r.URL.Path)
@@ -130,6 +138,8 @@ func TestGetPlatforms(t *testing.T) {
 }
 
 func TestGetGameScreenshots(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/123/platforms/1/screenshots" {
 			t.Errorf("path = %q, want /games/123/platforms/1/screenshots", r.URL.Path)
@@ -155,6 +165,8 @@ func TestGetGameScreenshots(t *testing.T) {
 }
 
 func TestGetGameCovers(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/123/platforms/1/covers" {
 			t.Errorf("path = %q, want /games/123/platforms/1/covers", r.URL.Path)
@@ -182,6 +194,8 @@ func TestGetGameCovers(t *testing.T) {
 }
 
 func TestGetRecentGames(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/recent" {
 			t.Errorf("path = %q, want /games/recent", r.URL.Path)
@@ -207,6 +221,8 @@ func TestGetRecentGames(t *testing.T) {
 }
 
 func TestGetRandomGames(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/random" {
 			t.Errorf("path = %q, want /games/random", r.URL.Path)
@@ -229,6 +245,8 @@ func TestGetRandomGames(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{"message":"Invalid API key"}`))
@@ -242,7 +260,7 @@ func TestAPIError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 401 {
+	if apiErr.StatusCode != http.StatusUnauthorized {
 		t.Errorf("StatusCode = %d, want 401", apiErr.StatusCode)
 	}
 }

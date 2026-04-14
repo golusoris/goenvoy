@@ -46,6 +46,8 @@ func newTestServer(t *testing.T, wantCmd string, response any) *flaresolverr.Cli
 }
 
 func TestGet(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "request.get", map[string]any{
 		"status":  "ok",
 		"message": "Challenge solved!",
@@ -79,6 +81,8 @@ func TestGet(t *testing.T) {
 }
 
 func TestGetWithOptions(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var req map[string]any
@@ -110,6 +114,8 @@ func TestGetWithOptions(t *testing.T) {
 }
 
 func TestPost(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var req map[string]any
@@ -141,6 +147,8 @@ func TestPost(t *testing.T) {
 }
 
 func TestCreateSession(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "sessions.create", map[string]any{"status": "ok", "message": "Session created"})
 
 	resp, err := c.CreateSession(context.Background(), "test-session", nil)
@@ -153,6 +161,8 @@ func TestCreateSession(t *testing.T) {
 }
 
 func TestCreateSessionWithProxy(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		var req map[string]any
@@ -179,6 +189,8 @@ func TestCreateSessionWithProxy(t *testing.T) {
 }
 
 func TestListSessions(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "sessions.list", map[string]any{"status": "ok", "message": "[]"})
 
 	resp, err := c.ListSessions(context.Background())
@@ -191,6 +203,8 @@ func TestListSessions(t *testing.T) {
 }
 
 func TestDestroySession(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "sessions.destroy", map[string]any{"status": "ok", "message": "Session destroyed"})
 
 	resp, err := c.DestroySession(context.Background(), "test-session")
@@ -203,6 +217,8 @@ func TestDestroySession(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("Internal Server Error"))
@@ -224,6 +240,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	custom := &http.Client{
 		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {

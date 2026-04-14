@@ -20,6 +20,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *audiodb.Client {
 }
 
 func TestSearchArtist(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("s"); got != "coldplay" {
 			t.Errorf("s = %q, want coldplay", got)
@@ -42,12 +44,14 @@ func TestSearchArtist(t *testing.T) {
 	if artists[0].StrArtist != "Coldplay" {
 		t.Errorf("StrArtist = %q, want Coldplay", artists[0].StrArtist)
 	}
-	if artists[0].IdArtist != "111239" {
-		t.Errorf("IdArtist = %q, want 111239", artists[0].IdArtist)
+	if artists[0].IDArtist != "111239" {
+		t.Errorf("IDArtist = %q, want 111239", artists[0].IDArtist)
 	}
 }
 
 func TestSearchAlbum(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -70,6 +74,8 @@ func TestSearchAlbum(t *testing.T) {
 }
 
 func TestSearchTrack(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("s"); got != "coldplay" {
 			t.Errorf("s = %q, want coldplay", got)
@@ -98,6 +104,8 @@ func TestSearchTrack(t *testing.T) {
 }
 
 func TestGetArtist(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -120,6 +128,8 @@ func TestGetArtist(t *testing.T) {
 }
 
 func TestGetAlbum(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -142,6 +152,8 @@ func TestGetAlbum(t *testing.T) {
 }
 
 func TestGetAlbumsByArtist(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -162,6 +174,8 @@ func TestGetAlbumsByArtist(t *testing.T) {
 }
 
 func TestGetTracksByAlbum(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -184,6 +198,8 @@ func TestGetTracksByAlbum(t *testing.T) {
 }
 
 func TestGetMusicVideos(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -206,6 +222,8 @@ func TestGetMusicVideos(t *testing.T) {
 }
 
 func TestGetDiscography(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -229,6 +247,8 @@ func TestGetDiscography(t *testing.T) {
 }
 
 func TestGetTopTracks(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -248,6 +268,8 @@ func TestGetTopTracks(t *testing.T) {
 }
 
 func TestGetTrending(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("country"); got != "us" {
 			t.Errorf("country = %q, want us", got)
@@ -276,6 +298,8 @@ func TestGetTrending(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("internal error"))
@@ -297,6 +321,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIKeyInURL(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Path; got != "/2/search.php" {
 			t.Errorf("path = %q, want /2/search.php", got)

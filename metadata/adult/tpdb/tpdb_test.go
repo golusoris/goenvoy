@@ -54,6 +54,8 @@ func newItemServer(t *testing.T, wantPath, wantToken string, data any) *httptest
 }
 
 func TestSearchScenes(t *testing.T) {
+	t.Parallel()
+
 	scene := tpdb.Scene{
 		ID:    42,
 		PID:   "abc123",
@@ -84,6 +86,8 @@ func TestSearchScenes(t *testing.T) {
 }
 
 func TestGetScene(t *testing.T) {
+	t.Parallel()
+
 	scene := tpdb.Scene{
 		ID:          99,
 		PID:         "def456",
@@ -112,6 +116,8 @@ func TestGetScene(t *testing.T) {
 }
 
 func TestGetSimilarScenes(t *testing.T) {
+	t.Parallel()
+
 	scenes := []tpdb.Scene{{ID: 10, Title: "Similar 1"}, {ID: 11, Title: "Similar 2"}}
 	ts := newListServer(t, "/scenes/abc/similar", "sim-token", scenes)
 	defer ts.Close()
@@ -127,6 +133,8 @@ func TestGetSimilarScenes(t *testing.T) {
 }
 
 func TestSearchPerformers(t *testing.T) {
+	t.Parallel()
+
 	perf := tpdb.Performer{
 		ID:   1,
 		PID:  "perf1",
@@ -159,6 +167,8 @@ func TestSearchPerformers(t *testing.T) {
 }
 
 func TestGetPerformer(t *testing.T) {
+	t.Parallel()
+
 	perf := tpdb.Performer{
 		ID:       2,
 		PID:      "perf2",
@@ -188,6 +198,8 @@ func TestGetPerformer(t *testing.T) {
 }
 
 func TestGetPerformerScenes(t *testing.T) {
+	t.Parallel()
+
 	scenes := []tpdb.Scene{{ID: 20, Title: "Scene With Performer"}}
 	ts := newListServer(t, "/performers/p1/scenes", "ps-token", scenes)
 	defer ts.Close()
@@ -206,6 +218,8 @@ func TestGetPerformerScenes(t *testing.T) {
 }
 
 func TestSearchSites(t *testing.T) {
+	t.Parallel()
+
 	site := tpdb.Site{ID: 3, UUID: "uuid-123", Name: "Test Studio", URL: "https://example.com"}
 	ts := newListServer(t, "/sites", "site-token", []tpdb.Site{site})
 	defer ts.Close()
@@ -227,6 +241,8 @@ func TestSearchSites(t *testing.T) {
 }
 
 func TestGetSite(t *testing.T) {
+	t.Parallel()
+
 	site := tpdb.Site{ID: 4, UUID: "uuid-456", Name: "Specific Site", Rating: 3.8}
 	ts := newItemServer(t, "/sites/uuid-456", "s-token", site)
 	defer ts.Close()
@@ -245,6 +261,8 @@ func TestGetSite(t *testing.T) {
 }
 
 func TestListTags(t *testing.T) {
+	t.Parallel()
+
 	tags := []tpdb.Tag{{ID: 1, Name: "Brunette", Slug: "brunette"}}
 	ts := newListServer(t, "/tags", "tag-token", tags)
 	defer ts.Close()
@@ -266,6 +284,8 @@ func TestListTags(t *testing.T) {
 }
 
 func TestGetTag(t *testing.T) {
+	t.Parallel()
+
 	tag := tpdb.Tag{ID: 7, Name: "Blonde", Slug: "blonde"}
 	ts := newItemServer(t, "/tags/blonde", "gt-token", tag)
 	defer ts.Close()
@@ -281,6 +301,8 @@ func TestGetTag(t *testing.T) {
 }
 
 func TestListDirectors(t *testing.T) {
+	t.Parallel()
+
 	dirs := []tpdb.Director{{ID: 1, Name: "John Doe", Slug: "john-doe"}}
 	ts := newListServer(t, "/directors", "dir-token", dirs)
 	defer ts.Close()
@@ -302,6 +324,8 @@ func TestListDirectors(t *testing.T) {
 }
 
 func TestSearchMovies(t *testing.T) {
+	t.Parallel()
+
 	movie := tpdb.Movie{ID: 5, Title: "Test Movie", SKU: "ABC-123"}
 	ts := newListServer(t, "/movies", "mov-token", []tpdb.Movie{movie})
 	defer ts.Close()
@@ -323,6 +347,8 @@ func TestSearchMovies(t *testing.T) {
 }
 
 func TestGetMovie(t *testing.T) {
+	t.Parallel()
+
 	movie := tpdb.Movie{ID: 6, Title: "Specific Movie", Duration: 7200}
 	ts := newItemServer(t, "/movies/6", "gm-token", movie)
 	defer ts.Close()
@@ -341,6 +367,8 @@ func TestGetMovie(t *testing.T) {
 }
 
 func TestSearchJav(t *testing.T) {
+	t.Parallel()
+
 	jav := tpdb.Jav{ID: 8, Title: "Test JAV", SKU: "JAV-001"}
 	ts := newListServer(t, "/jav", "jav-token", []tpdb.Jav{jav})
 	defer ts.Close()
@@ -362,6 +390,8 @@ func TestSearchJav(t *testing.T) {
 }
 
 func TestGetJav(t *testing.T) {
+	t.Parallel()
+
 	jav := tpdb.Jav{ID: 9, Title: "Specific JAV", Duration: 5400}
 	ts := newItemServer(t, "/jav/9", "gj-token", jav)
 	defer ts.Close()
@@ -377,6 +407,8 @@ func TestGetJav(t *testing.T) {
 }
 
 func TestGetChanges(t *testing.T) {
+	t.Parallel()
+
 	scenes := []tpdb.Scene{{ID: 100, Title: "Changed Scene"}}
 	ts := newListServer(t, "/changelog", "ch-token", scenes)
 	defer ts.Close()
@@ -395,6 +427,8 @@ func TestGetChanges(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(map[string]string{"message": "Unauthenticated."})
@@ -419,6 +453,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIErrorRawBody(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("internal error"))
@@ -440,6 +476,8 @@ func TestAPIErrorRawBody(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	ts := newItemServer(t, "/scenes/1", "custom-token", tpdb.Scene{ID: 1, Title: "Custom"})
 	defer ts.Close()
 
@@ -455,6 +493,8 @@ func TestWithHTTPClient(t *testing.T) {
 }
 
 func TestGetSimilarPerformers(t *testing.T) {
+	t.Parallel()
+
 	perfs := []tpdb.Performer{{ID: 50, Name: "Similar Performer"}}
 	ts := newListServer(t, "/performers/p1/similar", "sp-token", perfs)
 	defer ts.Close()
@@ -473,6 +513,8 @@ func TestGetSimilarPerformers(t *testing.T) {
 }
 
 func TestGetPerformerMovies(t *testing.T) {
+	t.Parallel()
+
 	movies := []tpdb.Movie{{ID: 60, Title: "Performer Movie"}}
 	ts := newListServer(t, "/performers/p2/movies", "pm-token", movies)
 	defer ts.Close()
@@ -494,6 +536,8 @@ func TestGetPerformerMovies(t *testing.T) {
 }
 
 func TestGetDirector(t *testing.T) {
+	t.Parallel()
+
 	dir := tpdb.Director{ID: 12, Name: "Test Director", Slug: "test-director"}
 	ts := newItemServer(t, "/directors/test-director", "gd-token", dir)
 	defer ts.Close()
@@ -512,6 +556,8 @@ func TestGetDirector(t *testing.T) {
 }
 
 func TestFindSceneByHash(t *testing.T) {
+	t.Parallel()
+
 	scenes := []tpdb.Scene{{ID: 77, Title: "Hashed Scene"}}
 	ts := newListServer(t, "/scenes", "hash-token", scenes)
 	defer ts.Close()

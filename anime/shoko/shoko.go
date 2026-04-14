@@ -103,7 +103,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body, dst a
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.userAgent)
 	if c.apiKey != "" {
-		req.Header.Set("apikey", c.apiKey)
+		req.Header.Set("Apikey", c.apiKey)
 	}
 
 	resp, err := c.httpClient.Do(req)

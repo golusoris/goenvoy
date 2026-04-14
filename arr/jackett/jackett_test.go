@@ -103,6 +103,8 @@ func newJSONServer(t *testing.T, wantPath string, response any) *jackett.Client 
 }
 
 func TestSearch(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if got := q.Get("t"); got != "search" {
@@ -161,6 +163,8 @@ func TestSearch(t *testing.T) {
 }
 
 func TestSearchNilCategories(t *testing.T) {
+	t.Parallel()
+
 	c := newXMLServer(t, "/api/v2.0/indexers/all/results/torznab", torznabXML)
 	results, err := c.Search(context.Background(), "test", nil)
 	if err != nil {
@@ -172,6 +176,8 @@ func TestSearchNilCategories(t *testing.T) {
 }
 
 func TestSearchIndexer(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.URL.Path, "/indexers/myindexer/") {
 			t.Errorf("path = %q, want myindexer in path", r.URL.Path)
@@ -192,6 +198,8 @@ func TestSearchIndexer(t *testing.T) {
 }
 
 func TestTVSearch(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if got := q.Get("t"); got != "tvsearch" {
@@ -225,6 +233,8 @@ func TestTVSearch(t *testing.T) {
 }
 
 func TestTVSearchOptionalParams(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if q.Has("season") {
@@ -249,6 +259,8 @@ func TestTVSearchOptionalParams(t *testing.T) {
 }
 
 func TestMovieSearch(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if got := q.Get("t"); got != "movie" {
@@ -273,6 +285,8 @@ func TestMovieSearch(t *testing.T) {
 }
 
 func TestMusicSearch(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if got := q.Get("t"); got != "music" {
@@ -291,6 +305,8 @@ func TestMusicSearch(t *testing.T) {
 }
 
 func TestBookSearch(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if got := q.Get("t"); got != "book" {
@@ -309,6 +325,8 @@ func TestBookSearch(t *testing.T) {
 }
 
 func TestGetCapabilities(t *testing.T) {
+	t.Parallel()
+
 	c := newXMLServer(t, "/api/v2.0/indexers/all/results/torznab", capsXML)
 	caps, err := c.GetCapabilities(context.Background())
 	if err != nil {
@@ -359,6 +377,8 @@ func TestGetCapabilities(t *testing.T) {
 }
 
 func TestGetIndexers(t *testing.T) {
+	t.Parallel()
+
 	indexers := []map[string]any{
 		{"id": "rarbg", "name": "RARBG", "type": "public", "configured": true, "language": "en-US", "site_link": "https://rarbg.to"},
 		{"id": "1337x", "name": "1337x", "type": "public", "configured": true, "language": "en-US", "site_link": "https://1337x.to"},
@@ -384,6 +404,8 @@ func TestGetIndexers(t *testing.T) {
 }
 
 func TestGetServerConfig(t *testing.T) {
+	t.Parallel()
+
 	config := map[string]any{
 		"api_key": "abc123", "blackholedir": "/downloads", "port": 9117, "instance_id": "inst-1",
 	}
@@ -408,6 +430,8 @@ func TestGetServerConfig(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("Unauthorized"))
@@ -432,6 +456,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIErrorNoBody(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
@@ -452,6 +478,8 @@ func TestAPIErrorNoBody(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	custom := &http.Client{
 		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
@@ -473,13 +501,17 @@ func TestWithHTTPClient(t *testing.T) {
 	}
 }
 
-func TestWithTimeout(_ *testing.T) {
+func TestWithTimeout(t *testing.T) {
+	t.Parallel()
+
 	c := jackett.New("http://localhost:9117", "key", jackett.WithTimeout(5*1e9))
 	// Just verify it doesn't panic.
 	_ = c
 }
 
 func TestEmptySearchResults(t *testing.T) {
+	t.Parallel()
+
 	emptyXML := `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"><channel></channel></rss>`
 	c := newXMLServer(t, "", emptyXML)

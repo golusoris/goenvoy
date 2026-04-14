@@ -114,7 +114,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	} else {
-		req.Header.Set("X-MAL-CLIENT-ID", c.clientID)
+		req.Header.Set("X-Mal-Client-Id", c.clientID)
 	}
 
 	resp, err := c.HTTPClient().Do(req)

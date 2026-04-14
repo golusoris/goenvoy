@@ -20,6 +20,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *steamgriddb.Client {
 }
 
 func TestGetGameByID(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/id/12345" {
 			t.Errorf("path = %q, want /games/id/12345", r.URL.Path)
@@ -47,6 +49,8 @@ func TestGetGameByID(t *testing.T) {
 }
 
 func TestGetGameByPlatformID(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games/steam/220" {
 			t.Errorf("path = %q, want /games/steam/220", r.URL.Path)
@@ -68,6 +72,8 @@ func TestGetGameByPlatformID(t *testing.T) {
 }
 
 func TestSearchGames(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/search/autocomplete/half-life" {
 			t.Errorf("path = %q, want /search/autocomplete/half-life", r.URL.Path)
@@ -94,6 +100,8 @@ func TestSearchGames(t *testing.T) {
 }
 
 func TestGetGrids(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/grids/game/12345" {
 			t.Errorf("path = %q, want /grids/game/12345", r.URL.Path)
@@ -120,6 +128,8 @@ func TestGetGrids(t *testing.T) {
 }
 
 func TestGetHeroes(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/heroes/game/12345" {
 			t.Errorf("path = %q, want /heroes/game/12345", r.URL.Path)
@@ -146,6 +156,8 @@ func TestGetHeroes(t *testing.T) {
 }
 
 func TestGetLogos(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/logos/game/12345" {
 			t.Errorf("path = %q, want /logos/game/12345", r.URL.Path)
@@ -169,6 +181,8 @@ func TestGetLogos(t *testing.T) {
 }
 
 func TestGetIcons(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/icons/game/12345" {
 			t.Errorf("path = %q, want /icons/game/12345", r.URL.Path)
@@ -192,6 +206,8 @@ func TestGetIcons(t *testing.T) {
 }
 
 func TestImageOptions(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("styles"); got != "alternate,material" {
 			t.Errorf("styles = %q, want alternate,material", got)
@@ -221,6 +237,8 @@ func TestImageOptions(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`{"success":false,"errors":["Unauthorized"]}`))
@@ -234,7 +252,7 @@ func TestAPIError(t *testing.T) {
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected APIError, got %T", err)
 	}
-	if apiErr.StatusCode != 401 {
+	if apiErr.StatusCode != http.StatusUnauthorized {
 		t.Errorf("StatusCode = %d, want 401", apiErr.StatusCode)
 	}
 }

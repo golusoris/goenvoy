@@ -44,6 +44,8 @@ func newTestServerFull(t *testing.T, wantCmd, wantKey string, response any) *myl
 }
 
 func TestGetIndex(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServerFull(t, "getIndex", "test-key", []map[string]any{
 		{"id": "1", "name": "Spider-Man", "status": "Active", "totalIssues": 50},
 		{"id": "2", "name": "Batman", "status": "Ended", "totalIssues": 100},
@@ -65,6 +67,8 @@ func TestGetIndex(t *testing.T) {
 }
 
 func TestGetComic(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "getComic", map[string]any{
 		"id": "42", "name": "X-Men", "status": "Active", "year": "1991",
 	})
@@ -82,6 +86,8 @@ func TestGetComic(t *testing.T) {
 }
 
 func TestGetUpcoming(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "getUpcoming", []map[string]any{
 		{"id": "1", "comicName": "Spider-Man", "issueNumber": "51"},
 	})
@@ -99,6 +105,8 @@ func TestGetUpcoming(t *testing.T) {
 }
 
 func TestGetWanted(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "getWanted", []map[string]any{
 		{"id": "10", "issueName": "Issue 5", "status": "Wanted"},
 	})
@@ -116,6 +124,8 @@ func TestGetWanted(t *testing.T) {
 }
 
 func TestGetHistory(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "getHistory", []map[string]any{
 		{"id": "1", "comicName": "Batman", "issueNumber": "10", "status": "Downloaded"},
 	})
@@ -133,6 +143,8 @@ func TestGetHistory(t *testing.T) {
 }
 
 func TestGetLogs(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "getLogs", []map[string]any{
 		{"message": "Started scan", "level": "INFO", "timestamp": "2025-01-01T00:00:00Z"},
 	})
@@ -150,6 +162,8 @@ func TestGetLogs(t *testing.T) {
 }
 
 func TestFindComic(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "findComic", []map[string]any{
 		{"id": "100", "name": "Saga", "year": "2012", "publisher": "Image", "issues": 66},
 	})
@@ -167,6 +181,8 @@ func TestFindComic(t *testing.T) {
 }
 
 func TestAddComic(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServerFull(t, "addComic", "test-key", nil)
 	if err := c.AddComic(context.Background(), "99"); err != nil {
 		t.Fatal(err)
@@ -174,6 +190,8 @@ func TestAddComic(t *testing.T) {
 }
 
 func TestDeleteComic(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "delComic", nil)
 	if err := c.DeleteComic(context.Background(), "99"); err != nil {
 		t.Fatal(err)
@@ -181,6 +199,8 @@ func TestDeleteComic(t *testing.T) {
 }
 
 func TestPauseComic(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "pauseComic", nil)
 	if err := c.PauseComic(context.Background(), "42"); err != nil {
 		t.Fatal(err)
@@ -188,6 +208,8 @@ func TestPauseComic(t *testing.T) {
 }
 
 func TestResumeComic(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "resumeComic", nil)
 	if err := c.ResumeComic(context.Background(), "42"); err != nil {
 		t.Fatal(err)
@@ -195,6 +217,8 @@ func TestResumeComic(t *testing.T) {
 }
 
 func TestGetVersion(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "getVersion", map[string]any{
 		"version": "0.7.0", "latestVersion": "0.7.1", "commits": "abc123",
 	})
@@ -209,6 +233,8 @@ func TestGetVersion(t *testing.T) {
 }
 
 func TestGetReadList(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "getReadList", []map[string]any{
 		{"id": "1", "name": "Summer Reading", "issues": []map[string]any{
 			{"id": "10", "issueNumber": "1"},
@@ -228,6 +254,8 @@ func TestGetReadList(t *testing.T) {
 }
 
 func TestGetStoryArc(t *testing.T) {
+	t.Parallel()
+
 	c := newTestServer(t, "getStoryArc", map[string]any{
 		"id": "5", "name": "Civil War", "publisher": "Marvel",
 		"issues": []map[string]any{{"id": "20", "issueNumber": "1"}},
@@ -246,6 +274,8 @@ func TestGetStoryArc(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("Unauthorized"))
@@ -267,6 +297,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestQueryParams(t *testing.T) {
+	t.Parallel()
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if got := q.Get("apikey"); got != "my-key" {
@@ -288,12 +320,14 @@ func TestQueryParams(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if comic.Id != "77" {
-		t.Errorf("Id = %q, want 77", comic.Id)
+	if comic.ID != "77" {
+		t.Errorf("ID = %q, want 77", comic.ID)
 	}
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	called := false
 	custom := &http.Client{
 		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {

@@ -21,11 +21,13 @@ func setup(t *testing.T, handler http.HandlerFunc) *igdb.Client {
 }
 
 func TestSearchGames(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
 		}
-		if got := r.Header.Get("Client-ID"); got != "test-client-id" {
+		if got := r.Header.Get("Client-Id"); got != "test-client-id" {
 			t.Errorf("Client-ID = %q, want test-client-id", got)
 		}
 		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
@@ -57,6 +59,8 @@ func TestSearchGames(t *testing.T) {
 }
 
 func TestGetGame(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/games" {
 			t.Errorf("path = %q, want /games", r.URL.Path)
@@ -87,6 +91,8 @@ func TestGetGame(t *testing.T) {
 }
 
 func TestGetGameNotFound(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte("[]"))
@@ -102,6 +108,8 @@ func TestGetGameNotFound(t *testing.T) {
 }
 
 func TestGetGames(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		if got := string(body); got != "fields *; where id = (1,2,3);" {
@@ -128,6 +136,8 @@ func TestGetGames(t *testing.T) {
 }
 
 func TestGetPopularGames(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		if got := string(body); got != "fields *; sort total_rating desc; where total_rating_count > 5; limit 10;" {
@@ -152,6 +162,8 @@ func TestGetPopularGames(t *testing.T) {
 }
 
 func TestGetPlatform(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/platforms" {
 			t.Errorf("path = %q, want /platforms", r.URL.Path)
@@ -178,6 +190,8 @@ func TestGetPlatform(t *testing.T) {
 }
 
 func TestGetPlatformNotFound(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte("[]"))
@@ -193,6 +207,8 @@ func TestGetPlatformNotFound(t *testing.T) {
 }
 
 func TestGetPlatforms(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		if got := string(body); got != "fields *; limit 10; offset 0;" {
@@ -215,6 +231,8 @@ func TestGetPlatforms(t *testing.T) {
 }
 
 func TestGetGenre(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode([]map[string]any{
@@ -235,6 +253,8 @@ func TestGetGenre(t *testing.T) {
 }
 
 func TestGetGenreNotFound(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte("[]"))
@@ -250,6 +270,8 @@ func TestGetGenreNotFound(t *testing.T) {
 }
 
 func TestGetGenres(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode([]map[string]any{
@@ -268,6 +290,8 @@ func TestGetGenres(t *testing.T) {
 }
 
 func TestGetCompany(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode([]map[string]any{
@@ -291,6 +315,8 @@ func TestGetCompany(t *testing.T) {
 }
 
 func TestGetCompanyNotFound(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte("[]"))
@@ -306,6 +332,8 @@ func TestGetCompanyNotFound(t *testing.T) {
 }
 
 func TestSearchCompanies(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		if got := string(body); got != `search "nintendo"; fields *; limit 5;` {
@@ -330,6 +358,8 @@ func TestSearchCompanies(t *testing.T) {
 }
 
 func TestGetGameCovers(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/covers" {
 			t.Errorf("path = %q, want /covers", r.URL.Path)
@@ -360,6 +390,8 @@ func TestGetGameCovers(t *testing.T) {
 }
 
 func TestGetGameScreenshots(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/screenshots" {
 			t.Errorf("path = %q, want /screenshots", r.URL.Path)
@@ -384,6 +416,8 @@ func TestGetGameScreenshots(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("unauthorized"))
@@ -408,6 +442,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestAPIErrorString(t *testing.T) {
+	t.Parallel()
+
 	e := &igdb.APIError{StatusCode: 401, Status: "401 Unauthorized", Body: "bad token"}
 	want := "igdb: 401 Unauthorized: bad token"
 	if got := e.Error(); got != want {
@@ -416,8 +452,10 @@ func TestAPIErrorString(t *testing.T) {
 }
 
 func TestRequestHeaders(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
-		if got := r.Header.Get("Client-ID"); got != "test-client-id" {
+		if got := r.Header.Get("Client-Id"); got != "test-client-id" {
 			t.Errorf("Client-ID = %q, want test-client-id", got)
 		}
 		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
@@ -437,6 +475,8 @@ func TestRequestHeaders(t *testing.T) {
 }
 
 func TestEndpointPaths(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		wantPath string
@@ -470,6 +510,7 @@ func TestEndpointPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path != tt.wantPath {
 					t.Errorf("path = %q, want %q", r.URL.Path, tt.wantPath)
@@ -485,6 +526,8 @@ func TestEndpointPaths(t *testing.T) {
 }
 
 func TestWithHTTPClient(t *testing.T) {
+	t.Parallel()
+
 	custom := &http.Client{}
 	c := igdb.New("id", "token", metadata.WithHTTPClient(custom))
 	// Verify client was created without error.

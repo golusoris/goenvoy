@@ -21,6 +21,8 @@ func setup(t *testing.T, handler http.HandlerFunc) *listenbrainz.Client {
 }
 
 func TestGetUserListens(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Errorf("method = %s, want GET", r.Method)
@@ -78,6 +80,8 @@ func TestGetUserListens(t *testing.T) {
 }
 
 func TestGetListenCount(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -97,6 +101,8 @@ func TestGetListenCount(t *testing.T) {
 }
 
 func TestGetPlayingNow(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -128,6 +134,8 @@ func TestGetPlayingNow(t *testing.T) {
 }
 
 func TestGetUserTopArtists(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("range"); got != "week" {
 			t.Errorf("range = %q, want week", got)
@@ -170,6 +178,8 @@ func TestGetUserTopArtists(t *testing.T) {
 }
 
 func TestGetUserTopReleases(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -198,6 +208,8 @@ func TestGetUserTopReleases(t *testing.T) {
 }
 
 func TestGetUserTopRecordings(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -232,6 +244,8 @@ func TestGetUserTopRecordings(t *testing.T) {
 }
 
 func TestGetListeningActivity(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("range"); got != "week" {
 			t.Errorf("range = %q, want week", got)
@@ -262,6 +276,8 @@ func TestGetListeningActivity(t *testing.T) {
 }
 
 func TestGetDailyActivity(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -298,6 +314,8 @@ func TestGetDailyActivity(t *testing.T) {
 }
 
 func TestGetSitewideArtists(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -322,6 +340,8 @@ func TestGetSitewideArtists(t *testing.T) {
 }
 
 func TestGetSimilarUsers(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
@@ -348,6 +368,8 @@ func TestGetSimilarUsers(t *testing.T) {
 }
 
 func TestGetLatestImport(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("user_name"); got != "testuser" {
 			t.Errorf("user_name = %q, want testuser", got)
@@ -368,6 +390,8 @@ func TestGetLatestImport(t *testing.T) {
 }
 
 func TestSubmitListens(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("method = %s, want POST", r.Method)
@@ -409,6 +433,8 @@ func TestSubmitListens(t *testing.T) {
 }
 
 func TestAPIError(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(`{"error":"not found"}`))
@@ -428,6 +454,8 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestSubmitListensNoBody(t *testing.T) {
+	t.Parallel()
+
 	c := setup(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})

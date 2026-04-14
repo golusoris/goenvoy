@@ -84,7 +84,10 @@ func (c *Client) get(ctx context.Context, endpoint string, v any) error {
 		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
 	}
 
-	return json.Unmarshal(body, v)
+	if err := json.Unmarshal(body, v); err != nil {
+		return fmt.Errorf("audiodb: decode response: %w", err)
+	}
+	return nil
 }
 
 // SearchArtist searches for artists by name.
@@ -121,7 +124,7 @@ func (c *Client) GetArtist(ctx context.Context, id string) (*Artist, error) {
 		return nil, err
 	}
 	if len(resp.Artists) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // documented "not found" — caller checks nil
 	}
 	return &resp.Artists[0], nil
 }
@@ -133,7 +136,7 @@ func (c *Client) GetAlbum(ctx context.Context, id string) (*Album, error) {
 		return nil, err
 	}
 	if len(resp.Album) == 0 {
-		return nil, nil
+		return nil, nil //nolint:nilnil // documented "not found" — caller checks nil
 	}
 	return &resp.Album[0], nil
 }

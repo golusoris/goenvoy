@@ -245,6 +245,7 @@ func (c *Client) callVoid(ctx context.Context, method string, args ...string) er
 
 // Torrent methods.
 
+//nolint:gochecknoglobals // immutable default field set, internal to package
 var torrentFields = []string{
 	"d.hash=",
 	"d.name=",
