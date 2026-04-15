@@ -1,9 +1,6 @@
 # goenvoy
 
 [![CI](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/golusoris/goenvoy/actions/workflows/codeql.yml/badge.svg)](https://github.com/golusoris/goenvoy/actions/workflows/codeql.yml)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/golusoris/goenvoy/badge)](https://scorecard.dev/viewer/?uri=github.com/golusoris/goenvoy)
-[![Go Reference](https://pkg.go.dev/badge/github.com/golusoris/goenvoy.svg)](https://pkg.go.dev/github.com/golusoris/goenvoy)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 
