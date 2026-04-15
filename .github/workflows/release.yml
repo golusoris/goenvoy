@@ -62,13 +62,14 @@ jobs:
           MOD: ${{ steps.tag.outputs.module }}
           VER: ${{ steps.tag.outputs.version }}
         run: |
-          mkdir -p dist
+          mkdir -p "${GITHUB_WORKSPACE}/dist"
           BASENAME="$(echo "$MOD" | tr '/' '_')_${VER}_source"
+          TARBALL="${GITHUB_WORKSPACE}/dist/${BASENAME}.tar.gz"
           (cd "${MOD}" && \
              find . -type f -not -path './coverage.out' -not -name '*.out' \
              | sort | LC_ALL=C tar --owner=0 --group=0 --numeric-owner \
-             --mtime='@0' --sort=name --no-recursion -czf "../dist/${BASENAME}.tar.gz" -T - )
-          (cd dist && sha256sum "${BASENAME}.tar.gz" > "${BASENAME}.checksums.txt")
+             --mtime='@0' --sort=name --no-recursion -czf "${TARBALL}" -T - )
+          (cd "${GITHUB_WORKSPACE}/dist" && sha256sum "${BASENAME}.tar.gz" > "${BASENAME}.checksums.txt")
           echo "basename=${BASENAME}" >> "$GITHUB_OUTPUT"
 
       - name: SBOM (syft → SPDX)
