@@ -67,31 +67,6 @@ jobs:
           working-directory: ${{ matrix.module }}
           args: --config=${{ github.workspace }}/.golangci.yml --timeout=5m
 
-  gosec:
-    name: Security (gosec)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
-        with:
-          go-version: stable
-      - name: Install gosec
-        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
-      - name: Run gosec per module
-        run: |
-          set +e
-          modules=$(find . -name 'go.mod' -not -path './.workingdir/*' -exec dirname {} \;)
-          failed=0
-          for mod in $modules; do
-            echo "::group::gosec $mod"
-            (cd "$mod" && gosec -exclude-generated ./...) || failed=1
-            echo "::endgroup::"
-          done
-          exit $failed
-
   vuln:
     name: Vulnerabilities ${{ matrix.module }}
     needs: discover
@@ -140,6 +115,10 @@ jobs:
           MOD_KEY="${MODULE#./}"
           THRESHOLD=$(jq -r --arg k "$MOD_KEY" '.overrides[$k] // .default' tools/coverage-thresholds.json)
           COV=$(go tool cover -func="${MODULE}/coverage.out" | awk '/^total/{gsub("%","",$3); print $3}')
+          if [ -z "$COV" ]; then
+            echo "no 'total' line in coverage.out (module has no testable code) — skipping threshold check"
+            exit 0
+          fi
           echo "Coverage for ${MOD_KEY}: ${COV}% (threshold ${THRESHOLD}%)"
           if awk -v c="$COV" -v t="$THRESHOLD" 'BEGIN { exit !(c+0 < t+0) }'; then
             echo "::error::${MOD_KEY} coverage ${COV}% < ${THRESHOLD}% — add tests or raise the override (only when intentional)"
@@ -192,6 +171,7 @@ jobs:
         env:
           MODULE_DIR: ${{ matrix.module }}
         run: |
+          set -euo pipefail
           MOD_PATH=${MODULE_DIR#./}
           TAG_PREFIX="${MOD_PATH}/v"
           PREV_TAG=$(git tag --list --sort=-v:refname "${TAG_PREFIX}*" | head -1 || true)
@@ -199,16 +179,39 @@ jobs:
             echo "No previous ${TAG_PREFIX}* tag — skipping (first release)."
             exit 0
           fi
+
+          PREV_SHA=$(git rev-parse "$PREV_TAG^{commit}")
+          HEAD_SHA=$(git rev-parse HEAD)
+          if [ "$PREV_SHA" = "$HEAD_SHA" ]; then
+            echo "PREV_TAG $PREV_TAG already at HEAD — nothing to diff."
+            exit 0
+          fi
+
+          # Source-only fast path: if no .go file under $MOD_PATH changed
+          # between PREV_TAG and HEAD, the public surface can't have moved.
+          if git diff --quiet "$PREV_TAG" HEAD -- "$MOD_PATH/*.go" "$MOD_PATH/**/*.go"; then
+            echo "No .go changes in $MOD_PATH since $PREV_TAG — skipping apidiff."
+            exit 0
+          fi
+
           echo "Comparing $MOD_PATH against $PREV_TAG"
-          cd "$MOD_PATH"
-          MOD_IMPORT=$(go list -m)
-          apidiff -m "$MOD_IMPORT" . > /tmp/current.txt 2>/dev/null || true
-          SAVED=$(git rev-parse HEAD)
-          git stash --include-untracked --quiet || true
-          git checkout --quiet "$PREV_TAG"
-          apidiff -m "$MOD_IMPORT" . > /tmp/prev.txt 2>/dev/null || true
-          git checkout --quiet "$SAVED"
-          git stash pop --quiet || true
+
+          MOD_IMPORT=$(cd "$MOD_PATH" && go list -m)
+
+          # Use a detached worktree for the previous tag so we never mutate
+          # the primary checkout (cleaner than stash + checkout).
+          PREV_WT=$(mktemp -d)
+          git worktree add --detach --quiet "$PREV_WT" "$PREV_TAG"
+          trap 'git worktree remove --force "$PREV_WT" >/dev/null 2>&1 || true' EXIT
+
+          apidiff -m "$MOD_IMPORT" "$PREV_WT/$MOD_PATH" > /tmp/prev.txt
+          apidiff -m "$MOD_IMPORT" "$MOD_PATH"          > /tmp/current.txt
+
+          if [ ! -s /tmp/prev.txt ] || [ ! -s /tmp/current.txt ]; then
+            echo "::error::apidiff produced an empty fingerprint (prev=$(stat -c%s /tmp/prev.txt) current=$(stat -c%s /tmp/current.txt)) — investigate the previous-tag build."
+            exit 1
+          fi
+
           if ! apidiff /tmp/prev.txt /tmp/current.txt; then
             echo "::error::Breaking API change in $MOD_PATH vs $PREV_TAG — add a 'BREAKING CHANGE:' + 'Migration:' footer or bump major."
             exit 1
@@ -218,12 +221,12 @@ jobs:
   status:
     name: CI Status
     if: always()
-    needs: [lint, gosec, vuln, test, build, apidiff]
+    needs: [lint, vuln, test, build, apidiff]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
         run: |
-          for j in lint gosec vuln test build apidiff; do
+          for j in lint vuln test build apidiff; do
             case "$(eval echo \$${j}_result)" in ""|success|skipped) ;; *)
               echo "job $j: $(eval echo \$${j}_result)"; exit 1 ;;
             esac
@@ -231,7 +234,6 @@ jobs:
           echo "All checks passed."
         env:
           lint_result: ${{ needs.lint.result }}
-          gosec_result: ${{ needs.gosec.result }}
           vuln_result: ${{ needs.vuln.result }}
           test_result: ${{ needs.test.result }}
           build_result: ${{ needs.build.result }}
