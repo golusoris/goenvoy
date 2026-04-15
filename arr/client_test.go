@@ -185,3 +185,19 @@ func TestBaseClient_Delete(t *testing.T) {
 		t.Fatalf("Delete failed: %v", err)
 	}
 }
+
+// FuzzNewBaseClient guards the NewBaseClient constructor — the one
+// user-controlled seam in the whole *arr monorepo — against panics on
+// arbitrary baseURL input. url.Parse is surprisingly tolerant and it
+// would be easy for downstream callers to feed us a value we don't
+// expect; treat any panic here as a bug.
+func FuzzNewBaseClient(f *testing.F) {
+	f.Add("http://localhost:8989")
+	f.Add("https://example.com/sonarr/")
+	f.Add("")
+	f.Add("://not-a-url")
+	f.Add("http://[::1]:9999")
+	f.Fuzz(func(_ *testing.T, baseURL string) {
+		_, _ = arr.NewBaseClient(baseURL, "k")
+	})
+}
