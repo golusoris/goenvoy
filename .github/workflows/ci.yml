@@ -37,7 +37,7 @@ jobs:
     outputs:
       modules: ${{ steps.find.outputs.modules }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - id: find
         name: Find all Go modules
         run: |
@@ -53,15 +53,15 @@ jobs:
       matrix:
         module: ${{ fromJSON(needs.discover.outputs.modules) }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version: stable
           cache-dependency-path: ${{ matrix.module }}/go.mod
       - name: Run go vet
         working-directory: ${{ matrix.module }}
         run: go vet ./...
-      - uses: golangci/golangci-lint-action@v9
+      - uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9
         with:
           version: latest
           working-directory: ${{ matrix.module }}
@@ -76,15 +76,15 @@ jobs:
       matrix:
         module: ${{ fromJSON(needs.discover.outputs.modules) }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version: stable
           cache-dependency-path: ${{ matrix.module }}/go.mod
       - name: govulncheck
         working-directory: ${{ matrix.module }}
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@v1.2.0
           govulncheck ./...
 
   test:
@@ -96,8 +96,8 @@ jobs:
       matrix:
         module: ${{ fromJSON(needs.discover.outputs.modules) }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version: stable
           cache-dependency-path: ${{ matrix.module }}/go.mod
@@ -136,7 +136,7 @@ jobs:
           fi
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: coverage-${{ hashFiles(format('{0}/go.mod', matrix.module)) }}
           path: ${{ matrix.module }}/coverage.out
@@ -151,8 +151,8 @@ jobs:
       matrix:
         module: ${{ fromJSON(needs.discover.outputs.modules) }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version: stable
           cache-dependency-path: ${{ matrix.module }}/go.mod
@@ -168,15 +168,15 @@ jobs:
       matrix:
         module: ${{ fromJSON(needs.discover.outputs.modules) }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version: stable
           cache-dependency-path: ${{ matrix.module }}/go.mod
       - name: Install apidiff
-        run: go install golang.org/x/exp/cmd/apidiff@latest
+        run: go install golang.org/x/exp/cmd/apidiff@v0.0.0-20260410095643-746e56fc9e2f
       - name: Run apidiff for ${{ matrix.module }}
         env:
           MODULE_DIR: ${{ matrix.module }}
