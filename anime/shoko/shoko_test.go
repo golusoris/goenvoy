@@ -21,7 +21,7 @@ func newTestServer(t *testing.T, wantPath, wantAPIKey string, response any) *htt
 			t.Errorf("path = %q, want %q", r.URL.Path, wantPath)
 		}
 		if wantAPIKey != "" {
-			if got := r.Header.Get("apikey"); got != wantAPIKey {
+			if got := r.Header.Get("Apikey"); got != wantAPIKey {
 				t.Errorf("apikey = %q, want %q", got, wantAPIKey)
 			}
 		}
