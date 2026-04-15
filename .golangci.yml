@@ -59,6 +59,7 @@ linters:
     - perfsprint
     - prealloc
     - makezero
+    - tagliatelle
     # project discipline (the pure-stdlib gate)
     - forbidigo
     - depguard
@@ -123,6 +124,14 @@ linters:
       allow-unused: false
       require-explanation: true
       require-specific: true
+
+    tagliatelle:
+      case:
+        rules:
+          json: camel
+          xml: camel
+          yaml: camel
+          toml: camel
 
 # The pure-stdlib gate. Every import outside stdlib + golang.org/x
     # + intra-monorepo (github.com/golusoris/goenvoy/*) is blocked with a
@@ -191,6 +200,9 @@ linters:
       - path: doc\.go
         linters:
           - godoclint
+      - path: types\.go
+        linters:
+          - tagliatelle    # JSON tags mirror upstream API shape verbatim
       - path: example_test\.go
         linters:
           - forbidigo
