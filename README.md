@@ -6,6 +6,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/golusoris/goenvoy/arr/v2.svg)](https://pkg.go.dev/github.com/golusoris/goenvoy/arr/v2)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![ko-fi](https://img.shields.io/badge/ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/lusoris)
 
 A collection of Go client libraries for media automation, metadata, and download service APIs — **69 modules** covering 63+ services.
 
@@ -168,3 +169,18 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 ## License
 
 [MIT](LICENSE)
+
+## Support
+
+If goenvoy saves you time, a coffee helps ☕
+
+<p align="left">
+  <a href="https://ko-fi.com/lusoris" target="_blank">
+    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/sponsors/lusoris" target="_blank">
+    <img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Sponsors" />
+  </a>
+</p>
+
