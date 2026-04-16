@@ -24,6 +24,12 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # Only one global fan-out at a time — two concurrent runs would
+  # race on `git tag` / `git push` and could double-push the same tag.
+  group: release-all
+  cancel-in-progress: false
+
 jobs:
   fan-out:
     name: Validate + tag every module

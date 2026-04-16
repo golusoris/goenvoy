@@ -15,6 +15,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # One release run per tag. Tag releases are immutable, so serialising
+  # per tag prevents two dispatches (push + workflow_dispatch) racing on
+  # the same GH Release and clobbering each other's artefacts.
+  group: release-${{ inputs.tag || github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     name: Release tagged module

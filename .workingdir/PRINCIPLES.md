@@ -66,6 +66,7 @@ C4 diagrams are omitted — each module is a single-file HTTP client with no sub
 | [0006](../docs/adr/0006-httptest-only-tests.md) | `httptest`-only test policy — no live API calls | Accepted |
 | [0007](../docs/adr/0007-oauth2-flows.md) | OAuth2 flow helpers — device / auth-code / PKCE / refresh, per-module | Accepted |
 | [0008](../docs/adr/0008-non-rest-wire-protocols.md) | XML-RPC / JSON-RPC / GraphQL clients reuse the same stdlib patterns as REST | Accepted |
+| [0009](../docs/adr/0009-local-replace-directives.md) | Drop committed `replace ../` directives in favour of `go.work` | Accepted |
 | 0100 | *(next forward-looking ADR starts here)* | — |
 
 ---

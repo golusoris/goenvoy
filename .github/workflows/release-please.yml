@@ -8,6 +8,12 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # release-please maintains long-lived release PRs; two runs racing on
+  # main can produce duplicate PR branches and conflicting manifests.
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
