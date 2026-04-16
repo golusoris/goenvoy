@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Moved from `metadata/music/listenbrainz` to `metadata/tracking/listenbrainz`. Update imports accordingly.
+
 ## [1.3.0](https://github.com/golusoris/goenvoy/compare/metadata/music/listenbrainz/v1.2.0...metadata/music/listenbrainz/v1.3.0) (2026-04-15)
 
 

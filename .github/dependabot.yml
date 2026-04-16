@@ -52,7 +52,7 @@ updates:
         patterns: ["*"]
     open-pull-requests-limit: 5
   - package-ecosystem: "gomod"
-    directory: "/arr/flaresolverr"
+    directory: "/tools/flaresolverr"
     schedule:
       interval: "weekly"
     groups:
@@ -468,7 +468,7 @@ updates:
         patterns: ["*"]
     open-pull-requests-limit: 5
   - package-ecosystem: "gomod"
-    directory: "/metadata/music/listenbrainz"
+    directory: "/metadata/tracking/listenbrainz"
     schedule:
       interval: "weekly"
     groups:
@@ -516,7 +516,7 @@ updates:
         patterns: ["*"]
     open-pull-requests-limit: 5
   - package-ecosystem: "gomod"
-    directory: "/metadata/video/letterboxd"
+    directory: "/metadata/tracking/letterboxd"
     schedule:
       interval: "weekly"
     groups:

@@ -4,7 +4,6 @@
   "arr": "2.1.0",
   "arr/autobrr": "1.3.0",
   "arr/bazarr": "1.3.0",
-  "arr/flaresolverr": "1.3.0",
   "arr/jackett": "1.3.0",
   "arr/lidarr": "1.3.0",
   "arr/mylar": "2.1.0",
@@ -56,16 +55,17 @@
   "metadata/music/deezer": "1.3.0",
   "metadata/music/discogs": "1.3.0",
   "metadata/music/lastfm": "1.3.0",
-  "metadata/music/listenbrainz": "1.3.0",
   "metadata/music/musicbrainz": "1.3.0",
   "metadata/music/spotify": "1.3.0",
+  "metadata/tracking/letterboxd": "1.0.0",
+  "metadata/tracking/listenbrainz": "1.0.0",
   "metadata/tracking/simkl": "1.3.0",
   "metadata/tracking/trakt": "1.3.0",
   "metadata/video/fanart": "1.3.0",
-  "metadata/video/letterboxd": "1.3.0",
   "metadata/video/omdb": "1.3.0",
   "metadata/video/opensubtitles": "1.3.0",
   "metadata/video/tmdb": "1.3.0",
   "metadata/video/tvdb": "1.3.0",
-  "metadata/video/tvmaze": "1.3.0"
+  "metadata/video/tvmaze": "1.3.0",
+  "tools/flaresolverr": "1.0.0"
 }

@@ -3,11 +3,11 @@
 //
 // Providers are organized by media category:
 //
-//   - video: TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, OpenSubtitles, Letterboxd
+//   - video: TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, OpenSubtitles
 //   - anime: AniList, AniDB, Kitsu, MyAnimeList
-//   - tracking: Trakt, Simkl
+//   - tracking: Trakt, Simkl, Letterboxd, ListenBrainz
 //   - adult: StashBox, TPDB
-//   - music: MusicBrainz, AudioDB, Deezer, Discogs, Last.fm, ListenBrainz, Spotify
+//   - music: MusicBrainz, AudioDB, Deezer, Discogs, Last.fm, Spotify
 //   - book: Google Books, Open Library
 //   - game: IGDB, RAWG, Steam
 //

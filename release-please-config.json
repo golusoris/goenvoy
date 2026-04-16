@@ -26,7 +26,6 @@
     "arr": { "package-name": "goenvoy/arr", "component": "arr" },
     "arr/autobrr": { "package-name": "goenvoy/arr/autobrr", "component": "arr/autobrr" },
     "arr/bazarr": { "package-name": "goenvoy/arr/bazarr", "component": "arr/bazarr" },
-    "arr/flaresolverr": { "package-name": "goenvoy/arr/flaresolverr", "component": "arr/flaresolverr" },
     "arr/jackett": { "package-name": "goenvoy/arr/jackett", "component": "arr/jackett" },
     "arr/lidarr": { "package-name": "goenvoy/arr/lidarr", "component": "arr/lidarr" },
     "arr/mylar": { "package-name": "goenvoy/arr/mylar", "component": "arr/mylar" },
@@ -78,17 +77,18 @@
     "metadata/music/deezer": { "package-name": "goenvoy/metadata/music/deezer", "component": "metadata/music/deezer" },
     "metadata/music/discogs": { "package-name": "goenvoy/metadata/music/discogs", "component": "metadata/music/discogs" },
     "metadata/music/lastfm": { "package-name": "goenvoy/metadata/music/lastfm", "component": "metadata/music/lastfm" },
-    "metadata/music/listenbrainz": { "package-name": "goenvoy/metadata/music/listenbrainz", "component": "metadata/music/listenbrainz" },
     "metadata/music/musicbrainz": { "package-name": "goenvoy/metadata/music/musicbrainz", "component": "metadata/music/musicbrainz" },
     "metadata/music/spotify": { "package-name": "goenvoy/metadata/music/spotify", "component": "metadata/music/spotify" },
+    "metadata/tracking/letterboxd": { "package-name": "goenvoy/metadata/tracking/letterboxd", "component": "metadata/tracking/letterboxd" },
+    "metadata/tracking/listenbrainz": { "package-name": "goenvoy/metadata/tracking/listenbrainz", "component": "metadata/tracking/listenbrainz" },
     "metadata/tracking/simkl": { "package-name": "goenvoy/metadata/tracking/simkl", "component": "metadata/tracking/simkl" },
     "metadata/tracking/trakt": { "package-name": "goenvoy/metadata/tracking/trakt", "component": "metadata/tracking/trakt" },
     "metadata/video/fanart": { "package-name": "goenvoy/metadata/video/fanart", "component": "metadata/video/fanart" },
-    "metadata/video/letterboxd": { "package-name": "goenvoy/metadata/video/letterboxd", "component": "metadata/video/letterboxd" },
     "metadata/video/omdb": { "package-name": "goenvoy/metadata/video/omdb", "component": "metadata/video/omdb" },
     "metadata/video/opensubtitles": { "package-name": "goenvoy/metadata/video/opensubtitles", "component": "metadata/video/opensubtitles" },
     "metadata/video/tmdb": { "package-name": "goenvoy/metadata/video/tmdb", "component": "metadata/video/tmdb" },
     "metadata/video/tvdb": { "package-name": "goenvoy/metadata/video/tvdb", "component": "metadata/video/tvdb" },
-    "metadata/video/tvmaze": { "package-name": "goenvoy/metadata/video/tvmaze", "component": "metadata/video/tvmaze" }
+    "metadata/video/tvmaze": { "package-name": "goenvoy/metadata/video/tvmaze", "component": "metadata/video/tvmaze" },
+    "tools/flaresolverr": { "package-name": "goenvoy/tools/flaresolverr", "component": "tools/flaresolverr" }
   }
 }

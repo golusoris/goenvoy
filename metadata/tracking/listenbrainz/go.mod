@@ -1,4 +1,4 @@
-module github.com/golusoris/goenvoy/metadata/music/listenbrainz
+module github.com/golusoris/goenvoy/metadata/tracking/listenbrainz
 
 go 1.26.1
 

@@ -15,7 +15,7 @@ FlareSolverr — proxy that solves Cloudflare challenges for upstream scrapers.
 
 ## Related
 
-- Service module: see `arr/flaresolverr` in the monorepo tree.
+- Service module: see `tools/flaresolverr` in the monorepo tree.
 - Internal notes: the service's `AGENTS.md` lists auth model, pagination, and known quirks.
 
 > Refreshed by `/audit-service-docs`. Do not hand-edit `last_verified` — run the skill.
