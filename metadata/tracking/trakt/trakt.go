@@ -24,17 +24,21 @@ const (
 // Client is a Trakt API v2 client.
 type Client struct {
 	*metadata.BaseClient
-	clientID     string
+	clientID string
+
+	mu           sync.RWMutex // Why: guards all fields mutated via Set* and by OAuth token flows.
 	clientSecret string
 	onToken      TokenCallback
-
-	mu           sync.RWMutex
 	accessToken  string
 	refreshToken string
 }
 
 // SetClientSecret sets the client secret needed for OAuth2 flows.
-func (c *Client) SetClientSecret(secret string) { c.clientSecret = secret }
+func (c *Client) SetClientSecret(secret string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.clientSecret = secret
+}
 
 // SetAccessToken sets a pre-existing OAuth2 access token.
 func (c *Client) SetAccessToken(token string) {
@@ -55,7 +59,17 @@ func (c *Client) SetRefreshToken(token string) {
 type TokenCallback func(token Token)
 
 // SetTokenCallback sets a callback invoked whenever tokens are refreshed or exchanged.
-func (c *Client) SetTokenCallback(cb TokenCallback) { c.onToken = cb }
+func (c *Client) SetTokenCallback(cb TokenCallback) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.onToken = cb
+}
+
+func (c *Client) getClientSecret() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.clientSecret
+}
 
 // New creates a Trakt [Client] using the given client ID (API key).
 func New(clientID string, opts ...metadata.Option) *Client {
@@ -2044,7 +2058,7 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (*Token,
 	body := map[string]string{
 		"code":          code.DeviceCode,
 		"client_id":     c.clientID,
-		"client_secret": c.clientSecret,
+		"client_secret": c.getClientSecret(),
 	}
 
 	for {
@@ -2090,7 +2104,7 @@ func (c *Client) ExchangeCode(ctx context.Context, code, redirectURI string) (*T
 	err := c.post(ctx, "/oauth/token", map[string]string{
 		"code":          code,
 		"client_id":     c.clientID,
-		"client_secret": c.clientSecret,
+		"client_secret": c.getClientSecret(),
 		"redirect_uri":  redirectURI,
 		"grant_type":    "authorization_code",
 	}, &token)
@@ -2105,6 +2119,7 @@ func (c *Client) ExchangeCode(ctx context.Context, code, redirectURI string) (*T
 func (c *Client) RefreshToken(ctx context.Context, redirectURI string) (*Token, error) {
 	c.mu.RLock()
 	rt := c.refreshToken
+	cs := c.clientSecret
 	c.mu.RUnlock()
 	if rt == "" {
 		return nil, errors.New("trakt: no refresh token available")
@@ -2114,7 +2129,7 @@ func (c *Client) RefreshToken(ctx context.Context, redirectURI string) (*Token, 
 	err := c.post(ctx, "/oauth/token", map[string]string{
 		"refresh_token": rt,
 		"client_id":     c.clientID,
-		"client_secret": c.clientSecret,
+		"client_secret": cs,
 		"redirect_uri":  redirectURI,
 		"grant_type":    "refresh_token",
 	}, &token)
@@ -2129,12 +2144,13 @@ func (c *Client) RefreshToken(ctx context.Context, redirectURI string) (*Token, 
 func (c *Client) RevokeToken(ctx context.Context) error {
 	c.mu.RLock()
 	token := c.accessToken
+	cs := c.clientSecret
 	c.mu.RUnlock()
 
 	return c.post(ctx, "/oauth/revoke", map[string]string{
 		"token":         token,
 		"client_id":     c.clientID,
-		"client_secret": c.clientSecret,
+		"client_secret": cs,
 	}, nil)
 }
 
@@ -2142,9 +2158,10 @@ func (c *Client) storeToken(t *Token) {
 	c.mu.Lock()
 	c.accessToken = t.AccessToken
 	c.refreshToken = t.RefreshToken
+	cb := c.onToken
 	c.mu.Unlock()
-	if c.onToken != nil {
-		c.onToken(*t)
+	if cb != nil {
+		cb(*t)
 	}
 }
 

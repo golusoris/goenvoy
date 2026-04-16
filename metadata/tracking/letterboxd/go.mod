@@ -1,4 +1,4 @@
-module github.com/golusoris/goenvoy/metadata/video/letterboxd
+module github.com/golusoris/goenvoy/metadata/tracking/letterboxd
 
 go 1.26.1
 

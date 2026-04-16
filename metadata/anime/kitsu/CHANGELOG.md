@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fix data race on concurrent Set*/read of OAuth tokens and client secret.
+
 ## [1.3.0](https://github.com/golusoris/goenvoy/compare/metadata/anime/kitsu/v1.2.0...metadata/anime/kitsu/v1.3.0) (2026-04-15)
 
 

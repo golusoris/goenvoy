@@ -3554,3 +3554,31 @@ func TestGetUserFavorites(t *testing.T) {
 		t.Fatalf("len = %d, want 1", len(items))
 	}
 }
+
+func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"title":"x","ids":{"trakt":1}}`))
+	}))
+	defer srv.Close()
+
+	c := trakt.New("cid", metadata.WithBaseURL(srv.URL))
+	c.SetAccessToken("init")
+
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 200; i++ {
+			c.SetAccessToken("a")
+			c.SetRefreshToken("r")
+			c.SetClientSecret("s")
+			c.SetTokenCallback(nil)
+		}
+		close(done)
+	}()
+	for i := 0; i < 200; i++ {
+		_, _ = c.GetMovie(context.Background(), "the-matrix")
+	}
+	<-done
+}

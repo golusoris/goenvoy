@@ -25,11 +25,11 @@ type TokenCallback func(accessToken string, expiresIn int)
 // Client is a Letterboxd v0 API client.
 type Client struct {
 	*metadata.BaseClient
+	mu           sync.RWMutex // Why: guards accessToken/onToken/tokenExpiry mutated via Set*/token refresh.
 	accessToken  string
 	clientID     string
 	clientSecret string
 	onToken      TokenCallback
-	mu           sync.Mutex
 	tokenExpiry  time.Time
 }
 
@@ -47,7 +47,18 @@ func NewWithClientCredentials(clientID, clientSecret string, opts ...metadata.Op
 }
 
 // SetTokenCallback sets a callback for token lifecycle events.
-func (c *Client) SetTokenCallback(cb TokenCallback) { c.onToken = cb }
+func (c *Client) SetTokenCallback(cb TokenCallback) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.onToken = cb
+}
+
+// getAccessToken returns the current access token under the read lock.
+func (c *Client) getAccessToken() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.accessToken
+}
 
 // tokenResponse is the OAuth2 token endpoint response.
 type tokenResponse struct {
@@ -63,7 +74,12 @@ func (c *Client) ensureToken(ctx context.Context) error {
 	}
 
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	unlocked := false
+	defer func() {
+		if !unlocked {
+			c.mu.Unlock()
+		}
+	}()
 
 	if c.accessToken != "" && time.Now().Before(c.tokenExpiry) {
 		return nil
@@ -106,9 +122,12 @@ func (c *Client) ensureToken(ctx context.Context) error {
 
 	c.accessToken = tok.AccessToken
 	c.tokenExpiry = time.Now().Add(time.Duration(tok.ExpiresIn)*time.Second - 30*time.Second)
+	cb := c.onToken
+	c.mu.Unlock()
+	unlocked = true
 
-	if c.onToken != nil {
-		c.onToken(tok.AccessToken, tok.ExpiresIn)
+	if cb != nil {
+		cb(tok.AccessToken, tok.ExpiresIn)
 	}
 
 	return nil
@@ -120,7 +139,7 @@ func (c *Client) get(ctx context.Context, path string, dst any) error {
 	}
 
 	c.SetAuth(func(req *http.Request) {
-		req.Header.Set("Authorization", "Bearer "+c.accessToken)
+		req.Header.Set("Authorization", "Bearer "+c.getAccessToken())
 	})
 
 	body, status, err := c.DoRaw(ctx, http.MethodGet, path, http.NoBody)
@@ -159,7 +178,7 @@ func (c *Client) doJSON(ctx context.Context, method, path string, payload, dst a
 	}
 
 	c.SetAuth(func(req *http.Request) {
-		req.Header.Set("Authorization", "Bearer "+c.accessToken)
+		req.Header.Set("Authorization", "Bearer "+c.getAccessToken())
 		if payload != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}

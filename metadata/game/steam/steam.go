@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/golusoris/goenvoy/metadata"
 )
@@ -21,6 +22,7 @@ const (
 // Client is a Steam API client.
 type Client struct {
 	*metadata.BaseClient
+	mu        sync.RWMutex // Why: guards storeURL/webAPIURL mutated via Set* while other goroutines read them.
 	storeURL  string
 	webAPIURL string
 	apiKey    string
@@ -50,10 +52,30 @@ func NewWithAPIKey(apiKey string, opts ...metadata.Option) *Client {
 }
 
 // SetStoreURL overrides the Steam Store API base URL (useful for testing).
-func (c *Client) SetStoreURL(u string) { c.storeURL = strings.TrimRight(u, "/") }
+func (c *Client) SetStoreURL(u string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.storeURL = strings.TrimRight(u, "/")
+}
 
 // SetWebAPIURL overrides the Steam Web API base URL (useful for testing).
-func (c *Client) SetWebAPIURL(u string) { c.webAPIURL = strings.TrimRight(u, "/") }
+func (c *Client) SetWebAPIURL(u string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.webAPIURL = strings.TrimRight(u, "/")
+}
+
+func (c *Client) getStoreURL() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.storeURL
+}
+
+func (c *Client) getWebAPIURL() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.webAPIURL
+}
 
 func (c *Client) get(ctx context.Context, u string, v any) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
@@ -91,7 +113,7 @@ func (c *Client) webAPIKeyParam() string {
 
 // GetAppDetails returns detailed information about a single Steam app.
 func (c *Client) GetAppDetails(ctx context.Context, appID int) (*AppDetails, error) {
-	u := c.storeURL + "/appdetails?appids=" + strconv.Itoa(appID)
+	u := c.getStoreURL() + "/appdetails?appids=" + strconv.Itoa(appID)
 
 	var wrapper map[string]appDetailsWrapper
 	if err := c.get(ctx, u, &wrapper); err != nil {
@@ -113,7 +135,7 @@ func (c *Client) GetMultipleAppDetails(ctx context.Context, appIDs []int) (map[i
 		ids[i] = strconv.Itoa(id)
 	}
 
-	u := c.storeURL + "/appdetails?appids=" + strings.Join(ids, ",")
+	u := c.getStoreURL() + "/appdetails?appids=" + strings.Join(ids, ",")
 
 	var wrapper map[string]appDetailsWrapper
 	if err := c.get(ctx, u, &wrapper); err != nil {
@@ -134,7 +156,7 @@ func (c *Client) GetMultipleAppDetails(ctx context.Context, appIDs []int) (map[i
 
 // GetFeatured returns currently featured games on the Steam store.
 func (c *Client) GetFeatured(ctx context.Context) (*FeaturedResponse, error) {
-	u := c.storeURL + "/featured"
+	u := c.getStoreURL() + "/featured"
 	var resp FeaturedResponse
 	if err := c.get(ctx, u, &resp); err != nil {
 		return nil, err
@@ -144,7 +166,7 @@ func (c *Client) GetFeatured(ctx context.Context) (*FeaturedResponse, error) {
 
 // GetFeaturedCategories returns featured store categories.
 func (c *Client) GetFeaturedCategories(ctx context.Context) (*FeaturedCategories, error) {
-	u := c.storeURL + "/featuredcategories"
+	u := c.getStoreURL() + "/featuredcategories"
 	var resp FeaturedCategories
 	if err := c.get(ctx, u, &resp); err != nil {
 		return nil, err
@@ -154,7 +176,7 @@ func (c *Client) GetFeaturedCategories(ctx context.Context) (*FeaturedCategories
 
 // GetAppList returns the complete list of all Steam applications.
 func (c *Client) GetAppList(ctx context.Context) ([]AppListEntry, error) {
-	u := c.webAPIURL + "/ISteamApps/GetAppList/v2/"
+	u := c.getWebAPIURL() + "/ISteamApps/GetAppList/v2/"
 	if c.apiKey != "" {
 		u += "?key=" + url.QueryEscape(c.apiKey)
 	}
@@ -169,7 +191,7 @@ func (c *Client) GetAppList(ctx context.Context) ([]AppListEntry, error) {
 
 // GetCurrentPlayers returns the number of current players for a Steam app.
 func (c *Client) GetCurrentPlayers(ctx context.Context, appID int) (int, error) {
-	u := c.webAPIURL + "/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=" + strconv.Itoa(appID) + c.webAPIKeyParam()
+	u := c.getWebAPIURL() + "/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=" + strconv.Itoa(appID) + c.webAPIKeyParam()
 
 	var resp currentPlayersResponse
 	if err := c.get(ctx, u, &resp); err != nil {
@@ -181,7 +203,7 @@ func (c *Client) GetCurrentPlayers(ctx context.Context, appID int) (int, error) 
 
 // GetAppNews returns news articles for a Steam app.
 func (c *Client) GetAppNews(ctx context.Context, appID, count, maxLength int) ([]NewsItem, error) {
-	u := c.webAPIURL + "/ISteamNews/GetNewsForApp/v2/?appid=" + strconv.Itoa(appID) +
+	u := c.getWebAPIURL() + "/ISteamNews/GetNewsForApp/v2/?appid=" + strconv.Itoa(appID) +
 		"&count=" + strconv.Itoa(count) +
 		"&maxlength=" + strconv.Itoa(maxLength) +
 		c.webAPIKeyParam()
@@ -196,7 +218,7 @@ func (c *Client) GetAppNews(ctx context.Context, appID, count, maxLength int) ([
 
 // GetGlobalAchievements returns global achievement unlock percentages for a Steam app.
 func (c *Client) GetGlobalAchievements(ctx context.Context, appID int) ([]Achievement, error) {
-	u := c.webAPIURL + "/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/?gameid=" + strconv.Itoa(appID) + c.webAPIKeyParam()
+	u := c.getWebAPIURL() + "/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/?gameid=" + strconv.Itoa(appID) + c.webAPIKeyParam()
 
 	var resp achievementsResponse
 	if err := c.get(ctx, u, &resp); err != nil {

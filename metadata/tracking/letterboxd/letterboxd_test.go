@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/golusoris/goenvoy/metadata"
-	"github.com/golusoris/goenvoy/metadata/video/letterboxd"
+	"github.com/golusoris/goenvoy/metadata/tracking/letterboxd"
 )
 
 func newTestServer(t *testing.T, wantPath string, response any) *httptest.Server {
@@ -1343,4 +1343,26 @@ func TestAddFilmsToLists(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AddFilmsToLists: %v", err)
 	}
+}
+
+func TestConcurrentSetTokenCallbackAndRequest(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"items":[]}`))
+	}))
+	defer srv.Close()
+
+	c := letterboxd.New("t", metadata.WithBaseURL(srv.URL))
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 200; i++ {
+			c.SetTokenCallback(func(string, int) {})
+		}
+		close(done)
+	}()
+	for i := 0; i < 200; i++ {
+		_, _ = c.GetLogEntryMembers(context.Background(), "x", "", 0)
+	}
+	<-done
 }

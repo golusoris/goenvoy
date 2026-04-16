@@ -26,21 +26,29 @@ const (
 // Client is a MyAnimeList API v2 client.
 type Client struct {
 	*metadata.BaseClient
-	clientID     string
+	clientID string
+
+	mu           sync.RWMutex // Why: guards all fields mutated by Set* and by tokenRequest.
 	clientSecret string
 	authURL      string
 	onToken      TokenCallback
-
-	mu           sync.RWMutex
 	accessToken  string
 	refreshToken string
 }
 
 // SetClientSecret sets the client secret (required for confidential clients).
-func (c *Client) SetClientSecret(secret string) { c.clientSecret = secret }
+func (c *Client) SetClientSecret(secret string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.clientSecret = secret
+}
 
 // SetAuthURL overrides the default OAuth2 authorization URL.
-func (c *Client) SetAuthURL(u string) { c.authURL = u }
+func (c *Client) SetAuthURL(u string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.authURL = u
+}
 
 // SetAccessToken sets a pre-existing OAuth2 access token.
 func (c *Client) SetAccessToken(token string) {
@@ -60,7 +68,23 @@ func (c *Client) SetRefreshToken(token string) {
 type TokenCallback func(token Token)
 
 // SetTokenCallback sets a callback invoked when tokens change.
-func (c *Client) SetTokenCallback(cb TokenCallback) { c.onToken = cb }
+func (c *Client) SetTokenCallback(cb TokenCallback) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.onToken = cb
+}
+
+func (c *Client) getAuthURL() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.authURL
+}
+
+func (c *Client) getClientSecret() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.clientSecret
+}
 
 // New creates a [Client] using the given MAL API client ID.
 func New(clientID string, opts ...metadata.Option) *Client {
@@ -360,7 +384,7 @@ func (c *Client) AuthorizationURL(state string, pkce *PKCEChallenge) string {
 	if state != "" {
 		v.Set("state", state)
 	}
-	return c.authURL + "/authorize?" + v.Encode()
+	return c.getAuthURL() + "/authorize?" + v.Encode()
 }
 
 // ExchangeCode exchanges an authorization code for access and refresh tokens.
@@ -371,8 +395,8 @@ func (c *Client) ExchangeCode(ctx context.Context, code string, pkce *PKCEChalle
 		"code":          {code},
 		"code_verifier": {pkce.CodeVerifier},
 	}
-	if c.clientSecret != "" {
-		data.Set("client_secret", c.clientSecret)
+	if cs := c.getClientSecret(); cs != "" {
+		data.Set("client_secret", cs)
 	}
 	if redirectURI != "" {
 		data.Set("redirect_uri", redirectURI)
@@ -384,6 +408,7 @@ func (c *Client) ExchangeCode(ctx context.Context, code string, pkce *PKCEChalle
 func (c *Client) RefreshToken(ctx context.Context) (*Token, error) {
 	c.mu.RLock()
 	rt := c.refreshToken
+	cs := c.clientSecret
 	c.mu.RUnlock()
 	if rt == "" {
 		return nil, errors.New("mal: no refresh token available")
@@ -393,14 +418,14 @@ func (c *Client) RefreshToken(ctx context.Context) (*Token, error) {
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {rt},
 	}
-	if c.clientSecret != "" {
-		data.Set("client_secret", c.clientSecret)
+	if cs != "" {
+		data.Set("client_secret", cs)
 	}
 	return c.tokenRequest(ctx, data)
 }
 
 func (c *Client) tokenRequest(ctx context.Context, data url.Values) (*Token, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.authURL+"/token",
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.getAuthURL()+"/token",
 		strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("mal: create token request: %w", err)
@@ -436,9 +461,10 @@ func (c *Client) tokenRequest(ctx context.Context, data url.Values) (*Token, err
 	c.mu.Lock()
 	c.accessToken = token.AccessToken
 	c.refreshToken = token.RefreshToken
+	cb := c.onToken
 	c.mu.Unlock()
-	if c.onToken != nil {
-		c.onToken(token)
+	if cb != nil {
+		cb(token)
 	}
 	return &token, nil
 }

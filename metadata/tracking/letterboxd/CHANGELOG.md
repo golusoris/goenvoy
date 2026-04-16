@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Moved from `metadata/video/letterboxd` to `metadata/tracking/letterboxd`. Update imports accordingly.
+- Fix data race on concurrent Set*/read of OAuth tokens and client secret.
+
 ## [1.3.0](https://github.com/golusoris/goenvoy/compare/metadata/video/letterboxd/v1.2.0...metadata/video/letterboxd/v1.3.0) (2026-04-15)
 
 

@@ -25,20 +25,28 @@ const (
 // Client is a Simkl API client.
 type Client struct {
 	*metadata.BaseClient
-	clientID     string
+	clientID string
+
+	mu           sync.RWMutex // Why: guards all fields mutated via Set* and by OAuth token flows.
 	clientSecret string
 	calBaseURL   string
 	onToken      TokenCallback
-
-	mu          sync.RWMutex
-	accessToken string
+	accessToken  string
 }
 
 // SetClientSecret sets the client secret needed for OAuth2 flows.
-func (c *Client) SetClientSecret(secret string) { c.clientSecret = secret }
+func (c *Client) SetClientSecret(secret string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.clientSecret = secret
+}
 
 // SetCalendarURL overrides the default Simkl calendar (CDN) base URL.
-func (c *Client) SetCalendarURL(u string) { c.calBaseURL = u }
+func (c *Client) SetCalendarURL(u string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.calBaseURL = u
+}
 
 // SetAccessToken sets a pre-existing OAuth2 access token.
 func (c *Client) SetAccessToken(token string) {
@@ -51,7 +59,23 @@ func (c *Client) SetAccessToken(token string) {
 type TokenCallback func(accessToken string)
 
 // SetTokenCallback sets a callback invoked when a new token is obtained.
-func (c *Client) SetTokenCallback(cb TokenCallback) { c.onToken = cb }
+func (c *Client) SetTokenCallback(cb TokenCallback) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.onToken = cb
+}
+
+func (c *Client) getCalBaseURL() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.calBaseURL
+}
+
+func (c *Client) getClientSecret() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.clientSecret
+}
 
 // New creates a Simkl [Client] using the given client ID (API key).
 func New(clientID string, opts ...metadata.Option) *Client {
@@ -143,7 +167,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 }
 
 func (c *Client) getCal(ctx context.Context, path string, dst any) error {
-	return c.doGet(ctx, c.calBaseURL, path, nil, dst)
+	return c.doGet(ctx, c.getCalBaseURL(), path, nil, dst)
 }
 
 func pageParams(page, limit int) url.Values {
@@ -553,9 +577,10 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (string,
 			case "OK":
 				c.mu.Lock()
 				c.accessToken = result.AccessToken
+				cb := c.onToken
 				c.mu.Unlock()
-				if c.onToken != nil {
-					c.onToken(result.AccessToken)
+				if cb != nil {
+					cb(result.AccessToken)
 				}
 				return result.AccessToken, nil
 			case "KO":
@@ -577,7 +602,7 @@ func (c *Client) ExchangeCode(ctx context.Context, code, redirectURI string) (st
 	err := c.post(ctx, "/oauth/token", map[string]string{
 		"code":          code,
 		"client_id":     c.clientID,
-		"client_secret": c.clientSecret,
+		"client_secret": c.getClientSecret(),
 		"redirect_uri":  redirectURI,
 		"grant_type":    "authorization_code",
 	}, &result)
@@ -586,9 +611,10 @@ func (c *Client) ExchangeCode(ctx context.Context, code, redirectURI string) (st
 	}
 	c.mu.Lock()
 	c.accessToken = result.AccessToken
+	cb := c.onToken
 	c.mu.Unlock()
-	if c.onToken != nil {
-		c.onToken(result.AccessToken)
+	if cb != nil {
+		cb(result.AccessToken)
 	}
 	return result.AccessToken, nil
 }

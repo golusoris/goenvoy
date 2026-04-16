@@ -1322,3 +1322,31 @@ func TestDeleteAuthHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	c := simkl.New("cid", metadata.WithBaseURL(srv.URL))
+	c.SetAccessToken("init")
+
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 200; i++ {
+			c.SetAccessToken("a")
+			c.SetClientSecret("s")
+			c.SetCalendarURL(srv.URL)
+			c.SetTokenCallback(nil)
+		}
+		close(done)
+	}()
+	for i := 0; i < 200; i++ {
+		_, _ = c.GetRatingByID(context.Background(), 1, "")
+	}
+	<-done
+}

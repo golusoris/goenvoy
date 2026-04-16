@@ -902,3 +902,32 @@ func TestPaginationParams(t *testing.T) {
 		t.Errorf("offset = %q, want %q", gotOffset, "50")
 	}
 }
+
+func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.Header.Get("Authorization")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":1,"title":"x"}`))
+	}))
+	defer srv.Close()
+
+	c := mal.New("cid", metadata.WithBaseURL(srv.URL))
+	c.SetAccessToken("initial")
+
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 200; i++ {
+			c.SetAccessToken("tok")
+			c.SetRefreshToken("r")
+			c.SetClientSecret("s")
+			c.SetAuthURL(srv.URL)
+			c.SetTokenCallback(nil)
+		}
+		close(done)
+	}()
+	for i := 0; i < 200; i++ {
+		_, _ = c.GetAnime(context.Background(), 1, nil)
+	}
+	<-done
+}

@@ -25,9 +25,9 @@ const (
 type Client struct {
 	*metadata.BaseClient
 	authURL string
-	onToken TokenCallback
 
-	mu           sync.RWMutex
+	mu           sync.RWMutex // Why: guards onToken/accessToken/refreshToken mutated via Set*/token refresh.
+	onToken      TokenCallback
 	accessToken  string
 	refreshToken string
 }
@@ -50,7 +50,11 @@ func (c *Client) SetRefreshToken(token string) {
 type TokenCallback func(token Token)
 
 // SetTokenCallback sets a callback invoked when tokens change.
-func (c *Client) SetTokenCallback(cb TokenCallback) { c.onToken = cb }
+func (c *Client) SetTokenCallback(cb TokenCallback) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.onToken = cb
+}
 
 // New creates a Kitsu [Client].
 func New(opts ...metadata.Option) *Client {
@@ -322,9 +326,10 @@ func (c *Client) tokenRequest(ctx context.Context, data url.Values) (*Token, err
 	c.mu.Lock()
 	c.accessToken = token.AccessToken
 	c.refreshToken = token.RefreshToken
+	cb := c.onToken
 	c.mu.Unlock()
-	if c.onToken != nil {
-		c.onToken(token)
+	if cb != nil {
+		cb(token)
 	}
 	return &token, nil
 }

@@ -402,3 +402,30 @@ func TestGetMultipleAppDetailsPartialSuccess(t *testing.T) {
 		t.Error("expected 99999 to be nil")
 	}
 }
+
+func TestConcurrentSetAndRead(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"applist":{"apps":[]}}`))
+	}))
+	defer srv.Close()
+
+	c := steam.New()
+	c.SetStoreURL(srv.URL)
+	c.SetWebAPIURL(srv.URL)
+
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 200; i++ {
+			c.SetWebAPIURL(srv.URL)
+			c.SetStoreURL(srv.URL)
+		}
+		close(done)
+	}()
+	for i := 0; i < 200; i++ {
+		_, _ = c.GetAppList(context.Background())
+	}
+	<-done
+}

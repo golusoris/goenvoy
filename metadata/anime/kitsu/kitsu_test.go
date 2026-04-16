@@ -577,3 +577,28 @@ func TestAuthenticateError(t *testing.T) {
 		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusUnauthorized)
 	}
 }
+
+func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		respondResource(w, "1", "anime", map[string]any{"slug": "x"})
+	}))
+	defer srv.Close()
+
+	c := New(metadata.WithBaseURL(srv.URL))
+	c.SetAccessToken("init")
+
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 200; i++ {
+			c.SetAccessToken("a")
+			c.SetRefreshToken("r")
+			c.SetTokenCallback(nil)
+		}
+		close(done)
+	}()
+	for i := 0; i < 200; i++ {
+		_, _ = c.GetAnime(context.Background(), 1)
+	}
+	<-done
+}
