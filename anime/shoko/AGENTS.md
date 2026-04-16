@@ -4,27 +4,14 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://docs.shokoanime.com/>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/anime-shoko.md](../../docs/upstream/anime-shoko.md)
 
 ## Auth model
 
-<TODO>
+`Login(username, password)` POSTs to `/api/auth`; the returned API key is sent as `Apikey` header on subsequent requests.
 
 ## Pagination
 
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+List endpoints take `page` and `pageSize` query params.

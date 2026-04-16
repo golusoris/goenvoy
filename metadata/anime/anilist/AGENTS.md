@@ -4,27 +4,14 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://docs.anilist.co/>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-anime-anilist.md](../../docs/upstream/metadata-anime-anilist.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
+Anonymous GraphQL queries work unauthenticated; user mutations require an OAuth2 access token passed as `Authorization: Bearer <token>`.
 
 ## Known quirks
 
-- <TODO>
-
-## Testing notes
-
-<TODO>
+- AniList uses British spelling (`favourites`) — the schema fragments carry `//nolint:misspell` justifications.

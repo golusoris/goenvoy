@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://nzbget.net/api>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/downloadclient-nzbget.md](../../docs/upstream/downloadclient-nzbget.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+HTTP Basic authentication over the JSON-RPC endpoint.

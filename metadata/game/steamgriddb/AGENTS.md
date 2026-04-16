@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://www.steamgriddb.com/api/v2>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-game-steamgriddb.md](../../docs/upstream/metadata-game-steamgriddb.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+API key passed as `Authorization: Bearer <key>`.

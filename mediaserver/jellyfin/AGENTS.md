@@ -4,27 +4,14 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://api.jellyfin.org/>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/mediaserver-jellyfin.md](../../docs/upstream/mediaserver-jellyfin.md)
 
 ## Auth model
 
-<TODO>
+`Authorization: MediaBrowser Client=..., Device=..., DeviceId=..., Version=..., Token=...` header; token is obtained via `AuthenticateByName` or `WithAccessToken`.
 
 ## Pagination
 
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+`GetItemsByParent` and related endpoints take `StartIndex` and `Limit` query params.

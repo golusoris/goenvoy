@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://simkl.docs.apiary.io/>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-tracking-simkl.md](../../docs/upstream/metadata-tracking-simkl.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+`Simkl-Api-Key` header is always sent; user endpoints add `Authorization: Bearer <token>` obtained via OAuth2 (PIN or authorization-code flow).

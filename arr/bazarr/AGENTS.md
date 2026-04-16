@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://wiki.bazarr.media/Additional-Configuration/API/>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/arr-bazarr.md](../../docs/upstream/arr-bazarr.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+API key passed as `X-Api-Key` header via `arr.BaseClient`.

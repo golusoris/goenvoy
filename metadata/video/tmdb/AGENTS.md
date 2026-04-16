@@ -4,27 +4,14 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://developer.themoviedb.org/reference/intro/getting-started>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-video-tmdb.md](../../docs/upstream/metadata-video-tmdb.md)
 
 ## Auth model
 
-<TODO>
+v4 API Read Access Token passed as `Authorization: Bearer <token>` header.
 
 ## Pagination
 
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+Search and discover endpoints take a `page` query param.

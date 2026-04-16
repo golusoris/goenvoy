@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://musicbrainz.org/doc/MusicBrainz_API>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-music-musicbrainz.md](../../docs/upstream/metadata-music-musicbrainz.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+No authentication for read endpoints; callers must set a descriptive `User-Agent` (see `WithUserAgent`).

@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://fanarttv.docs.apiary.io/>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-video-fanart.md](../../docs/upstream/metadata-video-fanart.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+Project API key passed as `Api-Key` header; optional personal `Client-Key` header unlocks personal/preview content.

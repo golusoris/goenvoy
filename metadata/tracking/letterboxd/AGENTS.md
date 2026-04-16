@@ -1,30 +1,13 @@
-# AGENTS — metadata/video/letterboxd
+# AGENTS — metadata/tracking/letterboxd
 
 > Per-service notes. Read [../AGENTS.md](../AGENTS.md) first.
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://api-docs.letterboxd.com/>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-video-letterboxd.md](../../docs/upstream/metadata-video-letterboxd.md)
+- Details: [docs/upstream/metadata-tracking-letterboxd.md](../../docs/upstream/metadata-tracking-letterboxd.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+OAuth2 client-credentials flow; the resulting access token is sent as `Authorization: Bearer <token>`.

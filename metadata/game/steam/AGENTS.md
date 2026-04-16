@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://steamcommunity.com/dev>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-game-steam.md](../../docs/upstream/metadata-game-steam.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+Store endpoints are open; Web API endpoints take a Steam Web API key passed as a `key` query parameter.

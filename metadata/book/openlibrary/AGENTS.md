@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://openlibrary.org/developers/api>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-book-openlibrary.md](../../docs/upstream/metadata-book-openlibrary.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+No authentication required for read endpoints.

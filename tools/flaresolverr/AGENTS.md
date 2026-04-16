@@ -1,30 +1,13 @@
-# AGENTS — arr/flaresolverr
+# AGENTS — tools/flaresolverr
 
-> Per-service notes. Read [../AGENTS.md](../AGENTS.md) first.
+> Per-service notes. Read the repo-root [AGENTS.md](../../AGENTS.md) first.
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://github.com/FlareSolverr/FlareSolverr/blob/master/README.md>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/arr-flaresolverr.md](../../docs/upstream/arr-flaresolverr.md)
+- Details: [docs/upstream/tools-flaresolverr.md](../../docs/upstream/tools-flaresolverr.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+No authentication — FlareSolverr exposes a local `POST /v1` JSON-RPC endpoint.

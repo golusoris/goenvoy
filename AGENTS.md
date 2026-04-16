@@ -36,14 +36,15 @@ goenvoy/
 │   ├── seerr/        # Seerr client
 │   ├── autobrr/      # Autobrr client
 │   ├── mylar/        # Mylar3 client
-│   ├── flaresolverr/ # FlareSolverr client
 │   ├── jackett/      # Jackett client
 │   └── nzbhydra/     # NZBHydra2 client
+├── tools/            # adjacent automation utilities
+│   └── flaresolverr/ # FlareSolverr Cloudflare-bypass client
 ├── metadata/         # shared metadata types (Rating, Image, Person, ...)
-│   ├── video/        # TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, Letterboxd, OpenSubtitles
+│   ├── video/        # TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, OpenSubtitles
 │   ├── anime/        # AniList, Kitsu, AniDB, MAL
-│   ├── music/        # MusicBrainz, Last.fm, Discogs, TheAudioDB, Spotify, Deezer, ListenBrainz
-│   ├── tracking/     # Trakt, Simkl
+│   ├── music/        # MusicBrainz, Last.fm, Discogs, TheAudioDB, Spotify, Deezer
+│   ├── tracking/     # Trakt, Simkl, Letterboxd, ListenBrainz
 │   ├── adult/        # StashBox, TPDB
 │   ├── book/         # Google Books, Open Library
 │   └── game/         # IGDB, RAWG, Steam, MobyGames, SteamGridDB, RetroAchievements, ScreenScraper, Hasheous, LaunchBox

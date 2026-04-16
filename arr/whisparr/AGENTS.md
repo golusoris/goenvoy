@@ -4,27 +4,18 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://wiki.servarr.com/whisparr>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/arr-whisparr.md](../../docs/upstream/arr-whisparr.md)
 
 ## Auth model
 
-<TODO>
+API key passed as `X-Api-Key` header via `arr.BaseClient`.
 
 ## Pagination
 
-<TODO>
-
-## Rate limits
-
-<TODO>
+Paged endpoints (queue, history, wanted, blocklist, log) take `page` and `pageSize` query params.
 
 ## Known quirks
 
-- <TODO>
-
-## Testing notes
-
-<TODO>
+- Ships V2 (Eros) and V3 client variants — V2 endpoints live in `eros.go`.

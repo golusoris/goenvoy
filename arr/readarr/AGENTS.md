@@ -4,27 +4,14 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://readarr.com/docs/api/>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/arr-readarr.md](../../docs/upstream/arr-readarr.md)
 
 ## Auth model
 
-<TODO>
+API key passed as `X-Api-Key` header via `arr.BaseClient`.
 
 ## Pagination
 
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+Paged endpoints (queue, history, wanted, blocklist, log) take `page` and `pageSize` query params.

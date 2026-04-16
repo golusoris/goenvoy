@@ -4,27 +4,14 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://api-docs.igdb.com/>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-game-igdb.md](../../docs/upstream/metadata-game-igdb.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
+Twitch OAuth2 client-credentials flow; requests carry both `Client-Id` and `Authorization: Bearer <access_token>` headers.
 
 ## Known quirks
 
-- <TODO>
-
-## Testing notes
-
-<TODO>
+- Query bodies are Apicalypse text, so the client sets `Content-Type: text/plain`, not JSON.

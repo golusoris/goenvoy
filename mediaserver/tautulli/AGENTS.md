@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://github.com/Tautulli/Tautulli/wiki/Tautulli-API-Reference>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/mediaserver-tautulli.md](../../docs/upstream/mediaserver-tautulli.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+API key passed as `apikey` query parameter against `/api/v2`.

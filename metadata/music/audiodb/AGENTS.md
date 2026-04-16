@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://www.theaudiodb.com/api_guide.php>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-music-audiodb.md](../../docs/upstream/metadata-music-audiodb.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+API key is embedded in the URL path (`/api/v1/json/<key>/<endpoint>`).

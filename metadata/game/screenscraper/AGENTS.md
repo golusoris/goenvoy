@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://www.screenscraper.fr/webapi2.php>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-game-screenscraper.md](../../docs/upstream/metadata-game-screenscraper.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+Developer credentials (`devid`, `devpassword`) passed as query parameters; optional user credentials (`ssid`, `sspassword`) raise per-user quotas.

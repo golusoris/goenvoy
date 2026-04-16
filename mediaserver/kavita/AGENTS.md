@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://wiki.kavitareader.com/guides/misc/api>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/mediaserver-kavita.md](../../docs/upstream/mediaserver-kavita.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+Bearer JWT passed in the `Authorization` header; obtained via `/api/Plugin/authenticate` using an API key.

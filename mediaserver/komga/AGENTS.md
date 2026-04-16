@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://komga.org/docs/openapi/>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/mediaserver-komga.md](../../docs/upstream/mediaserver-komga.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+HTTP Basic authentication (`req.SetBasicAuth(username, password)`).

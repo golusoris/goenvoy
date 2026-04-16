@@ -4,27 +4,14 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/downloadclient-qbit.md](../../docs/upstream/downloadclient-qbit.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
+`Login(username, password)` posts to `/api/v2/auth/login`; the server returns a `SID` cookie which the HTTP client's cookie jar carries on subsequent requests.
 
 ## Known quirks
 
-- <TODO>
-
-## Testing notes
-
-<TODO>
+- Every request sets a `Referer` header matching the base URL — qBittorrent rejects requests without it.

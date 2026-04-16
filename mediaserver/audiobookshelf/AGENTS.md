@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://api.audiobookshelf.org/>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/mediaserver-audiobookshelf.md](../../docs/upstream/mediaserver-audiobookshelf.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+Bearer token passed in the `Authorization` header; obtained via `/login` or set explicitly.

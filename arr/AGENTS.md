@@ -4,7 +4,7 @@
 
 ## What this category is
 
-Clients for the *arr stack and adjacent automation tools — Sonarr, Radarr, Readarr, Lidarr, Bazarr, Prowlarr, Whisparr, Mylar, Jackett, NZBHydra2, Autobrr, FlareSolverr, Overseerr/Jellyseerr (`seerr`).
+Clients for the *arr stack and adjacent automation tools — Sonarr, Radarr, Readarr, Lidarr, Bazarr, Prowlarr, Whisparr, Mylar, Jackett, NZBHydra2, Autobrr, Overseerr/Jellyseerr (`seerr`). FlareSolverr lives under `tools/flaresolverr`.
 
 ## Shared types (in `arr/`)
 
@@ -35,7 +35,6 @@ Service sub-modules **may** import `arr` for the shared types. This is the only 
 | [arr/nzbhydra](nzbhydra/) | NZBHydra2 meta-indexer | [docs/upstream/arr-nzbhydra.md](../docs/upstream/arr-nzbhydra.md) |
 | [arr/mylar](mylar/) | Mylar3 comics client | [docs/upstream/arr-mylar.md](../docs/upstream/arr-mylar.md) |
 | [arr/autobrr](autobrr/) | Autobrr filter-rules client | [docs/upstream/arr-autobrr.md](../docs/upstream/arr-autobrr.md) |
-| [arr/flaresolverr](flaresolverr/) | FlareSolverr CF-bypass client | [docs/upstream/arr-flaresolverr.md](../docs/upstream/arr-flaresolverr.md) |
 | [arr/seerr](seerr/) | Overseerr / Jellyseerr client | [docs/upstream/arr-seerr.md](../docs/upstream/arr-seerr.md) |
 
 ## When adding a new service here

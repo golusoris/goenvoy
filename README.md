@@ -25,10 +25,11 @@ Designed as a **multi-module monorepo** — import only what you need, from a si
 
 | Category | Module | Services |
 |---|---|---|
-| **Arr Stack** | `github.com/golusoris/goenvoy/arr` | Sonarr, Radarr, Lidarr, Readarr, Whisparr (v2+v3), Prowlarr, Bazarr, Seerr, Autobrr, Mylar3, FlareSolverr, Jackett, NZBHydra2 |
-| **Metadata** | `github.com/golusoris/goenvoy/metadata` | TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, Letterboxd, AniList, Kitsu, AniDB, MAL, Trakt, Simkl, MusicBrainz, StashBox, TPDB, OpenSubtitles, Last.fm, Discogs, TheAudioDB, Open Library, Google Books, Spotify, Deezer, ListenBrainz, IGDB, RAWG, Steam, MobyGames, SteamGridDB, RetroAchievements, ScreenScraper, Hasheous, LaunchBox |
+| **Arr Stack** | `github.com/golusoris/goenvoy/arr` | Sonarr, Radarr, Lidarr, Readarr, Whisparr (v2+v3), Prowlarr, Bazarr, Seerr, Autobrr, Mylar3, Jackett, NZBHydra2 |
+| **Metadata** | `github.com/golusoris/goenvoy/metadata` | TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, AniList, Kitsu, AniDB, MAL, Trakt, Simkl, Letterboxd, ListenBrainz, MusicBrainz, StashBox, TPDB, OpenSubtitles, Last.fm, Discogs, TheAudioDB, Open Library, Google Books, Spotify, Deezer, IGDB, RAWG, Steam, MobyGames, SteamGridDB, RetroAchievements, ScreenScraper, Hasheous, LaunchBox |
 | **Download Clients** | `github.com/golusoris/goenvoy/downloadclient` | qBittorrent, Transmission, Deluge, rTorrent, SABnzbd, NZBGet |
 | **Media Servers** | `github.com/golusoris/goenvoy/mediaserver` | Plex, Jellyfin, Emby, Tautulli, Audiobookshelf, Komga, Navidrome, Kavita, Stash, Tdarr |
+| **Tools** | `github.com/golusoris/goenvoy/tools` | FlareSolverr |
 | **Anime** | `github.com/golusoris/goenvoy/anime` | Shoko Server |
 
 ## Install
@@ -101,14 +102,15 @@ goenvoy/
 │   ├── seerr/        # Seerr client
 │   ├── autobrr/      # Autobrr client
 │   ├── mylar/        # Mylar3 client
-│   ├── flaresolverr/ # FlareSolverr client
 │   ├── jackett/      # Jackett client
 │   └── nzbhydra/     # NZBHydra2 client
+├── tools/            # adjacent automation utilities
+│   └── flaresolverr/ # FlareSolverr Cloudflare-bypass client
 ├── metadata/         # shared metadata types (Rating, Image, Person, ...)
-│   ├── video/        # TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, Letterboxd, OpenSubtitles
+│   ├── video/        # TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, OpenSubtitles
 │   ├── anime/        # AniList, Kitsu, AniDB, MAL
-│   ├── music/        # MusicBrainz, Last.fm, Discogs, TheAudioDB, Spotify, Deezer, ListenBrainz
-│   ├── tracking/     # Trakt, Simkl
+│   ├── music/        # MusicBrainz, Last.fm, Discogs, TheAudioDB, Spotify, Deezer
+│   ├── tracking/     # Trakt, Simkl, Letterboxd, ListenBrainz
 │   ├── adult/        # StashBox, TPDB
 │   ├── book/         # Google Books, Open Library
 │   └── game/         # IGDB, RAWG, Steam, MobyGames, SteamGridDB, RetroAchievements, ScreenScraper, Hasheous, LaunchBox

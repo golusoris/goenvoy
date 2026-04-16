@@ -8,8 +8,13 @@ Each module is versioned independently following [Semantic Versioning](https://s
 ## [Unreleased]
 
 ### Changed
+- **Constructor sweep**: 23 modules now return `(*Client, error)` and validate baseURL per PRINCIPLES.md §2.3 — autobrr, jackett, mylar, nzbhydra, flaresolverr, shoko, audiobookshelf, emby, jellyfin, kavita, komga, navidrome, plex, stash, tautulli, tdarr, deluge, nzbget, qbit, rtorrent, sabnzbd, transmission, stashbox.
 - **Repository**: Adopted golangci-lint v2 with 30+ linters as the standards baseline (goenvoy 2.0). The pure-stdlib gate is now enforced by `depguard`. Per-module `replace` directives have been removed in favour of versioned `arr` requires (ADR-0009).
 - **Tooling**: Bulk-applied `t.Parallel()` to every test function and subtest; wrapped third-party errors with module-prefixed `fmt.Errorf("%s: %s: %w", ...)`; canonicalised HTTP header literals.
+- **Module-path moves** (each starts fresh at `v1.0.0` under the new path):
+  - `metadata/video/letterboxd` → `metadata/tracking/letterboxd`.
+  - `metadata/music/listenbrainz` → `metadata/tracking/listenbrainz`.
+  - `arr/flaresolverr` → `tools/flaresolverr` (new `tools/` top-level category).
 
 ### Breaking — module path migration to `/v2`
 The 8 modules below ship a major bump and require a new import path (`…/v2`).
@@ -53,7 +58,7 @@ API breaks bundled with the v2 cut:
 
 ### Added
 - **BaseClient** (`metadata`): Shared HTTP client (`BaseClient`) with `DoRaw`, `DoRawURL`, `DoJSON`, `Get`, auth injection, and functional options — eliminates ~2,480 lines of duplicated HTTP boilerplate across all 27 metadata providers.
-- **Letterboxd** (`metadata/video/letterboxd`): Social film discovery client with OAuth2 Bearer auth — 65 methods covering films, film collections, contributors, lists, log entries, members, comments, stories, search, news, and auth helpers — with 60 tests.
+- **Letterboxd** (`metadata/tracking/letterboxd`): Social film discovery client with OAuth2 Bearer auth — 65 methods covering films, film collections, contributors, lists, log entries, members, comments, stories, search, news, and auth helpers — with 60 tests.
 
 ### Changed
 - All 27 metadata providers now embed `*metadata.BaseClient` instead of maintaining independent HTTP plumbing.
@@ -99,7 +104,7 @@ API breaks bundled with the v2 cut:
 - **NZBHydra2** (`arr/nzbhydra`): Meta NZB indexer client — Newznab search, TV/movie/book search, capabilities, statistics, search/download history, indexer statuses.
 - **Spotify** (`metadata/music/spotify`): Music metadata via OAuth2 Bearer — search, artists, albums, tracks, audio features, new releases, categories, recommendations.
 - **Deezer** (`metadata/music/deezer`): Music metadata (no auth) — search tracks/albums/artists, artist top tracks/albums/related, album tracks, genres, charts.
-- **ListenBrainz** (`metadata/music/listenbrainz`): Listening data and statistics — submit listens, user listens/history, top artists/releases/recordings, listening activity, similar users.
+- **ListenBrainz** (`metadata/tracking/listenbrainz`): Listening data and statistics — submit listens, user listens/history, top artists/releases/recordings, listening activity, similar users.
 - **IGDB** (`metadata/game/igdb`): Game metadata via Twitch OAuth2 — search games/companies, game details, platforms, genres, covers, screenshots, popular games.
 - **RAWG** (`metadata/game/rawg`): Video game database — search games, game details/screenshots/trailers/DLC/series, platforms, genres, publishers, developers, tags, stores.
 - **Steam** (`metadata/game/steam`): Steam Store and Web API — app details, featured games, app list, current players, app news, global achievements.
@@ -117,7 +122,7 @@ API breaks bundled with the v2 cut:
 - **Kavita** (`mediaserver/kavita`): Manga/comic/ebook reader with JWT auth — libraries, series, volumes, chapters, collections, reading lists, search.
 - **Tdarr** (`mediaserver/tdarr`): Media transcoding server — status, nodes, workers, file search, resolution stats, scan management.
 - **Mylar3** (`arr/mylar`): Comic book automation — comics, issues, wanted, history, story arcs, reading lists, providers.
-- **FlareSolverr** (`arr/flaresolverr`): Cloudflare bypass proxy — GET/POST requests, session management.
+- **FlareSolverr** (`tools/flaresolverr`): Cloudflare bypass proxy — GET/POST requests, session management.
 - **TheAudioDB** (`metadata/music/audiodb`): Music metadata — artist/album/track search and lookup, music videos, discography, charts, trending.
 - **Open Library** (`metadata/book/openlibrary`): Book metadata — search, works, editions, authors, subjects, ISBN lookup.
 - **Google Books** (`metadata/book/googlebooks`): Book search and volume details — search with filters, volume retrieval.

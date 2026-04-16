@@ -4,27 +4,14 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://developer.spotify.com/documentation/web-api>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-music-spotify.md](../../docs/upstream/metadata-music-spotify.md)
 
 ## Auth model
 
-<TODO>
+OAuth2 access token passed as `Authorization: Bearer <token>` — the caller supplies a token obtained via client-credentials or authorization-code flow.
 
 ## Pagination
 
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+Search and list endpoints take `limit` and `offset` query params.

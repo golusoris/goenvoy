@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://github.com/rakshasa/rtorrent/wiki/rTorrent-0.9-Comprehensive-Command-list-(WIP)>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/downloadclient-rtorrent.md](../../docs/upstream/downloadclient-rtorrent.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+Optional HTTP Basic over the XML-RPC (SCGI-via-HTTP) endpoint.

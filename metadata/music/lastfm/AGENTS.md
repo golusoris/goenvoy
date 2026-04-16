@@ -4,27 +4,10 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://www.last.fm/api>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-music-lastfm.md](../../docs/upstream/metadata-music-lastfm.md)
 
 ## Auth model
 
-<TODO>
-
-## Pagination
-
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+API key passed as `api_key` query parameter together with `method` against `ws.audioscrobbler.com/2.0/`.

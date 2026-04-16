@@ -4,27 +4,14 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://thetvdb.github.io/v4-api/>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/metadata-video-tvdb.md](../../docs/upstream/metadata-video-tvdb.md)
 
 ## Auth model
 
-<TODO>
+API key exchanged via `/login` for a JWT; the JWT is then sent as `Authorization: Bearer <token>`.
 
 ## Pagination
 
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+Listing endpoints take a zero-based `page` query param.

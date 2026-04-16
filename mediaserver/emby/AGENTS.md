@@ -4,27 +4,14 @@
 
 ## Upstream API
 
-- Canonical docs: <TODO: pinned upstream docs URL>
-- Pinned version / commit: <TODO>
+- Canonical docs: <https://dev.emby.media/doc/restapi/>
 - Last verified: 2026-04-15
 - Details: [docs/upstream/mediaserver-emby.md](../../docs/upstream/mediaserver-emby.md)
 
 ## Auth model
 
-<TODO>
+Access token passed as `X-Emby-Token` header; obtained via `AuthenticateByName` or `WithAccessToken`.
 
 ## Pagination
 
-<TODO>
-
-## Rate limits
-
-<TODO>
-
-## Known quirks
-
-- <TODO>
-
-## Testing notes
-
-<TODO>
+`GetItemsByParent` and related endpoints take `StartIndex` and `Limit` query params.

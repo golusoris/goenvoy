@@ -14,10 +14,10 @@ The category root ([metadata/types.go](types.go)) defines types shared across su
 
 | Sub-category | Services | Typical auth |
 |---|---|---|
-| [video/](video/) | TMDB, TVDB, TVmaze, Fanart.tv, OMDb, Letterboxd, OpenSubtitles | API key (header or query) |
+| [video/](video/) | TMDB, TVDB, TVmaze, Fanart.tv, OMDb, OpenSubtitles | API key (header or query) |
 | [anime/](anime/) | AniList, MAL, AniDB, Kitsu | API key / OAuth / GraphQL-bearer |
-| [music/](music/) | MusicBrainz, Discogs, Spotify, Deezer, Last.fm, AudioDB, ListenBrainz | API key / OAuth / none |
-| [tracking/](tracking/) | Trakt, SIMKL | OAuth 2.0 (device code / PKCE) |
+| [music/](music/) | MusicBrainz, Discogs, Spotify, Deezer, Last.fm, AudioDB | API key / OAuth / none |
+| [tracking/](tracking/) | Trakt, SIMKL, Letterboxd, ListenBrainz | OAuth 2.0 / Bearer / Token |
 | [book/](book/) | Open Library, Google Books | API key / none |
 | [game/](game/) | IGDB, RAWG, Steam, SteamGridDB, Hasheous, LaunchBox, MobyGames, RetroAchievements, ScreenScraper | API key / OAuth (IGDB via Twitch) |
 | [adult/](adult/) | ThePornDB, StashDB | Bearer token |
