@@ -57,7 +57,10 @@ func TestLogin(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := shoko.New(ts.URL)
+	c, err := shoko.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.Login(context.Background(), "admin", "secret"); err != nil {
 		t.Fatal(err)
 	}
@@ -73,8 +76,11 @@ func TestLoginError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := shoko.New(ts.URL)
-	err := c.Login(context.Background(), "bad", "creds")
+	c, err := shoko.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	err = c.Login(context.Background(), "bad", "creds")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -97,7 +103,10 @@ func TestGetSeries(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("my-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("my-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	s, err := c.GetSeries(context.Background(), 1)
 	if err != nil {
 		t.Fatal(err)
@@ -122,7 +131,10 @@ func TestListSeries(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("list-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("list-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.ListSeries(context.Background(), 1, 25)
 	if err != nil {
 		t.Fatal(err)
@@ -152,7 +164,10 @@ func TestSearchSeries(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("search-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("search-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.SearchSeries(context.Background(), "frieren", true, 1, 10)
 	if err != nil {
 		t.Fatal(err)
@@ -175,7 +190,10 @@ func TestGetSeriesAniDB(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("anidb-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("anidb-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	a, err := c.GetSeriesAniDB(context.Background(), 1)
 	if err != nil {
 		t.Fatal(err)
@@ -197,7 +215,10 @@ func TestGetSeriesTags(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("tag-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("tag-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	tags, err := c.GetSeriesTags(context.Background(), 1)
 	if err != nil {
 		t.Fatal(err)
@@ -222,7 +243,10 @@ func TestGetSeriesEpisodes(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("ep-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("ep-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	eps, err := c.GetSeriesEpisodes(context.Background(), 1, 1, 50)
 	if err != nil {
 		t.Fatal(err)
@@ -247,7 +271,10 @@ func TestGetAniDBAnime(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("anime-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("anime-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	a, err := c.GetAniDBAnime(context.Background(), 16498)
 	if err != nil {
 		t.Fatal(err)
@@ -270,7 +297,10 @@ func TestGetSeriesByAniDBID(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("lookup-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("lookup-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	s, err := c.GetSeriesByAniDBID(context.Background(), 16498)
 	if err != nil {
 		t.Fatal(err)
@@ -288,7 +318,10 @@ func TestGetAniDBRelations(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("rel-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("rel-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	rels, err := c.GetAniDBRelations(context.Background(), 16498)
 	if err != nil {
 		t.Fatal(err)
@@ -310,7 +343,10 @@ func TestGetEpisode(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("ep2-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("ep2-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	ep, err := c.GetEpisode(context.Background(), 10)
 	if err != nil {
 		t.Fatal(err)
@@ -335,7 +371,10 @@ func TestGetAniDBEpisode(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("aep-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("aep-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	ep, err := c.GetAniDBEpisode(context.Background(), 280000)
 	if err != nil {
 		t.Fatal(err)
@@ -361,7 +400,10 @@ func TestGetFile(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("file-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("file-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	f, err := c.GetFile(context.Background(), 100)
 	if err != nil {
 		t.Fatal(err)
@@ -383,7 +425,10 @@ func TestListManagedFolders(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("mf-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("mf-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	folders, err := c.ListManagedFolders(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -409,7 +454,10 @@ func TestGetDashboardStats(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("dash-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("dash-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	stats, err := c.GetDashboardStats(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -432,8 +480,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("bad"))
-	_, err := c.GetSeries(context.Background(), 1)
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("bad"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetSeries(context.Background(), 1)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -458,8 +509,11 @@ func TestAPIErrorNonJSON(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("test"))
-	_, err := c.GetSeries(context.Background(), 1)
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("test"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetSeries(context.Background(), 1)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -503,7 +557,10 @@ func TestRunImport(t *testing.T) {
 	ts := newTestServer(t, "/api/v3/Action/RunImport", "import-key", nil)
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("import-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("import-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RunImport(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -515,11 +572,14 @@ func TestContextCancellation(t *testing.T) {
 	ts := newTestServer(t, "/api/v3/Series/1", "cancel-key", shoko.Series{})
 	defer ts.Close()
 
-	c := shoko.New(ts.URL, shoko.WithAPIKey("cancel-key"))
+	c, err := shoko.New(ts.URL, shoko.WithAPIKey("cancel-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := c.GetSeries(ctx, 1)
+	_, err = c.GetSeries(ctx, 1)
 	if err == nil {
 		t.Fatal("expected error from canceled context")
 	}
@@ -535,12 +595,40 @@ func TestWithHTTPClient(t *testing.T) {
 	defer ts.Close()
 
 	customClient := &http.Client{}
-	c := shoko.New(ts.URL, shoko.WithHTTPClient(customClient), shoko.WithAPIKey("custom-key"))
+	c, err := shoko.New(ts.URL, shoko.WithHTTPClient(customClient), shoko.WithAPIKey("custom-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	s, err := c.GetSeries(context.Background(), 1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if s.Name != "Test" {
 		t.Errorf("Name = %q, want Test", s.Name)
+	}
+}
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := shoko.New(tc.url)
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
 	}
 }

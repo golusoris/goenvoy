@@ -49,7 +49,10 @@ func TestFindPerformer(t *testing.T) {
 	ts := newGQLServer(t, "key-1", "findPerformer", p)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-1")
+	c, err := stashbox.New(ts.URL, "key-1")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindPerformer(context.Background(), "abc-123")
 	if err != nil {
 		t.Fatal(err)
@@ -75,7 +78,10 @@ func TestQueryPerformers(t *testing.T) {
 	ts := newGQLServer(t, "key-2", "queryPerformers", resp)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-2")
+	c, err := stashbox.New(ts.URL, "key-2")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	performers, count, err := c.QueryPerformers(context.Background(), &stashbox.QueryInput{Page: 1, PerPage: 25})
 	if err != nil {
 		t.Fatal(err)
@@ -95,7 +101,10 @@ func TestSearchPerformers(t *testing.T) {
 	ts := newGQLServer(t, "key-3", "searchPerformer", performers)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-3")
+	c, err := stashbox.New(ts.URL, "key-3")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.SearchPerformers(context.Background(), "test", 10)
 	if err != nil {
 		t.Fatal(err)
@@ -121,7 +130,10 @@ func TestFindScene(t *testing.T) {
 	ts := newGQLServer(t, "key-4", "findScene", s)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-4")
+	c, err := stashbox.New(ts.URL, "key-4")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindScene(context.Background(), "scene-1")
 	if err != nil {
 		t.Fatal(err)
@@ -147,7 +159,10 @@ func TestQueryScenes(t *testing.T) {
 	ts := newGQLServer(t, "key-5", "queryScenes", resp)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-5")
+	c, err := stashbox.New(ts.URL, "key-5")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	scenes, count, err := c.QueryScenes(context.Background(), &stashbox.QueryInput{Page: 1, PerPage: 10})
 	if err != nil {
 		t.Fatal(err)
@@ -167,7 +182,10 @@ func TestSearchScenes(t *testing.T) {
 	ts := newGQLServer(t, "key-6", "searchScene", scenes)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-6")
+	c, err := stashbox.New(ts.URL, "key-6")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.SearchScenes(context.Background(), "test query")
 	if err != nil {
 		t.Fatal(err)
@@ -186,7 +204,10 @@ func TestFindScenesByFingerprints(t *testing.T) {
 	ts := newGQLServer(t, "key-7", "findScenesBySceneFingerprints", scenes)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-7")
+	c, err := stashbox.New(ts.URL, "key-7")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	fp := [][]stashbox.FingerprintInput{{{Hash: "abc123", Algorithm: "MD5"}}}
 	result, err := c.FindScenesByFingerprints(context.Background(), fp)
 	if err != nil {
@@ -211,7 +232,10 @@ func TestFindStudio(t *testing.T) {
 	ts := newGQLServer(t, "key-8", "findStudio", studio)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-8")
+	c, err := stashbox.New(ts.URL, "key-8")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindStudio(context.Background(), "studio-1")
 	if err != nil {
 		t.Fatal(err)
@@ -237,7 +261,10 @@ func TestQueryStudios(t *testing.T) {
 	ts := newGQLServer(t, "key-9", "queryStudios", resp)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-9")
+	c, err := stashbox.New(ts.URL, "key-9")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	studios, count, err := c.QueryStudios(context.Background(), &stashbox.QueryInput{Page: 1, PerPage: 25})
 	if err != nil {
 		t.Fatal(err)
@@ -257,7 +284,10 @@ func TestSearchStudios(t *testing.T) {
 	ts := newGQLServer(t, "key-10", "searchStudio", studios)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-10")
+	c, err := stashbox.New(ts.URL, "key-10")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.SearchStudios(context.Background(), "test")
 	if err != nil {
 		t.Fatal(err)
@@ -279,7 +309,10 @@ func TestFindTag(t *testing.T) {
 	ts := newGQLServer(t, "key-11", "findTag", tag)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-11")
+	c, err := stashbox.New(ts.URL, "key-11")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindTag(context.Background(), "tag-1")
 	if err != nil {
 		t.Fatal(err)
@@ -305,7 +338,10 @@ func TestQueryTags(t *testing.T) {
 	ts := newGQLServer(t, "key-12", "queryTags", resp)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-12")
+	c, err := stashbox.New(ts.URL, "key-12")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	tags, count, err := c.QueryTags(context.Background(), &stashbox.QueryInput{Page: 1, PerPage: 50})
 	if err != nil {
 		t.Fatal(err)
@@ -325,7 +361,10 @@ func TestSearchTags(t *testing.T) {
 	ts := newGQLServer(t, "key-13", "searchTag", tags)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-13")
+	c, err := stashbox.New(ts.URL, "key-13")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.SearchTags(context.Background(), "test")
 	if err != nil {
 		t.Fatal(err)
@@ -345,7 +384,10 @@ func TestListSites(t *testing.T) {
 	ts := newGQLServer(t, "key-14", "querySites", sites)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-14")
+	c, err := stashbox.New(ts.URL, "key-14")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.ListSites(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -369,7 +411,10 @@ func TestGetConfig(t *testing.T) {
 	ts := newGQLServer(t, "key-15", "getConfig", cfg)
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key-15")
+	c, err := stashbox.New(ts.URL, "key-15")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetConfig(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -391,8 +436,11 @@ func TestGraphQLError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "key")
-	_, err := c.FindPerformer(context.Background(), "missing")
+	c, err := stashbox.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.FindPerformer(context.Background(), "missing")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -414,8 +462,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := stashbox.New(ts.URL, "bad-key")
-	_, err := c.FindPerformer(context.Background(), "1")
+	c, err := stashbox.New(ts.URL, "bad-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.FindPerformer(context.Background(), "1")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -436,7 +487,10 @@ func TestWithCustomHTTPClient(t *testing.T) {
 	defer ts.Close()
 
 	custom := &http.Client{}
-	c := stashbox.New(ts.URL, "custom-key", metadata.WithHTTPClient(custom))
+	c, err := stashbox.New(ts.URL, "custom-key", metadata.WithHTTPClient(custom))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindPerformer(context.Background(), "p1")
 	if err != nil {
 		t.Fatal(err)
@@ -447,3 +501,27 @@ func TestWithCustomHTTPClient(t *testing.T) {
 }
 
 func intPtr(v int) *int { return &v }
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := stashbox.New(tc.url, "k")
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
+	}
+}

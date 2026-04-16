@@ -9,7 +9,10 @@ import (
 )
 
 func Example() {
-	client := jackett.New("http://localhost:9117", "your-api-key")
+	client, err := jackett.New("http://localhost:9117", "your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

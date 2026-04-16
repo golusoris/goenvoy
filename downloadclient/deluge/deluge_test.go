@@ -63,7 +63,10 @@ func TestLogin(t *testing.T) {
 	ts := loginServer(t)
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.Login(context.Background(), "deluge"); err != nil {
 		t.Fatal(err)
 	}
@@ -83,8 +86,11 @@ func TestLoginFailed(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
-	err := c.Login(context.Background(), "wrong")
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	err = c.Login(context.Background(), "wrong")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -110,7 +116,10 @@ func TestGetTorrentsStatus(t *testing.T) {
 	ts := newRPCServer(t, "core.get_torrents_status", result)
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	torrents, err := c.GetTorrentsStatus(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -132,7 +141,10 @@ func TestGetTorrentStatus(t *testing.T) {
 	ts := newRPCServer(t, "core.get_torrent_status", result)
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	torrent, err := c.GetTorrentStatus(context.Background(), "abc123")
 	if err != nil {
 		t.Fatal(err)
@@ -148,7 +160,10 @@ func TestAddTorrentURL(t *testing.T) {
 	ts := newRPCServer(t, "core.add_torrent_url", "abc123def456")
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	hash, err := c.AddTorrentURL(context.Background(), "magnet:?xt=urn:btih:abc123", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -164,7 +179,10 @@ func TestRemoveTorrent(t *testing.T) {
 	ts := newRPCServer(t, "core.remove_torrent", true)
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RemoveTorrent(context.Background(), "abc123", true); err != nil {
 		t.Fatal(err)
 	}
@@ -176,7 +194,10 @@ func TestPauseTorrent(t *testing.T) {
 	ts := newRPCServer(t, "core.pause_torrent", nil)
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.PauseTorrent(context.Background(), "abc123"); err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +209,10 @@ func TestResumeTorrent(t *testing.T) {
 	ts := newRPCServer(t, "core.resume_torrent", nil)
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.ResumeTorrent(context.Background(), "def456"); err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +224,10 @@ func TestForceRecheck(t *testing.T) {
 	ts := newRPCServer(t, "core.force_recheck", nil)
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.ForceRecheck(context.Background(), []string{"abc123"}); err != nil {
 		t.Fatal(err)
 	}
@@ -212,7 +239,10 @@ func TestGetVersion(t *testing.T) {
 	ts := newRPCServer(t, "daemon.info", "2.1.1")
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	v, err := c.GetVersion(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -232,7 +262,10 @@ func TestGetSessionStatus(t *testing.T) {
 	ts := newRPCServer(t, "core.get_session_status", result)
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	stats, err := c.GetSessionStatus(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -248,7 +281,10 @@ func TestGetFreeSpace(t *testing.T) {
 	ts := newRPCServer(t, "core.get_free_space", 500000000000)
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	space, err := c.GetFreeSpace(context.Background(), "/downloads")
 	if err != nil {
 		t.Fatal(err)
@@ -276,8 +312,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
-	_, err := c.GetTorrentsStatus(context.Background(), nil)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetTorrentsStatus(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -296,7 +335,10 @@ func TestConnected(t *testing.T) {
 	ts := newRPCServer(t, "web.connected", true)
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	ok, err := c.Connected(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -312,7 +354,10 @@ func TestSetTorrentLabel(t *testing.T) {
 	ts := newRPCServer(t, "label.set_torrent", nil)
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetTorrentLabel(context.Background(), "abc123", "movies"); err != nil {
 		t.Fatal(err)
 	}
@@ -324,8 +369,35 @@ func TestMoveTorrent(t *testing.T) {
 	ts := newRPCServer(t, "core.move_storage", nil)
 	defer ts.Close()
 
-	c := deluge.New(ts.URL)
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.MoveTorrent(context.Background(), []string{"abc123"}, "/new/path"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := deluge.New(tc.url)
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
 	}
 }

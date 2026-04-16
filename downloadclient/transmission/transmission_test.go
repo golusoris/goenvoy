@@ -51,7 +51,10 @@ func TestGetTorrents(t *testing.T) {
 	ts := newRPCServer(t, "torrent-get", result)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	torrents, err := c.GetTorrents(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +81,10 @@ func TestGetTorrentsWithIDs(t *testing.T) {
 	ts := newRPCServer(t, "torrent-get", result)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	torrents, err := c.GetTorrents(context.Background(), []int{5})
 	if err != nil {
 		t.Fatal(err)
@@ -102,7 +108,10 @@ func TestAddTorrentURL(t *testing.T) {
 	ts := newRPCServer(t, "torrent-add", result)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	added, err := c.AddTorrentURL(context.Background(), "magnet:?xt=urn:btih:abc123", &transmission.AddTorrentOptions{
 		DownloadDir: "/data/movies",
 		Labels:      []string{"movie"},
@@ -124,7 +133,10 @@ func TestStartTorrents(t *testing.T) {
 	ts := newRPCServer(t, "torrent-start", nil)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.StartTorrents(context.Background(), []int{1, 2}); err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +148,10 @@ func TestStopTorrents(t *testing.T) {
 	ts := newRPCServer(t, "torrent-stop", nil)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.StopTorrents(context.Background(), []int{3}); err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +163,10 @@ func TestRemoveTorrents(t *testing.T) {
 	ts := newRPCServer(t, "torrent-remove", nil)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RemoveTorrents(context.Background(), []int{1}, true); err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +178,10 @@ func TestVerifyTorrents(t *testing.T) {
 	ts := newRPCServer(t, "torrent-verify", nil)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.VerifyTorrents(context.Background(), []int{1}); err != nil {
 		t.Fatal(err)
 	}
@@ -172,7 +193,10 @@ func TestReannounceTorrents(t *testing.T) {
 	ts := newRPCServer(t, "torrent-reannounce", nil)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.ReannounceTorrents(context.Background(), []int{1}); err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +208,10 @@ func TestMoveTorrents(t *testing.T) {
 	ts := newRPCServer(t, "torrent-set-location", nil)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.MoveTorrents(context.Background(), []int{1}, "/new/path", true); err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +227,10 @@ func TestGetSession(t *testing.T) {
 	ts := newRPCServer(t, "session-get", result)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	s, err := c.GetSession(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -223,7 +253,10 @@ func TestGetSessionStats(t *testing.T) {
 	ts := newRPCServer(t, "session-stats", result)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	stats, err := c.GetSessionStats(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -243,7 +276,10 @@ func TestGetFreeSpace(t *testing.T) {
 	ts := newRPCServer(t, "free-space", result)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	fs, err := c.GetFreeSpace(context.Background(), "/downloads")
 	if err != nil {
 		t.Fatal(err)
@@ -260,7 +296,10 @@ func TestTestPort(t *testing.T) {
 	ts := newRPCServer(t, "port-test", result)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	open, err := c.TestPort(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -290,7 +329,10 @@ func TestSessionIDNegotiation(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	torrents, err := c.GetTorrents(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -313,8 +355,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
-	_, err := c.GetTorrents(context.Background(), nil)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetTorrents(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -336,8 +381,11 @@ func TestHTTPError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
-	_, err := c.GetTorrents(context.Background(), nil)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetTorrents(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -356,8 +404,35 @@ func TestSetTorrentLabels(t *testing.T) {
 	ts := newRPCServer(t, "torrent-set", nil)
 	defer ts.Close()
 
-	c := transmission.New(ts.URL)
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetTorrentLabels(context.Background(), []int{1}, []string{"movies", "4k"}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := transmission.New(tc.url)
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
 	}
 }

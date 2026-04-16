@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/golusoris/goenvoy/metadata"
 )
@@ -81,13 +83,24 @@ type Client struct {
 
 // New creates a StashBox [Client].
 // endpoint is the full GraphQL URL (e.g., "https://stashdb.org/graphql").
-func New(endpoint, apiKey string, opts ...metadata.Option) *Client {
+// It returns an error if endpoint is not a valid HTTP/HTTPS URL.
+func New(endpoint, apiKey string, opts ...metadata.Option) (*Client, error) {
+	endpoint = strings.TrimRight(endpoint, "/")
+
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("stashbox: invalid endpoint %q: %w", endpoint, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("stashbox: invalid endpoint %q: must be http(s) with a host", endpoint)
+	}
+
 	bc := metadata.NewBaseClient(endpoint, "stashbox", opts...)
 	c := &Client{BaseClient: bc, apiKey: apiKey}
 	bc.SetAuth(func(req *http.Request) {
 		req.Header.Set("Apikey", apiKey)
 	})
-	return c
+	return c, nil
 }
 
 // GraphQLError represents an error returned by the GraphQL API.

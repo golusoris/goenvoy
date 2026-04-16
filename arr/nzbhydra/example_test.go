@@ -9,7 +9,10 @@ import (
 )
 
 func Example() {
-	client := nzbhydra.New("http://localhost:5076", "your-api-key")
+	client, err := nzbhydra.New("http://localhost:5076", "your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

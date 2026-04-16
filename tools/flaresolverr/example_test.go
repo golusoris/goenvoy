@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/golusoris/goenvoy/arr/flaresolverr"
+	"github.com/golusoris/goenvoy/tools/flaresolverr"
 )
 
 func Example() {
-	client := flaresolverr.New("http://localhost:8191")
+	client, err := flaresolverr.New("http://localhost:8191")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
+
 ## [2.1.0](https://github.com/golusoris/goenvoy/compare/arr/mylar/v2.0.0...arr/mylar/v2.1.0) (2026-04-15)
 
 

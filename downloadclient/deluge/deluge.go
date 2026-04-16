@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -45,7 +47,18 @@ type Client struct {
 }
 
 // New creates a Deluge [Client] for the given base URL.
-func New(baseURL string, opts ...Option) *Client {
+// It returns an error if baseURL is not a valid HTTP/HTTPS URL.
+func New(baseURL string, opts ...Option) (*Client, error) {
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("deluge: invalid base URL %q: %w", baseURL, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("deluge: invalid base URL %q: must be http(s) with a host", baseURL)
+	}
+
 	jar, _ := cookiejar.New(nil)
 	c := &Client{
 		baseURL: baseURL,
@@ -61,7 +74,7 @@ func New(baseURL string, opts ...Option) *Client {
 	if c.httpClient.Jar == nil {
 		c.httpClient.Jar = jar
 	}
-	return c
+	return c, nil
 }
 
 // APIError is returned when Deluge returns a JSON-RPC error.

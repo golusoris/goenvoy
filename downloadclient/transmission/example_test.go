@@ -10,8 +10,11 @@ import (
 
 func Example() {
 	// Create a new Transmission client
-	client := transmission.New("http://localhost:9091/transmission/rpc",
+	client, err := transmission.New("http://localhost:9091/transmission/rpc",
 		transmission.WithAuth("username", "password"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

@@ -67,7 +67,11 @@ func newXMLServer(t *testing.T, xmlBody string) *nzbhydra.Client {
 		_, _ = w.Write([]byte(xmlBody))
 	}))
 	t.Cleanup(ts.Close)
-	return nzbhydra.New(ts.URL, "test-key")
+	c, err := nzbhydra.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return c
 }
 
 func newJSONPostServer(t *testing.T, wantPath string, response any) *nzbhydra.Client {
@@ -92,7 +96,11 @@ func newJSONPostServer(t *testing.T, wantPath string, response any) *nzbhydra.Cl
 		}
 	}))
 	t.Cleanup(ts.Close)
-	return nzbhydra.New(ts.URL, "test-key")
+	c, err := nzbhydra.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return c
 }
 
 func newJSONGetServer(t *testing.T, wantPath string, response any) *nzbhydra.Client {
@@ -113,7 +121,11 @@ func newJSONGetServer(t *testing.T, wantPath string, response any) *nzbhydra.Cli
 		}
 	}))
 	t.Cleanup(ts.Close)
-	return nzbhydra.New(ts.URL, "test-key")
+	c, err := nzbhydra.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return c
 }
 
 func TestSearch(t *testing.T) {
@@ -138,7 +150,10 @@ func TestSearch(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := nzbhydra.New(ts.URL, "test-key")
+	c, err := nzbhydra.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	results, err := c.Search(context.Background(), "ubuntu", []int{2000, 5000})
 	if err != nil {
 		t.Fatal(err)
@@ -211,7 +226,10 @@ func TestTVSearch(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := nzbhydra.New(ts.URL, "test-key")
+	c, err := nzbhydra.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	results, err := c.TVSearch(context.Background(), "breaking bad", &nzbhydra.TVSearchOptions{
 		Season:   3,
 		Episode:  5,
@@ -248,8 +266,11 @@ func TestTVSearchMinimalParams(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := nzbhydra.New(ts.URL, "test-key")
-	_, err := c.TVSearch(context.Background(), "test", &nzbhydra.TVSearchOptions{})
+	c, err := nzbhydra.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.TVSearch(context.Background(), "test", &nzbhydra.TVSearchOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +295,10 @@ func TestMovieSearch(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := nzbhydra.New(ts.URL, "test-key")
+	c, err := nzbhydra.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	results, err := c.MovieSearch(context.Background(), "inception", "tt1375666", "27205")
 	if err != nil {
 		t.Fatal(err)
@@ -297,8 +321,11 @@ func TestBookSearch(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := nzbhydra.New(ts.URL, "test-key")
-	_, err := c.BookSearch(context.Background(), "dune")
+	c, err := nzbhydra.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.BookSearch(context.Background(), "dune")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,7 +404,10 @@ func TestGetStats(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := nzbhydra.New(ts.URL, "test-key")
+	c, err := nzbhydra.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetStats(context.Background(), nzbhydra.StatsRequest{
 		IncludeAverageResponseTimes: true,
 	})
@@ -532,8 +562,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := nzbhydra.New(ts.URL, "bad-key")
-	_, err := c.Search(context.Background(), "test", nil)
+	c, err := nzbhydra.New(ts.URL, "bad-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.Search(context.Background(), "test", nil)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -557,8 +590,11 @@ func TestAPIErrorNoBody(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := nzbhydra.New(ts.URL, "key")
-	_, err := c.GetIndexerStatuses(context.Background())
+	c, err := nzbhydra.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetIndexerStatuses(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -580,8 +616,11 @@ func TestPostAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := nzbhydra.New(ts.URL, "bad-key")
-	_, err := c.GetStats(context.Background(), nzbhydra.StatsRequest{})
+	c, err := nzbhydra.New(ts.URL, "bad-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetStats(context.Background(), nzbhydra.StatsRequest{})
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -611,7 +650,10 @@ func TestWithHTTPClient(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := nzbhydra.New(ts.URL, "k", nzbhydra.WithHTTPClient(custom))
+	c, err := nzbhydra.New(ts.URL, "k", nzbhydra.WithHTTPClient(custom))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	_, _ = c.Search(context.Background(), "test", nil)
 	if !called {
 		t.Error("custom HTTP client was not used")
@@ -621,7 +663,10 @@ func TestWithHTTPClient(t *testing.T) {
 func TestWithTimeout(t *testing.T) {
 	t.Parallel()
 
-	c := nzbhydra.New("http://localhost:5076", "key", nzbhydra.WithTimeout(5*1e9))
+	c, err := nzbhydra.New("http://localhost:5076", "key", nzbhydra.WithTimeout(5*1e9))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	_ = c
 }
 
@@ -643,3 +688,28 @@ func TestEmptySearchResults(t *testing.T) {
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := nzbhydra.New(tc.url, "k")
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
+	}
+}

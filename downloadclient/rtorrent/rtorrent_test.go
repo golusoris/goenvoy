@@ -111,7 +111,10 @@ func TestGetTorrents(t *testing.T) {
 	ts := newXMLRPCServer(t, "d.multicall2", xmlMulticallResponse())
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	torrents, err := c.GetTorrents(context.Background(), "")
 	if err != nil {
 		t.Fatal(err)
@@ -139,7 +142,10 @@ func TestAddTorrentURL(t *testing.T) {
 	ts := newXMLRPCServer(t, "load.start", xmlVoidResponse())
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.AddTorrentURL(context.Background(), "magnet:?xt=urn:btih:abc123"); err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +157,10 @@ func TestRemoveTorrent(t *testing.T) {
 	ts := newXMLRPCServer(t, "d.erase", xmlVoidResponse())
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RemoveTorrent(context.Background(), "ABC123"); err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +172,10 @@ func TestStartTorrent(t *testing.T) {
 	ts := newXMLRPCServer(t, "d.start", xmlVoidResponse())
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.StartTorrent(context.Background(), "ABC123"); err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +187,10 @@ func TestStopTorrent(t *testing.T) {
 	ts := newXMLRPCServer(t, "d.stop", xmlVoidResponse())
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.StopTorrent(context.Background(), "ABC123"); err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +202,10 @@ func TestPauseTorrent(t *testing.T) {
 	ts := newXMLRPCServer(t, "d.pause", xmlVoidResponse())
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.PauseTorrent(context.Background(), "DEF456"); err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +217,10 @@ func TestResumeTorrent(t *testing.T) {
 	ts := newXMLRPCServer(t, "d.resume", xmlVoidResponse())
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.ResumeTorrent(context.Background(), "DEF456"); err != nil {
 		t.Fatal(err)
 	}
@@ -211,7 +232,10 @@ func TestRecheckTorrent(t *testing.T) {
 	ts := newXMLRPCServer(t, "d.check_hash", xmlVoidResponse())
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RecheckTorrent(context.Background(), "ABC123"); err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +247,10 @@ func TestSetLabel(t *testing.T) {
 	ts := newXMLRPCServer(t, "d.custom1.set", xmlVoidResponse())
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetLabel(context.Background(), "ABC123", "movies"); err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +275,10 @@ func TestGetSystemInfo(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	info, err := c.GetSystemInfo(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -270,7 +300,10 @@ func TestGetDownloadRate(t *testing.T) {
 	ts := newXMLRPCServer(t, "throttle.global_down.rate", xmlIntResponse(5000000))
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	rate, err := c.GetDownloadRate(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -286,7 +319,10 @@ func TestGetUploadRate(t *testing.T) {
 	ts := newXMLRPCServer(t, "throttle.global_up.rate", xmlIntResponse(1000000))
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	rate, err := c.GetUploadRate(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -302,7 +338,10 @@ func TestSetDownloadLimit(t *testing.T) {
 	ts := newXMLRPCServer(t, "throttle.global_down.max_rate.set", xmlVoidResponse())
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetDownloadLimit(context.Background(), 5000000); err != nil {
 		t.Fatal(err)
 	}
@@ -314,8 +353,11 @@ func TestAPIError(t *testing.T) {
 	ts := newXMLRPCServer(t, "d.start", xmlFaultResponse("Could not find info-hash."))
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL)
-	err := c.StartTorrent(context.Background(), "INVALID")
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	err = c.StartTorrent(context.Background(), "INVALID")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -339,7 +381,10 @@ func TestWithAuth(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := rtorrent.New(ts.URL, rtorrent.WithAuth("admin", "secret"))
+	c, err := rtorrent.New(ts.URL, rtorrent.WithAuth("admin", "secret"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	// GetTorrents will work if auth succeeds (even though response is wrong format)
 	// but we test that auth is sent. Use a system call that returns a string.
 	info, err := c.GetSystemInfo(context.Background())
@@ -348,5 +393,29 @@ func TestWithAuth(t *testing.T) {
 	}
 	if info.ClientVersion != "0.9.8" {
 		t.Errorf("ClientVersion = %q, want %q", info.ClientVersion, "0.9.8")
+	}
+}
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := rtorrent.New(tc.url)
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
 	}
 }

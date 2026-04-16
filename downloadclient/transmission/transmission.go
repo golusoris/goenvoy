@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -76,7 +78,18 @@ type Client struct {
 }
 
 // New creates a Transmission [Client] for the given base URL.
-func New(baseURL string, opts ...Option) *Client {
+// It returns an error if baseURL is not a valid HTTP/HTTPS URL.
+func New(baseURL string, opts ...Option) (*Client, error) {
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("transmission: invalid base URL %q: %w", baseURL, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("transmission: invalid base URL %q: must be http(s) with a host", baseURL)
+	}
+
 	c := &Client{
 		baseURL:    baseURL,
 		rpcPath:    defaultRPCPath,
@@ -86,7 +99,7 @@ func New(baseURL string, opts ...Option) *Client {
 	for _, o := range opts {
 		o(c)
 	}
-	return c
+	return c, nil
 }
 
 // APIError is returned when the RPC response result is not "success".

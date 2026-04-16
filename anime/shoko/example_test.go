@@ -10,7 +10,10 @@ import (
 
 func Example() {
 	// Create a new Shoko client
-	client := shoko.New("http://localhost:8111")
+	client, err := shoko.New("http://localhost:8111")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

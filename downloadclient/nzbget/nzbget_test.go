@@ -59,7 +59,10 @@ func TestListGroups(t *testing.T) {
 	ts := newRPCServer(t, "listgroups", result)
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	groups, err := c.ListGroups(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -81,7 +84,10 @@ func TestAppend(t *testing.T) {
 	ts := newRPCServer(t, "append", 42)
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	id, err := c.Append(context.Background(), "file.nzb", "https://example.com/file.nzb", "movies", 0)
 	if err != nil {
 		t.Fatal(err)
@@ -97,7 +103,10 @@ func TestEditQueue(t *testing.T) {
 	ts := newRPCServer(t, "editqueue", true)
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	ok, err := c.EditQueue(context.Background(), "GroupPause", "", []int{1, 2})
 	if err != nil {
 		t.Fatal(err)
@@ -113,7 +122,10 @@ func TestPauseDownload(t *testing.T) {
 	ts := newRPCServer(t, "pausedownload", true)
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.PauseDownload(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +137,10 @@ func TestResumeDownload(t *testing.T) {
 	ts := newRPCServer(t, "resumedownload", true)
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.ResumeDownload(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +156,10 @@ func TestGetStatus(t *testing.T) {
 	ts := newRPCServer(t, "status", result)
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	status, err := c.GetStatus(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -160,7 +178,10 @@ func TestGetVersion(t *testing.T) {
 	ts := newRPCServer(t, "version", "21.1")
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	v, err := c.GetVersion(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -179,7 +200,10 @@ func TestGetHistory(t *testing.T) {
 	ts := newRPCServer(t, "history", result)
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	items, err := c.GetHistory(context.Background(), false)
 	if err != nil {
 		t.Fatal(err)
@@ -202,7 +226,10 @@ func TestGetConfig(t *testing.T) {
 	ts := newRPCServer(t, "config", result)
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	entries, err := c.GetConfig(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -225,7 +252,10 @@ func TestGetLog(t *testing.T) {
 	ts := newRPCServer(t, "log", result)
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	entries, err := c.GetLog(context.Background(), 0, 100)
 	if err != nil {
 		t.Fatal(err)
@@ -256,8 +286,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
-	_, err := c.ListGroups(context.Background())
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.ListGroups(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -276,7 +309,10 @@ func TestSetDownloadRate(t *testing.T) {
 	ts := newRPCServer(t, "rate", true)
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetDownloadRate(context.Background(), 5000); err != nil {
 		t.Fatal(err)
 	}
@@ -288,7 +324,10 @@ func TestScanNZBDir(t *testing.T) {
 	ts := newRPCServer(t, "scan", true)
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.ScanNZBDir(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -300,12 +339,39 @@ func TestSetCategory(t *testing.T) {
 	ts := newRPCServer(t, "editqueue", true)
 	defer ts.Close()
 
-	c := nzbget.New(ts.URL, "nzbget", "pass123")
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	ok, err := c.SetCategory(context.Background(), 1, "movies")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !ok {
 		t.Error("ok = false, want true")
+	}
+}
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := nzbget.New(tc.url, "u", "p")
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
 	}
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
+
 ## [1.3.0](https://github.com/golusoris/goenvoy/compare/anime/shoko/v1.2.0...anime/shoko/v1.3.0) (2026-04-15)
 
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates the endpoint URL. Callers must check the error.
+
 ## [1.3.0](https://github.com/golusoris/goenvoy/compare/metadata/adult/stashbox/v1.2.0...metadata/adult/stashbox/v1.3.0) (2026-04-15)
 
 

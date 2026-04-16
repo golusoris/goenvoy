@@ -10,7 +10,10 @@ import (
 
 func Example() {
 	// Create a new rTorrent client
-	client := rtorrent.New("http://localhost:8000/RPC2")
+	client, err := rtorrent.New("http://localhost:8000/RPC2")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

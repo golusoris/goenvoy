@@ -48,7 +48,10 @@ func TestLogin(t *testing.T) {
 	ts := newLoginServer(t)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.Login(context.Background(), "admin", "adminadmin"); err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +63,10 @@ func TestLogout(t *testing.T) {
 	ts := newLoginServer(t)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	_ = c.Login(context.Background(), "admin", "adminadmin")
 	if err := c.Logout(context.Background()); err != nil {
 		t.Fatal(err)
@@ -75,7 +81,10 @@ func TestVersion(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	v, err := c.Version(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -93,7 +102,10 @@ func TestWebAPIVersion(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	v, err := c.WebAPIVersion(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -110,7 +122,10 @@ func TestGetBuildInfo(t *testing.T) {
 	ts := newTestServer(t, "/api/v2/app/buildInfo", info)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	b, err := c.GetBuildInfo(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -130,7 +145,10 @@ func TestGetPreferences(t *testing.T) {
 	ts := newTestServer(t, "/api/v2/app/preferences", prefs)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	p, err := c.GetPreferences(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -151,7 +169,10 @@ func TestDefaultSavePath(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	p, err := c.DefaultSavePath(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -171,7 +192,10 @@ func TestListTorrents(t *testing.T) {
 	ts := newTestServer(t, "/api/v2/torrents/info", torrents)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.ListTorrents(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -203,7 +227,10 @@ func TestListTorrentsWithOptions(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.ListTorrents(context.Background(), &qbit.ListOptions{Filter: "downloading", Category: "movies"})
 	if err != nil {
 		t.Fatal(err)
@@ -220,7 +247,10 @@ func TestGetTorrentProperties(t *testing.T) {
 	ts := newTestServer(t, "/api/v2/torrents/properties", props)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	p, err := c.GetTorrentProperties(context.Background(), "abc123")
 	if err != nil {
 		t.Fatal(err)
@@ -240,7 +270,10 @@ func TestGetTorrentTrackers(t *testing.T) {
 	ts := newTestServer(t, "/api/v2/torrents/trackers", trackers)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetTorrentTrackers(context.Background(), "abc123")
 	if err != nil {
 		t.Fatal(err)
@@ -260,7 +293,10 @@ func TestGetTorrentFiles(t *testing.T) {
 	ts := newTestServer(t, "/api/v2/torrents/files", files)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetTorrentFiles(context.Background(), "abc123")
 	if err != nil {
 		t.Fatal(err)
@@ -294,8 +330,11 @@ func TestAddTorrentURLs(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
-	err := c.AddTorrentURLs(context.Background(), []string{"magnet:?xt=urn:btih:abc123"}, &qbit.AddTorrentOptions{Category: "movies"})
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	err = c.AddTorrentURLs(context.Background(), []string{"magnet:?xt=urn:btih:abc123"}, &qbit.AddTorrentOptions{Category: "movies"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -319,7 +358,10 @@ func TestDeleteTorrents(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.DeleteTorrents(context.Background(), []string{"abc123", "def456"}, true); err != nil {
 		t.Fatal(err)
 	}
@@ -336,7 +378,10 @@ func TestPauseTorrents(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.PauseTorrents(context.Background(), []string{"abc123"}); err != nil {
 		t.Fatal(err)
 	}
@@ -353,7 +398,10 @@ func TestResumeTorrents(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.ResumeTorrents(context.Background(), []string{"abc123"}); err != nil {
 		t.Fatal(err)
 	}
@@ -369,7 +417,10 @@ func TestGetTransferInfo(t *testing.T) {
 	ts := newTestServer(t, "/api/v2/transfer/info", info)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetTransferInfo(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -392,7 +443,10 @@ func TestListCategories(t *testing.T) {
 	ts := newTestServer(t, "/api/v2/torrents/categories", cats)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.ListCategories(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -412,7 +466,10 @@ func TestListTags(t *testing.T) {
 	ts := newTestServer(t, "/api/v2/torrents/tags", tags)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.ListTags(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -437,7 +494,10 @@ func TestGetSyncMainData(t *testing.T) {
 	ts := newTestServer(t, "/api/v2/sync/maindata", data)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetSyncMainData(context.Background(), 0)
 	if err != nil {
 		t.Fatal(err)
@@ -460,7 +520,10 @@ func TestGetLog(t *testing.T) {
 	ts := newTestServer(t, "/api/v2/log/main", logs)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetLog(context.Background(), -1)
 	if err != nil {
 		t.Fatal(err)
@@ -482,8 +545,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
-	_, err := c.ListTorrents(context.Background(), nil)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.ListTorrents(context.Background(), nil)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -507,7 +573,10 @@ func TestRecheckTorrents(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RecheckTorrents(context.Background(), []string{"abc123"}); err != nil {
 		t.Fatal(err)
 	}
@@ -528,7 +597,10 @@ func TestCreateCategory(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.CreateCategory(context.Background(), "movies", "/data/movies"); err != nil {
 		t.Fatal(err)
 	}
@@ -543,7 +615,10 @@ func TestGetPeerLog(t *testing.T) {
 	ts := newTestServer(t, "/api/v2/log/peers", logs)
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetPeerLog(context.Background(), -1)
 	if err != nil {
 		t.Fatal(err)
@@ -571,7 +646,10 @@ func TestSetGlobalDownloadLimit(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetGlobalDownloadLimit(context.Background(), 10000000); err != nil {
 		t.Fatal(err)
 	}
@@ -582,7 +660,10 @@ func TestGetTorrentWebSeeds(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/webseeds", []qbit.WebSeed{{URL: "http://example.com"}})
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	seeds, err := c.GetTorrentWebSeeds(context.Background(), "abc123")
 	if err != nil {
 		t.Fatal(err)
@@ -597,7 +678,10 @@ func TestReannounceTorrents(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/reannounce", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.ReannounceTorrents(context.Background(), []string{"abc"}); err != nil {
 		t.Fatal(err)
 	}
@@ -608,7 +692,10 @@ func TestSetTorrentLocation(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/setLocation", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetTorrentLocation(context.Background(), []string{"abc"}, "/new/path"); err != nil {
 		t.Fatal(err)
 	}
@@ -619,7 +706,10 @@ func TestRenameTorrent(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/rename", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RenameTorrent(context.Background(), "abc", "newname"); err != nil {
 		t.Fatal(err)
 	}
@@ -630,7 +720,10 @@ func TestSetTorrentCategory(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/setCategory", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetTorrentCategory(context.Background(), []string{"abc"}, "movies"); err != nil {
 		t.Fatal(err)
 	}
@@ -641,7 +734,10 @@ func TestAddTorrentTags(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/addTags", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.AddTorrentTags(context.Background(), []string{"abc"}, []string{"tag1", "tag2"}); err != nil {
 		t.Fatal(err)
 	}
@@ -652,7 +748,10 @@ func TestRemoveTorrentTags(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/removeTags", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RemoveTorrentTags(context.Background(), []string{"abc"}, []string{"tag1"}); err != nil {
 		t.Fatal(err)
 	}
@@ -663,7 +762,10 @@ func TestGetGlobalDownloadLimit(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/transfer/downloadLimit", int64(5000000))
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	limit, err := c.GetGlobalDownloadLimit(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -678,7 +780,10 @@ func TestGetGlobalUploadLimit(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/transfer/uploadLimit", int64(3000000))
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	limit, err := c.GetGlobalUploadLimit(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -693,7 +798,10 @@ func TestSetGlobalUploadLimit(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/transfer/setUploadLimit", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetGlobalUploadLimit(context.Background(), 5000000); err != nil {
 		t.Fatal(err)
 	}
@@ -704,7 +812,10 @@ func TestSetPreferences(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/app/setPreferences", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetPreferences(context.Background(), map[string]any{"dl_limit": 1000}); err != nil {
 		t.Fatal(err)
 	}
@@ -715,7 +826,10 @@ func TestShutdown(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/app/shutdown", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.Shutdown(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -731,7 +845,10 @@ func TestGetSpeedLimitsMode(t *testing.T) {
 		_, _ = w.Write([]byte("1"))
 	}))
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	mode, err := c.GetSpeedLimitsMode(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -746,7 +863,10 @@ func TestToggleSpeedLimitsMode(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/transfer/toggleSpeedLimitsMode", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.ToggleSpeedLimitsMode(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -757,7 +877,10 @@ func TestBanPeers(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/transfer/banPeers", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.BanPeers(context.Background(), []string{"1.2.3.4:6881"}); err != nil {
 		t.Fatal(err)
 	}
@@ -768,7 +891,10 @@ func TestGetSyncTorrentPeers(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/sync/torrentPeers", qbit.SyncTorrentPeers{RID: 1, FullData: true})
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetSyncTorrentPeers(context.Background(), "abc", 0)
 	if err != nil {
 		t.Fatal(err)
@@ -783,7 +909,10 @@ func TestGetTorrentPieceStates(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/pieceStates", []int{0, 1, 2})
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	states, err := c.GetTorrentPieceStates(context.Background(), "abc")
 	if err != nil {
 		t.Fatal(err)
@@ -798,7 +927,10 @@ func TestGetTorrentPieceHashes(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/pieceHashes", []string{"hash1", "hash2"})
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	hashes, err := c.GetTorrentPieceHashes(context.Background(), "abc")
 	if err != nil {
 		t.Fatal(err)
@@ -813,7 +945,10 @@ func TestSetFilePriority(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/filePrio", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetFilePriority(context.Background(), "abc", []int{0, 1}, 7); err != nil {
 		t.Fatal(err)
 	}
@@ -824,7 +959,10 @@ func TestSetTorrentDownloadLimit(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/setDownloadLimit", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetTorrentDownloadLimit(context.Background(), []string{"abc"}, 100000); err != nil {
 		t.Fatal(err)
 	}
@@ -835,7 +973,10 @@ func TestSetTorrentUploadLimit(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/setUploadLimit", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetTorrentUploadLimit(context.Background(), []string{"abc"}, 50000); err != nil {
 		t.Fatal(err)
 	}
@@ -846,7 +987,10 @@ func TestSetShareLimits(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/setShareLimits", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetShareLimits(context.Background(), []string{"abc"}, 2.0, -1, -1); err != nil {
 		t.Fatal(err)
 	}
@@ -857,7 +1001,10 @@ func TestIncreasePriority(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/increasePrio", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.IncreasePriority(context.Background(), []string{"abc"}); err != nil {
 		t.Fatal(err)
 	}
@@ -868,7 +1015,10 @@ func TestDecreasePriority(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/decreasePrio", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.DecreasePriority(context.Background(), []string{"abc"}); err != nil {
 		t.Fatal(err)
 	}
@@ -879,7 +1029,10 @@ func TestTopPriority(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/topPrio", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.TopPriority(context.Background(), []string{"abc"}); err != nil {
 		t.Fatal(err)
 	}
@@ -890,7 +1043,10 @@ func TestBottomPriority(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/bottomPrio", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.BottomPriority(context.Background(), []string{"abc"}); err != nil {
 		t.Fatal(err)
 	}
@@ -901,7 +1057,10 @@ func TestSetForceStart(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/setForceStart", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetForceStart(context.Background(), []string{"abc"}, true); err != nil {
 		t.Fatal(err)
 	}
@@ -912,7 +1071,10 @@ func TestSetSuperSeeding(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/setSuperSeeding", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetSuperSeeding(context.Background(), []string{"abc"}, true); err != nil {
 		t.Fatal(err)
 	}
@@ -923,7 +1085,10 @@ func TestSetAutoManagement(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/setAutoManagement", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.SetAutoManagement(context.Background(), []string{"abc"}, true); err != nil {
 		t.Fatal(err)
 	}
@@ -934,7 +1099,10 @@ func TestToggleSequentialDownload(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/toggleSequentialDownload", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.ToggleSequentialDownload(context.Background(), []string{"abc"}); err != nil {
 		t.Fatal(err)
 	}
@@ -945,7 +1113,10 @@ func TestToggleFirstLastPiecePrio(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/toggleFirstLastPiecePrio", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.ToggleFirstLastPiecePrio(context.Background(), []string{"abc"}); err != nil {
 		t.Fatal(err)
 	}
@@ -956,7 +1127,10 @@ func TestAddTrackers(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/addTrackers", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.AddTrackers(context.Background(), "abc", []string{"http://tracker1.com/announce"}); err != nil {
 		t.Fatal(err)
 	}
@@ -967,7 +1141,10 @@ func TestEditTracker(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/editTracker", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.EditTracker(context.Background(), "abc", "http://old.com/announce", "http://new.com/announce"); err != nil {
 		t.Fatal(err)
 	}
@@ -978,7 +1155,10 @@ func TestRemoveTrackers(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/removeTrackers", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RemoveTrackers(context.Background(), "abc", []string{"http://tracker1.com/announce"}); err != nil {
 		t.Fatal(err)
 	}
@@ -989,7 +1169,10 @@ func TestEditCategory(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/editCategory", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.EditCategory(context.Background(), "movies", "/new/path"); err != nil {
 		t.Fatal(err)
 	}
@@ -1000,7 +1183,10 @@ func TestRemoveCategories(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/removeCategories", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RemoveCategories(context.Background(), []string{"movies", "tv"}); err != nil {
 		t.Fatal(err)
 	}
@@ -1011,7 +1197,10 @@ func TestCreateTags(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/createTags", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.CreateTags(context.Background(), []string{"tag1", "tag2"}); err != nil {
 		t.Fatal(err)
 	}
@@ -1022,7 +1211,10 @@ func TestDeleteTags(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/deleteTags", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.DeleteTags(context.Background(), []string{"tag1"}); err != nil {
 		t.Fatal(err)
 	}
@@ -1033,7 +1225,10 @@ func TestRenameFile(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/renameFile", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RenameFile(context.Background(), "abc", "old.mkv", "new.mkv"); err != nil {
 		t.Fatal(err)
 	}
@@ -1044,8 +1239,35 @@ func TestRenameFolder(t *testing.T) {
 
 	ts := newTestServer(t, "/api/v2/torrents/renameFolder", nil)
 	defer ts.Close()
-	c := qbit.New(ts.URL)
+	c, err := qbit.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RenameFolder(context.Background(), "abc", "OldFolder", "NewFolder"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := qbit.New(tc.url)
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
 	}
 }

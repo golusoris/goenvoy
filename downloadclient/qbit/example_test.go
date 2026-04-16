@@ -10,7 +10,10 @@ import (
 
 func Example() {
 	// Create a new qBittorrent client
-	client := qbit.New("http://localhost:8080")
+	client, err := qbit.New("http://localhost:8080")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

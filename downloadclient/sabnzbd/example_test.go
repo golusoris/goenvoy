@@ -10,7 +10,10 @@ import (
 
 func Example() {
 	// Create a new SABnzbd client
-	client := sabnzbd.New("http://localhost:8080", "your-api-key")
+	client, err := sabnzbd.New("http://localhost:8080", "your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

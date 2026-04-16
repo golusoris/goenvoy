@@ -45,17 +45,28 @@ type Client struct {
 }
 
 // New creates a qBittorrent [Client] for the given base URL (e.g. "http://localhost:8080").
-func New(baseURL string, opts ...Option) *Client {
+// It returns an error if baseURL is not a valid HTTP/HTTPS URL.
+func New(baseURL string, opts ...Option) (*Client, error) {
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("qbit: invalid base URL %q: %w", baseURL, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("qbit: invalid base URL %q: must be http(s) with a host", baseURL)
+	}
+
 	jar, _ := cookiejar.New(nil)
 	c := &Client{
-		baseURL:    strings.TrimRight(baseURL, "/"),
+		baseURL:    baseURL,
 		httpClient: &http.Client{Timeout: defaultTimeout, Jar: jar},
 		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {
 		o(c)
 	}
-	return c
+	return c, nil
 }
 
 // APIError is returned when the API responds with a non-2xx status.

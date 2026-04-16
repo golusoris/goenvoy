@@ -9,7 +9,10 @@ import (
 )
 
 func Example() {
-	client := mylar.New("http://localhost:8090", "your-api-key")
+	client, err := mylar.New("http://localhost:8090", "your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

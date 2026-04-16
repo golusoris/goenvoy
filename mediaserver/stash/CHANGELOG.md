@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates the endpoint URL. Callers must check the error.
+
 ## [1.2.1](https://github.com/golusoris/goenvoy/compare/mediaserver/stash/v1.2.0...mediaserver/stash/v1.2.1) (2026-04-15)
 
 

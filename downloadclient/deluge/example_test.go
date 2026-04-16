@@ -10,7 +10,10 @@ import (
 
 func Example() {
 	// Create a new Deluge client
-	client := deluge.New("http://localhost:8112/json")
+	client, err := deluge.New("http://localhost:8112/json")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

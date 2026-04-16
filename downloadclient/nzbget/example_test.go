@@ -10,7 +10,10 @@ import (
 
 func Example() {
 	// Create a new NZBGet client
-	client := nzbget.New("http://localhost:6789", "username", "password")
+	client, err := nzbget.New("http://localhost:6789", "username", "password")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

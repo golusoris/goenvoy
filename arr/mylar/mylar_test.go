@@ -21,7 +21,11 @@ func newTestServer(t *testing.T, _ string, response any) *mylar.Client {
 		}
 	}))
 	t.Cleanup(ts.Close)
-	return mylar.New(ts.URL, "test-key")
+	c, err := mylar.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return c
 }
 
 func newTestServerFull(t *testing.T, wantCmd, wantKey string, response any) *mylar.Client {
@@ -40,7 +44,11 @@ func newTestServerFull(t *testing.T, wantCmd, wantKey string, response any) *myl
 		}
 	}))
 	t.Cleanup(ts.Close)
-	return mylar.New(ts.URL, wantKey)
+	c, err := mylar.New(ts.URL, wantKey)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return c
 }
 
 func TestGetIndex(t *testing.T) {
@@ -282,8 +290,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := mylar.New(ts.URL, "bad-key")
-	_, err := c.GetIndex(context.Background())
+	c, err := mylar.New(ts.URL, "bad-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetIndex(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -315,7 +326,10 @@ func TestQueryParams(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := mylar.New(ts.URL, "my-key")
+	c, err := mylar.New(ts.URL, "my-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	comic, err := c.GetComic(context.Background(), "77")
 	if err != nil {
 		t.Fatal(err)
@@ -342,7 +356,10 @@ func TestWithHTTPClient(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := mylar.New(ts.URL, "k", mylar.WithHTTPClient(custom))
+	c, err := mylar.New(ts.URL, "k", mylar.WithHTTPClient(custom))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	_, _ = c.GetIndex(context.Background())
 	if !called {
 		t.Error("custom HTTP client was not used")
@@ -352,3 +369,28 @@ func TestWithHTTPClient(t *testing.T) {
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := mylar.New(tc.url, "k")
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
+	}
+}

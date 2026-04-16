@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -158,7 +160,18 @@ type Client struct {
 
 // New creates a Stash [Client].
 // endpoint is the full GraphQL URL (e.g., "http://localhost:9999/graphql").
-func New(endpoint, apiKey string, opts ...Option) *Client {
+// It returns an error if endpoint is not a valid HTTP/HTTPS URL.
+func New(endpoint, apiKey string, opts ...Option) (*Client, error) {
+	endpoint = strings.TrimRight(endpoint, "/")
+
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("stash: invalid endpoint %q: %w", endpoint, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("stash: invalid endpoint %q: must be http(s) with a host", endpoint)
+	}
+
 	c := &Client{
 		endpoint:   endpoint,
 		apiKey:     apiKey,
@@ -168,7 +181,7 @@ func New(endpoint, apiKey string, opts ...Option) *Client {
 	for _, o := range opts {
 		o(c)
 	}
-	return c
+	return c, nil
 }
 
 // GraphQLError represents a GraphQL error from the API.

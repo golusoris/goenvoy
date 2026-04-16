@@ -40,7 +40,18 @@ type Client struct {
 }
 
 // New creates an NZBHydra2 [Client] for the instance at baseURL with the given API key.
-func New(baseURL, apiKey string, opts ...Option) *Client {
+// It returns an error if baseURL is not a valid HTTP/HTTPS URL.
+func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("nzbhydra: invalid base URL %q: %w", baseURL, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("nzbhydra: invalid base URL %q: must be http(s) with a host", baseURL)
+	}
+
 	c := &Client{
 		rawBaseURL: baseURL,
 		apiKey:     apiKey,
@@ -49,7 +60,7 @@ func New(baseURL, apiKey string, opts ...Option) *Client {
 	for _, o := range opts {
 		o(c)
 	}
-	return c
+	return c, nil
 }
 
 // APIError is returned when the API responds with a non-2xx status.

@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -52,7 +54,18 @@ type Client struct {
 }
 
 // New creates an rTorrent [Client] for the given XML-RPC endpoint URL.
-func New(endpoint string, opts ...Option) *Client {
+// It returns an error if endpoint is not a valid HTTP/HTTPS URL.
+func New(endpoint string, opts ...Option) (*Client, error) {
+	endpoint = strings.TrimRight(endpoint, "/")
+
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("rtorrent: invalid endpoint %q: %w", endpoint, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("rtorrent: invalid endpoint %q: must be http(s) with a host", endpoint)
+	}
+
 	c := &Client{
 		endpoint:   endpoint,
 		httpClient: &http.Client{Timeout: defaultTimeout},
@@ -61,7 +74,7 @@ func New(endpoint string, opts ...Option) *Client {
 	for _, o := range opts {
 		o(c)
 	}
-	return c
+	return c, nil
 }
 
 // APIError is returned when rTorrent returns an XML-RPC fault.

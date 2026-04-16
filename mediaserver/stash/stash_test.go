@@ -41,7 +41,10 @@ func TestFindScene(t *testing.T) {
 	ts := newGQLServer(t, "key-1", "findScene", scene)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-1")
+	c, err := stash.New(ts.URL, "key-1")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindScene(context.Background(), "1")
 	if err != nil {
 		t.Fatal(err)
@@ -67,7 +70,10 @@ func TestFindScenes(t *testing.T) {
 	ts := newGQLServer(t, "key-2", "findScenes", resp)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-2")
+	c, err := stash.New(ts.URL, "key-2")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	scenes, count, err := c.FindScenes(context.Background(), &stash.FindFilter{Page: 1, PerPage: 25})
 	if err != nil {
 		t.Fatal(err)
@@ -93,7 +99,10 @@ func TestFindPerformer(t *testing.T) {
 	ts := newGQLServer(t, "key-3", "findPerformer", p)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-3")
+	c, err := stash.New(ts.URL, "key-3")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindPerformer(context.Background(), "p1")
 	if err != nil {
 		t.Fatal(err)
@@ -119,7 +128,10 @@ func TestFindPerformers(t *testing.T) {
 	ts := newGQLServer(t, "key-4", "findPerformers", resp)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-4")
+	c, err := stash.New(ts.URL, "key-4")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	performers, count, err := c.FindPerformers(context.Background(), &stash.FindFilter{Page: 1, PerPage: 25})
 	if err != nil {
 		t.Fatal(err)
@@ -147,7 +159,10 @@ func TestFindStudio(t *testing.T) {
 	ts := newGQLServer(t, "key-5", "findStudio", studio)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-5")
+	c, err := stash.New(ts.URL, "key-5")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindStudio(context.Background(), "s1")
 	if err != nil {
 		t.Fatal(err)
@@ -173,7 +188,10 @@ func TestFindStudios(t *testing.T) {
 	ts := newGQLServer(t, "key-6", "findStudios", resp)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-6")
+	c, err := stash.New(ts.URL, "key-6")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	studios, count, err := c.FindStudios(context.Background(), &stash.FindFilter{Page: 1, PerPage: 25})
 	if err != nil {
 		t.Fatal(err)
@@ -198,7 +216,10 @@ func TestFindTag(t *testing.T) {
 	ts := newGQLServer(t, "key-7", "findTag", tag)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-7")
+	c, err := stash.New(ts.URL, "key-7")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindTag(context.Background(), "t1")
 	if err != nil {
 		t.Fatal(err)
@@ -224,7 +245,10 @@ func TestFindTags(t *testing.T) {
 	ts := newGQLServer(t, "key-8", "findTags", resp)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-8")
+	c, err := stash.New(ts.URL, "key-8")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	tags, count, err := c.FindTags(context.Background(), &stash.FindFilter{Page: 1, PerPage: 50})
 	if err != nil {
 		t.Fatal(err)
@@ -249,7 +273,10 @@ func TestFindGallery(t *testing.T) {
 	ts := newGQLServer(t, "key-9", "findGallery", gallery)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-9")
+	c, err := stash.New(ts.URL, "key-9")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindGallery(context.Background(), "g1")
 	if err != nil {
 		t.Fatal(err)
@@ -275,7 +302,10 @@ func TestFindGalleries(t *testing.T) {
 	ts := newGQLServer(t, "key-10", "findGalleries", resp)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-10")
+	c, err := stash.New(ts.URL, "key-10")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	galleries, count, err := c.FindGalleries(context.Background(), &stash.FindFilter{Page: 1, PerPage: 25})
 	if err != nil {
 		t.Fatal(err)
@@ -299,7 +329,10 @@ func TestFindImage(t *testing.T) {
 	ts := newGQLServer(t, "key-11", "findImage", img)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-11")
+	c, err := stash.New(ts.URL, "key-11")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindImage(context.Background(), "i1")
 	if err != nil {
 		t.Fatal(err)
@@ -325,7 +358,10 @@ func TestFindImages(t *testing.T) {
 	ts := newGQLServer(t, "key-12", "findImages", resp)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-12")
+	c, err := stash.New(ts.URL, "key-12")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	images, count, err := c.FindImages(context.Background(), &stash.FindFilter{Page: 1, PerPage: 25})
 	if err != nil {
 		t.Fatal(err)
@@ -351,7 +387,10 @@ func TestFindGroup(t *testing.T) {
 	ts := newGQLServer(t, "key-13", "findGroup", group)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-13")
+	c, err := stash.New(ts.URL, "key-13")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindGroup(context.Background(), "m1")
 	if err != nil {
 		t.Fatal(err)
@@ -377,7 +416,10 @@ func TestFindGroups(t *testing.T) {
 	ts := newGQLServer(t, "key-14", "findGroups", resp)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-14")
+	c, err := stash.New(ts.URL, "key-14")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	groups, count, err := c.FindGroups(context.Background(), &stash.FindFilter{Page: 1, PerPage: 25})
 	if err != nil {
 		t.Fatal(err)
@@ -403,7 +445,10 @@ func TestFindSceneMarkers(t *testing.T) {
 	ts := newGQLServer(t, "key-15", "findSceneMarkers", markers)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-15")
+	c, err := stash.New(ts.URL, "key-15")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, count, err := c.FindSceneMarkers(context.Background(), &stash.FindFilter{Page: 1, PerPage: 25})
 	if err != nil {
 		t.Fatal(err)
@@ -431,7 +476,10 @@ func TestGetStats(t *testing.T) {
 	ts := newGQLServer(t, "key-16", "stats", stats)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-16")
+	c, err := stash.New(ts.URL, "key-16")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetStats(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -451,7 +499,10 @@ func TestGetVersion(t *testing.T) {
 	ts := newGQLServer(t, "key-17", "version", ver)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-17")
+	c, err := stash.New(ts.URL, "key-17")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetVersion(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -471,7 +522,10 @@ func TestGetSystemStatus(t *testing.T) {
 	ts := newGQLServer(t, "key-18", "systemStatus", status)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key-18")
+	c, err := stash.New(ts.URL, "key-18")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetSystemStatus(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -490,8 +544,11 @@ func TestGraphQLError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "key")
-	_, err := c.FindScene(context.Background(), "missing")
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.FindScene(context.Background(), "missing")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -513,8 +570,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "bad-key")
-	_, err := c.FindScene(context.Background(), "1")
+	c, err := stash.New(ts.URL, "bad-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.FindScene(context.Background(), "1")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -534,7 +594,10 @@ func TestNoAuthRequired(t *testing.T) {
 	ts := newGQLServer(t, "", "findScene", scene)
 	defer ts.Close()
 
-	c := stash.New(ts.URL, "")
+	c, err := stash.New(ts.URL, "")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.FindScene(context.Background(), "1")
 	if err != nil {
 		t.Fatal(err)
@@ -545,3 +608,28 @@ func TestNoAuthRequired(t *testing.T) {
 }
 
 func intPtr(v int) *int { return &v }
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := stash.New(tc.url, "k")
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
+	}
+}

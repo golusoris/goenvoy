@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/golusoris/goenvoy/arr/flaresolverr"
+	"github.com/golusoris/goenvoy/tools/flaresolverr"
 )
 
 func newTestServer(t *testing.T, wantCmd string, response any) *flaresolverr.Client {
@@ -42,7 +42,11 @@ func newTestServer(t *testing.T, wantCmd string, response any) *flaresolverr.Cli
 		}
 	}))
 	t.Cleanup(ts.Close)
-	return flaresolverr.New(ts.URL)
+	c, err := flaresolverr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return c
 }
 
 func TestGet(t *testing.T) {
@@ -100,7 +104,10 @@ func TestGetWithOptions(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := flaresolverr.New(ts.URL)
+	c, err := flaresolverr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	resp, err := c.Get(context.Background(), "https://example.com", &flaresolverr.RequestOptions{
 		Session:    "my-session",
 		MaxTimeout: 60000,
@@ -133,7 +140,10 @@ func TestPost(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := flaresolverr.New(ts.URL)
+	c, err := flaresolverr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	resp, err := c.Post(context.Background(), "https://example.com/login", "user=test", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -181,8 +191,11 @@ func TestCreateSessionWithProxy(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := flaresolverr.New(ts.URL)
-	_, err := c.CreateSession(context.Background(), "s1", &flaresolverr.Proxy{URL: "http://proxy:8080"})
+	c, err := flaresolverr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.CreateSession(context.Background(), "s1", &flaresolverr.Proxy{URL: "http://proxy:8080"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,8 +238,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := flaresolverr.New(ts.URL)
-	_, err := c.Get(context.Background(), "https://example.com", nil)
+	c, err := flaresolverr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.Get(context.Background(), "https://example.com", nil)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -256,7 +272,10 @@ func TestWithHTTPClient(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := flaresolverr.New(ts.URL, flaresolverr.WithHTTPClient(custom))
+	c, err := flaresolverr.New(ts.URL, flaresolverr.WithHTTPClient(custom))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	_, _ = c.Get(context.Background(), "https://example.com", nil)
 	if !called {
 		t.Error("custom HTTP client was not used")
@@ -266,3 +285,28 @@ func TestWithHTTPClient(t *testing.T) {
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := flaresolverr.New(tc.url)
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
+	}
+}

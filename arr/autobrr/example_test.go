@@ -9,7 +9,10 @@ import (
 )
 
 func Example() {
-	client := autobrr.New("http://localhost:7474", "your-api-key")
+	client, err := autobrr.New("http://localhost:7474", "your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

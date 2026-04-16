@@ -81,7 +81,11 @@ func newXMLServer(t *testing.T, wantPath, xmlBody string) *jackett.Client {
 		_, _ = w.Write([]byte(xmlBody))
 	}))
 	t.Cleanup(ts.Close)
-	return jackett.New(ts.URL, "test-key")
+	c, err := jackett.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return c
 }
 
 func newJSONServer(t *testing.T, wantPath string, response any) *jackett.Client {
@@ -99,7 +103,11 @@ func newJSONServer(t *testing.T, wantPath string, response any) *jackett.Client 
 		}
 	}))
 	t.Cleanup(ts.Close)
-	return jackett.New(ts.URL, "test-key")
+	c, err := jackett.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return c
 }
 
 func TestSearch(t *testing.T) {
@@ -124,7 +132,10 @@ func TestSearch(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := jackett.New(ts.URL, "test-key")
+	c, err := jackett.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	results, err := c.Search(context.Background(), "ubuntu", []int{4000, 5000})
 	if err != nil {
 		t.Fatal(err)
@@ -187,7 +198,10 @@ func TestSearchIndexer(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := jackett.New(ts.URL, "test-key")
+	c, err := jackett.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	results, err := c.SearchIndexer(context.Background(), "myindexer", "test", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -222,7 +236,10 @@ func TestTVSearch(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := jackett.New(ts.URL, "test-key")
+	c, err := jackett.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	results, err := c.TVSearch(context.Background(), "breaking bad", 5, 3, "tt0903747")
 	if err != nil {
 		t.Fatal(err)
@@ -251,8 +268,11 @@ func TestTVSearchOptionalParams(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := jackett.New(ts.URL, "test-key")
-	_, err := c.TVSearch(context.Background(), "test", 0, 0, "")
+	c, err := jackett.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.TVSearch(context.Background(), "test", 0, 0, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +294,10 @@ func TestMovieSearch(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := jackett.New(ts.URL, "test-key")
+	c, err := jackett.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	results, err := c.MovieSearch(context.Background(), "inception", "tt1375666")
 	if err != nil {
 		t.Fatal(err)
@@ -297,8 +320,11 @@ func TestMusicSearch(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := jackett.New(ts.URL, "test-key")
-	_, err := c.MusicSearch(context.Background(), "radiohead")
+	c, err := jackett.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.MusicSearch(context.Background(), "radiohead")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -317,8 +343,11 @@ func TestBookSearch(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := jackett.New(ts.URL, "test-key")
-	_, err := c.BookSearch(context.Background(), "dune")
+	c, err := jackett.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.BookSearch(context.Background(), "dune")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -438,8 +467,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := jackett.New(ts.URL, "bad-key")
-	_, err := c.Search(context.Background(), "test", nil)
+	c, err := jackett.New(ts.URL, "bad-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.Search(context.Background(), "test", nil)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -463,8 +495,11 @@ func TestAPIErrorNoBody(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := jackett.New(ts.URL, "key")
-	_, err := c.GetIndexers(context.Background())
+	c, err := jackett.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetIndexers(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -494,7 +529,10 @@ func TestWithHTTPClient(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := jackett.New(ts.URL, "k", jackett.WithHTTPClient(custom))
+	c, err := jackett.New(ts.URL, "k", jackett.WithHTTPClient(custom))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	_, _ = c.Search(context.Background(), "test", nil)
 	if !called {
 		t.Error("custom HTTP client was not used")
@@ -504,7 +542,10 @@ func TestWithHTTPClient(t *testing.T) {
 func TestWithTimeout(t *testing.T) {
 	t.Parallel()
 
-	c := jackett.New("http://localhost:9117", "key", jackett.WithTimeout(5*1e9))
+	c, err := jackett.New("http://localhost:9117", "key", jackett.WithTimeout(5*1e9))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	// Just verify it doesn't panic.
 	_ = c
 }
@@ -527,3 +568,28 @@ func TestEmptySearchResults(t *testing.T) {
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := jackett.New(tc.url, "k")
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
+	}
+}

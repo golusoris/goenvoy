@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -46,7 +48,18 @@ type Client struct {
 }
 
 // New creates an NZBGet [Client] for the given base URL with basic auth credentials.
-func New(baseURL, username, password string, opts ...Option) *Client {
+// It returns an error if baseURL is not a valid HTTP/HTTPS URL.
+func New(baseURL, username, password string, opts ...Option) (*Client, error) {
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("nzbget: invalid base URL %q: %w", baseURL, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("nzbget: invalid base URL %q: must be http(s) with a host", baseURL)
+	}
+
 	c := &Client{
 		baseURL:    baseURL,
 		username:   username,
@@ -57,7 +70,7 @@ func New(baseURL, username, password string, opts ...Option) *Client {
 	for _, o := range opts {
 		o(c)
 	}
-	return c
+	return c, nil
 }
 
 // APIError is returned when NZBGet returns a JSON-RPC error.

@@ -10,7 +10,10 @@ import (
 
 func Example() {
 	// Create a new Stash client
-	client := stash.New("http://localhost:9999/graphql", "your-api-key")
+	client, err := stash.New("http://localhost:9999/graphql", "your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 
