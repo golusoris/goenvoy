@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/golusoris/goenvoy/metadata"
 )
@@ -34,11 +35,36 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("screenscraper: %s: %s", e.Status, e.Body)
 }
 
-// ClientOption configures the Screenscraper client.
-type ClientOption func(*Client)
+// Option configures the Screenscraper [Client]. It unifies the embedded
+// metadata.BaseClient options (HTTP client, timeout, user-agent, base URL)
+// with screenscraper-specific options (user credentials) under a single
+// compile-time-checked type.
+type Option func(*Client)
 
-// WithUser sets the user credentials for the client.
-func WithUser(userID, userPassword string) ClientOption {
+// WithHTTPClient sets a custom *http.Client.
+func WithHTTPClient(hc *http.Client) Option {
+	return func(c *Client) { metadata.WithHTTPClient(hc)(c.BaseClient) }
+}
+
+// WithTimeout overrides the default HTTP request timeout.
+func WithTimeout(d time.Duration) Option {
+	return func(c *Client) { metadata.WithTimeout(d)(c.BaseClient) }
+}
+
+// WithUserAgent sets the User-Agent header for all requests.
+func WithUserAgent(ua string) Option {
+	return func(c *Client) { metadata.WithUserAgent(ua)(c.BaseClient) }
+}
+
+// WithBaseURL overrides the default API base URL.
+func WithBaseURL(u string) Option {
+	return func(c *Client) { metadata.WithBaseURL(u)(c.BaseClient) }
+}
+
+// WithUser sets the end-user credentials for the client. Developer
+// credentials remain required and are passed to [New]; user credentials
+// unlock per-user rate limits and personal data.
+func WithUser(userID, userPassword string) Option {
 	return func(c *Client) {
 		c.userID = userID
 		c.userPassword = userPassword
@@ -46,25 +72,15 @@ func WithUser(userID, userPassword string) ClientOption {
 }
 
 // New creates a Screenscraper [Client] with the given developer credentials.
-func New(devID, devPassword, softName string, opts ...any) *Client {
-	var metaOpts []metadata.Option
-	var clientOpts []ClientOption
-	for _, o := range opts {
-		switch v := o.(type) {
-		case metadata.Option:
-			metaOpts = append(metaOpts, v)
-		case ClientOption:
-			clientOpts = append(clientOpts, v)
-		}
-	}
-	bc := metadata.NewBaseClient(defaultBaseURL, "screenscraper", metaOpts...)
+func New(devID, devPassword, softName string, opts ...Option) *Client {
+	bc := metadata.NewBaseClient(defaultBaseURL, "screenscraper")
 	c := &Client{
 		BaseClient:  bc,
 		devID:       devID,
 		devPassword: devPassword,
 		softName:    softName,
 	}
-	for _, o := range clientOpts {
+	for _, o := range opts {
 		o(c)
 	}
 	return c
