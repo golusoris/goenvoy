@@ -545,3 +545,189 @@ func TestBannedError(t *testing.T) {
 		t.Errorf("Message = %q, expected 'Banned'", apiErr.Message)
 	}
 }
+
+func TestParseTitleDump(t *testing.T) {
+	t.Parallel()
+
+	input := strings.NewReader("# comment line\n" +
+		"1|1|x-jat|Seikai no Monshou\n" +
+		"1|4|en|Crest of the Stars\n" +
+		"\n" +
+		"2|1|x-jat|Tonari no Totoro\n" +
+		"bad|line\n")
+
+	entries, err := ParseTitleDump(input)
+	if err != nil {
+		t.Fatalf("ParseTitleDump() error: %v", err)
+	}
+	if len(entries) != 3 {
+		t.Fatalf("got %d entries, want 3", len(entries))
+	}
+	if entries[0].AID != 1 {
+		t.Errorf("entries[0].AID = %d, want 1", entries[0].AID)
+	}
+	if entries[0].Type != "1" {
+		t.Errorf("entries[0].Type = %q, want %q", entries[0].Type, "1")
+	}
+	if entries[0].Lang != "x-jat" {
+		t.Errorf("entries[0].Lang = %q, want %q", entries[0].Lang, "x-jat")
+	}
+	if entries[0].Title != "Seikai no Monshou" {
+		t.Errorf("entries[0].Title = %q, want %q", entries[0].Title, "Seikai no Monshou")
+	}
+	if entries[1].Lang != "en" {
+		t.Errorf("entries[1].Lang = %q, want %q", entries[1].Lang, "en")
+	}
+	if entries[2].AID != 2 {
+		t.Errorf("entries[2].AID = %d, want 2", entries[2].AID)
+	}
+}
+
+func TestSearchByTitle(t *testing.T) {
+	t.Parallel()
+
+	c := New("testclient", 1)
+
+	// SearchByTitle before loading should return an error.
+	_, err := c.SearchByTitle("test", 10)
+	if err == nil {
+		t.Fatal("expected error when title dump not loaded")
+	}
+
+	// Populate entries directly for testing.
+	c.titles.mu.Lock()
+	c.titles.entries = []TitleEntry{
+		{AID: 1, Type: "1", Lang: "x-jat", Title: "Seikai no Monshou"},
+		{AID: 1, Type: "4", Lang: "en", Title: "Crest of the Stars"},
+		{AID: 2, Type: "1", Lang: "x-jat", Title: "Tonari no Totoro"},
+		{AID: 3, Type: "1", Lang: "en", Title: "Steins;Gate"},
+		{AID: 4, Type: "1", Lang: "en", Title: "Monster"},
+	}
+	c.titles.mu.Unlock()
+
+	// Exact match.
+	results, err := c.SearchByTitle("Steins;Gate", 10)
+	if err != nil {
+		t.Fatalf("SearchByTitle() error: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("got %d results, want 1", len(results))
+	}
+	if results[0].AID != 3 {
+		t.Errorf("AID = %d, want 3", results[0].AID)
+	}
+	if results[0].Score != 1.0 {
+		t.Errorf("Score = %f, want 1.0", results[0].Score)
+	}
+
+	// Prefix match.
+	results, err = c.SearchByTitle("crest", 10)
+	if err != nil {
+		t.Fatalf("SearchByTitle() error: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("got %d results, want 1", len(results))
+	}
+	if results[0].AID != 1 {
+		t.Errorf("AID = %d, want 1", results[0].AID)
+	}
+	if results[0].Score != 0.75 {
+		t.Errorf("Score = %f, want 0.75", results[0].Score)
+	}
+
+	// Contains match.
+	results, err = c.SearchByTitle("onster", 10)
+	if err != nil {
+		t.Fatalf("SearchByTitle() error: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("got %d results, want 1", len(results))
+	}
+	if results[0].AID != 4 {
+		t.Errorf("AID = %d, want 4", results[0].AID)
+	}
+	if results[0].Score != 0.5 {
+		t.Errorf("Score = %f, want 0.5", results[0].Score)
+	}
+
+	// Multiple matches with limit.
+	results, err = c.SearchByTitle("no", 1)
+	if err != nil {
+		t.Fatalf("SearchByTitle() error: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("got %d results, want 1 (limited)", len(results))
+	}
+
+	// No match.
+	results, err = c.SearchByTitle("zzzzz", 10)
+	if err != nil {
+		t.Fatalf("SearchByTitle() error: %v", err)
+	}
+	if len(results) != 0 {
+		t.Errorf("got %d results, want 0", len(results))
+	}
+}
+
+func TestParseTitleDumpEmpty(t *testing.T) {
+	t.Parallel()
+
+	input := strings.NewReader("# only comments\n# nothing here\n")
+	entries, err := ParseTitleDump(input)
+	if err != nil {
+		t.Fatalf("ParseTitleDump() error: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("got %d entries, want 0", len(entries))
+	}
+}
+
+func TestLoadTitleDumpHTTPError(t *testing.T) {
+	t.Parallel()
+
+	// LoadTitleDump uses a hardcoded URL so we cannot point it at httptest.
+	// Instead test the error path indirectly: a cancelled context will fail.
+	c := New("testclient", 1)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := c.LoadTitleDump(ctx)
+	if err == nil {
+		t.Fatal("expected error from cancelled context")
+	}
+}
+
+func TestSearchByTitleDedup(t *testing.T) {
+	t.Parallel()
+
+	c := New("testclient", 1)
+	c.titles.mu.Lock()
+	c.titles.entries = []TitleEntry{
+		{AID: 1, Type: "1", Lang: "x-jat", Title: "Seikai no Monshou"},
+		{AID: 1, Type: "2", Lang: "en", Title: "seikai no monshou"},
+	}
+	c.titles.mu.Unlock()
+
+	results, err := c.SearchByTitle("seikai no monshou", 10)
+	if err != nil {
+		t.Fatalf("SearchByTitle() error: %v", err)
+	}
+	// Should deduplicate by AID, keeping the highest score.
+	if len(results) != 1 {
+		t.Fatalf("got %d results, want 1 (deduplicated)", len(results))
+	}
+	if results[0].Score != 1.0 {
+		t.Errorf("Score = %f, want 1.0 (exact match preferred)", results[0].Score)
+	}
+}
+
+func TestAPIErrorString(t *testing.T) {
+	t.Parallel()
+
+	e := &APIError{Code: "500", Message: "banned"}
+	got := e.Error()
+	want := "anidb: 500: banned"
+	if got != want {
+		t.Errorf("Error() = %q, want %q", got, want)
+	}
+}
