@@ -1337,7 +1337,7 @@ func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		for i := 0; i < 200; i++ {
+		for range 200 {
 			c.SetAccessToken("a")
 			c.SetClientSecret("s")
 			c.SetCalendarURL(srv.URL)
@@ -1345,7 +1345,7 @@ func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
 		}
 		close(done)
 	}()
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		_, _ = c.GetRatingByID(context.Background(), 1, "")
 	}
 	<-done

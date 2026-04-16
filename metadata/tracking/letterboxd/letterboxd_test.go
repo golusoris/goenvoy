@@ -1356,12 +1356,12 @@ func TestConcurrentSetTokenCallbackAndRequest(t *testing.T) {
 	c := letterboxd.New("t", metadata.WithBaseURL(srv.URL))
 	done := make(chan struct{})
 	go func() {
-		for i := 0; i < 200; i++ {
+		for range 200 {
 			c.SetTokenCallback(func(string, int) {})
 		}
 		close(done)
 	}()
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		_, _ = c.GetLogEntryMembers(context.Background(), "x", "", 0)
 	}
 	<-done

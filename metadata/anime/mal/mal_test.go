@@ -917,7 +917,7 @@ func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		for i := 0; i < 200; i++ {
+		for range 200 {
 			c.SetAccessToken("tok")
 			c.SetRefreshToken("r")
 			c.SetClientSecret("s")
@@ -926,7 +926,7 @@ func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
 		}
 		close(done)
 	}()
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		_, _ = c.GetAnime(context.Background(), 1, nil)
 	}
 	<-done

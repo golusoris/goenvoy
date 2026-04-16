@@ -418,13 +418,13 @@ func TestConcurrentSetAndRead(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		for i := 0; i < 200; i++ {
+		for range 200 {
 			c.SetWebAPIURL(srv.URL)
 			c.SetStoreURL(srv.URL)
 		}
 		close(done)
 	}()
-	for i := 0; i < 200; i++ {
+	for range 200 {
 		_, _ = c.GetAppList(context.Background())
 	}
 	<-done
