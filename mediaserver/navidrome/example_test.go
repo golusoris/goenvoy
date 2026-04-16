@@ -9,7 +9,10 @@ import (
 )
 
 func Example() {
-	c := navidrome.New("http://localhost:4533", "admin", "password")
+	c, err := navidrome.New("http://localhost:4533", "admin", "password")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

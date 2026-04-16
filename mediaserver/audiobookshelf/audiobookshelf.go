@@ -8,10 +8,14 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
-const defaultTimeout = 30 * time.Second
+const (
+	defaultTimeout   = 30 * time.Second
+	defaultUserAgent = "goenvoy/0.0.1"
+)
 
 // Option configures a [Client].
 type Option func(*Client)
@@ -26,24 +30,42 @@ func WithTimeout(d time.Duration) Option {
 	return func(cl *Client) { cl.httpClient.Timeout = d }
 }
 
+// WithUserAgent sets the User-Agent header for all requests.
+func WithUserAgent(ua string) Option {
+	return func(cl *Client) { cl.userAgent = ua }
+}
+
 // Client is an Audiobookshelf API client.
 type Client struct {
 	rawBaseURL string
 	token      string
 	httpClient *http.Client
+	userAgent  string
 }
 
 // New creates an Audiobookshelf [Client] for the instance at baseURL with the given token.
-func New(baseURL, token string, opts ...Option) *Client {
+// It returns an error if baseURL is not a valid HTTP/HTTPS URL.
+func New(baseURL, token string, opts ...Option) (*Client, error) {
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("audiobookshelf: invalid base URL %q: %w", baseURL, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("audiobookshelf: invalid base URL %q: must be http(s) with a host", baseURL)
+	}
+
 	c := &Client{
 		rawBaseURL: baseURL,
 		token:      token,
 		httpClient: &http.Client{Timeout: defaultTimeout},
+		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {
 		o(c)
 	}
-	return c
+	return c, nil
 }
 
 // APIError is returned when the API responds with a non-2xx status.
@@ -74,6 +96,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values) ([]byt
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("User-Agent", c.userAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

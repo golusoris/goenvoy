@@ -10,7 +10,10 @@ import (
 
 func Example() {
 	// Create a new Emby client
-	client := emby.New("http://192.168.1.100:8096")
+	client, err := emby.New("http://192.168.1.100:8096")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

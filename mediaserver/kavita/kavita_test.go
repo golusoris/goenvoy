@@ -13,7 +13,10 @@ func newTestServer(t *testing.T, handler http.HandlerFunc) *Client {
 	t.Helper()
 	ts := httptest.NewServer(handler)
 	t.Cleanup(ts.Close)
-	c := New(ts.URL, "test-api-key")
+	c, err := New(ts.URL, "test-api-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	c.token = "test-token"
 	return c
 }
@@ -36,7 +39,10 @@ func TestAuthenticate(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := New(ts.URL, "test-api-key")
+	c, err := New(ts.URL, "test-api-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.Authenticate(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +69,10 @@ func TestAutoAuthenticate(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := New(ts.URL, "test-api-key")
+	c, err := New(ts.URL, "test-api-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	libs, err := c.GetLibraries(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -311,8 +320,60 @@ func TestWithHTTPClient(t *testing.T) {
 	t.Parallel()
 
 	custom := &http.Client{}
-	c := New("http://localhost", "key", WithHTTPClient(custom))
+	c, err := New("http://localhost", "key", WithHTTPClient(custom))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if c.http != custom {
 		t.Fatal("custom HTTP client not set")
+	}
+}
+
+func TestWithUserAgent(t *testing.T) {
+	t.Parallel()
+
+	var gotUA string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUA = r.Header.Get("User-Agent")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]map[string]any{})
+	}))
+	defer ts.Close()
+
+	c, err := New(ts.URL, "key", WithUserAgent("myapp/1.2.3"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	c.token = "t"
+	if _, err := c.GetLibraries(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if gotUA != "myapp/1.2.3" {
+		t.Errorf("User-Agent = %q, want %q", gotUA, "myapp/1.2.3")
+	}
+}
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := New(tc.url, "k")
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
 	}
 }

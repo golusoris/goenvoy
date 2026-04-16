@@ -7,10 +7,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 )
 
-const defaultTimeout = 30 * time.Second
+const (
+	defaultTimeout   = 30 * time.Second
+	defaultUserAgent = "goenvoy/0.0.1"
+)
 
 // Option configures a [Client].
 type Option func(*Client)
@@ -23,6 +28,11 @@ func WithAPIKey(key string) Option {
 // WithHTTPClient sets a custom [http.Client].
 func WithHTTPClient(c *http.Client) Option {
 	return func(cl *Client) { cl.httpClient = c }
+}
+
+// WithUserAgent sets the User-Agent header for all requests.
+func WithUserAgent(ua string) Option {
+	return func(cl *Client) { cl.userAgent = ua }
 }
 
 // APIError is returned when the API responds with a non-2xx status.
@@ -44,18 +54,31 @@ type Client struct {
 	baseURL    string
 	apiKey     string
 	httpClient *http.Client
+	userAgent  string
 }
 
 // New creates a Tdarr [Client] for the instance at baseURL.
-func New(baseURL string, opts ...Option) *Client {
+// It returns an error if baseURL is not a valid HTTP/HTTPS URL.
+func New(baseURL string, opts ...Option) (*Client, error) {
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("tdarr: invalid base URL %q: %w", baseURL, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("tdarr: invalid base URL %q: must be http(s) with a host", baseURL)
+	}
+
 	c := &Client{
 		baseURL:    baseURL,
 		httpClient: &http.Client{Timeout: defaultTimeout},
+		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {
 		o(c)
 	}
-	return c
+	return c, nil
 }
 
 func (c *Client) do(ctx context.Context, method, path string, body, v any) error {
@@ -80,6 +103,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, v any) error
 	if c.apiKey != "" {
 		req.Header.Set("X-Api-Key", c.apiKey)
 	}
+	req.Header.Set("User-Agent", c.userAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -112,6 +136,7 @@ func (c *Client) doText(ctx context.Context, method, path string) (string, error
 	if c.apiKey != "" {
 		req.Header.Set("X-Api-Key", c.apiKey)
 	}
+	req.Header.Set("User-Agent", c.userAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

@@ -10,7 +10,10 @@ import (
 
 func Example() {
 	// Create a new Jellyfin client
-	client := jellyfin.New("http://192.168.1.100:8096")
+	client, err := jellyfin.New("http://192.168.1.100:8096")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

@@ -10,7 +10,10 @@ import (
 
 func Example() {
 	// Create a new Plex client
-	client := plex.New("http://192.168.1.100:32400", "your-plex-token")
+	client, err := plex.New("http://192.168.1.100:32400", "your-plex-token")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

@@ -12,14 +12,18 @@ import (
 	"time"
 )
 
-const defaultTimeout = 30 * time.Second
+const (
+	defaultTimeout   = 30 * time.Second
+	defaultUserAgent = "goenvoy/0.0.1"
+)
 
 // Client is a Komga API client.
 type Client struct {
-	baseURL  string
-	username string
-	password string
-	http     *http.Client
+	baseURL   string
+	username  string
+	password  string
+	userAgent string
+	http      *http.Client
 }
 
 // Option configures the Client.
@@ -28,6 +32,11 @@ type Option func(*Client)
 // WithHTTPClient sets a custom HTTP client.
 func WithHTTPClient(c *http.Client) Option {
 	return func(cl *Client) { cl.http = c }
+}
+
+// WithUserAgent sets the User-Agent header for all requests.
+func WithUserAgent(ua string) Option {
+	return func(cl *Client) { cl.userAgent = ua }
 }
 
 // APIError is returned when the API responds with a non-2xx status.
@@ -45,17 +54,29 @@ func (e *APIError) Error() string {
 //
 // The baseURL should include the protocol and host (e.g. "http://localhost:25600").
 // Authentication uses HTTP Basic Auth with the provided username and password.
-func New(baseURL, username, password string, opts ...Option) *Client {
+// It returns an error if baseURL is not a valid HTTP/HTTPS URL.
+func New(baseURL, username, password string, opts ...Option) (*Client, error) {
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("komga: invalid base URL %q: %w", baseURL, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("komga: invalid base URL %q: must be http(s) with a host", baseURL)
+	}
+
 	c := &Client{
-		baseURL:  strings.TrimRight(baseURL, "/"),
-		username: username,
-		password: password,
-		http:     &http.Client{Timeout: defaultTimeout},
+		baseURL:   baseURL,
+		username:  username,
+		password:  password,
+		userAgent: defaultUserAgent,
+		http:      &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)
 	}
-	return c
+	return c, nil
 }
 
 func (c *Client) get(ctx context.Context, path string, params url.Values, v any) error {
@@ -69,6 +90,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, v any)
 		return fmt.Errorf("komga: build request: %w", err)
 	}
 	req.SetBasicAuth(c.username, c.password)
+	req.Header.Set("User-Agent", c.userAgent)
 
 	resp, err := c.http.Do(req)
 	if err != nil {

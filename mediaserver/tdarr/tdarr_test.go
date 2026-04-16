@@ -54,8 +54,11 @@ func TestAPIKeyHeader(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := tdarr.New(ts.URL, tdarr.WithAPIKey("secret-key"))
-	_, err := c.GetStatus(context.Background())
+	c, err := tdarr.New(ts.URL, tdarr.WithAPIKey("secret-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetStatus(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +72,10 @@ func TestGetStatus(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tdarr.New(ts.URL)
+	c, err := tdarr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	s, err := c.GetStatus(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -88,7 +94,10 @@ func TestGetNodes(t *testing.T) {
 	ts := newGetServer(t, "/api/v2/get-nodes", nodes)
 	defer ts.Close()
 
-	c := tdarr.New(ts.URL)
+	c, err := tdarr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	out, err := c.GetNodes(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -109,7 +118,10 @@ func TestSearchDB(t *testing.T) {
 	ts := newPostServer(t, "/api/v2/search-db", files)
 	defer ts.Close()
 
-	c := tdarr.New(ts.URL)
+	c, err := tdarr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	out, err := c.SearchDB(context.Background(), "staging", 10, 0, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -129,7 +141,10 @@ func TestCrudDB(t *testing.T) {
 	ts := newPostServer(t, "/api/v2/cruddb", docs)
 	defer ts.Close()
 
-	c := tdarr.New(ts.URL)
+	c, err := tdarr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	out, err := c.CrudDB(context.Background(), "staging", "read", "doc1")
 	if err != nil {
 		t.Fatal(err)
@@ -147,7 +162,10 @@ func TestGetResStats(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tdarr.New(ts.URL)
+	c, err := tdarr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	out, err := c.GetResStats(context.Background(), "lib1")
 	if err != nil {
 		t.Fatal(err)
@@ -165,7 +183,10 @@ func TestGetDBStatuses(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tdarr.New(ts.URL)
+	c, err := tdarr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	out, err := c.GetDBStatuses(context.Background(), "lib1")
 	if err != nil {
 		t.Fatal(err)
@@ -181,7 +202,10 @@ func TestScanFiles(t *testing.T) {
 	ts := newPostServer(t, "/api/v2/scan-files", nil)
 	defer ts.Close()
 
-	c := tdarr.New(ts.URL)
+	c, err := tdarr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.ScanFiles(context.Background(), "lib1", "/media"); err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +217,10 @@ func TestCancelWorkerItem(t *testing.T) {
 	ts := newPostServer(t, "/api/v2/cancel-worker-item", nil)
 	defer ts.Close()
 
-	c := tdarr.New(ts.URL)
+	c, err := tdarr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.CancelWorkerItem(context.Background(), "node1", "worker1"); err != nil {
 		t.Fatal(err)
 	}
@@ -205,7 +232,10 @@ func TestKillWorker(t *testing.T) {
 	ts := newPostServer(t, "/api/v2/kill-worker", nil)
 	defer ts.Close()
 
-	c := tdarr.New(ts.URL)
+	c, err := tdarr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.KillWorker(context.Background(), "node1", "worker1"); err != nil {
 		t.Fatal(err)
 	}
@@ -220,7 +250,10 @@ func TestGetServerLog(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := tdarr.New(ts.URL)
+	c, err := tdarr.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	log, err := c.GetServerLog(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -239,8 +272,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := tdarr.New(ts.URL, tdarr.WithAPIKey("bad-key"))
-	_, err := c.GetStatus(context.Background())
+	c, err := tdarr.New(ts.URL, tdarr.WithAPIKey("bad-key"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetStatus(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -260,9 +296,59 @@ func TestWithHTTPClient(t *testing.T) {
 	defer ts.Close()
 
 	custom := &http.Client{}
-	c := tdarr.New(ts.URL, tdarr.WithHTTPClient(custom))
-	_, err := c.GetStatus(context.Background())
+	c, err := tdarr.New(ts.URL, tdarr.WithHTTPClient(custom))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetStatus(context.Background())
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestWithUserAgent(t *testing.T) {
+	t.Parallel()
+
+	var gotUA string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUA = r.Header.Get("User-Agent")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{})
+	}))
+	defer ts.Close()
+
+	c, err := tdarr.New(ts.URL, tdarr.WithUserAgent("myapp/1.2.3"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := c.GetStatus(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if gotUA != "myapp/1.2.3" {
+		t.Errorf("User-Agent = %q, want %q", gotUA, "myapp/1.2.3")
+	}
+}
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := tdarr.New(tc.url)
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
 	}
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
+- Add WithUserAgent option.
+
 ## [2.1.0](https://github.com/golusoris/goenvoy/compare/mediaserver/emby/v2.0.0...mediaserver/emby/v2.1.0) (2026-04-15)
 
 

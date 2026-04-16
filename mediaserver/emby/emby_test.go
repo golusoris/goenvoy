@@ -51,7 +51,10 @@ func TestAuthenticateByName(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := emby.New(ts.URL)
+	c, err := emby.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.AuthenticateByName(context.Background(), "admin", "secret"); err != nil {
 		t.Fatal(err)
 	}
@@ -67,8 +70,11 @@ func TestAuthenticationError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := emby.New(ts.URL)
-	err := c.AuthenticateByName(context.Background(), "bad", "creds")
+	c, err := emby.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	err = c.AuthenticateByName(context.Background(), "bad", "creds")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -92,7 +98,10 @@ func TestGetPublicSystemInfo(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := emby.New(ts.URL)
+	c, err := emby.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	info, err := c.GetPublicSystemInfo(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -117,7 +126,10 @@ func TestGetSystemInfo(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := emby.New(ts.URL, emby.WithAccessToken("token"))
+	c, err := emby.New(ts.URL, emby.WithAccessToken("token"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	info, err := c.GetSystemInfo(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -133,7 +145,10 @@ func TestPing(t *testing.T) {
 	ts := newTestServer(t, "/emby/System/Ping", "")
 	defer ts.Close()
 
-	c := emby.New(ts.URL)
+	c, err := emby.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.Ping(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +163,10 @@ func TestGetUsers(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := emby.New(ts.URL, emby.WithAccessToken("token"))
+	c, err := emby.New(ts.URL, emby.WithAccessToken("token"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	users, err := c.GetUsers(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -172,7 +190,10 @@ func TestGetCurrentUser(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := emby.New(ts.URL, emby.WithAccessToken("token"))
+	c, err := emby.New(ts.URL, emby.WithAccessToken("token"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	user, err := c.GetCurrentUser(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -197,7 +218,10 @@ func TestGetSessions(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := emby.New(ts.URL, emby.WithAccessToken("token"))
+	c, err := emby.New(ts.URL, emby.WithAccessToken("token"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	sessions, err := c.GetSessions(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -223,7 +247,10 @@ func TestGetItems(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := emby.New(ts.URL, emby.WithAccessToken("token"))
+	c, err := emby.New(ts.URL, emby.WithAccessToken("token"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetItems(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -264,7 +291,10 @@ func TestGetItemsByParent(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := emby.New(ts.URL, emby.WithAccessToken("token"))
+	c, err := emby.New(ts.URL, emby.WithAccessToken("token"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetItemsByParent(context.Background(), "lib-1", 0, 50)
 	if err != nil {
 		t.Fatal(err)
@@ -286,7 +316,10 @@ func TestGetItem(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := emby.New(ts.URL, emby.WithAccessToken("token"))
+	c, err := emby.New(ts.URL, emby.WithAccessToken("token"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	item, err := c.GetItem(context.Background(), "item-1")
 	if err != nil {
 		t.Fatal(err)
@@ -320,7 +353,10 @@ func TestGetUserViews(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := emby.New(ts.URL, emby.WithAccessToken("token"))
+	c, err := emby.New(ts.URL, emby.WithAccessToken("token"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	result, err := c.GetUserViews(context.Background(), "user-1")
 	if err != nil {
 		t.Fatal(err)
@@ -342,8 +378,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := emby.New(ts.URL, emby.WithAccessToken("bad"))
-	_, err := c.GetUsers(context.Background())
+	c, err := emby.New(ts.URL, emby.WithAccessToken("bad"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetUsers(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -387,11 +426,14 @@ func TestContextCancellation(t *testing.T) {
 	ts := newTestServer(t, "/emby/Users", []emby.UserDto{})
 	defer ts.Close()
 
-	c := emby.New(ts.URL, emby.WithAccessToken("token"))
+	c, err := emby.New(ts.URL, emby.WithAccessToken("token"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := c.GetUsers(ctx)
+	_, err = c.GetUsers(ctx)
 	if err == nil {
 		t.Fatal("expected error from canceled context")
 	}
@@ -409,12 +451,66 @@ func TestWithOptions(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := emby.New(ts.URL,
+	c, err := emby.New(ts.URL,
 		emby.WithAccessToken("token"),
 		emby.WithDeviceID("my-device-123"),
 	)
-	_, err := c.GetUsers(context.Background())
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetUsers(context.Background())
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestWithUserAgent(t *testing.T) {
+	t.Parallel()
+
+	var gotUA string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUA = r.Header.Get("User-Agent")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode([]emby.UserDto{})
+	}))
+	defer ts.Close()
+
+	c, err := emby.New(ts.URL,
+		emby.WithAccessToken("token"),
+		emby.WithUserAgent("myapp/1.2.3"),
+	)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := c.GetUsers(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if gotUA != "myapp/1.2.3" {
+		t.Errorf("User-Agent = %q, want %q", gotUA, "myapp/1.2.3")
+	}
+}
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := emby.New(tc.url)
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
 	}
 }

@@ -47,7 +47,10 @@ func TestGetIdentity(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "test-token")
+	c, err := plex.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	id, err := c.GetIdentity(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +74,10 @@ func TestGetLibraries(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "lib-token")
+	c, err := plex.New(ts.URL, "lib-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	libs, err := c.GetLibraries(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -112,7 +118,10 @@ func TestGetLibraryContents(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "content-token")
+	c, err := plex.New(ts.URL, "content-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	mc, err := c.GetLibraryContents(context.Background(), "1", 0, 50)
 	if err != nil {
 		t.Fatal(err)
@@ -147,7 +156,10 @@ func TestGetMetadata(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "meta-token")
+	c, err := plex.New(ts.URL, "meta-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	m, err := c.GetMetadata(context.Background(), "1244")
 	if err != nil {
 		t.Fatal(err)
@@ -174,8 +186,11 @@ func TestGetMetadataNotFound(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "nf-token")
-	_, err := c.GetMetadata(context.Background(), "99999")
+	c, err := plex.New(ts.URL, "nf-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetMetadata(context.Background(), "99999")
 	if err == nil {
 		t.Fatal("expected error for empty metadata")
 	}
@@ -191,7 +206,10 @@ func TestGetOnDeck(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "deck-token")
+	c, err := plex.New(ts.URL, "deck-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	items, err := c.GetOnDeck(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -214,7 +232,10 @@ func TestGetRecentlyAdded(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "recent-token")
+	c, err := plex.New(ts.URL, "recent-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	items, err := c.GetRecentlyAdded(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -246,7 +267,10 @@ func TestSearch(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "search-token")
+	c, err := plex.New(ts.URL, "search-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	mc, err := c.Search(context.Background(), "dark knight")
 	if err != nil {
 		t.Fatal(err)
@@ -273,7 +297,10 @@ func TestGetSessions(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "sess-token")
+	c, err := plex.New(ts.URL, "sess-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	sessions, err := c.GetSessions(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -295,7 +322,10 @@ func TestRefreshLibrary(t *testing.T) {
 	ts := newTestServer(t, "/library/sections/1/refresh", "refresh-token", plex.MediaContainer{})
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "refresh-token")
+	c, err := plex.New(ts.URL, "refresh-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.RefreshLibrary(context.Background(), "1"); err != nil {
 		t.Fatal(err)
 	}
@@ -316,7 +346,10 @@ func TestMarkWatched(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "scrobble-token")
+	c, err := plex.New(ts.URL, "scrobble-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.MarkWatched(context.Background(), "1244"); err != nil {
 		t.Fatal(err)
 	}
@@ -334,7 +367,10 @@ func TestMarkUnwatched(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "unscrobble-token")
+	c, err := plex.New(ts.URL, "unscrobble-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.MarkUnwatched(context.Background(), "1244"); err != nil {
 		t.Fatal(err)
 	}
@@ -351,7 +387,10 @@ func TestGetServerInfo(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "info-token")
+	c, err := plex.New(ts.URL, "info-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	mc, err := c.GetServerInfo(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -373,8 +412,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "bad-token")
-	_, err := c.GetLibraries(context.Background())
+	c, err := plex.New(ts.URL, "bad-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetLibraries(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -414,11 +456,14 @@ func TestContextCancellation(t *testing.T) {
 	ts := newTestServer(t, "/library/sections", "cancel-token", plex.MediaContainer{})
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "cancel-token")
+	c, err := plex.New(ts.URL, "cancel-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := c.GetLibraries(ctx)
+	_, err = c.GetLibraries(ctx)
 	if err == nil {
 		t.Fatal("expected error from canceled context")
 	}
@@ -439,12 +484,63 @@ func TestWithOptions(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := plex.New(ts.URL, "opt-token",
+	c, err := plex.New(ts.URL, "opt-token",
 		plex.WithProduct("MyApp"),
 		plex.WithClientIdentifier("my-app-id"),
 	)
-	_, err := c.GetLibraries(context.Background())
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetLibraries(context.Background())
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestWithUserAgent(t *testing.T) {
+	t.Parallel()
+
+	var gotUA string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUA = r.Header.Get("User-Agent")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(testResponse{MediaContainer: map[string]any{}})
+	}))
+	defer ts.Close()
+
+	c, err := plex.New(ts.URL, "tok", plex.WithUserAgent("myapp/1.2.3"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := c.GetServerInfo(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if gotUA != "myapp/1.2.3" {
+		t.Errorf("User-Agent = %q, want %q", gotUA, "myapp/1.2.3")
+	}
+}
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := plex.New(tc.url, "tok")
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
 	}
 }

@@ -14,15 +14,19 @@ import (
 	"time"
 )
 
-const defaultTimeout = 30 * time.Second
+const (
+	defaultTimeout   = 30 * time.Second
+	defaultUserAgent = "goenvoy/0.0.1"
+)
 
 // Client is a Kavita API client.
 type Client struct {
-	baseURL string
-	apiKey  string
-	token   string
-	mu      sync.RWMutex
-	http    *http.Client
+	baseURL   string
+	apiKey    string
+	token     string
+	userAgent string
+	mu        sync.RWMutex
+	http      *http.Client
 }
 
 // Option configures the Client.
@@ -33,21 +37,37 @@ func WithHTTPClient(c *http.Client) Option {
 	return func(cl *Client) { cl.http = c }
 }
 
+// WithUserAgent sets the User-Agent header for all requests.
+func WithUserAgent(ua string) Option {
+	return func(cl *Client) { cl.userAgent = ua }
+}
+
 // New creates a new Kavita client.
 //
 // The baseURL should include the protocol and host (e.g. "http://localhost:5000").
 // Authentication uses an API key that is exchanged for a JWT token via the
-// Plugin authenticate endpoint.
-func New(baseURL, apiKey string, opts ...Option) *Client {
+// Plugin authenticate endpoint. It returns an error if baseURL is not a valid HTTP/HTTPS URL.
+func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("kavita: invalid base URL %q: %w", baseURL, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("kavita: invalid base URL %q: must be http(s) with a host", baseURL)
+	}
+
 	c := &Client{
-		baseURL: strings.TrimRight(baseURL, "/"),
-		apiKey:  apiKey,
-		http:    &http.Client{Timeout: defaultTimeout},
+		baseURL:   baseURL,
+		apiKey:    apiKey,
+		userAgent: defaultUserAgent,
+		http:      &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)
 	}
-	return c
+	return c, nil
 }
 
 // Authenticate exchanges the API key for a JWT token.
@@ -62,6 +82,7 @@ func (c *Client) Authenticate(ctx context.Context) error {
 		return fmt.Errorf("kavita: build auth request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", c.userAgent)
 
 	resp, err := c.http.Do(req)
 	if err != nil {
@@ -156,6 +177,7 @@ func (c *Client) send(ctx context.Context, method, path string, body any) (*http
 		return nil, fmt.Errorf("kavita: build request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+c.getToken())
+	req.Header.Set("User-Agent", c.userAgent)
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}

@@ -9,7 +9,10 @@ import (
 )
 
 func Example() {
-	c := kavita.New("http://localhost:5000", "your-api-key")
+	c, err := kavita.New("http://localhost:5000", "your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
 	libs, err := c.GetLibraries(context.Background())
 	if err != nil {
 		log.Fatal(err)

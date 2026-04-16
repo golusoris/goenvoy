@@ -9,7 +9,10 @@ import (
 )
 
 func Example() {
-	c := komga.New("http://localhost:25600", "admin@example.com", "password")
+	c, err := komga.New("http://localhost:25600", "admin@example.com", "password")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -18,6 +19,7 @@ const (
 	defaultVersion    = "0.0.1"
 	defaultDeviceID   = "goenvoy-client"
 	defaultDeviceName = "GoEnvoy"
+	defaultUserAgent  = "goenvoy/0.0.1"
 )
 
 // Option configures a [Client].
@@ -43,6 +45,11 @@ func WithDeviceID(id string) Option {
 	return func(cl *Client) { cl.deviceID = id }
 }
 
+// WithUserAgent sets the User-Agent header for all requests.
+func WithUserAgent(ua string) Option {
+	return func(cl *Client) { cl.userAgent = ua }
+}
+
 // Client is an Emby Media Server API client.
 type Client struct {
 	rawBaseURL  string
@@ -52,10 +59,22 @@ type Client struct {
 	version     string
 	deviceID    string
 	deviceName  string
+	userAgent   string
 }
 
 // New creates an Emby [Client] for the server at baseURL.
-func New(baseURL string, opts ...Option) *Client {
+// It returns an error if baseURL is not a valid HTTP/HTTPS URL.
+func New(baseURL string, opts ...Option) (*Client, error) {
+	baseURL = strings.TrimRight(baseURL, "/")
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("emby: invalid base URL %q: %w", baseURL, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, fmt.Errorf("emby: invalid base URL %q: must be http(s) with a host", baseURL)
+	}
+
 	c := &Client{
 		rawBaseURL: baseURL,
 		httpClient: &http.Client{Timeout: defaultTimeout},
@@ -63,11 +82,12 @@ func New(baseURL string, opts ...Option) *Client {
 		version:    defaultVersion,
 		deviceID:   defaultDeviceID,
 		deviceName: defaultDeviceName,
+		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {
 		o(c)
 	}
-	return c
+	return c, nil
 }
 
 // APIError is returned when the API responds with a non-2xx status.
@@ -116,6 +136,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body, dst a
 	req.Header.Set("X-Emby-Client-Version", c.version)
 	req.Header.Set("X-Emby-Device-Id", c.deviceID)
 	req.Header.Set("X-Emby-Device-Name", c.deviceName)
+	req.Header.Set("User-Agent", c.userAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -166,6 +187,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values) ([]byt
 	req.Header.Set("X-Emby-Client-Version", c.version)
 	req.Header.Set("X-Emby-Device-Id", c.deviceID)
 	req.Header.Set("X-Emby-Device-Name", c.deviceName)
+	req.Header.Set("User-Agent", c.userAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

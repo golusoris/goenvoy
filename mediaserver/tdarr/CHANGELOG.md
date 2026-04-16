@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates the base URL. Callers must check the error.
+- Add WithUserAgent option.
+
 ## [2.1.0](https://github.com/golusoris/goenvoy/compare/mediaserver/tdarr/v2.0.0...mediaserver/tdarr/v2.1.0) (2026-04-15)
 
 

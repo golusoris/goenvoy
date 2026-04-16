@@ -48,7 +48,10 @@ func TestGetActivity(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	a, err := c.GetActivity(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -69,7 +72,10 @@ func TestGetHistory(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	h, err := c.GetHistory(context.Background(), 0, 25)
 	if err != nil {
 		t.Fatal(err)
@@ -88,7 +94,10 @@ func TestGetLibraries(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	libs, err := c.GetLibraries(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -112,7 +121,10 @@ func TestGetLibrary(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	lib, err := c.GetLibrary(context.Background(), "1")
 	if err != nil {
 		t.Fatal(err)
@@ -130,7 +142,10 @@ func TestGetUsers(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	users, err := c.GetUsers(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -153,7 +168,10 @@ func TestGetUser(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	u, err := c.GetUser(context.Background(), "133788")
 	if err != nil {
 		t.Fatal(err)
@@ -172,7 +190,10 @@ func TestGetServerInfo(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	info, err := c.GetServerInfo(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -190,7 +211,10 @@ func TestGetTautulliInfo(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	info, err := c.GetTautulliInfo(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -210,7 +234,10 @@ func TestGetMetadata(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	m, err := c.GetMetadata(context.Background(), "153037")
 	if err != nil {
 		t.Fatal(err)
@@ -230,7 +257,10 @@ func TestGetRecentlyAdded(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	r, err := c.GetRecentlyAdded(context.Background(), 10)
 	if err != nil {
 		t.Fatal(err)
@@ -248,7 +278,10 @@ func TestSearch(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	s, err := c.Search(context.Background(), "Thrones")
 	if err != nil {
 		t.Fatal(err)
@@ -266,7 +299,10 @@ func TestServerStatus(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	s, err := c.ServerStatus(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -282,7 +318,10 @@ func TestTerminateSession(t *testing.T) {
 	ts := newTestServer(t, "terminate_session", "test-key", nil)
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if err := c.TerminateSession(context.Background(), "27", "test"); err != nil {
 		t.Fatal(err)
 	}
@@ -297,8 +336,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "bad-key")
-	_, err := c.GetActivity(context.Background())
+	c, err := tautulli.New(ts.URL, "bad-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetActivity(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -323,8 +365,11 @@ func TestAPIErrorResult(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
-	_, err := c.GetActivity(context.Background())
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetActivity(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -343,7 +388,10 @@ func TestGetGeoIPLookup(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	g, err := c.GetGeoIPLookup(context.Background(), "8.8.8.8")
 	if err != nil {
 		t.Fatal(err)
@@ -361,7 +409,10 @@ func TestGetUserWatchTimeStats(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "test-key")
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	stats, err := c.GetUserWatchTimeStats(context.Background(), "133788")
 	if err != nil {
 		t.Fatal(err)
@@ -388,7 +439,10 @@ func TestWithHTTPClient(t *testing.T) {
 	ts := newTestServer(t, "get_activity", "k", map[string]any{"stream_count": "0"})
 	defer ts.Close()
 
-	c := tautulli.New(ts.URL, "k", tautulli.WithHTTPClient(custom))
+	c, err := tautulli.New(ts.URL, "k", tautulli.WithHTTPClient(custom))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	_, _ = c.GetActivity(context.Background())
 	if !called {
 		t.Error("custom HTTP client was not used")
@@ -398,3 +452,53 @@ func TestWithHTTPClient(t *testing.T) {
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestWithUserAgent(t *testing.T) {
+	t.Parallel()
+
+	var gotUA string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUA = r.Header.Get("User-Agent")
+		resp := apiResp{}
+		resp.Response.Result = "success"
+		resp.Response.Data = map[string]any{}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer ts.Close()
+
+	c, err := tautulli.New(ts.URL, "k", tautulli.WithUserAgent("myapp/1.2.3"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := c.GetActivity(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if gotUA != "myapp/1.2.3" {
+		t.Errorf("User-Agent = %q, want %q", gotUA, "myapp/1.2.3")
+	}
+}
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := tautulli.New(tc.url, "k")
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
+	}
+}

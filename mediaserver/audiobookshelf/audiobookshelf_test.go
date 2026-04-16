@@ -37,7 +37,10 @@ func TestGetLibraries(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := audiobookshelf.New(ts.URL, "test-token")
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	libs, err := c.GetLibraries(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +61,10 @@ func TestGetLibrary(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := audiobookshelf.New(ts.URL, "test-token")
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	lib, err := c.GetLibrary(context.Background(), "lib1")
 	if err != nil {
 		t.Fatal(err)
@@ -81,7 +87,10 @@ func TestGetLibraryItems(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := audiobookshelf.New(ts.URL, "test-token")
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	resp, err := c.GetLibraryItems(context.Background(), "lib1", 0, 20)
 	if err != nil {
 		t.Fatal(err)
@@ -99,7 +108,10 @@ func TestGetItem(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := audiobookshelf.New(ts.URL, "test-token")
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	item, err := c.GetItem(context.Background(), "item1")
 	if err != nil {
 		t.Fatal(err)
@@ -117,7 +129,10 @@ func TestGetUsers(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := audiobookshelf.New(ts.URL, "test-token")
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	users, err := c.GetUsers(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -138,7 +153,10 @@ func TestGetMe(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := audiobookshelf.New(ts.URL, "test-token")
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	user, err := c.GetMe(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -157,7 +175,10 @@ func TestGetServerInfo(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := audiobookshelf.New(ts.URL, "test-token")
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	info, err := c.GetServerInfo(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -177,7 +198,10 @@ func TestGetSessions(t *testing.T) {
 	})
 	defer ts.Close()
 
-	c := audiobookshelf.New(ts.URL, "test-token")
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	sessions, err := c.GetSessions(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -196,8 +220,11 @@ func TestAPIError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := audiobookshelf.New(ts.URL, "bad-token")
-	_, err := c.GetLibraries(context.Background())
+	c, err := audiobookshelf.New(ts.URL, "bad-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetLibraries(context.Background())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -224,13 +251,64 @@ func TestWithHTTPClient(t *testing.T) {
 	ts := newTestServer(t, "/api/libraries", "k", map[string]any{"libraries": []any{}})
 	defer ts.Close()
 
-	c := audiobookshelf.New(ts.URL, "k", audiobookshelf.WithHTTPClient(custom))
+	c, err := audiobookshelf.New(ts.URL, "k", audiobookshelf.WithHTTPClient(custom))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	_, _ = c.GetLibraries(context.Background())
 	if !called {
 		t.Error("custom HTTP client was not used")
 	}
 }
 
+func TestWithUserAgent(t *testing.T) {
+	t.Parallel()
+
+	var gotUA string
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUA = r.Header.Get("User-Agent")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"libraries": []any{}})
+	}))
+	defer ts.Close()
+
+	c, err := audiobookshelf.New(ts.URL, "k", audiobookshelf.WithUserAgent("myapp/1.2.3"))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := c.GetLibraries(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if gotUA != "myapp/1.2.3" {
+		t.Errorf("User-Agent = %q, want %q", gotUA, "myapp/1.2.3")
+	}
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func TestNew_invalidURL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name, url string
+	}{
+		{"empty", ""},
+		{"malformed", "://x"},
+		{"ftp", "ftp://x"},
+		{"no-scheme", "no-scheme"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := audiobookshelf.New(tc.url, "k")
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			if c != nil {
+				t.Fatal("expected nil client")
+			}
+		})
+	}
+}

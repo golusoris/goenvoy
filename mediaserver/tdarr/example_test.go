@@ -9,7 +9,10 @@ import (
 )
 
 func Example() {
-	client := tdarr.New("http://localhost:8265", tdarr.WithAPIKey("your-key"))
+	client, err := tdarr.New("http://localhost:8265", tdarr.WithAPIKey("your-key"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 

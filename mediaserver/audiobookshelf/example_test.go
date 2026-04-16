@@ -9,7 +9,10 @@ import (
 )
 
 func Example() {
-	client := audiobookshelf.New("http://localhost:13378", "your-token")
+	client, err := audiobookshelf.New("http://localhost:13378", "your-token")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 
