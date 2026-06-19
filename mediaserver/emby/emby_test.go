@@ -451,7 +451,8 @@ func TestWithOptions(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := emby.New(ts.URL,
+	c, err := emby.New(
+		ts.URL,
 		emby.WithAccessToken("token"),
 		emby.WithDeviceID("my-device-123"),
 	)
@@ -475,7 +476,8 @@ func TestWithUserAgent(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := emby.New(ts.URL,
+	c, err := emby.New(
+		ts.URL,
 		emby.WithAccessToken("token"),
 		emby.WithUserAgent("myapp/1.2.3"),
 	)

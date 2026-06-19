@@ -456,7 +456,8 @@ func TestWithOptions(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := jellyfin.New(ts.URL,
+	c, err := jellyfin.New(
+		ts.URL,
 		jellyfin.WithAccessToken("token"),
 		jellyfin.WithDeviceID("my-device-123"),
 	)
@@ -480,7 +481,8 @@ func TestWithUserAgent(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := jellyfin.New(ts.URL,
+	c, err := jellyfin.New(
+		ts.URL,
 		jellyfin.WithAccessToken("token"),
 		jellyfin.WithUserAgent("myapp/1.2.3"),
 	)

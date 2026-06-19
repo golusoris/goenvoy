@@ -484,7 +484,8 @@ func TestWithOptions(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c, err := plex.New(ts.URL, "opt-token",
+	c, err := plex.New(
+		ts.URL, "opt-token",
 		plex.WithProduct("MyApp"),
 		plex.WithClientIdentifier("my-app-id"),
 	)

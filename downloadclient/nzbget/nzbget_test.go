@@ -390,7 +390,8 @@ func TestOptionsAndAPIErrorString(t *testing.T) {
 	t.Parallel()
 
 	custom := &http.Client{}
-	c, err := nzbget.New("http://example.test", "u", "p",
+	c, err := nzbget.New(
+		"http://example.test", "u", "p",
 		nzbget.WithHTTPClient(custom),
 		nzbget.WithTimeout(0),
 		nzbget.WithUserAgent("nzbget-test"),
