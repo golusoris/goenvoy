@@ -45,8 +45,24 @@ Phased adoption of golusoris standards. Plan in [`.goenvoy2.0/`](../.goenvoy2.0/
 - Version currency: Go (go1.26.4), golangci-lint (v2.12.2), and gosec (v2.27.1) are
   already latest. Bumped `govulncheck` v1.3.0 → v1.4.0 (Makefile + ci.yml); verified
   clean.
-- GitHub state: Renovate PR #69 bumps `actions/checkout` v6 → v7. `codeql.yml` pins
-  an orphaned older v6 checkout SHA (`de0fac2e`) that PR #69 does not update. The
-  Renovate Dependency Dashboard (#62) lists no unopened version bumps beyond #69.
-  release-please PR #68 is pending (releases the modules touched by the arr/v2 →
-  v2.1.0 dependency bumps).
+- GitHub state: folded `actions/checkout` v6 → v7 into the workflows (incl. the
+  orphaned `de0fac2e` SHA in codeql.yml) and closed Renovate PR #69 as superseded.
+  The Renovate Dependency Dashboard (#62) listed no unopened version bumps beyond
+  #69. release-please PR #68 remains pending.
+- Pushing surfaced that local `main` was 11 commits ahead of origin with a
+  half-finished major-version migration, and that `main` had been CI-red since
+  2026-06-14. Two inherited problems, both now fixed:
+  1. The apidiff CI gate never worked — it called `apidiff -m IMPORT DIR > file`
+     (a no-op for this apidiff version), so every tagged module failed the
+     empty-fingerprint guard. Fixed to `apidiff -m -w FILE MODULE` from inside each
+     module dir + `apidiff -incompatible -m` output-based detection (apidiff exits
+     0 even on incompatible changes).
+  2. The `New() → (*Client, error)` constructor sweep broke 22 already-released
+     modules on the same major path. Bumped each to the next major (18 × v1→/v2;
+     arr/mylar, mediaserver/emby, mediaserver/jellyfin, mediaserver/tdarr × v2→/v3).
+     All 22 build/vet/test green; the apidiff gate now reports 0 breaking.
+- Verified locally before push: apidiff audit (0 breaking, 28 path-change skips),
+  lint on migrated modules, gofumpt clean.
+- Removed `.github/dependabot.yml`: Renovate (configured 2026-06-14, manages gomod +
+  github-actions) fully superseded it, so both bots were racing to open duplicate
+  dependency PRs. Renovate is now the sole dependency manager.
