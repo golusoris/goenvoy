@@ -2,7 +2,7 @@ package navidrome
 
 import (
 	"context"
-	"crypto/md5" //nolint:gosec // required by Subsonic API protocol
+	"crypto/md5" // #nosec G501 -- required by the Subsonic authentication protocol.
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -92,7 +92,7 @@ func (c *Client) authParams() (url.Values, error) {
 		return nil, fmt.Errorf("navidrome: generate salt: %w", err)
 	}
 	s := hex.EncodeToString(salt)
-	h := md5.Sum([]byte(c.password + s)) //nolint:gosec // required by Subsonic API protocol
+	h := md5.Sum([]byte(c.password + s)) // #nosec G401 -- required by the Subsonic authentication protocol.
 	t := hex.EncodeToString(h[:])
 
 	params := url.Values{}

@@ -83,7 +83,7 @@ func (c *Client) post(ctx context.Context, path string, body, v any) error {
 }
 
 func (c *Client) do(req *http.Request, v any) error {
-	resp, err := c.HTTPClient().Do(req) //nolint:gosec // user-configured base URL is intentional for API clients
+	resp, err := c.HTTPClient().Do(req)
 	if err != nil {
 		return fmt.Errorf("listenbrainz: request: %w", err)
 	}
