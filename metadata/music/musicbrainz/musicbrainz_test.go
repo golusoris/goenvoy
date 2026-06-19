@@ -59,6 +59,38 @@ func TestLookupArtist(t *testing.T) {
 	}
 }
 
+func TestLookupArtistWithIncludes(t *testing.T) {
+	t.Parallel()
+
+	artist := musicbrainz.Artist{
+		ID:   "a1",
+		Name: "Radiohead",
+		Recordings: []musicbrainz.Recording{
+			{ID: "r1", Title: "Creep"},
+		},
+	}
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/artist/a1" {
+			t.Errorf("path = %q, want /artist/a1", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("inc"); got != "recordings+releases" {
+			t.Errorf("inc = %q, want recordings+releases", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(artist)
+	}))
+	defer ts.Close()
+
+	c := musicbrainz.New(metadata.WithBaseURL(ts.URL))
+	a, err := c.LookupArtist(context.Background(), "a1", []string{"recordings", "releases"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(a.Recordings) != 1 {
+		t.Fatalf("len(recordings) = %d, want 1", len(a.Recordings))
+	}
+}
+
 func TestLookupRelease(t *testing.T) {
 	t.Parallel()
 
@@ -400,6 +432,131 @@ func TestSearchLabels(t *testing.T) {
 	}
 }
 
+func TestSearchWorks(t *testing.T) {
+	t.Parallel()
+
+	resp := struct {
+		Created string             `json:"created"`
+		Count   int                `json:"count"`
+		Offset  int                `json:"offset"`
+		Works   []musicbrainz.Work `json:"works"`
+	}{
+		Count: 7,
+		Works: []musicbrainz.Work{{ID: "w1", Title: "Exit Music (For a Film)"}},
+	}
+	ts := newTestServer(t, "/work", resp)
+	defer ts.Close()
+
+	c := musicbrainz.New(metadata.WithBaseURL(ts.URL))
+	result, err := c.SearchWorks(context.Background(), "exit music", 25, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Entities[0].Title != "Exit Music (For a Film)" {
+		t.Errorf("Title = %q, want Exit Music (For a Film)", result.Entities[0].Title)
+	}
+}
+
+func TestSearchAreas(t *testing.T) {
+	t.Parallel()
+
+	resp := struct {
+		Created string             `json:"created"`
+		Count   int                `json:"count"`
+		Offset  int                `json:"offset"`
+		Areas   []musicbrainz.Area `json:"areas"`
+	}{
+		Count: 1,
+		Areas: []musicbrainz.Area{{ID: "area-1", Name: "Iceland"}},
+	}
+	ts := newTestServer(t, "/area", resp)
+	defer ts.Close()
+
+	c := musicbrainz.New(metadata.WithBaseURL(ts.URL))
+	result, err := c.SearchAreas(context.Background(), "iceland", 25, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Count != 1 || result.Entities[0].Name != "Iceland" {
+		t.Fatalf("unexpected areas: %+v", result)
+	}
+}
+
+func TestSearchEvents(t *testing.T) {
+	t.Parallel()
+
+	resp := struct {
+		Created string              `json:"created"`
+		Count   int                 `json:"count"`
+		Offset  int                 `json:"offset"`
+		Events  []musicbrainz.Event `json:"events"`
+	}{
+		Count:  2,
+		Events: []musicbrainz.Event{{ID: "event-1", Name: "Glastonbury"}},
+	}
+	ts := newTestServer(t, "/event", resp)
+	defer ts.Close()
+
+	c := musicbrainz.New(metadata.WithBaseURL(ts.URL))
+	result, err := c.SearchEvents(context.Background(), "glastonbury", 25, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Entities[0].Name != "Glastonbury" {
+		t.Errorf("Name = %q, want Glastonbury", result.Entities[0].Name)
+	}
+}
+
+func TestSearchInstruments(t *testing.T) {
+	t.Parallel()
+
+	resp := struct {
+		Created     string                   `json:"created"`
+		Count       int                      `json:"count"`
+		Offset      int                      `json:"offset"`
+		Instruments []musicbrainz.Instrument `json:"instruments"`
+	}{
+		Count:       3,
+		Instruments: []musicbrainz.Instrument{{ID: "inst-1", Name: "guitar"}},
+	}
+	ts := newTestServer(t, "/instrument", resp)
+	defer ts.Close()
+
+	c := musicbrainz.New(metadata.WithBaseURL(ts.URL))
+	result, err := c.SearchInstruments(context.Background(), "guitar", 25, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Entities[0].Name != "guitar" {
+		t.Errorf("Name = %q, want guitar", result.Entities[0].Name)
+	}
+}
+
+func TestSearchSeries(t *testing.T) {
+	t.Parallel()
+
+	resp := struct {
+		Created string               `json:"created"`
+		Count   int                  `json:"count"`
+		Offset  int                  `json:"offset"`
+		Series  []musicbrainz.Series `json:"series"`
+	}{
+		Count:  4,
+		Series: []musicbrainz.Series{{ID: "series-1", Name: "BBC Proms"}},
+	}
+	ts := newTestServer(t, "/series", resp)
+	defer ts.Close()
+
+	c := musicbrainz.New(metadata.WithBaseURL(ts.URL))
+	result, err := c.SearchSeries(context.Background(), "proms", 25, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Entities[0].Name != "BBC Proms" {
+		t.Errorf("Name = %q, want BBC Proms", result.Entities[0].Name)
+	}
+}
+
 func TestBrowseReleasesByArtist(t *testing.T) {
 	t.Parallel()
 
@@ -424,6 +581,78 @@ func TestBrowseReleasesByArtist(t *testing.T) {
 	}
 	if len(result.Entities) != 1 {
 		t.Fatalf("len = %d, want 1", len(result.Entities))
+	}
+}
+
+func TestBrowseArtistsByReleaseGroup(t *testing.T) {
+	t.Parallel()
+
+	resp := struct {
+		ArtistCount  int                  `json:"artist-count"`
+		ArtistOffset int                  `json:"artist-offset"`
+		Artists      []musicbrainz.Artist `json:"artists"`
+	}{
+		ArtistCount: 1,
+		Artists:     []musicbrainz.Artist{{ID: "artist-1", Name: "Radiohead"}},
+	}
+	ts := newTestServer(t, "/artist", resp)
+	defer ts.Close()
+
+	c := musicbrainz.New(metadata.WithBaseURL(ts.URL))
+	result, err := c.BrowseArtistsByReleaseGroup(context.Background(), "rg1", 25, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Entities[0].Name != "Radiohead" {
+		t.Errorf("Name = %q, want Radiohead", result.Entities[0].Name)
+	}
+}
+
+func TestBrowseArtistsByRecording(t *testing.T) {
+	t.Parallel()
+
+	resp := struct {
+		ArtistCount  int                  `json:"artist-count"`
+		ArtistOffset int                  `json:"artist-offset"`
+		Artists      []musicbrainz.Artist `json:"artists"`
+	}{
+		ArtistCount: 1,
+		Artists:     []musicbrainz.Artist{{ID: "artist-1", Name: "Radiohead"}},
+	}
+	ts := newTestServer(t, "/artist", resp)
+	defer ts.Close()
+
+	c := musicbrainz.New(metadata.WithBaseURL(ts.URL))
+	result, err := c.BrowseArtistsByRecording(context.Background(), "recording-1", 25, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Count != 1 {
+		t.Errorf("Count = %d, want 1", result.Count)
+	}
+}
+
+func TestBrowseReleasesByLabel(t *testing.T) {
+	t.Parallel()
+
+	resp := struct {
+		ReleaseCount  int                   `json:"release-count"`
+		ReleaseOffset int                   `json:"release-offset"`
+		Releases      []musicbrainz.Release `json:"releases"`
+	}{
+		ReleaseCount: 12,
+		Releases:     []musicbrainz.Release{{ID: "r1", Title: "OK Computer"}},
+	}
+	ts := newTestServer(t, "/release", resp)
+	defer ts.Close()
+
+	c := musicbrainz.New(metadata.WithBaseURL(ts.URL))
+	result, err := c.BrowseReleasesByLabel(context.Background(), "label-1", 25, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Count != 12 {
+		t.Errorf("Count = %d, want 12", result.Count)
 	}
 }
 
@@ -472,6 +701,30 @@ func TestBrowseRecordingsByArtist(t *testing.T) {
 	}
 	if result.Count != 500 {
 		t.Errorf("Count = %d, want 500", result.Count)
+	}
+}
+
+func TestBrowseRecordingsByRelease(t *testing.T) {
+	t.Parallel()
+
+	resp := struct {
+		RecordingCount  int                     `json:"recording-count"`
+		RecordingOffset int                     `json:"recording-offset"`
+		Recordings      []musicbrainz.Recording `json:"recordings"`
+	}{
+		RecordingCount: 9,
+		Recordings:     []musicbrainz.Recording{{ID: "rec1", Title: "No Surprises"}},
+	}
+	ts := newTestServer(t, "/recording", resp)
+	defer ts.Close()
+
+	c := musicbrainz.New(metadata.WithBaseURL(ts.URL))
+	result, err := c.BrowseRecordingsByRelease(context.Background(), "release-1", 25, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Entities[0].Title != "No Surprises" {
+		t.Errorf("Title = %q, want No Surprises", result.Entities[0].Title)
 	}
 }
 
@@ -561,6 +814,9 @@ func TestAPIError(t *testing.T) {
 	if apiErr.Message != "Not Found" {
 		t.Errorf("Message = %q, want %q", apiErr.Message, "Not Found")
 	}
+	if got := apiErr.Error(); got != "musicbrainz: HTTP 404: Not Found" {
+		t.Errorf("Error() = %q, want musicbrainz: HTTP 404: Not Found", got)
+	}
 }
 
 func TestAPIErrorRawBody(t *testing.T) {
@@ -583,6 +839,12 @@ func TestAPIErrorRawBody(t *testing.T) {
 	}
 	if apiErr.RawBody != "service unavailable" {
 		t.Errorf("RawBody = %q, want %q", apiErr.RawBody, "service unavailable")
+	}
+	if got := apiErr.Error(); got != "musicbrainz: HTTP 503: service unavailable" {
+		t.Errorf("Error() = %q, want musicbrainz: HTTP 503: service unavailable", got)
+	}
+	if got := (&musicbrainz.APIError{StatusCode: http.StatusTooManyRequests}).Error(); got != "musicbrainz: HTTP 429" {
+		t.Errorf("Error() without body = %q, want musicbrainz: HTTP 429", got)
 	}
 }
 

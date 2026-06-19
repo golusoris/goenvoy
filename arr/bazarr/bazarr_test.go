@@ -85,6 +85,43 @@ func TestGetSeries(t *testing.T) {
 	}
 }
 
+func TestSetSeriesProfile(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %s, want POST", r.Method)
+		}
+		if r.URL.Path != "/api/series" {
+			t.Errorf("path = %q, want /api/series", r.URL.Path)
+		}
+		var body struct {
+			SeriesID  []int    `json:"seriesid"`
+			ProfileID []string `json:"profileid"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if len(body.SeriesID) != 2 || body.SeriesID[0] != 1 || body.SeriesID[1] != 2 {
+			t.Errorf("seriesid = %#v, want [1 2]", body.SeriesID)
+		}
+		if len(body.ProfileID) != 1 || body.ProfileID[0] != "eng" {
+			t.Errorf("profileid = %#v, want [eng]", body.ProfileID)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	c, err := bazarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := c.SetSeriesProfile(context.Background(), []int{1, 2}, []string{"eng"}); err != nil {
+		t.Fatalf("SetSeriesProfile: %v", err)
+	}
+}
+
 func TestRunSeriesAction(t *testing.T) {
 	t.Parallel()
 
@@ -214,6 +251,43 @@ func TestDownloadEpisodeSubtitle(t *testing.T) {
 	}
 }
 
+func TestDeleteEpisodeSubtitle(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("method = %s, want DELETE", r.Method)
+		}
+		if r.URL.Path != "/api/episodes/subtitles" {
+			t.Errorf("path = %q, want /api/episodes/subtitles", r.URL.Path)
+		}
+		query := r.URL.Query()
+		for key, want := range map[string]string{
+			"seriesid":  "1",
+			"episodeid": "100",
+			"language":  "en",
+			"forced":    "false",
+			"hi":        "true",
+			"path":      "/data/show/subtitle.srt",
+		} {
+			if got := query.Get(key); got != want {
+				t.Errorf("%s = %q, want %q", key, got, want)
+			}
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	c, err := bazarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := c.DeleteEpisodeSubtitle(context.Background(), 1, 100, "en", "false", "true", "/data/show/subtitle.srt"); err != nil {
+		t.Fatalf("DeleteEpisodeSubtitle: %v", err)
+	}
+}
+
 func TestGetMovies(t *testing.T) {
 	t.Parallel()
 
@@ -238,6 +312,43 @@ func TestGetMovies(t *testing.T) {
 	}
 	if got.Data[0].Title != "Inception" {
 		t.Errorf("Title = %q, want %q", got.Data[0].Title, "Inception")
+	}
+}
+
+func TestSetMovieProfile(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %s, want POST", r.Method)
+		}
+		if r.URL.Path != "/api/movies" {
+			t.Errorf("path = %q, want /api/movies", r.URL.Path)
+		}
+		var body struct {
+			RadarrID  []int    `json:"radarrid"`
+			ProfileID []string `json:"profileid"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if len(body.RadarrID) != 1 || body.RadarrID[0] != 5 {
+			t.Errorf("radarrid = %#v, want [5]", body.RadarrID)
+		}
+		if len(body.ProfileID) != 1 || body.ProfileID[0] != "eng" {
+			t.Errorf("profileid = %#v, want [eng]", body.ProfileID)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	c, err := bazarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := c.SetMovieProfile(context.Background(), []int{5}, []string{"eng"}); err != nil {
+		t.Fatalf("SetMovieProfile: %v", err)
 	}
 }
 
@@ -286,6 +397,104 @@ func TestGetWantedMovies(t *testing.T) {
 	}
 	if got.Data[0].Title != "The Matrix" {
 		t.Errorf("Title = %q, want %q", got.Data[0].Title, "The Matrix")
+	}
+}
+
+func TestGetMovieHistory(t *testing.T) {
+	t.Parallel()
+
+	want := bazarr.PagedResponse[bazarr.MovieHistoryRecord]{
+		Data: []bazarr.MovieHistoryRecord{
+			{Title: "Inception", Provider: "opensubtitles", RadarrID: 5},
+		},
+		Total: 1,
+	}
+
+	radarrID := 5
+	srv := newTestServer(t, "/api/movies/history?length=10&radarrid=5&start=0", want)
+	defer srv.Close()
+
+	c, err := bazarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.GetMovieHistory(context.Background(), 0, 10, &radarrID)
+	if err != nil {
+		t.Fatalf("GetMovieHistory: %v", err)
+	}
+	if got.Data[0].Provider != "opensubtitles" {
+		t.Errorf("Provider = %q, want opensubtitles", got.Data[0].Provider)
+	}
+}
+
+func TestDownloadMovieSubtitle(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch {
+			t.Errorf("method = %s, want PATCH", r.Method)
+		}
+		if r.URL.Path != "/api/movies/subtitles" {
+			t.Errorf("path = %q, want /api/movies/subtitles", r.URL.Path)
+		}
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if body["radarrid"] != float64(5) {
+			t.Errorf("radarrid = %v, want 5", body["radarrid"])
+		}
+		if body["language"] != "en" {
+			t.Errorf("language = %v, want en", body["language"])
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	c, err := bazarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := c.DownloadMovieSubtitle(context.Background(), 5, "en", "false", "false"); err != nil {
+		t.Fatalf("DownloadMovieSubtitle: %v", err)
+	}
+}
+
+func TestDeleteMovieSubtitle(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("method = %s, want DELETE", r.Method)
+		}
+		if r.URL.Path != "/api/movies/subtitles" {
+			t.Errorf("path = %q, want /api/movies/subtitles", r.URL.Path)
+		}
+		query := r.URL.Query()
+		for key, want := range map[string]string{
+			"radarrid": "5",
+			"language": "en",
+			"forced":   "false",
+			"hi":       "true",
+			"path":     "/data/movie/subtitle.srt",
+		} {
+			if got := query.Get(key); got != want {
+				t.Errorf("%s = %q, want %q", key, got, want)
+			}
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	c, err := bazarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := c.DeleteMovieSubtitle(context.Background(), 5, "en", "false", "true", "/data/movie/subtitle.srt"); err != nil {
+		t.Fatalf("DeleteMovieSubtitle: %v", err)
 	}
 }
 
@@ -441,6 +650,63 @@ func TestGetLanguages(t *testing.T) {
 	}
 	if got[0].Code2 != "en" {
 		t.Errorf("Code2 = %q, want %q", got[0].Code2, "en")
+	}
+}
+
+func TestGetLanguageProfiles(t *testing.T) {
+	t.Parallel()
+
+	want := map[string]any{
+		"data": []bazarr.LanguageProfile{
+			{ProfileID: 1, Name: "English"},
+		},
+	}
+
+	srv := newTestServer(t, "/api/system/languages/profiles", want)
+	defer srv.Close()
+
+	c, err := bazarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.GetLanguageProfiles(context.Background())
+	if err != nil {
+		t.Fatalf("GetLanguageProfiles: %v", err)
+	}
+	if got[0].Name != "English" {
+		t.Errorf("Name = %q, want English", got[0].Name)
+	}
+}
+
+func TestSystemAction(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %s, want POST", r.Method)
+		}
+		if r.URL.Path != "/api/system" {
+			t.Errorf("path = %q, want /api/system", r.URL.Path)
+		}
+		var body map[string]string
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if body["action"] != "restart" {
+			t.Errorf("action = %q, want restart", body["action"])
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	c, err := bazarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := c.SystemAction(context.Background(), "restart"); err != nil {
+		t.Fatalf("SystemAction: %v", err)
 	}
 }
 

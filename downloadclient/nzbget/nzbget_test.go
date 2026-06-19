@@ -352,6 +352,62 @@ func TestSetCategory(t *testing.T) {
 	}
 }
 
+func TestReload(t *testing.T) {
+	t.Parallel()
+
+	ts := newRPCServer(t, "reload", true)
+	defer ts.Close()
+
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if err := c.Reload(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSetPriority(t *testing.T) {
+	t.Parallel()
+
+	ts := newRPCServer(t, "editqueue", true)
+	defer ts.Close()
+
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	ok, err := c.SetPriority(context.Background(), 1, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ok {
+		t.Fatal("ok = false, want true")
+	}
+}
+
+func TestOptionsAndAPIErrorString(t *testing.T) {
+	t.Parallel()
+
+	custom := &http.Client{}
+	c, err := nzbget.New("http://example.test", "u", "p",
+		nzbget.WithHTTPClient(custom),
+		nzbget.WithTimeout(0),
+		nzbget.WithUserAgent("nzbget-test"),
+	)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if c == nil {
+		t.Fatal("expected client")
+	}
+
+	got := (&nzbget.APIError{Code: -1, Message: "failed"}).Error()
+	if got != "nzbget: failed (code -1)" {
+		t.Fatalf("Error() = %q", got)
+	}
+}
+
 func TestNew_invalidURL(t *testing.T) {
 	t.Parallel()
 	cases := []struct {

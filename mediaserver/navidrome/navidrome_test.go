@@ -154,6 +154,33 @@ func TestGetRandomSongs(t *testing.T) {
 	}
 }
 
+func TestGetTopSongs(t *testing.T) {
+	t.Parallel()
+
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/rest/getTopSongs" {
+			t.Errorf("path = %q, want /rest/getTopSongs", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("artist"); got != "Radiohead" {
+			t.Errorf("artist = %q, want Radiohead", got)
+		}
+		if got := r.URL.Query().Get("count"); got != "2" {
+			t.Errorf("count = %q, want 2", got)
+		}
+		subsonicJSON(t, w, &responseBody{
+			TopSongs: &TopSongs{Song: []Song{{ID: "s1", Title: "Creep"}}},
+		})
+	})
+
+	songs, err := c.GetTopSongs(context.Background(), "Radiohead", 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(songs) != 1 || songs[0].Title != "Creep" {
+		t.Fatalf("unexpected songs: %+v", songs)
+	}
+}
+
 func TestSearch3(t *testing.T) {
 	t.Parallel()
 
@@ -212,6 +239,27 @@ func TestGetPlaylist(t *testing.T) {
 	}
 }
 
+func TestGetNowPlaying(t *testing.T) {
+	t.Parallel()
+
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/rest/getNowPlaying" {
+			t.Errorf("path = %q, want /rest/getNowPlaying", r.URL.Path)
+		}
+		subsonicJSON(t, w, &responseBody{
+			NowPlaying: &NowPlaying{Entry: []NowPlayingEntry{{Song: Song{ID: "s1", Title: "Airbag"}, Username: "admin"}}},
+		})
+	})
+
+	entries, err := c.GetNowPlaying(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Username != "admin" {
+		t.Fatalf("unexpected now playing entries: %+v", entries)
+	}
+}
+
 func TestGetGenres(t *testing.T) {
 	t.Parallel()
 
@@ -245,6 +293,90 @@ func TestGetScanStatus(t *testing.T) {
 	}
 	if ss.Scanning || ss.Count != 5000 {
 		t.Fatalf("unexpected scan status: %+v", ss)
+	}
+}
+
+func TestStartScan(t *testing.T) {
+	t.Parallel()
+
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/rest/startScan" {
+			t.Errorf("path = %q, want /rest/startScan", r.URL.Path)
+		}
+		subsonicJSON(t, w, &responseBody{
+			ScanStatus: &ScanStatus{Scanning: true, Count: 12},
+		})
+	})
+
+	status, err := c.StartScan(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !status.Scanning || status.Count != 12 {
+		t.Fatalf("unexpected scan status: %+v", status)
+	}
+}
+
+func TestScrobble(t *testing.T) {
+	t.Parallel()
+
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/rest/scrobble" {
+			t.Errorf("path = %q, want /rest/scrobble", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("id"); got != "s1" {
+			t.Errorf("id = %q, want s1", got)
+		}
+		if got := r.URL.Query().Get("submission"); got != "true" {
+			t.Errorf("submission = %q, want true", got)
+		}
+		subsonicJSON(t, w, &responseBody{})
+	})
+
+	if err := c.Scrobble(context.Background(), "s1", true); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestStar(t *testing.T) {
+	t.Parallel()
+
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/rest/star" {
+			t.Errorf("path = %q, want /rest/star", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("id"); got != "s1" {
+			t.Errorf("id = %q, want s1", got)
+		}
+		if got := r.URL.Query().Get("albumId"); got != "a1" {
+			t.Errorf("albumId = %q, want a1", got)
+		}
+		if got := r.URL.Query().Get("artistId"); got != "ar1" {
+			t.Errorf("artistId = %q, want ar1", got)
+		}
+		subsonicJSON(t, w, &responseBody{})
+	})
+
+	if err := c.Star(context.Background(), "s1", "a1", "ar1"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUnstar(t *testing.T) {
+	t.Parallel()
+
+	c := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/rest/unstar" {
+			t.Errorf("path = %q, want /rest/unstar", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("albumId"); got != "a1" {
+			t.Errorf("albumId = %q, want a1", got)
+		}
+		subsonicJSON(t, w, &responseBody{})
+	})
+
+	if err := c.Unstar(context.Background(), "", "a1", ""); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -292,6 +424,9 @@ func TestSubsonicError(t *testing.T) {
 	if se.Code != 40 {
 		t.Fatalf("unexpected error code: %d", se.Code)
 	}
+	if got := se.Error(); got != "Wrong username or password" {
+		t.Fatalf("Error() = %q, want Wrong username or password", got)
+	}
 }
 
 func TestAPIError(t *testing.T) {
@@ -311,6 +446,9 @@ func TestAPIError(t *testing.T) {
 	}
 	if apiErr.StatusCode != http.StatusServiceUnavailable {
 		t.Fatalf("unexpected status code: %d", apiErr.StatusCode)
+	}
+	if got := apiErr.Error(); got != "navidrome: 503 Service Unavailable: service unavailable\n" {
+		t.Fatalf("Error() = %q, want navidrome service unavailable message", got)
 	}
 }
 

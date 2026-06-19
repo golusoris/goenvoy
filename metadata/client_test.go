@@ -167,7 +167,6 @@ func TestDoRaw(t *testing.T) {
 
 			c := metadata.NewBaseClient(srv.URL, testPkg)
 			data, status, err := c.DoRaw(context.Background(), tt.method, "/api", tt.body)
-
 			if err != nil {
 				t.Fatalf("DoRaw error: %v", err)
 			}
@@ -194,14 +193,13 @@ func TestDoRaw(t *testing.T) {
 func TestDoRaw_NonOK(t *testing.T) {
 	t.Parallel()
 
-	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+	srv := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte("not found"))
 	})
 
 	c := metadata.NewBaseClient(srv.URL, testPkg)
 	data, status, err := c.DoRaw(context.Background(), http.MethodGet, "/missing", nil)
-
 	if err != nil {
 		t.Fatalf("expected no error for non-2xx in DoRaw, got: %v", err)
 	}
@@ -218,7 +216,7 @@ func TestDoRaw_NonOK(t *testing.T) {
 func TestDoRaw_NetworkError(t *testing.T) {
 	t.Parallel()
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	srv.Close()
 
 	c := metadata.NewBaseClient(srv.URL, testPkg)
@@ -251,7 +249,6 @@ func TestDoRawURL(t *testing.T) {
 
 	c := metadata.NewBaseClient("http://ignored.example.com", testPkg)
 	data, status, err := c.DoRawURL(context.Background(), http.MethodGet, srv.URL+"/custom/path", nil)
-
 	if err != nil {
 		t.Fatalf("DoRawURL error: %v", err)
 	}
@@ -305,7 +302,7 @@ func TestGet(t *testing.T) {
 func TestGet_NonOK(t *testing.T) {
 	t.Parallel()
 
-	srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+	srv := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte("forbidden"))
 	})
@@ -370,7 +367,6 @@ func TestDoJSON(t *testing.T) {
 
 	var got respBody
 	err := c.DoJSON(context.Background(), http.MethodPost, "/submit", reqBody{Value: "hello"}, &got)
-
 	if err != nil {
 		t.Fatalf("DoJSON error: %v", err)
 	}
@@ -414,7 +410,6 @@ func TestDoJSON_Methods(t *testing.T) {
 
 			var dst map[string]bool
 			err := c.DoJSON(context.Background(), tt.method, "/resource", payload{Key: "val"}, &dst)
-
 			if err != nil {
 				t.Fatalf("DoJSON error: %v", err)
 			}
@@ -451,7 +446,7 @@ func TestDoJSON_ErrorResponse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			srv := newTestServer(t, func(w http.ResponseWriter, r *http.Request) {
+			srv := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(tt.statusCode)
 				_, _ = w.Write([]byte(tt.body))
 			})

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/golusoris/goenvoy/downloadclient/transmission"
 )
@@ -217,6 +218,47 @@ func TestMoveTorrents(t *testing.T) {
 	}
 }
 
+func TestSetTorrentSpeedLimits(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("HTTP method = %q, want POST", r.Method)
+		}
+		var req rpcRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		if req.Method != "torrent-set" {
+			t.Errorf("RPC method = %q, want torrent-set", req.Method)
+		}
+		var args map[string]any
+		if err := json.Unmarshal(req.Arguments, &args); err != nil {
+			t.Fatalf("decode arguments: %v", err)
+		}
+		if args["downloadLimited"] != false {
+			t.Errorf("downloadLimited = %v, want false", args["downloadLimited"])
+		}
+		if args["uploadLimited"] != true {
+			t.Errorf("uploadLimited = %v, want true", args["uploadLimited"])
+		}
+		if args["uploadLimit"] != float64(256) {
+			t.Errorf("uploadLimit = %v, want 256", args["uploadLimit"])
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"result": "success", "arguments": map[string]any{}})
+	}))
+	defer ts.Close()
+
+	c, err := transmission.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if err := c.SetTorrentSpeedLimits(context.Background(), []int{1}, -1, 256); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestGetSession(t *testing.T) {
 	t.Parallel()
 
@@ -345,6 +387,54 @@ func TestSessionIDNegotiation(t *testing.T) {
 	}
 }
 
+func TestOptions(t *testing.T) {
+	t.Parallel()
+
+	called := false
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/rpc2" {
+			t.Errorf("path = %q, want /rpc2", r.URL.Path)
+		}
+		if got := r.Header.Get("User-Agent"); got != "transmission-test/1.0" {
+			t.Errorf("User-Agent = %q, want transmission-test/1.0", got)
+		}
+		username, password, ok := r.BasicAuth()
+		if !ok || username != "user" || password != "pass" {
+			t.Errorf("BasicAuth = %q/%q/%v, want user/pass/true", username, password, ok)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"result":    "success",
+			"arguments": map[string]any{"version": "4.0.5"},
+		})
+	}))
+	defer ts.Close()
+
+	custom := &http.Client{
+		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			called = true
+			return http.DefaultTransport.RoundTrip(r)
+		}),
+	}
+	c, err := transmission.New(
+		ts.URL,
+		transmission.WithTimeout(time.Second),
+		transmission.WithHTTPClient(custom),
+		transmission.WithUserAgent("transmission-test/1.0"),
+		transmission.WithRPCPath("/rpc2"),
+		transmission.WithAuth("user", "pass"),
+	)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := c.GetSession(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if !called {
+		t.Error("custom HTTP client was not used")
+	}
+}
+
 func TestAPIError(t *testing.T) {
 	t.Parallel()
 
@@ -369,6 +459,9 @@ func TestAPIError(t *testing.T) {
 	}
 	if apiErr.Result != "no such torrent" {
 		t.Errorf("Result = %q, want %q", apiErr.Result, "no such torrent")
+	}
+	if got := apiErr.Error(); got != "transmission: no such torrent" {
+		t.Errorf("Error() = %q, want transmission: no such torrent", got)
 	}
 }
 
@@ -396,6 +489,12 @@ func TestHTTPError(t *testing.T) {
 	if httpErr.StatusCode != http.StatusInternalServerError {
 		t.Errorf("StatusCode = %d, want %d", httpErr.StatusCode, http.StatusInternalServerError)
 	}
+	if got := httpErr.Error(); got != "transmission: HTTP 500: server error" {
+		t.Errorf("Error() = %q, want transmission: HTTP 500: server error", got)
+	}
+	if got := (&transmission.HTTPError{StatusCode: http.StatusBadGateway}).Error(); got != "transmission: HTTP 502" {
+		t.Errorf("Error() without body = %q, want transmission: HTTP 502", got)
+	}
 }
 
 func TestSetTorrentLabels(t *testing.T) {
@@ -412,6 +511,10 @@ func TestSetTorrentLabels(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
 func TestNew_invalidURL(t *testing.T) {
 	t.Parallel()

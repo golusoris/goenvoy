@@ -1650,7 +1650,7 @@ func TestUploadBackup(t *testing.T) {
 	}
 }
 
-// ---------- Config (CRUD) ----------
+// Config CRUD tests.
 
 func TestGetDownloadClientConfig(t *testing.T) {
 	t.Parallel()
@@ -1832,7 +1832,7 @@ func TestUpdateMediaManagementConfig(t *testing.T) {
 	}
 }
 
-// ---------- AutoTag ----------
+// AutoTag tests.
 
 func TestGetAutoTagging(t *testing.T) {
 	t.Parallel()
@@ -1919,7 +1919,7 @@ func TestGetAutoTagSchema(t *testing.T) {
 	}
 }
 
-// ---------- Blocklist ----------
+// Blocklist tests.
 
 func TestGetBlocklist(t *testing.T) {
 	t.Parallel()
@@ -1959,7 +1959,7 @@ func TestDeleteBlocklistBulk(t *testing.T) {
 	}
 }
 
-// ---------- CustomFilter ----------
+// CustomFilter tests.
 
 func TestGetCustomFilters(t *testing.T) {
 	t.Parallel()
@@ -2031,7 +2031,7 @@ func TestDeleteCustomFilter(t *testing.T) {
 	}
 }
 
-// ---------- CustomFormat ----------
+// CustomFormat tests.
 
 func TestGetCustomFormats(t *testing.T) {
 	t.Parallel()
@@ -2118,7 +2118,7 @@ func TestGetCustomFormatSchema(t *testing.T) {
 	}
 }
 
-// ---------- DelayProfile ----------
+// DelayProfile tests.
 
 func TestGetDelayProfiles(t *testing.T) {
 	t.Parallel()
@@ -2205,7 +2205,7 @@ func TestReorderDelayProfile(t *testing.T) {
 	}
 }
 
-// ---------- DownloadClient ----------
+// DownloadClient tests.
 
 func TestGetDownloadClients(t *testing.T) {
 	t.Parallel()
@@ -2302,7 +2302,7 @@ func TestTestDownloadClient(t *testing.T) {
 	}
 }
 
-// ---------- ImportList ----------
+// ImportList tests.
 
 func TestGetImportLists(t *testing.T) {
 	t.Parallel()
@@ -2469,7 +2469,7 @@ func TestDeleteImportListExclusion(t *testing.T) {
 	}
 }
 
-// ---------- Indexer ----------
+// Indexer tests.
 
 func TestGetIndexers(t *testing.T) {
 	t.Parallel()
@@ -2581,7 +2581,7 @@ func TestGetIndexerFlags(t *testing.T) {
 	}
 }
 
-// ---------- Metadata ----------
+// Metadata tests.
 
 func TestGetMetadataConsumers(t *testing.T) {
 	t.Parallel()
@@ -2678,7 +2678,7 @@ func TestTestMetadataConsumer(t *testing.T) {
 	}
 }
 
-// ---------- Notification ----------
+// Notification tests.
 
 func TestGetNotifications(t *testing.T) {
 	t.Parallel()
@@ -2775,7 +2775,7 @@ func TestTestNotification(t *testing.T) {
 	}
 }
 
-// ---------- QualityDefinition ----------
+// QualityDefinition tests.
 
 func TestGetQualityDefinitions(t *testing.T) {
 	t.Parallel()
@@ -2822,7 +2822,7 @@ func TestUpdateQualityDefinition(t *testing.T) {
 	}
 }
 
-// ---------- QualityProfile ----------
+// QualityProfile tests.
 
 func TestGetQualityProfile(t *testing.T) {
 	t.Parallel()
@@ -2879,7 +2879,7 @@ func TestDeleteQualityProfile(t *testing.T) {
 	}
 }
 
-// ---------- Queue ----------
+// Queue tests.
 
 func TestDeleteQueueItems(t *testing.T) {
 	t.Parallel()
@@ -2941,7 +2941,7 @@ func TestGetQueueStatus(t *testing.T) {
 	}
 }
 
-// ---------- Release ----------
+// Release tests.
 
 func TestGetReleaseProfiles(t *testing.T) {
 	t.Parallel()
@@ -3048,7 +3048,7 @@ func TestGrabRelease(t *testing.T) {
 	}
 }
 
-// ---------- RemotePathMapping ----------
+// RemotePathMapping tests.
 
 func TestGetRemotePathMappings(t *testing.T) {
 	t.Parallel()
@@ -3120,7 +3120,7 @@ func TestDeleteRemotePathMapping(t *testing.T) {
 	}
 }
 
-// ---------- Rename / ManualImport ----------
+// Rename and ManualImport tests.
 
 func TestGetRenameList(t *testing.T) {
 	t.Parallel()
@@ -3162,7 +3162,7 @@ func TestProcessManualImport(t *testing.T) {
 	}
 }
 
-// ---------- RootFolder ----------
+// RootFolder tests.
 
 func TestGetRootFolder(t *testing.T) {
 	t.Parallel()
@@ -3204,7 +3204,7 @@ func TestDeleteRootFolder(t *testing.T) {
 	}
 }
 
-// ---------- Series (editor, import, folder) ----------
+// Series editor, import, and folder tests.
 
 func TestEditSeries(t *testing.T) {
 	t.Parallel()
@@ -3256,7 +3256,7 @@ func TestGetSeriesFolder(t *testing.T) {
 	}
 }
 
-// ---------- System ----------
+// System tests.
 
 func TestGetBackups(t *testing.T) {
 	t.Parallel()
@@ -3387,7 +3387,7 @@ func TestGetFileSystemMediaFiles(t *testing.T) {
 	}
 }
 
-// ---------- Tag ----------
+// Tag tests.
 
 func TestGetTag(t *testing.T) {
 	t.Parallel()
@@ -3459,7 +3459,7 @@ func TestGetTagDetail(t *testing.T) {
 	}
 }
 
-// ---------- Update ----------
+// Update tests.
 
 func TestGetUpdates(t *testing.T) {
 	t.Parallel()
@@ -3476,7 +3476,7 @@ func TestGetUpdates(t *testing.T) {
 	}
 }
 
-// ---------- Wanted ----------
+// Wanted tests.
 
 func TestGetWantedMissing(t *testing.T) {
 	t.Parallel()
@@ -3514,7 +3514,7 @@ func TestGetWantedCutoff(t *testing.T) {
 	}
 }
 
-// ---------- History ----------
+// History tests.
 
 func TestGetHistorySeries(t *testing.T) {
 	t.Parallel()
@@ -3556,7 +3556,7 @@ func TestMarkHistoryFailed(t *testing.T) {
 	}
 }
 
-// ---------- Language ----------
+// Language tests.
 
 func TestGetLanguages(t *testing.T) {
 	t.Parallel()
@@ -3573,7 +3573,7 @@ func TestGetLanguages(t *testing.T) {
 	}
 }
 
-// ---------- Log ----------
+// Log tests.
 
 func TestGetLogs(t *testing.T) {
 	t.Parallel()

@@ -160,6 +160,28 @@ func TestAddIndexer(t *testing.T) {
 	}
 }
 
+func TestUpdateIndexer(t *testing.T) {
+	t.Parallel()
+
+	want := prowlarr.Indexer{ID: 1, Name: "Updated", Enable: true}
+
+	srv := newTestServer(t, http.MethodPut, "/api/v1/indexer/1", want)
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.UpdateIndexer(context.Background(), &prowlarr.Indexer{ID: 1, Name: "Updated"})
+	if err != nil {
+		t.Fatalf("UpdateIndexer: %v", err)
+	}
+	if got.Name != "Updated" {
+		t.Errorf("Name = %q, want Updated", got.Name)
+	}
+}
+
 func TestDeleteIndexer(t *testing.T) {
 	t.Parallel()
 
@@ -230,6 +252,72 @@ func TestGetApplications(t *testing.T) {
 	}
 }
 
+func TestGetApplication(t *testing.T) {
+	t.Parallel()
+
+	want := prowlarr.Application{ID: 1, Name: "Sonarr", SyncLevel: "fullSync"}
+
+	srv := newTestServer(t, http.MethodGet, "/api/v1/applications/1", want)
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.GetApplication(context.Background(), 1)
+	if err != nil {
+		t.Fatalf("GetApplication: %v", err)
+	}
+	if got.Name != "Sonarr" {
+		t.Errorf("Name = %q, want Sonarr", got.Name)
+	}
+}
+
+func TestAddApplication(t *testing.T) {
+	t.Parallel()
+
+	want := prowlarr.Application{ID: 2, Name: "Radarr", SyncLevel: "fullSync"}
+
+	srv := newTestServer(t, http.MethodPost, "/api/v1/applications", want)
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.AddApplication(context.Background(), &prowlarr.Application{Name: "Radarr"})
+	if err != nil {
+		t.Fatalf("AddApplication: %v", err)
+	}
+	if got.ID != 2 {
+		t.Errorf("ID = %d, want 2", got.ID)
+	}
+}
+
+func TestUpdateApplication(t *testing.T) {
+	t.Parallel()
+
+	want := prowlarr.Application{ID: 1, Name: "Updated", SyncLevel: "addOnly"}
+
+	srv := newTestServer(t, http.MethodPut, "/api/v1/applications/1", want)
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.UpdateApplication(context.Background(), &prowlarr.Application{ID: 1, Name: "Updated"})
+	if err != nil {
+		t.Fatalf("UpdateApplication: %v", err)
+	}
+	if got.SyncLevel != "addOnly" {
+		t.Errorf("SyncLevel = %q, want addOnly", got.SyncLevel)
+	}
+}
+
 func TestDeleteApplication(t *testing.T) {
 	t.Parallel()
 
@@ -267,6 +355,88 @@ func TestGetAppProfiles(t *testing.T) {
 	}
 	if got[0].Name != "Standard" {
 		t.Errorf("Name = %q, want %q", got[0].Name, "Standard")
+	}
+}
+
+func TestGetAppProfile(t *testing.T) {
+	t.Parallel()
+
+	want := prowlarr.AppProfile{ID: 1, Name: "Standard", EnableRss: true}
+
+	srv := newTestServer(t, http.MethodGet, "/api/v1/appprofile/1", want)
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.GetAppProfile(context.Background(), 1)
+	if err != nil {
+		t.Fatalf("GetAppProfile: %v", err)
+	}
+	if got.Name != "Standard" {
+		t.Errorf("Name = %q, want Standard", got.Name)
+	}
+}
+
+func TestAddAppProfile(t *testing.T) {
+	t.Parallel()
+
+	want := prowlarr.AppProfile{ID: 2, Name: "Movies", EnableInteractiveSearch: true}
+
+	srv := newTestServer(t, http.MethodPost, "/api/v1/appprofile", want)
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.AddAppProfile(context.Background(), &prowlarr.AppProfile{Name: "Movies"})
+	if err != nil {
+		t.Fatalf("AddAppProfile: %v", err)
+	}
+	if got.ID != 2 {
+		t.Errorf("ID = %d, want 2", got.ID)
+	}
+}
+
+func TestUpdateAppProfile(t *testing.T) {
+	t.Parallel()
+
+	want := prowlarr.AppProfile{ID: 1, Name: "Updated", MinimumSeeders: 2}
+
+	srv := newTestServer(t, http.MethodPut, "/api/v1/appprofile/1", want)
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.UpdateAppProfile(context.Background(), &prowlarr.AppProfile{ID: 1, Name: "Updated"})
+	if err != nil {
+		t.Fatalf("UpdateAppProfile: %v", err)
+	}
+	if got.MinimumSeeders != 2 {
+		t.Errorf("MinimumSeeders = %d, want 2", got.MinimumSeeders)
+	}
+}
+
+func TestDeleteAppProfile(t *testing.T) {
+	t.Parallel()
+
+	srv := newTestServer(t, http.MethodDelete, "/api/v1/appprofile/1", nil)
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := c.DeleteAppProfile(context.Background(), 1); err != nil {
+		t.Fatalf("DeleteAppProfile: %v", err)
 	}
 }
 
@@ -395,6 +565,76 @@ func TestSendCommand(t *testing.T) {
 	}
 }
 
+func TestGetCommands(t *testing.T) {
+	t.Parallel()
+
+	want := []arr.CommandResponse{
+		{ID: 1, Name: "ApplicationIndexerSync", Status: "queued"},
+	}
+
+	srv := newTestServer(t, http.MethodGet, "/api/v1/command", want)
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.GetCommands(context.Background())
+	if err != nil {
+		t.Fatalf("GetCommands: %v", err)
+	}
+	if got[0].Status != "queued" {
+		t.Errorf("Status = %q, want queued", got[0].Status)
+	}
+}
+
+func TestGetCommand(t *testing.T) {
+	t.Parallel()
+
+	want := arr.CommandResponse{ID: 1, Name: "ApplicationIndexerSync", Status: "completed"}
+
+	srv := newTestServer(t, http.MethodGet, "/api/v1/command/1", want)
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.GetCommand(context.Background(), 1)
+	if err != nil {
+		t.Fatalf("GetCommand: %v", err)
+	}
+	if got.Status != "completed" {
+		t.Errorf("Status = %q, want completed", got.Status)
+	}
+}
+
+func TestGetHealth(t *testing.T) {
+	t.Parallel()
+
+	want := []arr.HealthCheck{
+		{Source: "Indexer", Type: "warning", Message: "Indexer unavailable"},
+	}
+
+	srv := newTestServer(t, http.MethodGet, "/api/v1/health", want)
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.GetHealth(context.Background())
+	if err != nil {
+		t.Fatalf("GetHealth: %v", err)
+	}
+	if got[0].Source != "Indexer" {
+		t.Errorf("Source = %q, want Indexer", got[0].Source)
+	}
+}
+
 func TestGetSystemStatus(t *testing.T) {
 	t.Parallel()
 
@@ -439,6 +679,44 @@ func TestGetTags(t *testing.T) {
 	}
 }
 
+func TestCreateTag(t *testing.T) {
+	t.Parallel()
+
+	want := arr.Tag{ID: 3, Label: "usenet"}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %s, want POST", r.Method)
+		}
+		if r.URL.RequestURI() != "/api/v1/tag" {
+			t.Errorf("path = %q, want /api/v1/tag", r.URL.RequestURI())
+		}
+		var body arr.Tag
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if body.Label != "usenet" {
+			t.Errorf("Label = %q, want usenet", body.Label)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(want)
+	}))
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.CreateTag(context.Background(), "usenet")
+	if err != nil {
+		t.Fatalf("CreateTag: %v", err)
+	}
+	if got.ID != 3 {
+		t.Errorf("ID = %d, want 3", got.ID)
+	}
+}
+
 func TestGetHistory(t *testing.T) {
 	t.Parallel()
 
@@ -465,6 +743,32 @@ func TestGetHistory(t *testing.T) {
 	}
 	if got.Records[0].EventType != "releaseGrabbed" {
 		t.Errorf("EventType = %q, want %q", got.Records[0].EventType, "releaseGrabbed")
+	}
+}
+
+func TestGetHistorySince(t *testing.T) {
+	t.Parallel()
+
+	want := []prowlarr.HistoryRecord{
+		{ID: 5, IndexerID: 1, EventType: "releaseGrabbed", Date: "2025-01-02T03:04:05Z"},
+	}
+
+	srv := newTestServer(t, http.MethodGet,
+		"/api/v1/history/since?date=2025-01-02T03%3A04%3A05Z",
+		want)
+	defer srv.Close()
+
+	c, err := prowlarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := c.GetHistorySince(context.Background(), "2025-01-02T03:04:05Z")
+	if err != nil {
+		t.Fatalf("GetHistorySince: %v", err)
+	}
+	if got[0].EventType != "releaseGrabbed" {
+		t.Errorf("EventType = %q, want releaseGrabbed", got[0].EventType)
 	}
 }
 

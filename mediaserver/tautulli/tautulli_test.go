@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/golusoris/goenvoy/mediaserver/tautulli"
 )
@@ -134,6 +135,27 @@ func TestGetLibrary(t *testing.T) {
 	}
 }
 
+func TestGetLibraryNames(t *testing.T) {
+	t.Parallel()
+
+	ts := newTestServer(t, "get_library_names", "test-key", []map[string]any{
+		{"section_id": 1, "section_name": "Movies", "section_type": "movie"},
+	})
+	defer ts.Close()
+
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	names, err := c.GetLibraryNames(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if names[0].SectionName != "Movies" {
+		t.Errorf("SectionName = %q, want Movies", names[0].SectionName)
+	}
+}
+
 func TestGetUsers(t *testing.T) {
 	t.Parallel()
 
@@ -178,6 +200,48 @@ func TestGetUser(t *testing.T) {
 	}
 	if u.FriendlyName != "Jon Snow" {
 		t.Errorf("FriendlyName = %q, want Jon Snow", u.FriendlyName)
+	}
+}
+
+func TestGetUserNames(t *testing.T) {
+	t.Parallel()
+
+	ts := newTestServer(t, "get_user_names", "test-key", []map[string]any{
+		{"user_id": 133788, "friendly_name": "Jon Snow"},
+	})
+	defer ts.Close()
+
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	names, err := c.GetUserNames(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if names[0].FriendlyName != "Jon Snow" {
+		t.Errorf("FriendlyName = %q, want Jon Snow", names[0].FriendlyName)
+	}
+}
+
+func TestGetHomeStats(t *testing.T) {
+	t.Parallel()
+
+	ts := newTestServer(t, "get_home_stats", "test-key", []map[string]any{
+		{"stat_id": "top_movies", "stat_type": "total_plays", "rows": []any{}},
+	})
+	defer ts.Close()
+
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	stats, err := c.GetHomeStats(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats[0].StatID != "top_movies" {
+		t.Errorf("StatID = %q, want top_movies", stats[0].StatID)
 	}
 }
 
@@ -351,6 +415,12 @@ func TestAPIError(t *testing.T) {
 	if apiErr.StatusCode != http.StatusUnauthorized {
 		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusUnauthorized)
 	}
+	if got := apiErr.Error(); got != "tautulli: HTTP 401: Invalid API key" {
+		t.Errorf("Error() = %q, want tautulli: HTTP 401: Invalid API key", got)
+	}
+	if got := (&tautulli.APIError{StatusCode: http.StatusBadGateway}).Error(); got != "tautulli: HTTP 502" {
+		t.Errorf("Error() without body = %q, want tautulli: HTTP 502", got)
+	}
 }
 
 func TestAPIErrorResult(t *testing.T) {
@@ -376,6 +446,9 @@ func TestAPIErrorResult(t *testing.T) {
 	var apiErr *tautulli.APIError
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("expected *APIError, got %T", err)
+	}
+	if got := apiErr.Error(); got != "tautulli: HTTP 200: something went wrong" {
+		t.Errorf("Error() = %q, want tautulli: HTTP 200: something went wrong", got)
 	}
 }
 
@@ -422,6 +495,27 @@ func TestGetUserWatchTimeStats(t *testing.T) {
 	}
 	if stats[0].TotalPlays != 3 {
 		t.Errorf("TotalPlays = %d, want 3", stats[0].TotalPlays)
+	}
+}
+
+func TestGetLibraryWatchTimeStats(t *testing.T) {
+	t.Parallel()
+
+	ts := newTestServer(t, "get_library_watch_time_stats", "test-key", []map[string]any{
+		{"query_days": 30, "total_plays": 9, "total_time": 9000},
+	})
+	defer ts.Close()
+
+	c, err := tautulli.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	stats, err := c.GetLibraryWatchTimeStats(context.Background(), "1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats[0].TotalPlays != 9 {
+		t.Errorf("TotalPlays = %d, want 9", stats[0].TotalPlays)
 	}
 }
 
@@ -476,6 +570,21 @@ func TestWithUserAgent(t *testing.T) {
 	}
 	if gotUA != "myapp/1.2.3" {
 		t.Errorf("User-Agent = %q, want %q", gotUA, "myapp/1.2.3")
+	}
+}
+
+func TestWithTimeout(t *testing.T) {
+	t.Parallel()
+
+	ts := newTestServer(t, "get_activity", "k", map[string]any{"stream_count": "0"})
+	defer ts.Close()
+
+	c, err := tautulli.New(ts.URL, "k", tautulli.WithTimeout(time.Second))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := c.GetActivity(context.Background()); err != nil {
+		t.Fatal(err)
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/golusoris/goenvoy/mediaserver/audiobookshelf"
 )
@@ -166,6 +167,29 @@ func TestGetMe(t *testing.T) {
 	}
 }
 
+func TestGetCollections(t *testing.T) {
+	t.Parallel()
+
+	ts := newTestServer(t, "/api/libraries/lib1/collections", "test-token", map[string]any{
+		"results": []map[string]any{
+			{"id": "c1", "libraryId": "lib1", "name": "Favorites"},
+		},
+	})
+	defer ts.Close()
+
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	collections, err := c.GetCollections(context.Background(), "lib1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if collections[0].Name != "Favorites" {
+		t.Errorf("Name = %q, want Favorites", collections[0].Name)
+	}
+}
+
 func TestGetServerInfo(t *testing.T) {
 	t.Parallel()
 
@@ -185,6 +209,41 @@ func TestGetServerInfo(t *testing.T) {
 	}
 	if info.Version != "2.5.0" {
 		t.Errorf("Version = %q, want 2.5.0", info.Version)
+	}
+}
+
+func TestSearch(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/libraries/lib1/search" {
+			t.Errorf("path = %q, want /api/libraries/lib1/search", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("q"); got != "dune" {
+			t.Errorf("q = %q, want dune", got)
+		}
+		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
+			t.Errorf("Authorization = %q, want Bearer test-token", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"book": "Dune"})
+	}))
+	defer ts.Close()
+
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	data, err := c.Search(context.Background(), "lib1", "dune")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got map[string]string
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("decode search response: %v", err)
+	}
+	if got["book"] != "Dune" {
+		t.Errorf("book = %q, want Dune", got["book"])
 	}
 }
 
@@ -211,6 +270,73 @@ func TestGetSessions(t *testing.T) {
 	}
 }
 
+func TestGetMediaProgress(t *testing.T) {
+	t.Parallel()
+
+	ts := newTestServer(t, "/api/me/progress/item1", "test-token", map[string]any{
+		"id": "p1", "libraryItemId": "item1", "progress": 0.5, "currentTime": 120.0,
+	})
+	defer ts.Close()
+
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	progress, err := c.GetMediaProgress(context.Background(), "item1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if progress.LibraryItemID != "item1" {
+		t.Errorf("LibraryItemID = %q, want item1", progress.LibraryItemID)
+	}
+}
+
+func TestGetAuthors(t *testing.T) {
+	t.Parallel()
+
+	ts := newTestServer(t, "/api/libraries/lib1/authors", "test-token", map[string]any{
+		"authors": []map[string]any{
+			{"id": "a1", "name": "Ursula K. Le Guin"},
+		},
+	})
+	defer ts.Close()
+
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	authors, err := c.GetAuthors(context.Background(), "lib1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if authors[0].Name != "Ursula K. Le Guin" {
+		t.Errorf("Name = %q, want Ursula K. Le Guin", authors[0].Name)
+	}
+}
+
+func TestGetSeries(t *testing.T) {
+	t.Parallel()
+
+	ts := newTestServer(t, "/api/libraries/lib1/series", "test-token", map[string]any{
+		"results": []map[string]any{
+			{"id": "s1", "name": "Earthsea"},
+		},
+	})
+	defer ts.Close()
+
+	c, err := audiobookshelf.New(ts.URL, "test-token")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	series, err := c.GetSeries(context.Background(), "lib1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if series[0].Name != "Earthsea" {
+		t.Errorf("Name = %q, want Earthsea", series[0].Name)
+	}
+}
+
 func TestAPIError(t *testing.T) {
 	t.Parallel()
 
@@ -234,6 +360,12 @@ func TestAPIError(t *testing.T) {
 	}
 	if apiErr.StatusCode != http.StatusForbidden {
 		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusForbidden)
+	}
+	if got := apiErr.Error(); got != "audiobookshelf: HTTP 403: Forbidden" {
+		t.Errorf("Error() = %q, want audiobookshelf: HTTP 403: Forbidden", got)
+	}
+	if got := (&audiobookshelf.APIError{StatusCode: http.StatusNotFound}).Error(); got != "audiobookshelf: HTTP 404" {
+		t.Errorf("Error() without body = %q, want audiobookshelf: HTTP 404", got)
 	}
 }
 
@@ -281,6 +413,21 @@ func TestWithUserAgent(t *testing.T) {
 	}
 	if gotUA != "myapp/1.2.3" {
 		t.Errorf("User-Agent = %q, want %q", gotUA, "myapp/1.2.3")
+	}
+}
+
+func TestWithTimeout(t *testing.T) {
+	t.Parallel()
+
+	ts := newTestServer(t, "/api/libraries", "k", map[string]any{"libraries": []any{}})
+	defer ts.Close()
+
+	c, err := audiobookshelf.New(ts.URL, "k", audiobookshelf.WithTimeout(time.Second))
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := c.GetLibraries(context.Background()); err != nil {
+		t.Fatal(err)
 	}
 }
 

@@ -686,14 +686,14 @@ func TestLoadTitleDumpHTTPError(t *testing.T) {
 	t.Parallel()
 
 	// LoadTitleDump uses a hardcoded URL so we cannot point it at httptest.
-	// Instead test the error path indirectly: a cancelled context will fail.
+	// Instead test the error path indirectly: a canceled context will fail.
 	c := New("testclient", 1)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
 	err := c.LoadTitleDump(ctx)
 	if err == nil {
-		t.Fatal("expected error from cancelled context")
+		t.Fatal("expected error from canceled context")
 	}
 }
 

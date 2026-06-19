@@ -63,6 +63,60 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestNewWithClientCredentials(t *testing.T) {
+	t.Parallel()
+
+	var callbackToken string
+	var callbackExpires int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/auth/token":
+			if r.Method != http.MethodPost {
+				t.Errorf("method = %s, want POST", r.Method)
+			}
+			if err := r.ParseForm(); err != nil {
+				t.Fatalf("ParseForm: %v", err)
+			}
+			if got := r.Form.Get("client_id"); got != "client-id" {
+				t.Errorf("client_id = %q, want client-id", got)
+			}
+			if got := r.Form.Get("client_secret"); got != "client-secret" {
+				t.Errorf("client_secret = %q, want client-secret", got)
+			}
+			json.NewEncoder(w).Encode(map[string]any{
+				"access_token": "generated-token",
+				"expires_in":   3600,
+				"token_type":   "Bearer",
+			})
+		case "/film/abc1":
+			if auth := r.Header.Get("Authorization"); auth != "Bearer generated-token" {
+				t.Errorf("Authorization = %q, want generated token", auth)
+			}
+			json.NewEncoder(w).Encode(letterboxd.Film{ID: "abc1", Name: "Token Film"})
+		default:
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	c := letterboxd.NewWithClientCredentials("client-id", "client-secret", metadata.WithBaseURL(srv.URL))
+	c.SetTokenCallback(func(accessToken string, expiresIn int) {
+		callbackToken = accessToken
+		callbackExpires = expiresIn
+	})
+	got, err := c.GetFilm(context.Background(), "abc1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "Token Film" {
+		t.Fatalf("Name = %q, want Token Film", got.Name)
+	}
+	if callbackToken != "generated-token" || callbackExpires != 3600 {
+		t.Fatalf("callback = %q/%d, want generated-token/3600", callbackToken, callbackExpires)
+	}
+}
+
 func TestAPIError(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -82,6 +136,20 @@ func TestAPIError(t *testing.T) {
 	}
 	if apiErr.StatusCode != http.StatusNotFound {
 		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusNotFound)
+	}
+}
+
+func TestAPIErrorString(t *testing.T) {
+	t.Parallel()
+
+	if got := (&letterboxd.APIError{StatusCode: http.StatusBadRequest, Message: "bad"}).Error(); got != "letterboxd: HTTP 400: bad" {
+		t.Fatalf("message Error() = %q", got)
+	}
+	if got := (&letterboxd.APIError{StatusCode: http.StatusBadGateway, RawBody: "gateway"}).Error(); got != "letterboxd: HTTP 502: gateway" {
+		t.Fatalf("raw Error() = %q", got)
+	}
+	if got := (&letterboxd.APIError{StatusCode: http.StatusTeapot}).Error(); got != "letterboxd: HTTP 418" {
+		t.Fatalf("status Error() = %q", got)
 	}
 }
 
