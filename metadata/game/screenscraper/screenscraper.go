@@ -147,6 +147,9 @@ type GameInfoOptions struct {
 }
 
 func (o *GameInfoOptions) params() url.Values {
+	if o == nil {
+		return nil
+	}
 	params := url.Values{}
 	if o.CRC != "" {
 		params.Set("crc", o.CRC)

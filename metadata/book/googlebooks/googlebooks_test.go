@@ -101,6 +101,29 @@ func TestSearchWithParams(t *testing.T) {
 	}
 }
 
+func TestSearchWithNilParams(t *testing.T) {
+	t.Parallel()
+
+	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("key"); got != "test-key" {
+			t.Errorf("key = %q, want test-key", got)
+		}
+		if got := r.URL.Query().Get("q"); got != "" {
+			t.Errorf("q = %q, want empty", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(googlebooks.VolumesResponse{TotalItems: 0})
+	})
+
+	resp, err := c.SearchWithParams(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.TotalItems != 0 {
+		t.Fatalf("TotalItems = %d, want 0", resp.TotalItems)
+	}
+}
+
 func TestGetVolume(t *testing.T) {
 	t.Parallel()
 

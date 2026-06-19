@@ -85,6 +85,22 @@ func TestSearchScenes(t *testing.T) {
 	}
 }
 
+func TestSearchScenesNilParams(t *testing.T) {
+	t.Parallel()
+
+	ts := newListServer(t, "/scenes", "test-token", []tpdb.Scene{{ID: 1, Title: "Scene"}})
+	defer ts.Close()
+
+	c := tpdb.New("test-token", metadata.WithBaseURL(ts.URL))
+	scenes, _, err := c.SearchScenes(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(scenes) != 1 {
+		t.Fatalf("len = %d, want 1", len(scenes))
+	}
+}
+
 func TestGetScene(t *testing.T) {
 	t.Parallel()
 
@@ -163,6 +179,22 @@ func TestSearchPerformers(t *testing.T) {
 	}
 	if pg.Total != 1 {
 		t.Errorf("Total = %d, want 1", pg.Total)
+	}
+}
+
+func TestSearchPerformersNilParams(t *testing.T) {
+	t.Parallel()
+
+	ts := newListServer(t, "/performers", "perf-token", []tpdb.Performer{{ID: 1, Name: "Performer"}})
+	defer ts.Close()
+
+	c := tpdb.New("perf-token", metadata.WithBaseURL(ts.URL))
+	perfs, _, err := c.SearchPerformers(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(perfs) != 1 {
+		t.Fatalf("len = %d, want 1", len(perfs))
 	}
 }
 

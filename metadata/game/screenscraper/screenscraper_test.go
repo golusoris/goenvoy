@@ -87,6 +87,32 @@ func TestGetGameInfo(t *testing.T) {
 	}
 }
 
+func TestGetGameInfoNilOptions(t *testing.T) {
+	t.Parallel()
+
+	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/jeuInfos.php" {
+			t.Errorf("path = %q, want /jeuInfos.php", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("crc"); got != "" {
+			t.Errorf("crc = %q, want empty", got)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"header":   map[string]any{"success": "true"},
+			"response": map[string]any{"jeu": map[string]any{"id": "3"}},
+		})
+	})
+
+	result, err := c.GetGameInfo(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Response.Game.ID != "3" {
+		t.Errorf("ID = %q, want 3", result.Response.Game.ID)
+	}
+}
+
 func TestSearchGames(t *testing.T) {
 	t.Parallel()
 
@@ -198,5 +224,84 @@ func TestAPIError(t *testing.T) {
 	}
 	if apiErr.StatusCode != http.StatusForbidden {
 		t.Errorf("StatusCode = %d, want 403", apiErr.StatusCode)
+	}
+}
+
+func TestAPIErrorString(t *testing.T) {
+	t.Parallel()
+
+	err := (&screenscraper.APIError{Status: "403 Forbidden", Body: "API closed"}).Error()
+	if err != "screenscraper: 403 Forbidden: API closed" {
+		t.Fatalf("Error() = %q", err)
+	}
+}
+
+func TestOptions(t *testing.T) {
+	t.Parallel()
+
+	custom := &http.Client{}
+	c := screenscraper.New(
+		"dev",
+		"pass",
+		"app",
+		screenscraper.WithHTTPClient(custom),
+		screenscraper.WithTimeout(0),
+		screenscraper.WithUserAgent("screenscraper-test"),
+	)
+	if c.HTTPClient() != custom {
+		t.Fatal("custom HTTP client not set")
+	}
+	if c.UserAgent() != "screenscraper-test" {
+		t.Fatalf("UserAgent = %q, want screenscraper-test", c.UserAgent())
+	}
+}
+
+func TestGetUserInfo(t *testing.T) {
+	t.Parallel()
+
+	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/ssuserInfos.php" {
+			t.Errorf("path = %q, want /ssuserInfos.php", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"header": map[string]any{"success": "true"},
+			"response": map[string]any{
+				"ssid":              "user",
+				"requeststoday":     "3",
+				"maxrequestsperday": "1000",
+			},
+		})
+	})
+
+	result, err := c.GetUserInfo(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Response.ID != "user" {
+		t.Fatalf("ID = %q, want user", result.Response.ID)
+	}
+}
+
+func TestGetInfraInfo(t *testing.T) {
+	t.Parallel()
+
+	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/ssinfraInfos.php" {
+			t.Errorf("path = %q, want /ssinfraInfos.php", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"header":   map[string]any{"success": "true"},
+			"response": map[string]any{"maxthreads": "12", "cpu": "ok"},
+		})
+	})
+
+	result, err := c.GetInfraInfo(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Response.MaxThreads != "12" {
+		t.Fatalf("MaxThreads = %q, want 12", result.Response.MaxThreads)
 	}
 }

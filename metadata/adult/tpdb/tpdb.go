@@ -140,6 +140,9 @@ type SceneSearchParams struct {
 }
 
 func (p *SceneSearchParams) values() url.Values {
+	if p == nil {
+		return nil
+	}
 	v := pageParams(p.Page, p.PerPage)
 	if p.Query != "" {
 		v.Set("q", p.Query)
@@ -239,6 +242,9 @@ type PerformerSearchParams struct {
 }
 
 func (p *PerformerSearchParams) values() url.Values {
+	if p == nil {
+		return nil
+	}
 	v := pageParams(p.Page, p.PerPage)
 	if p.Query != "" {
 		v.Set("q", p.Query)

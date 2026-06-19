@@ -28,7 +28,10 @@ func newTestClient(t *testing.T, handler http.HandlerFunc) *Client {
 func TestSearch(t *testing.T) {
 	t.Parallel()
 
-	c := newTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("query"); got != "inception" {
+			t.Errorf("query = %q, want inception", got)
+		}
 		json.NewEncoder(w).Encode(SearchResponse{
 			TotalCount: 1,
 			TotalPages: 1,
@@ -51,6 +54,52 @@ func TestSearch(t *testing.T) {
 	}
 	if len(resp.Data) != 1 || resp.Data[0].Attributes.Language != "en" {
 		t.Fatalf("unexpected response: %+v", resp)
+	}
+}
+
+func TestSearchNilParams(t *testing.T) {
+	t.Parallel()
+
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.RawQuery; got != "" {
+			t.Errorf("RawQuery = %q, want empty", got)
+		}
+		json.NewEncoder(w).Encode(SearchResponse{})
+	})
+
+	resp, err := c.Search(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.TotalCount != 0 {
+		t.Fatalf("TotalCount = %d, want 0", resp.TotalCount)
+	}
+}
+
+func TestSearchParentParams(t *testing.T) {
+	t.Parallel()
+
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if got := q.Get("parent_feature_id"); got != "42" {
+			t.Errorf("parent_feature_id = %q, want 42", got)
+		}
+		if got := q.Get("parent_imdb_id"); got != "123456" {
+			t.Errorf("parent_imdb_id = %q, want 123456", got)
+		}
+		if got := q.Get("parent_tmdb_id"); got != "654321" {
+			t.Errorf("parent_tmdb_id = %q, want 654321", got)
+		}
+		json.NewEncoder(w).Encode(SearchResponse{})
+	})
+
+	_, err := c.Search(context.Background(), &SearchParams{
+		ParentFeatureID: 42,
+		ParentIMDBID:    123456,
+		ParentTMDBID:    654321,
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -182,6 +231,31 @@ func TestPopular(t *testing.T) {
 	}
 }
 
+func TestLatest(t *testing.T) {
+	t.Parallel()
+
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("languages"); got != "en" {
+			t.Errorf("languages = %q, want en", got)
+		}
+		json.NewEncoder(w).Encode(SearchResponse{
+			TotalCount: 1,
+			Data: []Subtitle{{
+				ID:         "latest-1",
+				Attributes: SubtitleAttributes{Language: "en"},
+			}},
+		})
+	})
+
+	resp, err := c.Latest(context.Background(), "EN")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(resp.Data) != 1 {
+		t.Fatalf("len(Data) = %d, want 1", len(resp.Data))
+	}
+}
+
 func TestAPIError(t *testing.T) {
 	t.Parallel()
 
@@ -199,6 +273,15 @@ func TestAPIError(t *testing.T) {
 	}
 	if apiErr.StatusCode != http.StatusTooManyRequests {
 		t.Fatalf("unexpected status: %d", apiErr.StatusCode)
+	}
+}
+
+func TestAPIErrorString(t *testing.T) {
+	t.Parallel()
+
+	got := (&APIError{Status: "429", Body: "rate limited"}).Error()
+	if got != "opensubtitles: 429: rate limited" {
+		t.Fatalf("Error() = %q", got)
 	}
 }
 

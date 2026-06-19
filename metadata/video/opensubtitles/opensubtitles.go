@@ -91,49 +91,48 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, v any)
 
 // Search searches for subtitles matching the given parameters.
 func (c *Client) Search(ctx context.Context, p *SearchParams) (*SearchResponse, error) {
-	params := url.Values{}
-	if p.Query != "" {
-		params.Set("query", p.Query)
-	}
-	if p.IMDBID != 0 {
-		params.Set("imdb_id", strconv.Itoa(p.IMDBID))
-	}
-	if p.TMDBID != 0 {
-		params.Set("tmdb_id", strconv.Itoa(p.TMDBID))
-	}
-	if p.Languages != "" {
-		params.Set("languages", p.Languages)
-	}
-	if p.MovieHash != "" {
-		params.Set("moviehash", p.MovieHash)
-	}
-	if p.Type != "" {
-		params.Set("type", p.Type)
-	}
-	if p.SeasonNumber != 0 {
-		params.Set("season_number", strconv.Itoa(p.SeasonNumber))
-	}
-	if p.EpisodeNumber != 0 {
-		params.Set("episode_number", strconv.Itoa(p.EpisodeNumber))
-	}
-	if p.Year != 0 {
-		params.Set("year", strconv.Itoa(p.Year))
-	}
-	if p.Page != 0 {
-		params.Set("page", strconv.Itoa(p.Page))
-	}
-	if p.OrderBy != "" {
-		params.Set("order_by", p.OrderBy)
-	}
-	if p.OrderDirection != "" {
-		params.Set("order_direction", p.OrderDirection)
-	}
+	params := p.values()
 
 	var sr SearchResponse
 	if err := c.get(ctx, "/subtitles", params, &sr); err != nil {
 		return nil, err
 	}
 	return &sr, nil
+}
+
+func (p *SearchParams) values() url.Values {
+	params := url.Values{}
+	if p != nil {
+		setStringParam(params, "query", p.Query)
+		setIntParam(params, "imdb_id", p.IMDBID)
+		setIntParam(params, "tmdb_id", p.TMDBID)
+		setStringParam(params, "languages", p.Languages)
+		setStringParam(params, "moviehash", p.MovieHash)
+		setStringParam(params, "type", p.Type)
+		setIntParam(params, "season_number", p.SeasonNumber)
+		setIntParam(params, "episode_number", p.EpisodeNumber)
+		setIntParam(params, "parent_feature_id", p.ParentFeatureID)
+		setIntParam(params, "parent_imdb_id", p.ParentIMDBID)
+		setIntParam(params, "parent_tmdb_id", p.ParentTMDBID)
+		setIntParam(params, "year", p.Year)
+		setIntParam(params, "page", p.Page)
+		setStringParam(params, "order_by", p.OrderBy)
+		setStringParam(params, "order_direction", p.OrderDirection)
+	}
+
+	return params
+}
+
+func setStringParam(params url.Values, name, value string) {
+	if value != "" {
+		params.Set(name, value)
+	}
+}
+
+func setIntParam(params url.Values, name string, value int) {
+	if value != 0 {
+		params.Set(name, strconv.Itoa(value))
+	}
 }
 
 // Download requests a download link for a subtitle file.
