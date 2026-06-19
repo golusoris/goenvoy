@@ -1,5 +1,5 @@
 module github.com/golusoris/goenvoy/arr/radarr
 
-go 1.26.1
+go 1.26.4
 
 require github.com/golusoris/goenvoy/arr/v2 v2.1.0
