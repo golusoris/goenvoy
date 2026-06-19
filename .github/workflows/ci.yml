@@ -255,16 +255,25 @@ jobs:
             exit 0
           fi
 
-          apidiff -m "$MOD_IMPORT" "$PREV_WT/$MOD_PATH" > /tmp/prev.txt
-          apidiff -m "$MOD_IMPORT" "$MOD_PATH"          > /tmp/current.txt
+          # apidiff -w consults the module in the current directory's go.mod,
+          # so write each fingerprint from inside its own module directory.
+          ( cd "$PREV_WT/$MOD_PATH" && apidiff -m -w /tmp/prev.fp "$MOD_IMPORT" )
+          ( cd "$MOD_PATH"          && apidiff -m -w /tmp/cur.fp  "$MOD_IMPORT" )
 
-          if [ ! -s /tmp/prev.txt ] || [ ! -s /tmp/current.txt ]; then
-            echo "::error::apidiff produced an empty fingerprint (prev=$(stat -c%s /tmp/prev.txt) current=$(stat -c%s /tmp/current.txt)) — investigate the previous-tag build."
+          if [ ! -s /tmp/prev.fp ] || [ ! -s /tmp/cur.fp ]; then
+            echo "::error::apidiff produced an empty fingerprint (prev=$(stat -c%s /tmp/prev.fp) current=$(stat -c%s /tmp/cur.fp)) — investigate the previous-tag build."
             exit 1
           fi
 
-          if ! apidiff /tmp/prev.txt /tmp/current.txt; then
-            echo "::error::Breaking API change in $MOD_PATH vs $PREV_TAG — add a 'BREAKING CHANGE:' + 'Migration:' footer or bump major."
+          # apidiff exits 0 even when it finds incompatible changes, so the gate
+          # keys off the -incompatible output (module fingerprints compare with -m).
+          if ! INCOMPAT=$(apidiff -incompatible -m /tmp/prev.fp /tmp/cur.fp 2>&1); then
+            echo "::error::apidiff comparison failed: $INCOMPAT"
+            exit 1
+          fi
+          if [ -n "$INCOMPAT" ]; then
+            echo "::error::Breaking API change in $MOD_PATH vs $PREV_TAG — bump the module major version (/vN) or revert the break:"
+            echo "$INCOMPAT"
             exit 1
           fi
           echo "API backwards-compatible with $PREV_TAG."
