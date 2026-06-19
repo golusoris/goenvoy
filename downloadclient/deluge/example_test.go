@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/golusoris/goenvoy/downloadclient/deluge"
+	"github.com/golusoris/goenvoy/downloadclient/deluge/v2"
 )
 
 func Example() {

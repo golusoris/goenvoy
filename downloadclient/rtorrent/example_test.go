@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/golusoris/goenvoy/downloadclient/rtorrent"
+	"github.com/golusoris/goenvoy/downloadclient/rtorrent/v2"
 )
 
 func Example() {

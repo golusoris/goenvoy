@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golusoris/goenvoy/downloadclient/transmission"
+	"github.com/golusoris/goenvoy/downloadclient/transmission/v2"
 )
 
 type rpcRequest struct {

@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/golusoris/goenvoy/mediaserver/emby/v2"
+	"github.com/golusoris/goenvoy/mediaserver/emby/v3"
 )
 
 func newTestServer(t *testing.T, wantPath string, response any) *httptest.Server {

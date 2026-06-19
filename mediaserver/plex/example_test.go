@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/golusoris/goenvoy/mediaserver/plex"
+	"github.com/golusoris/goenvoy/mediaserver/plex/v2"
 )
 
 func Example() {

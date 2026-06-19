@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/golusoris/goenvoy/downloadclient/nzbget"
+	"github.com/golusoris/goenvoy/downloadclient/nzbget/v2"
 )
 
 type rpcRequest struct {

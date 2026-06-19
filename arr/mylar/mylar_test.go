@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/golusoris/goenvoy/arr/mylar/v2"
+	"github.com/golusoris/goenvoy/arr/mylar/v3"
 )
 
 func newTestServer(t *testing.T, _ string, response any) *mylar.Client {

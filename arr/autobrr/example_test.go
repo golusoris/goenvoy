@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/golusoris/goenvoy/arr/autobrr"
+	"github.com/golusoris/goenvoy/arr/autobrr/v2"
 )
 
 func Example() {

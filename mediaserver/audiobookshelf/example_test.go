@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/golusoris/goenvoy/mediaserver/audiobookshelf"
+	"github.com/golusoris/goenvoy/mediaserver/audiobookshelf/v2"
 )
 
 func Example() {

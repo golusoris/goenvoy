@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golusoris/goenvoy/mediaserver/tautulli"
+	"github.com/golusoris/goenvoy/mediaserver/tautulli/v2"
 )
 
 type apiResp struct {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golusoris/goenvoy/mediaserver/jellyfin/v2"
+	"github.com/golusoris/goenvoy/mediaserver/jellyfin/v3"
 )
 
 func newTestServer(t *testing.T, wantPath string, response any) *httptest.Server {

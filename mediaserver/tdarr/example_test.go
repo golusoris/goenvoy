@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/golusoris/goenvoy/mediaserver/tdarr/v2"
+	"github.com/golusoris/goenvoy/mediaserver/tdarr/v3"
 )
 
 func Example() {

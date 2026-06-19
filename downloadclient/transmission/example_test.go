@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/golusoris/goenvoy/downloadclient/transmission"
+	"github.com/golusoris/goenvoy/downloadclient/transmission/v2"
 )
 
 func Example() {

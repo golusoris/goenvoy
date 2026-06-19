@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golusoris/goenvoy/mediaserver/audiobookshelf"
+	"github.com/golusoris/goenvoy/mediaserver/audiobookshelf/v2"
 )
 
 func newTestServer(t *testing.T, wantPath, wantToken string, response any) *httptest.Server {

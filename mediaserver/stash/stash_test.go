@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/golusoris/goenvoy/mediaserver/stash"
+	"github.com/golusoris/goenvoy/mediaserver/stash/v2"
 )
 
 func newGQLServer(t *testing.T, wantKey, dataField string, response any) *httptest.Server {

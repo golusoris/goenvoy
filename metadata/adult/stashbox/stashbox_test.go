@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/golusoris/goenvoy/metadata"
-	"github.com/golusoris/goenvoy/metadata/adult/stashbox"
+	"github.com/golusoris/goenvoy/metadata/adult/stashbox/v2"
 )
 
 type gqlRequest struct {

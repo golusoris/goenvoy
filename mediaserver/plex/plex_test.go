@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/golusoris/goenvoy/mediaserver/plex"
+	"github.com/golusoris/goenvoy/mediaserver/plex/v2"
 )
 
 type testResponse struct {

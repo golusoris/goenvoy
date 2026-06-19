@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golusoris/goenvoy/arr/nzbhydra"
+	"github.com/golusoris/goenvoy/arr/nzbhydra/v2"
 )
 
 const newznabXML = `<?xml version="1.0" encoding="UTF-8"?>

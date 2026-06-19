@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/golusoris/goenvoy/metadata/adult/stashbox"
+	"github.com/golusoris/goenvoy/metadata/adult/stashbox/v2"
 )
 
 func Example() {

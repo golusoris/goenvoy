@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/golusoris/goenvoy/mediaserver/navidrome"
+	"github.com/golusoris/goenvoy/mediaserver/navidrome/v2"
 )
 
 func Example() {
