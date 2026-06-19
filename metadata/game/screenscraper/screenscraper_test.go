@@ -8,14 +8,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/golusoris/goenvoy/metadata/game/screenscraper"
+	"github.com/golusoris/goenvoy/metadata/game/screenscraper/v2"
 )
 
 func setup(t *testing.T, handler http.HandlerFunc) *screenscraper.Client {
 	t.Helper()
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
-	return screenscraper.New("testdev", "testpass", "testapp",
+	return screenscraper.New(
+		"testdev", "testpass", "testapp",
 		screenscraper.WithBaseURL(srv.URL),
 		screenscraper.WithUser("user", "userpass"),
 	)
