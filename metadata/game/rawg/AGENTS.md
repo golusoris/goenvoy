@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://rawg.io/apidocs>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-game-rawg.md](../../docs/upstream/metadata-game-rawg.md)
+- Details: [docs/upstream/metadata-game-rawg.md](../../../docs/upstream/metadata-game-rawg.md)
 
 ## Auth model
 

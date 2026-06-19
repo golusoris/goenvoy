@@ -4,9 +4,9 @@
 
 ## Upstream API
 
-- Canonical docs: <https://opensubtitles.stoplight.io/docs/opensubtitles-api/>
-- Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-video-opensubtitles.md](../../docs/upstream/metadata-video-opensubtitles.md)
+- Canonical docs: <https://opensubtitles.stoplight.io/docs/opensubtitles-api/b1eb44d4c8502-open-subtitles-api>
+- Last verified: 2026-06-14
+- Details: [docs/upstream/metadata-video-opensubtitles.md](../../../docs/upstream/metadata-video-opensubtitles.md)
 
 ## Auth model
 

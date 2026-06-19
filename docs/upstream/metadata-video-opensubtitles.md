@@ -1,13 +1,13 @@
 ---
 service: OpenSubtitles
-url: https://opensubtitles.stoplight.io/docs/opensubtitles-api/
-last_verified: 2026-04-15
+url: https://opensubtitles.stoplight.io/docs/opensubtitles-api/b1eb44d4c8502-open-subtitles-api
+last_verified: 2026-06-14
 ---
 
 # Upstream API — OpenSubtitles
 
-- **Canonical docs:** <https://opensubtitles.stoplight.io/docs/opensubtitles-api/>
-- **Last verified:** 2026-04-15
+- **Canonical docs:** <https://opensubtitles.stoplight.io/docs/opensubtitles-api/b1eb44d4c8502-open-subtitles-api>
+- **Last verified:** 2026-06-14
 
 ## What this API does
 

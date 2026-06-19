@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://docs.anilist.co/>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-anime-anilist.md](../../docs/upstream/metadata-anime-anilist.md)
+- Details: [docs/upstream/metadata-anime-anilist.md](../../../docs/upstream/metadata-anime-anilist.md)
 
 ## Auth model
 

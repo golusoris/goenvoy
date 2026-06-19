@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://simkl.docs.apiary.io/>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-tracking-simkl.md](../../docs/upstream/metadata-tracking-simkl.md)
+- Details: [docs/upstream/metadata-tracking-simkl.md](../../../docs/upstream/metadata-tracking-simkl.md)
 
 ## Auth model
 

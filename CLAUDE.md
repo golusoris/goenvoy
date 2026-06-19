@@ -36,12 +36,18 @@ Located in `.claude/hooks/`:
 Read [.workingdir/PRINCIPLES.md](.workingdir/PRINCIPLES.md) first. Quick hitlist:
 
 - Pure stdlib. No imports outside `net/http`, `encoding/json`, `encoding/xml`, `crypto/*`, `context`, `net/url`, `net/http/httptest`.
-- `New(baseURL, apiKey) → *Client` constructor shape.
+- `New(baseURL, apiKey string, opts ...Option) (*Client, error)` constructor shape, unless the module's `AGENTS.md` documents a public-key-only or OAuth exception.
 - Functional options (`Option` + `With*`).
 - Every method takes `context.Context` first.
 - Every module has an `APIError`.
 - Every response body is `defer resp.Body.Close()`-ed.
 - `//nolint` needs a same-line justification.
+
+## Working agreements
+
+- Use the structured question popup when a decision is unclear and operationally risky; otherwise keep moving with the repo's established conventions.
+- Update [.workingdir/STATE.md](.workingdir/STATE.md) as significant audit findings are fixed, confirmed, or ruled out.
+- A hardening pass should ship the full set: code fixes, agent/tooling drift fixes, CI/local-gate parity, upstream-doc refreshes, and a verification summary.
 
 ## Don't
 

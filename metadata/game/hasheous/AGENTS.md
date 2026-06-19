@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://hasheous.org/>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-game-hasheous.md](../../docs/upstream/metadata-game-hasheous.md)
+- Details: [docs/upstream/metadata-game-hasheous.md](../../../docs/upstream/metadata-game-hasheous.md)
 
 ## Auth model
 

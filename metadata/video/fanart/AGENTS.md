@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://fanarttv.docs.apiary.io/>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-video-fanart.md](../../docs/upstream/metadata-video-fanart.md)
+- Details: [docs/upstream/metadata-video-fanart.md](../../../docs/upstream/metadata-video-fanart.md)
 
 ## Auth model
 

@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://listenbrainz.readthedocs.io/>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-tracking-listenbrainz.md](../../docs/upstream/metadata-tracking-listenbrainz.md)
+- Details: [docs/upstream/metadata-tracking-listenbrainz.md](../../../docs/upstream/metadata-tracking-listenbrainz.md)
 
 ## Auth model
 

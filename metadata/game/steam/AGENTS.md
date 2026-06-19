@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://steamcommunity.com/dev>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-game-steam.md](../../docs/upstream/metadata-game-steam.md)
+- Details: [docs/upstream/metadata-game-steam.md](../../../docs/upstream/metadata-game-steam.md)
 
 ## Auth model
 

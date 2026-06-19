@@ -1,58 +1,66 @@
-# Claude Code hooks — goenvoy
+# Claude Code hooks - goenvoy
 
-Three hooks enforce this repo's invariants at tool-call time. They run locally in your Claude Code session and refuse operations that violate the project rules.
+Working hook scripts wired from [`../settings.json`](../settings.json). Each
+script reads the Claude Code hook JSON envelope on stdin, inspects the tool
+input, and either allows (exit 0), blocks with a rejection reason (exit 2), or
+runs a post-action formatter.
 
-## Hooks
+The bar for adding rules here is: **would it save an edit cycle compared to
+catching the same thing in CI?** `golangci-lint`, `gosec`, `govulncheck`, and
+the module test matrix are authoritative. Hooks exist so the agent does not
+spend a round trip on rules it already knows.
 
-### `guard-bash.sh` — PreToolUse / Bash
-Blocks:
-- `--no-verify` (disables pre-commit/push hooks)
-- `--no-gpg-sign` (bypasses commit signing)
-- `git push --force[-with-lease] ... main|master`
-- `git reset --hard main|master`
-- `rm -rf .git*`
-- `rm -rf .workingdir*` (destroys plan + state)
+## Active Hooks
 
-### `guard-go-edit.sh` — PreToolUse / Edit|Write
-Blocks Go-file edits that violate the pure-stdlib invariant or contain obvious client-lib footguns:
-1. **Non-stdlib imports** — `github.com/...`, `gopkg.in/...`, `gitlab.com/...`, `bitbucket.org/...`. `golang.org/x/...` is allowed. (Enforces ADR-0001.)
-2. **`InsecureSkipVerify: true`** — requires same-line `//nolint:gosec // <reason>`.
-3. **`//nolint`** — requires same-line `// <reason>` justification.
-4. **Live-API URLs in `*_test.go`** — tests must use `httptest.NewServer`; a denylist of known upstream hosts is blocked.
+| Hook | Event | Matcher | Exit 2 triggers |
+|---|---|---|---|
+| [`guard-bash.sh`](guard-bash.sh) | PreToolUse | `Bash` | `--no-verify`, `--no-gpg-sign`, force-push to main/master, `reset --hard main/master`, `rm -rf .git`, `rm -rf .workingdir` |
+| [`guard-go-edit.sh`](guard-go-edit.sh) | PreToolUse | `Edit\|Write` on `*.go` | Non-stdlib imports, unjustified `InsecureSkipVerify: true`, unjustified `//nolint`, live upstream URLs in tests |
+| [`format-go-write.sh`](format-go-write.sh) | PostToolUse | `Edit\|Write` on `*.go` | Never blocks; runs `gofumpt -w` and `gci write` when those tools are on PATH |
 
-### `format-go-write.sh` — PostToolUse / Edit|Write
-After every Go-file write, runs:
-- `gofumpt -w <file>` (if installed)
-- `gci write --skip-generated -s standard -s default -s 'prefix(github.com/golusoris/goenvoy)' <file>` (if installed)
+## Path Notes
 
-Silently skips when either tool is missing — CI catches formatting regressions.
+- `guard-go-edit.sh` does not exempt `*_test.go` from the stdlib check; tests
+  must also stay pure stdlib.
+- `golang.org/x/...` imports are allowed where needed for Go project tooling.
+- The live-API host denylist is intentionally small. Add hosts when a real
+  regression appears.
 
-## Exemptions
+## Why These Rules
 
-- `guard-go-edit.sh` does **not** exempt `*_test.go` from the stdlib check — tests must also be stdlib-only.
-- `golang.org/x/...` imports are allowed everywhere (they're effectively stdlib extensions).
-- The live-API host denylist is small on purpose (four hosts today). Add to it when you see a regression.
+- **Pure stdlib** - ADR-0001 is load-bearing for the small client modules.
+- **No silent TLS weakening** - `InsecureSkipVerify: true` needs a same-line
+  `//nolint:gosec // <reason>` justification.
+- **`//nolint` needs justification** - CI enforces this; catching it locally
+  saves one push and wait cycle.
+- **No live API tests** - goenvoy tests use `httptest`; secrets and network
+  flakiness do not belong in module tests.
 
-## Smoke-testing a hook
+## Smoke-Testing A Hook
 
-Each hook reads a JSON payload on stdin. You can smoke-test without Claude Code:
+Each script reads the hook JSON envelope on stdin. To dry-run locally:
 
 ```bash
-echo '{"tool_input":{"command":"git push --force origin main"}}' | .claude/hooks/guard-bash.sh
-# → exit 2, stderr: "blocked by ... force-push to main/master blocked..."
+printf '%s' '{"tool_input":{"command":"git push --force origin main"}}' \
+  | .claude/hooks/guard-bash.sh; echo "exit=$?"
 
-echo '{"tool_name":"Write","tool_input":{"file_path":"/tmp/x.go","content":"import \"github.com/foo/bar\""}}' | .claude/hooks/guard-go-edit.sh
-# → exit 2, stderr: "non-stdlib import blocked..."
+printf '%s' '{"tool_name":"Write","tool_input":{"file_path":"/tmp/x.go","content":"import \"github.com/foo/bar\""}}' \
+  | .claude/hooks/guard-go-edit.sh; echo "exit=$?"
 
-echo '{"tool_input":{"file_path":"/tmp/x.go"}}' | .claude/hooks/format-go-write.sh
-# → exit 0 (no-op for missing file)
+printf '%s' '{"tool_input":{"file_path":"/tmp/x.go"}}' \
+  | .claude/hooks/format-go-write.sh; echo "exit=$?"
 ```
 
-Exit code 0 = allowed. Exit code 2 = blocked (reason on stderr).
+A blocking hook returns exit code 2 and prints its reason to stderr; a passing
+hook returns 0 silently.
 
-## Adding a new rule
+## Settings Files - Tracked Vs Personal
 
-1. Edit the relevant hook script.
-2. Smoke-test with the snippet above.
-3. Update this README with the new rule.
-4. If the rule enforces an invariant also checkable in CI, add the equivalent linter/gate in [.golangci.yml](../../.golangci.yml) or [.github/workflows/ci.yml](../../.github/workflows/ci.yml) — hooks are best-effort; CI is the ground truth.
+- [`../settings.json`](../settings.json) - team-shared, checked in. This is
+  where the hook wiring lives.
+- `../settings.local.json` - personal, gitignored. User-specific overrides and
+  API key paths go here.
+- `../scheduled_tasks.lock` - runtime lockfile, gitignored.
+
+If personal Claude files start showing up in `git status`, check
+[`.gitignore`](../../.gitignore) before committing them.

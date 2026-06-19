@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://www.discogs.com/developers/>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-music-discogs.md](../../docs/upstream/metadata-music-discogs.md)
+- Details: [docs/upstream/metadata-music-discogs.md](../../../docs/upstream/metadata-music-discogs.md)
 
 ## Auth model
 

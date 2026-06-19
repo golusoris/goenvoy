@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://api-docs.letterboxd.com/>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-tracking-letterboxd.md](../../docs/upstream/metadata-tracking-letterboxd.md)
+- Details: [docs/upstream/metadata-tracking-letterboxd.md](../../../docs/upstream/metadata-tracking-letterboxd.md)
 
 ## Auth model
 

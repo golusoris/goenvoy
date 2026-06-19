@@ -4,8 +4,8 @@
 
 ## Upstream API
 
-- Canonical docs: <https://komga.org/docs/openapi/>
-- Last verified: 2026-04-15
+- Canonical docs: <https://komga.org/docs/openapi/komga-api/>
+- Last verified: 2026-06-14
 - Details: [docs/upstream/mediaserver-komga.md](../../docs/upstream/mediaserver-komga.md)
 
 ## Auth model

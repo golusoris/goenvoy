@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://developer.spotify.com/documentation/web-api>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-music-spotify.md](../../docs/upstream/metadata-music-spotify.md)
+- Details: [docs/upstream/metadata-music-spotify.md](../../../docs/upstream/metadata-music-spotify.md)
 
 ## Auth model
 

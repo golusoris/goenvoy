@@ -4,8 +4,8 @@
 
 ## Upstream API
 
-- Canonical docs: <https://autobrr.com/reference/api>
-- Last verified: 2026-04-15
+- Canonical docs: <https://autobrr.com/api>
+- Last verified: 2026-06-14
 - Details: [docs/upstream/arr-autobrr.md](../../docs/upstream/arr-autobrr.md)
 
 ## Auth model

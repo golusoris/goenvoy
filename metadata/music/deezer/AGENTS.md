@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://developers.deezer.com/api>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-music-deezer.md](../../docs/upstream/metadata-music-deezer.md)
+- Details: [docs/upstream/metadata-music-deezer.md](../../../docs/upstream/metadata-music-deezer.md)
 
 ## Auth model
 

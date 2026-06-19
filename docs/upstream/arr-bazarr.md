@@ -1,17 +1,18 @@
 ---
 service: Bazarr
-url: https://wiki.bazarr.media/Additional-Configuration/API/
-last_verified: 2026-04-15
+url: https://wiki.bazarr.media/
+last_verified: 2026-06-14
 ---
 
 # Upstream API — Bazarr
 
-- **Canonical docs:** <https://wiki.bazarr.media/Additional-Configuration/API/>
-- **Last verified:** 2026-04-15
+- **Canonical docs:** <https://wiki.bazarr.media/>
+- **Last verified:** 2026-06-14
 
 ## What this API does
 
-Bazarr — companion to Sonarr/Radarr for subtitle downloads.
+Bazarr — companion to Sonarr/Radarr for subtitle downloads. The old API-specific
+wiki page currently returns 404; this client targets Bazarr's `/api` endpoints.
 
 ## Related
 

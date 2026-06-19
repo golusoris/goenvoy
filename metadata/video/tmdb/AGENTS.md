@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://developer.themoviedb.org/reference/intro/getting-started>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-video-tmdb.md](../../docs/upstream/metadata-video-tmdb.md)
+- Details: [docs/upstream/metadata-video-tmdb.md](../../../docs/upstream/metadata-video-tmdb.md)
 
 ## Auth model
 

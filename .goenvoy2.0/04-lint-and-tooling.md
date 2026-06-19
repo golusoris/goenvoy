@@ -233,7 +233,7 @@ formatters:
 
 **Behavioural impact**:
 
-- `depguard` + `gomodguard` will fire on **any existing test file importing `testify`**. First-pass rollout: expect zero hits (current tree verified pure-stdlib — `go.mod` files have no `require` blocks beyond `go 1.26.1`). If a module has a `testify` import, choose: (a) rewrite to `testing` + `if ... t.Fatalf(...)` (preferred; fast), or (b) file an ADR to exempt that module.
+- `depguard` + `gomodguard` will fire on **any existing test file importing `testify`**. First-pass rollout: expect zero hits (current tree verified pure-stdlib — `go.mod` files have no `require` blocks beyond `go 1.26.4`). If a module has a `testify` import, choose: (a) rewrite to `testing` + `if ... t.Fatalf(...)` (preferred; fast), or (b) file an ADR to exempt that module.
 - `forbidigo` on `fmt.Print*` — check each module's `*.go` (excluding `*_test.go`, `example_test.go`, `doc.go`). Replace any with `return fmt.Errorf(...)`.
 - `funlen`/`gocognit` may flag a few long decode functions. Refactor or `//nolint:funlen // API mirrors upstream schema, splitting adds no clarity`.
 

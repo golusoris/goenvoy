@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://github.com/stashapp/stash-box>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-adult-stashbox.md](../../docs/upstream/metadata-adult-stashbox.md)
+- Details: [docs/upstream/metadata-adult-stashbox.md](../../../docs/upstream/metadata-adult-stashbox.md)
 
 ## Auth model
 

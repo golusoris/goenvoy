@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://www.steamgriddb.com/api/v2>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-game-steamgriddb.md](../../docs/upstream/metadata-game-steamgriddb.md)
+- Details: [docs/upstream/metadata-game-steamgriddb.md](../../../docs/upstream/metadata-game-steamgriddb.md)
 
 ## Auth model
 

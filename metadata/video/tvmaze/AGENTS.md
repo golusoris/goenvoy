@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://www.tvmaze.com/api>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-video-tvmaze.md](../../docs/upstream/metadata-video-tvmaze.md)
+- Details: [docs/upstream/metadata-video-tvmaze.md](../../../docs/upstream/metadata-video-tvmaze.md)
 
 ## Auth model
 

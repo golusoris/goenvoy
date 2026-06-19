@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://openlibrary.org/developers/api>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-book-openlibrary.md](../../docs/upstream/metadata-book-openlibrary.md)
+- Details: [docs/upstream/metadata-book-openlibrary.md](../../../docs/upstream/metadata-book-openlibrary.md)
 
 ## Auth model
 

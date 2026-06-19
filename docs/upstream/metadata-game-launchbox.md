@@ -1,17 +1,19 @@
 ---
 service: LaunchBox
-url: https://gamesdb.launchbox-app.com/api/documentation
-last_verified: 2026-04-15
+url: https://gamesdb.launchbox-app.com/
+last_verified: 2026-06-14
 ---
 
 # Upstream API — LaunchBox
 
-- **Canonical docs:** <https://gamesdb.launchbox-app.com/api/documentation>
-- **Last verified:** 2026-04-15
+- **Canonical docs:** <https://gamesdb.launchbox-app.com/>
+- **Last verified:** 2026-06-14
 
 ## What this API does
 
-LaunchBox Games Database — retro + modern games metadata.
+LaunchBox Games Database — retro + modern games metadata. The client uses the
+public bulk archive at <https://gamesdb.launchbox-app.com/Metadata.zip>; the old
+API documentation URL currently returns 404.
 
 ## Related
 

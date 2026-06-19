@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://api-docs.igdb.com/>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-game-igdb.md](../../docs/upstream/metadata-game-igdb.md)
+- Details: [docs/upstream/metadata-game-igdb.md](../../../docs/upstream/metadata-game-igdb.md)
 
 ## Auth model
 

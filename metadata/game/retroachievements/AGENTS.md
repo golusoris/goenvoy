@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://api-docs.retroachievements.org/>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-game-retroachievements.md](../../docs/upstream/metadata-game-retroachievements.md)
+- Details: [docs/upstream/metadata-game-retroachievements.md](../../../docs/upstream/metadata-game-retroachievements.md)
 
 ## Auth model
 

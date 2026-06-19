@@ -22,7 +22,7 @@ The user says "add a client for <service>" and you need to create an entire new 
 
 1. Verify the target directory does not exist (`ls <category>/<service>` → must error).
 2. Create `<category>/<service>/` and inside it:
-   - `go.mod` — `module github.com/golusoris/goenvoy/<category>/<service>` · `go 1.26.1`. No `require` block (pure stdlib).
+   - `go.mod` — `module github.com/golusoris/goenvoy/<category>/<service>` · `go 1.26.4`. No `require` block (pure stdlib).
    - `doc.go` — package-level comment: one sentence, ends with a period.
    - `types.go` — placeholder struct for `<Service>Response` + `APIError`.
    - `<service>.go` — `New(baseURL, apiKey string, opts ...Option) (*Client, error)` + `Option` type + `WithHTTPClient` + `WithTimeout` + `WithHeader` + helper `do(ctx, method, path, body, out) error`.

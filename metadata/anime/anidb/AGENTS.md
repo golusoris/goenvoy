@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://wiki.anidb.net/API>
 - Last verified: 2026-04-15
-- Details: [docs/upstream/metadata-anime-anidb.md](../../docs/upstream/metadata-anime-anidb.md)
+- Details: [docs/upstream/metadata-anime-anidb.md](../../../docs/upstream/metadata-anime-anidb.md)
 
 ## Auth model
 

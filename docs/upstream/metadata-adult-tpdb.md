@@ -1,17 +1,19 @@
 ---
 service: ThePornDB
-url: https://theporndb.net/docs/api
-last_verified: 2026-04-15
+url: https://theporndb.net/
+last_verified: 2026-06-14
 ---
 
 # Upstream API — ThePornDB
 
-- **Canonical docs:** <https://theporndb.net/docs/api>
-- **Last verified:** 2026-04-15
+- **Canonical docs:** <https://theporndb.net/>
+- **Last verified:** 2026-06-14
 
 ## What this API does
 
-ThePornDB — adult-video metadata. Bearer token.
+ThePornDB — adult-video metadata. Bearer token. The old API docs URL currently
+returns 404, so this entry tracks the service home until upstream publishes a
+stable API reference again.
 
 ## Related
 
