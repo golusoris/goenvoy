@@ -76,7 +76,7 @@ linters:
     - testifylint
     # supply-chain
     - gomoddirectives
-    - gomodguard
+    - gomodguard_v2
 
   settings:
     gocyclo:
@@ -145,12 +145,12 @@ linters:
             - pkg: "gopkg.in/"
               desc: "goenvoy is pure stdlib (ADR-0001)."
 
-    gomodguard:
+    gomodguard_v2:
       blocked:
-        modules:
-          - github.com/stretchr/testify:
-              recommendations: ["standard library testing"]
-              reason: "No test deps outside stdlib (ADR-0001)."
+        - module: github.com/stretchr/testify
+          recommendations:
+            - standard library testing
+          reason: "No test deps outside stdlib (ADR-0001)."
 
     # Intra-monorepo errors don't need re-wrapping at the consumer.
     # Module boundaries (HTTP, decode) still wrap via fmt.Errorf("<mod>: <op>: %w", err).

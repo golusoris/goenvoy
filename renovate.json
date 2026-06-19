@@ -1,6 +1,34 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 5,
+  "gomod": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Auto-merge low-risk updates once required checks pass.",
+      "matchUpdateTypes": ["pin", "pinDigest", "digest", "patch", "minor"],
+      "automerge": true,
+      "automergeStrategy": "squash",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Group all GitHub Actions bumps into a single PR.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions"
+    },
+    {
+      "description": "Major bumps require review.",
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "breaking-change"],
+      "automerge": false
+    }
   ]
 }

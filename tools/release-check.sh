@@ -31,7 +31,26 @@ echo "==> go vet"
 go vet ./...
 
 echo "==> go test (race)"
-go test -race -count=1 ./...
+go test -race -count=1 -coverprofile=coverage.out -covermode=atomic ./...
+
+if command -v jq >/dev/null 2>&1; then
+  echo "==> coverage threshold"
+  THRESHOLD=$(jq -r --arg k "$MOD" '.overrides[$k] // .default' "$REPO_ROOT/tools/coverage-thresholds.json")
+  COVERAGE=$(go tool cover -func=coverage.out | awk '/^total/{gsub("%","",$3); print $3}')
+  if [ -z "$COVERAGE" ]; then
+    echo "   no executable statements - skipping coverage threshold"
+  elif [ "$COVERAGE" = "0.0" ] && [ "$(grep -cv '^mode:' coverage.out || true)" -eq 0 ]; then
+    echo "   no executable statements - skipping coverage threshold"
+  else
+    echo "   coverage ${COVERAGE}% (threshold ${THRESHOLD}%)"
+    if awk -v c="$COVERAGE" -v t="$THRESHOLD" 'BEGIN { exit !(c+0 < t+0) }'; then
+      echo "!! Coverage ${COVERAGE}% < ${THRESHOLD}% for ${MOD}"
+      exit 1
+    fi
+  fi
+else
+  echo "!! jq not installed - skipping coverage threshold"
+fi
 
 if command -v golangci-lint >/dev/null 2>&1; then
   echo "==> golangci-lint"
@@ -63,16 +82,10 @@ elif ! command -v apidiff >/dev/null 2>&1; then
 else
   MI=$(go list -m)
   apidiff -m "$MI" . > /tmp/release-check-curr.txt 2>/dev/null || true
-  SAVED=$(git rev-parse HEAD)
-  STASHED=0
-  if ! git diff --quiet || ! git diff --cached --quiet; then
-    git stash --include-untracked --quiet
-    STASHED=1
-  fi
-  git checkout --quiet "$PREV"
-  apidiff -m "$MI" . > /tmp/release-check-prev.txt 2>/dev/null || true
-  git checkout --quiet "$SAVED"
-  [ "$STASHED" -eq 1 ] && git stash pop --quiet
+  PREV_WT=$(mktemp -d)
+  git worktree add --detach --quiet "$PREV_WT" "$PREV"
+  trap 'git worktree remove --force "$PREV_WT" >/dev/null 2>&1 || true' EXIT
+  apidiff -m "$MI" "$PREV_WT/$MOD" > /tmp/release-check-prev.txt 2>/dev/null || true
   if apidiff /tmp/release-check-prev.txt /tmp/release-check-curr.txt; then
     echo "   OK: compatible vs $PREV"
   else

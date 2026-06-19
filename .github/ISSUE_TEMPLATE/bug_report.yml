@@ -52,7 +52,7 @@ body:
     id: go-version
     attributes:
       label: Go version
-      placeholder: "1.26.1"
+      placeholder: "1.26.4"
     validations:
       required: true
 

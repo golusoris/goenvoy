@@ -18,7 +18,7 @@ jobs:
     outputs:
       modules: ${{ steps.set.outputs.modules }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - id: set
         # Enumerate every top-level directory that contains (directly or
         # transitively) a go.mod. Keeps the matrix self-expanding when a
@@ -41,7 +41,7 @@ jobs:
       matrix:
         module: ${{ fromJson(needs.discover.outputs.modules) }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version: stable
@@ -52,10 +52,10 @@ jobs:
           queries: security-extended,security-and-quality
       - name: Build submodules under ${{ matrix.module }}/
         run: |
-          for d in $(find ./${{ matrix.module }} -name 'go.mod' -exec dirname {} \;); do
+          while IFS= read -r -d '' d; do
             echo "==> $d"
             (cd "$d" && go build ./...)
-          done
+          done < <(find ./${{ matrix.module }} -name 'go.mod' -printf '%h\0')
       - uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
         with:
           category: "/language:go/category:${{ matrix.module }}"
