@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.1](https://github.com/golusoris/goenvoy/compare/metadata/book/googlebooks/v2.1.0...metadata/book/googlebooks/v2.1.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.0 ([#65](https://github.com/golusoris/goenvoy/issues/65)) ([127fc2d](https://github.com/golusoris/goenvoy/commit/127fc2df0eef17326e41cd0ed1a46011ff3811fe))
+* guard nil search params and encode OpenSubtitles parent filters ([5fe5b7b](https://github.com/golusoris/goenvoy/commit/5fe5b7b87c3c5518376bc1718ec7d80bba2737ee))
+
 ## [2.1.0](https://github.com/golusoris/goenvoy/compare/metadata/book/googlebooks/v2.0.0...metadata/book/googlebooks/v2.1.0) (2026-04-15)
 
 
