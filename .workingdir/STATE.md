@@ -1,20 +1,41 @@
 # Session state — goenvoy
 
 > Persistent state across workstations and AI sessions. Updated as significant changes happen.
-> Last update: 2026-06-19 (verified the hardening pass, bumped govulncheck).
+> **Convention (per issue #12): write back to this file immediately as work lands — no batching.**
+> Last update: 2026-07-04 (verified phases 2–6 landed; marked them Done with landing evidence).
 
 ## Standards rollout — `.goenvoy2.0/`
 
-Phased adoption of golusoris standards. Plan in [`.goenvoy2.0/`](../.goenvoy2.0/), checklist in [`.goenvoy2.0/10-rollout-checklist.md`](../.goenvoy2.0/10-rollout-checklist.md).
+Phased adoption of golusoris standards — **complete**. Plan in [`.goenvoy2.0/`](../.goenvoy2.0/), checklist in [`.goenvoy2.0/10-rollout-checklist.md`](../.goenvoy2.0/10-rollout-checklist.md).
 
 | Phase | Title | Status |
 |---|---|---|
-| 1 | Governance docs + editor config | Done (commit `0e4352b`) |
-| 2 | Principles + ADRs + working dir | In progress |
-| 3 | Lint + tooling baseline | In progress |
-| 4 | CI hardening (CodeQL, Scorecard, apidiff) | In progress |
-| 5 | Release + supply-chain hardening | In progress |
-| 6 | Claude hooks + skills + per-module AGENTS | In progress |
+| 1 | Governance docs + editor config | Done — root `AGENTS.md`/`CLAUDE.md`/`.editorconfig`/`.markdownlintignore` (commit `0fbb62d`, #6) |
+| 2 | Principles + ADRs + working dir | Done — `.workingdir/PRINCIPLES.md` + `docs/adr/0001`–`0009` (commit `0fbb62d`, #6) |
+| 3 | Lint + tooling baseline | Done — `.golangci.yml` (30+ linters incl. depguard stdlib gate) + `Makefile` gates (lint v2 baseline, commit `0fbb62d`, #6) |
+| 4 | CI hardening (CodeQL, Scorecard, apidiff) | Done — `.github/workflows/codeql.yml` + `scorecard.yml` (commit `5884791`); apidiff gate in `ci.yml` fixed 2026-06-19 |
+| 5 | Release + supply-chain hardening | Done — release-please (`release-please.yml`, `release-please-config.json`, `.release-please-manifest.json`) (commit `ffe809a`); live via `chore: release main (#68)` `53be042` |
+| 6 | Claude hooks + skills + per-module AGENTS | Done — `.claude/hooks/` (3 guards + formatter) + 5 skills + 70 `AGENTS.md` (root + 69 modules) (commit `4beed3d`) |
+
+## 2026-07-04 Notes
+
+- Refreshed this stale STATE.md (GOE-2). The phase table had marked phases 2–6
+  "In progress" since 2026-06-19, but all six phases have LANDED in-repo. Verified
+  each artifact exists and captured the introducing commit as evidence (table above):
+  - Phase 2: `.workingdir/PRINCIPLES.md` + `docs/adr/0001`–`0009` (nine ADRs, one
+    past the planned `0008`; `0009-local-replace-directives.md` also present).
+  - Phase 3: `.golangci.yml` (30+ linters, depguard stdlib-only gate) + `Makefile` gates.
+  - Phase 4: `codeql.yml` + `scorecard.yml` workflows; apidiff gate fixed 2026-06-19.
+  - Phase 5: release-please trio present and live (last release `53be042`, #68).
+  - Phase 6: `.claude/hooks/` (guard-bash, guard-go-edit, format-go-write) + 5 skills
+    (add-service-client, add-service-method, bump-module, release-module,
+    audit-service-docs) + 70 `AGENTS.md` (root + all 69 modules).
+- Corrected the Phase 1 row: its prior evidence hash `0e4352b` resolves in no ref
+  (dangling). The phase-1 governance files (root `AGENTS.md`/`CLAUDE.md`/
+  `.editorconfig`/`.markdownlintignore`) actually landed in `0fbb62d` (#6).
+- No re-implementation done — everything already present. No genuine gap surfaced.
+- Adopted the immediate-writeback convention (issue #12): update this file as work
+  lands, not in batches.
 
 ## 2026-06-14 Notes
 
