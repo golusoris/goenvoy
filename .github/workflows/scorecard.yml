@@ -1,10 +1,12 @@
+# DISABLED on this Gitea instance: ossf/scorecard-action requires the GitHub
+# API and publishes to the OpenSSF results endpoint keyed on a GitHub
+# repository, so 'Scorecard analysis' fails on every run here. Left in place
+# rather than deleted so the intent survives if these repositories ever return
+# to GitHub; triggers reduced to manual only so it stops consuming the shared
+# self-hosted runner, which also builds the cluster's container images.
 name: Scorecard
 
 on:
-  push:
-    branches: [main]
-  schedule:
-    - cron: '15 6 * * 1'
   workflow_dispatch:
 
 permissions:
