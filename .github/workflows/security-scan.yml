@@ -1,13 +1,15 @@
 # Static analysis that can actually run on this Gitea instance.
 #
-# Replaces CodeQL, which fails at "Initialize CodeQL" every time: the action
+# Replaces CodeQL, which failed at "Initialize CodeQL" every time: the action
 # needs GitHub's CodeQL infrastructure and uploads to the security-events API,
 # neither of which exists here. That failure kept every PR red and burned the
 # shared runner that also builds the cluster's images.
 #
-# Semgrep runs fully inside its own container, so no toolchain is required on
-# the runner. Rulesets come from the public registry without an account;
-# `--config auto` is deliberately NOT used because it reports the project URL.
+# Semgrep runs fully inside its own container. The runner image (node:20-bookworm)
+# ships NO docker client, so a pinned static CLI is installed first - the same
+# approach the cluster's own image workflows use. Rulesets come from the public
+# registry without an account; `--config auto` is deliberately NOT used because
+# it reports the project URL.
 name: Security scan
 
 on:
@@ -22,6 +24,9 @@ on:
 permissions:
   contents: read
 
+env:
+  DOCKER_CLI_VERSION: "27.5.1"
+
 jobs:
   semgrep:
     name: Semgrep analysis
@@ -30,27 +35,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run Semgrep
+      - name: Install pinned docker CLI and locate the dind daemon
         shell: bash
         run: |
           set -euo pipefail
-          # The runner image ships no Python/Semgrep; the daemon is the dind
-          # sidecar reached over DOCKER_HOST. Resolve its address at runtime —
-          # act puts each job on its own network, so the bridge gateway is not
-          # a stable address, and iproute2 is not guaranteed in the image.
+          curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" -o /tmp/docker.tgz
+          tar -xzf /tmp/docker.tgz -C /tmp
+          install -m 0755 /tmp/docker/docker /usr/local/bin/docker
+          # act puts each job on its OWN network, so the bridge gateway is not a
+          # stable address and the job container has no /var/run/docker.sock.
+          # The job's default gateway is always the dind host; iproute2 is not
+          # guaranteed in the image, so fall back to decoding /proc/net/route.
           gw=$(ip route 2>/dev/null | awk '/^default/{print $3; exit}' || true)
           if [ -z "$gw" ]; then
             h=$(awk '$2=="00000000"{print $3; exit}' /proc/net/route)
             [ -n "$h" ] && gw=$(printf '%d.%d.%d.%d' "0x${h:6:2}" "0x${h:4:2}" "0x${h:2:2}" "0x${h:0:2}")
           fi
           [ -n "$gw" ] || { echo "could not resolve the dind gateway" >&2; exit 1; }
-          export DOCKER_HOST="tcp://${gw}:2375"
+          echo "DOCKER_HOST=tcp://${gw}:2375" >> "$GITHUB_ENV"
 
-          # The dind daemon cannot bind-mount this workspace: they are separate
-          # containers with separate filesystems. Stream the tree in over stdin
-          # rather than reaching for a -v that would mount an empty directory.
+      - name: Run Semgrep
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The dind daemon cannot bind-mount this workspace: separate containers,
+          # separate filesystems. Stream the tree in over stdin rather than
+          # reaching for a -v that would mount an empty directory.
           tar -cf - --exclude=.git . \
-            | docker run --rm -i -w /src semgrep/semgrep:1.144.0 \
+            | docker run --rm -i semgrep/semgrep:1.144.0 \
                 sh -ec 'mkdir -p /src && tar -xf - -C /src && \
                   semgrep scan \
                     --config p/golang \
