@@ -16,7 +16,7 @@ concurrency:
 jobs:
   gate:
     name: CI gate
-    runs-on: cauda-k8s
+    runs-on: cauda-k8s-office-canary
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
