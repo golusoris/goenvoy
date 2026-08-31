@@ -33,7 +33,7 @@ concurrency:
 jobs:
   fan-out:
     name: Validate + tag every module
-    runs-on: ubuntu-latest
+    runs-on: arc-cauda-golusoris-goenvoy
     permissions:
       contents: write   # push per-module tags; triggers release.yml
     steps:

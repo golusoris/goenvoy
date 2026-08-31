@@ -15,7 +15,7 @@ permissions:
 jobs:
   analysis:
     name: Scorecard Analysis
-    runs-on: ubuntu-latest
+    runs-on: arc-cauda-golusoris-goenvoy
     permissions:
       contents: read
       security-events: write

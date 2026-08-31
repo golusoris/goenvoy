@@ -92,6 +92,7 @@ func (c *Client) authParams() (url.Values, error) {
 		return nil, fmt.Errorf("navidrome: generate salt: %w", err)
 	}
 	s := hex.EncodeToString(salt)
+	// nosemgrep: go.lang.security.audit.crypto.use_of_weak_crypto.use-of-md5 -- Subsonic mandates MD5(password+salt).
 	h := md5.Sum([]byte(c.password + s)) // #nosec G401 -- required by the Subsonic authentication protocol.
 	t := hex.EncodeToString(h[:])
 

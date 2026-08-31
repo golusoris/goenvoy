@@ -1,0 +1,32 @@
+name: Office runner canary
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  tool-checkout-build:
+    name: Tool, checkout, test, and build proof
+    runs-on: cauda-k8s-office-canary
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - name: Prove the baked toolchain
+        run: |
+          set -eux
+          git --version
+          node --version
+          npm --version
+          go version
+          docker --version
+          kubectl version --client
+          helm version --short
+      - name: Test and build a real module
+        working-directory: mediaserver/navidrome
+        run: |
+          set -eux
+          go test ./...
+          go build ./...
+

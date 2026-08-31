@@ -208,7 +208,8 @@ formatters:
   settings:
     gofumpt:
       module-path: github.com/golusoris/goenvoy
-      extra-rules: true
+      extra:
+        group-params: true
     gci:
       sections:
         - standard

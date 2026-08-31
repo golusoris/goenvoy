@@ -17,7 +17,7 @@ jobs:
   pr-title:
     name: PR title (Conventional Commits)
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: arc-cauda-golusoris-goenvoy
     steps:
       - name: Check PR title
         env:
@@ -33,7 +33,7 @@ jobs:
 
   discover:
     name: Discover modules
-    runs-on: ubuntu-latest
+    runs-on: arc-cauda-golusoris-goenvoy
     outputs:
       modules: ${{ steps.find.outputs.modules }}
     steps:
@@ -85,14 +85,17 @@ jobs:
             echo "Changed modules:"; printf '%s\n' "$SELECTED" | sed 's/^/  /'
           fi
 
-          modules=$(printf '%s\n' "$SELECTED" | jq -R -s -c 'split("\n") | map(select(. != ""))')
+          # The Gitea job image deliberately stays small and does not include
+          # jq. Node is guaranteed because JavaScript actions require it.
+          modules=$(printf '%s\n' "$SELECTED" | node -e \
+            'let s=""; process.stdin.on("data", c => s += c); process.stdin.on("end", () => console.log(JSON.stringify(s.split(/\r?\n/).filter(Boolean))))')
           echo "modules=$modules" >> "$GITHUB_OUTPUT"
           echo "Selected matrix: $modules"
 
   lint:
     name: Lint ${{ matrix.module }}
     needs: discover
-    runs-on: ubuntu-latest
+    runs-on: arc-cauda-golusoris-goenvoy
     strategy:
       fail-fast: false
       matrix:
@@ -108,14 +111,14 @@ jobs:
         run: go vet ./...
       - uses: golangci/golangci-lint-action@82606bf257cbaff209d206a39f5134f0cfbfd2ee # v9
         with:
-          version: v2.12.2
+          version: v2.13.2
           working-directory: ${{ matrix.module }}
           args: --config=${{ github.workspace }}/.golangci.yml --timeout=5m
 
   gosec:
     name: Security ${{ matrix.module }}
     needs: discover
-    runs-on: ubuntu-latest
+    runs-on: arc-cauda-golusoris-goenvoy
     permissions:
       contents: read
       security-events: write
@@ -145,7 +148,7 @@ jobs:
   vuln:
     name: Vulnerabilities ${{ matrix.module }}
     needs: discover
-    runs-on: ubuntu-latest
+    runs-on: arc-cauda-golusoris-goenvoy
     strategy:
       fail-fast: false
       matrix:
@@ -165,7 +168,7 @@ jobs:
   test:
     name: Test ${{ matrix.module }}
     needs: discover
-    runs-on: ubuntu-latest
+    runs-on: arc-cauda-golusoris-goenvoy
     strategy:
       fail-fast: false
       matrix:
@@ -189,7 +192,7 @@ jobs:
           fi
           MOD_KEY="${MODULE#./}"
           THRESHOLD=$(jq -r --arg k "$MOD_KEY" '.overrides[$k] // .default' tools/coverage-thresholds.json)
-          COV=$(go tool cover -func="${MODULE}/coverage.out" | awk '/^total/{gsub("%","",$3); print $3}')
+          COV=$(cd "$MODULE" && go tool cover -func=coverage.out | awk '/^total/{gsub("%","",$3); print $3}')
           if [ -z "$COV" ]; then
             echo "no 'total' line in coverage.out (module has no testable code) — skipping threshold check"
             exit 0
@@ -220,7 +223,7 @@ jobs:
   build:
     name: Build ${{ matrix.module }}
     needs: discover
-    runs-on: ubuntu-latest
+    runs-on: arc-cauda-golusoris-goenvoy
     strategy:
       fail-fast: false
       matrix:
@@ -237,7 +240,7 @@ jobs:
   apidiff:
     name: apidiff ${{ matrix.module }}
     needs: discover
-    runs-on: ubuntu-latest
+    runs-on: arc-cauda-golusoris-goenvoy
     strategy:
       fail-fast: false
       matrix:
@@ -327,7 +330,7 @@ jobs:
     name: CI Status
     if: always()
     needs: [lint, gosec, vuln, test, build, apidiff]
-    runs-on: ubuntu-latest
+    runs-on: arc-cauda-golusoris-goenvoy
     steps:
       - name: Check results
         run: |

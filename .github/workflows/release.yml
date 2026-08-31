@@ -25,7 +25,7 @@ concurrency:
 jobs:
   release:
     name: Release tagged module
-    runs-on: ubuntu-latest
+    runs-on: arc-cauda-golusoris-goenvoy
     permissions:
       contents: write       # create GH Release + upload artefacts
       id-token: write       # cosign keyless + SLSA

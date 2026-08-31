@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: CI gate
+    runs-on: cauda-k8s
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+      - name: Validate pull-request title
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -eu
+          echo "$PR_TITLE" | grep -qE '^(feat|fix|docs|chore|refactor|test|perf|ci|build|revert|style)(\(.+\))?(!)?: .+' ||
+            { echo "::error::pull-request title is not Conventional Commits"; exit 1; }
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version: stable
+          cache: false
+      - name: Install pinned gate tools
+        run: |
+          set -eux
+          if ! command -v jq >/dev/null 2>&1; then
+            apt-get update
+            apt-get install -y --no-install-recommends jq
+          fi
+          mkdir -p "$PWD/.ci-bin"
+          export GOBIN="$PWD/.ci-bin"
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.27.1
+          go install golang.org/x/vuln/cmd/govulncheck@v1.4.0
+          echo "$GOBIN" >> "$GITHUB_PATH"
+      - name: Run the documented full gate
+        run: make ci-all
+      - name: Remove generated coverage files
+        if: always()
+        run: make clean-all
+

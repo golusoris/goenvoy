@@ -1,7 +1,7 @@
 .PHONY: help test-all coverage-check-all lint-all vet-all vuln-all gosec-all cover-all tidy-all build-all fmt-all golines-all ci-all list-modules clean-all tools-install doc
 
 MODULES := $(shell find . -name 'go.mod' -not -path './.workingdir/*' -not -path './.workingdir2/*' -exec dirname {} \; | sort)
-GOLANGCI_LINT_VERSION := v2.12.2
+GOLANGCI_LINT_VERSION := v2.13.2
 GOSEC_VERSION := v2.27.1
 GOVULNCHECK_VERSION := v1.4.0
 APIDIFF_VERSION := v0.0.0-20260410095643-746e56fc9e2f
@@ -28,7 +28,7 @@ coverage-check-all: ## Enforce per-module coverage thresholds from tools/coverag
 			continue; \
 		fi; \
 		threshold=$$(jq -r --arg k "$$key" '.overrides[$$k] // .default' tools/coverage-thresholds.json); \
-		cov=$$(go tool cover -func="$$file" | awk '/^total/{gsub("%","",$$3); print $$3}'); \
+		cov=$$(cd "$$mod" && go tool cover -func=coverage.out | awk '/^total/{gsub("%","",$$3); print $$3}'); \
 		if [ -z "$$cov" ]; then \
 			echo "==> Coverage $$key: no executable statements, skipping"; \
 			continue; \

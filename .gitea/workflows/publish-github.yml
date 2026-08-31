@@ -1,0 +1,88 @@
+name: Publish validated refs to GitHub
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  push:
+    tags:
+      - '**/v[0-9]*.[0-9]*.[0-9]*'
+      - '**/v[0-9]*.[0-9]*.[0-9]*-*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Fast-forward public GitHub
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main') ||
+      startsWith(github.ref, 'refs/tags/')
+    runs-on: cauda-k8s
+    timeout-minutes: 15
+    env:
+      GITHUB_PUBLISH_TOKEN: ${{ secrets.GITHUB_PUBLISH_TOKEN }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+      - name: Publish only validated, non-divergent refs
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SOURCE_REF: ${{ github.ref }}
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          test -n "$GITHUB_PUBLISH_TOKEN"
+          test "$(git remote get-url origin)" = "https://git.dev.cauda.dev/golusoris/goenvoy.git"
+
+          askpass=$(mktemp)
+          trap 'rm -f "$askpass"' EXIT
+          # Variables expand when Git invokes the generated helper.
+          # shellcheck disable=SC2016
+          printf '%s\n' '#!/bin/sh' \
+            'case "$1" in *Username*) printf "%s\n" "x-access-token";; *) printf "%s\n" "$GITHUB_PUBLISH_TOKEN";; esac' > "$askpass"
+          chmod 0700 "$askpass"
+          export GIT_ASKPASS="$askpass" GIT_TERMINAL_PROMPT=0
+
+          git fetch --no-tags origin main
+          git remote add public https://github.com/golusoris/goenvoy.git
+          git fetch --no-tags public main
+
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            test -n "$VALIDATED_SHA"
+            git cat-file -e "$VALIDATED_SHA^{commit}"
+            current=$(git rev-parse refs/remotes/origin/main)
+            if [ "$VALIDATED_SHA" != "$current" ]; then
+              echo "Validated commit was superseded by $current; the newer CI run will publish."
+              exit 0
+            fi
+            git merge-base --is-ancestor refs/remotes/public/main "$VALIDATED_SHA" ||
+              { echo "::error::public GitHub main diverged; refusing a non-fast-forward update"; exit 1; }
+            git push public "$VALIDATED_SHA:refs/heads/main"
+            exit 0
+          fi
+
+          tag=${SOURCE_REF#refs/tags/}
+          test -n "$tag"
+          git fetch --no-tags origin "refs/tags/$tag:refs/tags/$tag"
+          sha=$(git rev-parse "refs/tags/$tag^{commit}")
+          git merge-base --is-ancestor "$sha" refs/remotes/origin/main ||
+            { echo "::error::tag is not reachable from canonical Gitea main"; exit 1; }
+          git merge-base --is-ancestor "$sha" refs/remotes/public/main ||
+            { echo "::error::tag commit has not been validated and published to GitHub main"; exit 1; }
+
+          if git ls-remote --exit-code --tags public "refs/tags/$tag" >/tmp/public-tag; then
+            remote=$(awk 'NR==1 {print $1}' /tmp/public-tag)
+            test "$remote" = "$(git rev-parse "refs/tags/$tag")" ||
+              { echo "::error::immutable public tag already exists at another object"; exit 1; }
+            echo "Public tag already matches."
+          else
+            git push public "refs/tags/$tag:refs/tags/$tag"
+          fi
