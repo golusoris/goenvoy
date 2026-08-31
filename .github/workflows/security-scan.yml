@@ -24,6 +24,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   DOCKER_CLI_VERSION: "27.5.1"
 
