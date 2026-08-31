@@ -15,7 +15,7 @@ jobs:
       github.event_name != 'issues' ||
       (contains(github.event.issue.title, 'Dependency Dashboard') &&
        contains(github.event.issue.body, '[x]'))
-    runs-on: cauda-k8s
+    runs-on: cauda-k8s-office-canary
     container:
       image: docker.io/renovate/renovate:44@sha256:dd5a8ca92b2f3cbb8e3c8de35c63ae46494b074463c5e2488ed43e128b22f32e
     steps:
