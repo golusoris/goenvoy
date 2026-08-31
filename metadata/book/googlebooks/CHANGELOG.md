@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.2](https://github.com/golusoris/goenvoy/compare/metadata/book/googlebooks/v2.1.1...metadata/book/googlebooks/v2.1.2) (2026-08-31)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([#3](https://github.com/golusoris/goenvoy/issues/3)) ([b40adc4](https://github.com/golusoris/goenvoy/commit/b40adc47018b15d3224efa758b39326f7c6f7af1))
+
 ## [2.1.1](https://github.com/golusoris/goenvoy/compare/metadata/book/googlebooks/v2.1.0...metadata/book/googlebooks/v2.1.1) (2026-06-19)
 
 
