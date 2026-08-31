@@ -30,7 +30,7 @@ env:
 jobs:
   semgrep:
     name: Semgrep analysis
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: cauda-k8s-office-canary
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
