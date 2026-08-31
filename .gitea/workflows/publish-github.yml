@@ -40,7 +40,11 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$PUBLIC_GITHUB_TOKEN"
-          test "$(git remote get-url origin)" = "https://git.dev.cauda.dev/golusoris/goenvoy.git"
+          test "$GITHUB_REPOSITORY" = "golusoris/goenvoy"
+          case "$(git remote get-url origin)" in
+            */golusoris/goenvoy|*/golusoris/goenvoy.git) ;;
+            *) echo "::error::checkout origin does not match golusoris/goenvoy"; exit 1 ;;
+          esac
 
           askpass=$(mktemp)
           trap 'rm -f "$askpass"' EXIT
