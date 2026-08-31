@@ -1,0 +1,27 @@
+name: Office job image canary
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  goenvoy:
+    name: Goenvoy toolchain and test proof
+    runs-on: cauda-k8s-office-canary
+    container: harbor.infra.cauda.dev/library/gitea-actions-job:2.335.1-cauda2-gitea1@sha256:fb84eb8ecbc7806e18d407a410f098fccc92b6726a7987baf64e98b7350fa0c6
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          fetch-depth: 1
+      - name: Prove complete toolchain
+        run: verify-gitea-job-tools
+      - name: Run Goenvoy modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r mod; do
+            echo "==> testing $mod"
+            (cd "$mod" && go test ./...)
+          done < <(find . -name go.mod -not -path './.workingdir/*' -printf '%h\n' | sort)
