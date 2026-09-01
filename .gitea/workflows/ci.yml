@@ -32,15 +32,15 @@ jobs:
           set -eu
           echo "$PR_TITLE" | grep -qE '^(feat|fix|docs|chore|refactor|test|perf|ci|build|revert|style)(\(.+\))?(!)?: .+' ||
             { echo "::error::pull-request title is not Conventional Commits"; exit 1; }
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
-        with:
-          go-version-file: metadata/go.mod
-          cache: false
       - name: Verify pinned gate tools
         run: |
           set -eux
           verify-gitea-job-tools
           command -v jq golangci-lint gosec govulncheck
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: metadata/go.mod
+          cache: false
       - name: Run the documented full gate
         run: make ci-all
       - name: Remove generated coverage files
