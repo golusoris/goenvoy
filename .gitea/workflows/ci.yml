@@ -18,7 +18,7 @@ jobs:
     name: CI gate
     runs-on: cauda-k8s-office-canary
     container:
-      image: harbor.infra.cauda.dev/library/gitea-actions-job:2.335.1-cauda2-gitea1@sha256:fb84eb8ecbc7806e18d407a410f098fccc92b6726a7987baf64e98b7350fa0c6
+      image: harbor.infra.cauda.dev/library/gitea-actions-job:2.335.1-cauda3-gitea3@sha256:ca08d1bee54628ae8713133ae4bf2fe7f06a20a6db6ffd1d184f6ac63660297b
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
