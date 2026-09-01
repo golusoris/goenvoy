@@ -43,9 +43,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" -o /tmp/docker.tgz
-          tar -xzf /tmp/docker.tgz -C /tmp
-          install -m 0755 /tmp/docker/docker /usr/local/bin/docker
+          docker_cli_dir="${RUNNER_TEMP}/docker-cli"
+          docker_cli_archive="${RUNNER_TEMP}/docker-cli.tgz"
+          mkdir -p "$docker_cli_dir"
+          curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" -o "$docker_cli_archive"
+          tar -xzf "$docker_cli_archive" -C "$docker_cli_dir" --strip-components=1 docker/docker
+          chmod 0755 "$docker_cli_dir/docker"
+          echo "$docker_cli_dir" >> "$GITHUB_PATH"
           # act puts each job on its OWN network, so the bridge gateway is not a
           # stable address and the job container has no /var/run/docker.sock.
           # The job's default gateway is always the dind host; iproute2 is not
