@@ -19,7 +19,7 @@ jobs:
     runs-on: cauda-k8s-office-canary
     container:
       image: harbor.infra.cauda.dev/library/gitea-actions-job:2.335.1-cauda2-gitea1@sha256:fb84eb8ecbc7806e18d407a410f098fccc92b6726a7987baf64e98b7350fa0c6
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
@@ -40,7 +40,10 @@ jobs:
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
           go-version-file: metadata/go.mod
-          cache: false
+          cache: true
+          cache-dependency-path: |
+            **/go.mod
+            **/go.sum
       - name: Run the documented full gate
         run: make ci-all
       - name: Remove generated coverage files
