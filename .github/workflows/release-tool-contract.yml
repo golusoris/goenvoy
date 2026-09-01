@@ -36,7 +36,7 @@ jobs:
           test -n "$RUNNER_TEMP"
           test -w "$RUNNER_TEMP"
           test -w "$RUNNER_TOOL_CACHE"
-          for tool in bash git curl tar gzip sha256sum gh go node cosign syft; do
+          for tool in bash git curl tar gzip sha256sum gh jq go node cosign syft; do
             command -v "$tool"
           done
           gh --version
