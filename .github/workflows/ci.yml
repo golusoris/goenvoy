@@ -15,7 +15,7 @@ concurrency:
 jobs:
   pr-title:
     name: PR title (Conventional Commits)
-    if: github.event_name == 'pull_request'
+    if: github.actor != 'renovate[bot]' && github.event_name == 'pull_request'
     runs-on: arc-cauda-golusoris-goenvoy
     steps:
       - name: Check PR title
@@ -32,6 +32,7 @@ jobs:
 
   discover:
     name: Discover modules
+    if: github.actor != 'renovate[bot]'
     runs-on: arc-cauda-golusoris-goenvoy
     outputs:
       modules: ${{ steps.find.outputs.modules }}
@@ -93,6 +94,7 @@ jobs:
 
   lint:
     name: Lint ${{ matrix.module }}
+    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -116,6 +118,7 @@ jobs:
 
   gosec:
     name: Security ${{ matrix.module }}
+    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     permissions:
@@ -146,6 +149,7 @@ jobs:
 
   vuln:
     name: Vulnerabilities ${{ matrix.module }}
+    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -166,6 +170,7 @@ jobs:
 
   test:
     name: Test ${{ matrix.module }}
+    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -221,6 +226,7 @@ jobs:
 
   build:
     name: Build ${{ matrix.module }}
+    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -238,6 +244,7 @@ jobs:
 
   apidiff:
     name: apidiff ${{ matrix.module }}
+    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -327,7 +334,7 @@ jobs:
 
   status:
     name: CI Status
-    if: always()
+    if: always() && github.actor != 'renovate[bot]'
     needs: [lint, gosec, vuln, test, build, apidiff]
     runs-on: arc-cauda-golusoris-goenvoy
     steps:

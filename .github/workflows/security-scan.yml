@@ -30,10 +30,12 @@ concurrency:
 
 env:
   DOCKER_CLI_VERSION: "27.5.1"
+  DOCKER_CLI_SHA256: "4f798b3ee1e0140eab5bf30b0edc4e84f4cdb53255a429dc3bbae9524845d640"
 
 jobs:
   semgrep:
     name: Semgrep analysis
+    if: github.actor != 'renovate[bot]'
     runs-on: arc-cauda-golusoris-goenvoy
     timeout-minutes: 20
     steps:
@@ -47,6 +49,7 @@ jobs:
           docker_cli_archive="${RUNNER_TEMP}/docker-cli.tgz"
           mkdir -p "$docker_cli_dir"
           curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" -o "$docker_cli_archive"
+          echo "${DOCKER_CLI_SHA256}  ${docker_cli_archive}" | sha256sum -c -
           tar -xzf "$docker_cli_archive" -C "$docker_cli_dir" --strip-components=1 docker/docker
           chmod 0755 "$docker_cli_dir/docker"
           echo "$docker_cli_dir" >> "$GITHUB_PATH"
@@ -70,7 +73,7 @@ jobs:
           # separate filesystems. Stream the tree in over stdin rather than
           # reaching for a -v that would mount an empty directory.
           tar -cf - --exclude=.git . \
-            | docker run --rm -i semgrep/semgrep:1.144.0 \
+            | docker run --rm -i semgrep/semgrep:1.144.0@sha256:10301f060aacf84078f9704fb1ba3a321df4ac46b009fd29c1c66880d1db8e77 \
                 sh -ec 'mkdir -p /src && tar -xf - -C /src && \
                   semgrep scan \
                     --config p/golang \
