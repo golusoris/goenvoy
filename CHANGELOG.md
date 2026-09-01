@@ -8,6 +8,7 @@ Each module is versioned independently following [Semantic Versioning](https://s
 ## [Unreleased]
 
 ### Changed
+- **Toolchain security**: Raised every module's minimum Go patch release to 1.26.7 so builds include the standard-library fixes required by `govulncheck`, including GO-2026-6218, GO-2026-6090, GO-2026-5972, GO-2026-5856, and GO-2026-5026.
 - **Constructor sweep**: 23 modules now return `(*Client, error)` and validate baseURL per PRINCIPLES.md §2.3 — autobrr, jackett, mylar, nzbhydra, flaresolverr, shoko, audiobookshelf, emby, jellyfin, kavita, komga, navidrome, plex, stash, tautulli, tdarr, deluge, nzbget, qbit, rtorrent, sabnzbd, transmission, stashbox.
 - **Repository**: Adopted golangci-lint v2 with 30+ linters as the standards baseline (goenvoy 2.0). The pure-stdlib gate is now enforced by `depguard`. Per-module `replace` directives have been removed in favour of versioned `arr` requires (ADR-0009).
 - **Tooling**: Bulk-applied `t.Parallel()` to every test function and subtest; wrapped third-party errors with module-prefixed `fmt.Errorf("%s: %s: %w", ...)`; canonicalised HTTP header literals.
