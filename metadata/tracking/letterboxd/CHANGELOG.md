@@ -5,6 +5,14 @@
 - Moved from `metadata/video/letterboxd` to `metadata/tracking/letterboxd`. Update imports accordingly.
 - Fix data race on concurrent Set*/read of OAuth tokens and client secret.
 
+## [1.0.3](https://github.com/golusoris/goenvoy/compare/metadata/tracking/letterboxd/v1.0.2...metadata/tracking/letterboxd/v1.0.3) (2026-09-01)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([#3](https://github.com/golusoris/goenvoy/issues/3)) ([b40adc4](https://github.com/golusoris/goenvoy/commit/b40adc47018b15d3224efa758b39326f7c6f7af1))
+* guard Set* methods with RWMutex for thread safety ([e67eb43](https://github.com/golusoris/goenvoy/commit/e67eb4397c125441a837b7bf692488e87f2fd1be))
+
 ## [1.0.2](https://github.com/golusoris/goenvoy/compare/metadata/tracking/letterboxd/v1.0.1...metadata/tracking/letterboxd/v1.0.2) (2026-08-31)
 
 

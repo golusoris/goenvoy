@@ -4,6 +4,24 @@
 
 - Fix data race on concurrent Set*/read of OAuth tokens and client secret.
 
+## [1.4.0](https://github.com/golusoris/goenvoy/compare/metadata/tracking/trakt/v1.3.2...metadata/tracking/trakt/v1.4.0) (2026-09-01)
+
+
+### Features
+
+* add HeadPing, UploadBackup, GetRaw to all arr packages ([893a185](https://github.com/golusoris/goenvoy/commit/893a185c977a366421599d7d738f15f103151c2c))
+* **metadata/tracking/trakt:** add Trakt API v2 client ([41207b8](https://github.com/golusoris/goenvoy/commit/41207b8cbab597c8da0e38f6044b0cc78ab53858))
+* **metadata:** add shared BaseClient, migrate all 27 providers, restructure movie→video ([0026baa](https://github.com/golusoris/goenvoy/commit/0026baa54634fa25c00f67d9387e8013e5d70a6e))
+* **trakt:** add comments, notes, calendars, sync, social, and 80+ new methods ([670fd75](https://github.com/golusoris/goenvoy/commit/670fd753e713541dba3c9a1fd8be6fe5d9e6757d))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.0 ([#65](https://github.com/golusoris/goenvoy/issues/65)) ([127fc2d](https://github.com/golusoris/goenvoy/commit/127fc2df0eef17326e41cd0ed1a46011ff3811fe))
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([#3](https://github.com/golusoris/goenvoy/issues/3)) ([b40adc4](https://github.com/golusoris/goenvoy/commit/b40adc47018b15d3224efa758b39326f7c6f7af1))
+* guard Set* methods with RWMutex for thread safety ([e67eb43](https://github.com/golusoris/goenvoy/commit/e67eb4397c125441a837b7bf692488e87f2fd1be))
+* resolve golangci-lint CI errors across 6 packages ([1ef79c1](https://github.com/golusoris/goenvoy/commit/1ef79c17f6c98a701f5001405a7686fb35ddc3b9))
+
 ## [1.3.2](https://github.com/golusoris/goenvoy/compare/metadata/tracking/trakt/v1.3.1...metadata/tracking/trakt/v1.3.2) (2026-08-31)
 
 
