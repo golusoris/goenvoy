@@ -1,15 +1,8 @@
-# Static analysis that can actually run on this Gitea instance.
-#
-# Replaces CodeQL, which failed at "Initialize CodeQL" every time: the action
-# needs GitHub's CodeQL infrastructure and uploads to the security-events API,
-# neither of which exists here. That failure kept every PR red and burned the
-# shared runner that also builds the cluster's images.
-#
-# Semgrep runs fully inside its own container. The runner image (node:20-bookworm)
-# ships NO docker client, so a pinned static CLI is installed first - the same
-# approach the cluster's own image workflows use. Rulesets come from the public
-# registry without an account; `--config auto` is deliberately NOT used because
-# it reports the project URL.
+# Semgrep runs fully inside its pinned container through the ARC Docker sidecar.
+# The immutable cauda runner image supplies the verified Docker CLI and shares
+# /var/run/docker.sock with dind. Rulesets come from the public registry without
+# an account; `--config auto` is deliberately NOT used because it reports the
+# project URL.
 name: Security scan
 
 on:
@@ -28,10 +21,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  DOCKER_CLI_VERSION: "27.5.1"
-  DOCKER_CLI_SHA256: "4f798b3ee1e0140eab5bf30b0edc4e84f4cdb53255a429dc3bbae9524845d640"
-
 jobs:
   semgrep:
     name: Semgrep analysis
@@ -41,29 +30,13 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      - name: Install pinned docker CLI and locate the dind daemon
+      - name: Verify the pinned Docker sidecar contract
         shell: bash
         run: |
           set -euo pipefail
-          docker_cli_dir="${RUNNER_TEMP}/docker-cli"
-          docker_cli_archive="${RUNNER_TEMP}/docker-cli.tgz"
-          mkdir -p "$docker_cli_dir"
-          curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" -o "$docker_cli_archive"
-          echo "${DOCKER_CLI_SHA256}  ${docker_cli_archive}" | sha256sum -c -
-          tar -xzf "$docker_cli_archive" -C "$docker_cli_dir" --strip-components=1 docker/docker
-          chmod 0755 "$docker_cli_dir/docker"
-          echo "$docker_cli_dir" >> "$GITHUB_PATH"
-          # act puts each job on its OWN network, so the bridge gateway is not a
-          # stable address and the job container has no /var/run/docker.sock.
-          # The job's default gateway is always the dind host; iproute2 is not
-          # guaranteed in the image, so fall back to decoding /proc/net/route.
-          gw=$(ip route 2>/dev/null | awk '/^default/{print $3; exit}' || true)
-          if [ -z "$gw" ]; then
-            h=$(awk '$2=="00000000"{print $3; exit}' /proc/net/route)
-            [ -n "$h" ] && gw=$(printf '%d.%d.%d.%d' "0x${h:6:2}" "0x${h:4:2}" "0x${h:2:2}" "0x${h:0:2}")
-          fi
-          [ -n "$gw" ] || { echo "could not resolve the dind gateway" >&2; exit 1; }
-          echo "DOCKER_HOST=tcp://${gw}:2375" >> "$GITHUB_ENV"
+          command -v docker
+          test "${DOCKER_HOST:-}" = "unix:///var/run/docker.sock"
+          docker info
 
       - name: Run Semgrep
         shell: bash
