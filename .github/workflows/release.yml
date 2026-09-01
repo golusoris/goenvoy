@@ -57,7 +57,7 @@ jobs:
 
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
-          go-version: stable
+          go-version-file: ${{ steps.tag.outputs.dir }}/go.mod
           cache-dependency-path: ${{ steps.tag.outputs.dir }}/go.mod
 
       - name: Validate the tagged module
@@ -67,16 +67,14 @@ jobs:
           go vet ./...
           go test -race -count=1 ./...
 
-      - name: Install cosign
-        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-
-      - name: Install syft
-        env:
-          SYFT_VERSION: v1.14.0
+      - name: Verify pre-baked supply-chain tools
+        shell: bash
         run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/ccbee94b876240284c25c8931c6233fc71a5b7fb/install.sh \
-            | sh -s -- -b /usr/local/bin "${SYFT_VERSION}"
-          syft version
+          set -euo pipefail
+          command -v cosign
+          command -v syft
+          cosign version | grep -Eq 'GitVersion:[[:space:]]+v?3\.1\.3([[:space:]]|$)'
+          syft version | grep -Eq 'Version:[[:space:]]+1\.51\.1([[:space:]]|$)'
 
       - name: Package source tarball
         id: pkg
@@ -100,17 +98,21 @@ jobs:
 
       - name: Sign release artefacts (cosign keyless)
         env:
-          COSIGN_EXPERIMENTAL: "1"
           BASENAME: ${{ steps.pkg.outputs.basename }}
         run: |
-          # Sign every consumer-facing artefact, not just the checksum
-          # file. Scorecard's Signed-Releases check counts one .sig file
-          # per release and caps below 10 when sibling artefacts
-          # (tarball, SBOM) are unsigned.
+          set -euo pipefail
+          # Native Sigstore bundles contain the signature, certificate and
+          # transparency-log proof, and OpenSSF Scorecard recognizes the
+          # .sigstore.json suffix for Signed-Releases.
+          IDENTITY="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yml@${GITHUB_REF}"
           for f in "${BASENAME}.tar.gz" "${BASENAME}.checksums.txt" "${BASENAME}.sbom.spdx.json"; do
             cosign sign-blob --yes \
-              --output-signature "dist/${f}.sig" \
-              --output-certificate "dist/${f}.pem" \
+              --bundle "dist/${f}.sigstore.json" \
+              "dist/${f}"
+            cosign verify-blob \
+              --bundle "dist/${f}.sigstore.json" \
+              --certificate-identity "$IDENTITY" \
+              --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
               "dist/${f}"
           done
 
@@ -134,14 +136,11 @@ jobs:
           # the signed artefacts idempotently instead of failing.
           ASSETS=(
             "dist/${BASENAME}.tar.gz"
-            "dist/${BASENAME}.tar.gz.sig"
-            "dist/${BASENAME}.tar.gz.pem"
+            "dist/${BASENAME}.tar.gz.sigstore.json"
             "dist/${BASENAME}.checksums.txt"
-            "dist/${BASENAME}.checksums.txt.sig"
-            "dist/${BASENAME}.checksums.txt.pem"
+            "dist/${BASENAME}.checksums.txt.sigstore.json"
             "dist/${BASENAME}.sbom.spdx.json"
-            "dist/${BASENAME}.sbom.spdx.json.sig"
-            "dist/${BASENAME}.sbom.spdx.json.pem"
+            "dist/${BASENAME}.sbom.spdx.json.sigstore.json"
           )
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$TAG" "${ASSETS[@]}" --clobber

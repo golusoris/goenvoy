@@ -15,7 +15,7 @@ concurrency:
 jobs:
   pr-title:
     name: PR title (Conventional Commits)
-    if: github.event_name == 'pull_request'
+    if: github.actor != 'renovate[bot]' && github.event_name == 'pull_request'
     runs-on: arc-cauda-golusoris-goenvoy
     steps:
       - name: Check PR title
@@ -32,6 +32,7 @@ jobs:
 
   discover:
     name: Discover modules
+    if: github.actor != 'renovate[bot]'
     runs-on: arc-cauda-golusoris-goenvoy
     outputs:
       modules: ${{ steps.find.outputs.modules }}
@@ -93,6 +94,7 @@ jobs:
 
   lint:
     name: Lint ${{ matrix.module }}
+    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -103,7 +105,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
-          go-version: stable
+          go-version-file: ${{ matrix.module }}/go.mod
           cache-dependency-path: ${{ matrix.module }}/go.mod
       - name: Run go vet
         working-directory: ${{ matrix.module }}
@@ -116,6 +118,7 @@ jobs:
 
   gosec:
     name: Security ${{ matrix.module }}
+    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     permissions:
@@ -129,7 +132,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
-          go-version: stable
+          go-version-file: ${{ matrix.module }}/go.mod
           cache-dependency-path: ${{ matrix.module }}/go.mod
       - name: gosec
         working-directory: ${{ matrix.module }}
@@ -146,6 +149,7 @@ jobs:
 
   vuln:
     name: Vulnerabilities ${{ matrix.module }}
+    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -156,7 +160,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
-          go-version: stable
+          go-version-file: ${{ matrix.module }}/go.mod
           cache-dependency-path: ${{ matrix.module }}/go.mod
       - name: govulncheck
         working-directory: ${{ matrix.module }}
@@ -166,6 +170,7 @@ jobs:
 
   test:
     name: Test ${{ matrix.module }}
+    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -176,7 +181,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
-          go-version: stable
+          go-version-file: ${{ matrix.module }}/go.mod
           cache-dependency-path: ${{ matrix.module }}/go.mod
       - name: Run tests
         working-directory: ${{ matrix.module }}
@@ -221,6 +226,7 @@ jobs:
 
   build:
     name: Build ${{ matrix.module }}
+    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -231,13 +237,14 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
-          go-version: stable
+          go-version-file: ${{ matrix.module }}/go.mod
           cache-dependency-path: ${{ matrix.module }}/go.mod
       - working-directory: ${{ matrix.module }}
         run: go build ./...
 
   apidiff:
     name: apidiff ${{ matrix.module }}
+    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -250,7 +257,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
         with:
-          go-version: stable
+          go-version-file: ${{ matrix.module }}/go.mod
           cache-dependency-path: ${{ matrix.module }}/go.mod
       - name: Install apidiff
         run: go install golang.org/x/exp/cmd/apidiff@v0.0.0-20260410095643-746e56fc9e2f
@@ -327,7 +334,7 @@ jobs:
 
   status:
     name: CI Status
-    if: always()
+    if: always() && github.actor != 'renovate[bot]'
     needs: [lint, gosec, vuln, test, build, apidiff]
     runs-on: arc-cauda-golusoris-goenvoy
     steps:

@@ -1,3 +1,3 @@
 module github.com/golusoris/goenvoy/metadata
 
-go 1.26.4
+go 1.26.7
