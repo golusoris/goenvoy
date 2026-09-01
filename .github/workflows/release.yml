@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to (re)release, e.g. anime/v1.3.0. Needed because release-please creates tags with GITHUB_TOKEN, which does not fire the push-tag trigger.'
+        description: 'Existing canonical tag to (re)release, e.g. anime/v1.3.0, when retrying a missed tag-triggered run.'
         required: true
         type: string
 
@@ -130,11 +130,8 @@ jobs:
           VER: ${{ steps.tag.outputs.version }}
           BASENAME: ${{ steps.pkg.outputs.basename }}
         run: |
-          # Release-please may have already created a bare release (notes
-          # only, no artefacts) when it cut the tag — upload the signed
-          # artefacts to that existing release instead of failing. The
-          # push-tag trigger path still lands in the create branch since
-          # no release exists yet at that point.
+          # A retry or manual dispatch may find an existing release. Upload
+          # the signed artefacts idempotently instead of failing.
           ASSETS=(
             "dist/${BASENAME}.tar.gz"
             "dist/${BASENAME}.tar.gz.sig"

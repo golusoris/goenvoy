@@ -25,3 +25,7 @@ jobs:
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+          # Gitea is canonical: this workflow prepares release metadata only.
+          # Immutable tags are created on Gitea after canonical CI succeeds,
+          # then the publisher forwards them to GitHub.
+          skip-github-release: true

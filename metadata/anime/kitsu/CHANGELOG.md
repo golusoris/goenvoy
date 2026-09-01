@@ -4,6 +4,13 @@
 
 - Fix data race on concurrent Set*/read of OAuth tokens and client secret.
 
+## [1.3.2](https://github.com/golusoris/goenvoy/compare/metadata/anime/kitsu/v1.3.1...metadata/anime/kitsu/v1.3.2) (2026-08-31)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([#3](https://github.com/golusoris/goenvoy/issues/3)) ([b40adc4](https://github.com/golusoris/goenvoy/commit/b40adc47018b15d3224efa758b39326f7c6f7af1))
+
 ## [1.3.1](https://github.com/golusoris/goenvoy/compare/metadata/anime/kitsu/v1.3.0...metadata/anime/kitsu/v1.3.1) (2026-06-19)
 
 
