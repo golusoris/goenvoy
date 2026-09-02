@@ -17,6 +17,8 @@ jobs:
   gate:
     name: CI gate
     runs-on: cauda-k8s-office-canary
+    container:
+      image: harbor.infra.cauda.dev/library/gitea-actions-job:2.335.1-cauda2-gitea1@sha256:fb84eb8ecbc7806e18d407a410f098fccc92b6726a7987baf64e98b7350fa0c6
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -30,32 +32,15 @@ jobs:
           set -eu
           echo "$PR_TITLE" | grep -qE '^(feat|fix|docs|chore|refactor|test|perf|ci|build|revert|style)(\(.+\))?(!)?: .+' ||
             { echo "::error::pull-request title is not Conventional Commits"; exit 1; }
-      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
-        with:
-          go-version: stable
-          cache: false
-      - name: Install pinned gate tools
+      - name: Verify pinned gate tools
         run: |
           set -eux
-          export GODEBUG=http2client=0
-          retry() {
-            attempt=1
-            until "$@"; do
-              [ "$attempt" -ge 3 ] && return 1
-              sleep $((attempt * 5))
-              attempt=$((attempt + 1))
-            done
-          }
-          if ! command -v jq >/dev/null 2>&1; then
-            apt-get update
-            apt-get install -y --no-install-recommends jq
-          fi
-          mkdir -p "$PWD/.ci-bin"
-          export GOBIN="$PWD/.ci-bin"
-          retry go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
-          retry go install github.com/securego/gosec/v2/cmd/gosec@v2.27.1
-          retry go install golang.org/x/vuln/cmd/govulncheck@v1.4.0
-          echo "$GOBIN" >> "$GITHUB_PATH"
+          verify-gitea-job-tools
+          command -v jq golangci-lint gosec govulncheck
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: metadata/go.mod
+          cache: false
       - name: Run the documented full gate
         run: make ci-all
       - name: Remove generated coverage files

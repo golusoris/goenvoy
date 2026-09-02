@@ -1,0 +1,53 @@
+name: Release runner tool contract
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tools:
+    name: Verify rootless release tools
+    runs-on: arc-cauda-golusoris-goenvoy
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Verify the release runtime contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$RUNNER_TEMP"
+          test -w "$RUNNER_TEMP"
+          test -w "$RUNNER_TOOL_CACHE"
+          command -v verify-arc-runner-tools
+          verify-arc-runner-tools
+          for tool in bash git curl tar gzip sha256sum gh jq go node cosign syft; do
+            command -v "$tool"
+          done
+          gh --version
+          go version
+          node --version
+          cosign version | grep -Eq 'GitVersion:[[:space:]]+v?3\.1\.3([[:space:]]|$)'
+          syft version | grep -Eq 'Version:[[:space:]]+1\.51\.1([[:space:]]|$)'
+          roundtrip_dir="$(mktemp -d "$RUNNER_TEMP/cosign-roundtrip.XXXXXX")"
+          trap 'rm -rf "$roundtrip_dir"' EXIT
+          printf 'release contract\n' > "$roundtrip_dir/artifact"
+          (
+            cd "$roundtrip_dir"
+            COSIGN_PASSWORD='' cosign generate-key-pair
+            COSIGN_PASSWORD='' cosign sign-blob --yes --key cosign.key \
+              --bundle artifact.sigstore.json artifact
+            cosign verify-blob --key cosign.pub \
+              --bundle artifact.sigstore.json artifact
+          )
+
+      - name: Select the repository Go toolchain
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: metadata/go.mod
+          cache: false
+
+      - name: Verify the selected Go toolchain
+        run: go version
