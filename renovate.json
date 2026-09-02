@@ -17,7 +17,7 @@
       "matchUpdateTypes": ["pin", "pinDigest", "digest", "patch", "minor"],
       "automerge": true,
       "automergeStrategy": "squash",
-      "platformAutomerge": true
+      "platformAutomerge": false
     },
     {
       "description": "Group all GitHub Actions bumps into a single PR.",

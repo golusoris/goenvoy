@@ -16,7 +16,7 @@ func newTestClient(t *testing.T, handler http.HandlerFunc) *Client {
 	t.Helper()
 	ts := httptest.NewServer(handler)
 	t.Cleanup(ts.Close)
-	return New("test-token", metadata.WithBaseURL(ts.URL))
+	return New("test-token", metadata.WithBaseURL(ts.URL), metadata.WithHTTPClient(ts.Client()))
 }
 
 func TestGetRelease(t *testing.T) {

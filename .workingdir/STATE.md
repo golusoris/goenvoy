@@ -1,7 +1,32 @@
 # Session state — goenvoy
 
 > Persistent state across workstations and AI sessions. Updated as significant changes happen.
-> Last update: 2026-06-19 (verified the hardening pass, bumped govulncheck).
+> Last update: 2026-09-02 (Gitea publication and Discogs test isolation).
+
+## 2026-09-02 Notes
+
+- Restricted the Gitea-to-GitHub `workflow_run` publisher to successful `main`
+  CI events. Pull-request completions had entered the same publication
+  concurrency group and cancelled the waiting validated-main publisher.
+- Isolated the Discogs tests from `http.DefaultTransport` by using each
+  `httptest.Server` client. The shared transport let one parallel test's server
+  cleanup interrupt another test's POST with `http: CloseIdleConnections
+  called`; this caused the 2026-09-02 Gitea-main CI failure.
+- Reproduced the documented `make ci-all` gate with Go 1.26.7,
+  golangci-lint 2.13.2, gosec 2.27.1, and govulncheck 1.4.0 under the office
+  runner's 4-CPU/6-GiB envelope. Every module passed lint, vet, security,
+  race/coverage, and build in 367 seconds; peak memory was 1,341,501,440 bytes
+  with no cgroup pressure or OOM events.
+- Disabled platform-native Renovate auto-merge for low-risk bumps. Gitea has no
+  required-status branch gate here, so native auto-merge could land work before
+  CI started or while it was failing. Renovate's own merge path waits for green,
+  requires the branch to be current, and merges at most one PR per target branch
+  per run.
+- Keyed publication concurrency by event and ref. Validated `main` events still
+  serialize, but Goenvoy's distinct module tags can no longer cancel one another
+  while multiple release publications wait for the office runner.
+- Live acceptance remains an exact Gitea-main CI success followed by publication
+  of that same SHA to public GitHub.
 
 ## Standards rollout — `.goenvoy2.0/`
 
