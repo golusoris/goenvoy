@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.5.0](https://github.com/golusoris/goenvoy/compare/metadata/music/discogs/v1.4.0...metadata/music/discogs/v1.5.0) (2026-09-04)
+
+
+### Features
+
+* add 8 new service modules ([1dcd7bc](https://github.com/golusoris/goenvoy/commit/1dcd7bce5cc9cb04f5a14a7add647d1f0603f4e0))
+* **discogs:** add marketplace, collection, wantlist, identity, and 40+ methods ([3ad0cc1](https://github.com/golusoris/goenvoy/commit/3ad0cc108b220bcd94f0dcb6411fc4a3b6259f7e))
+* **metadata:** add shared BaseClient, migrate all 27 providers, restructure movie→video ([0026baa](https://github.com/golusoris/goenvoy/commit/0026baa54634fa25c00f67d9387e8013e5d70a6e))
+
+
+### Bug Fixes
+
+* BaseClient.Delete body support, URL injection, default timeouts ([59203c0](https://github.com/golusoris/goenvoy/commit/59203c0eda4c747e89c6567b91811e0cdee46e5b))
+* **ci:** stabilize canonical publication train ([#27](https://github.com/golusoris/goenvoy/issues/27)) ([9329bde](https://github.com/golusoris/goenvoy/commit/9329bdebcf3792bd92123806cce2f0080b2b5965))
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.0 ([#65](https://github.com/golusoris/goenvoy/issues/65)) ([127fc2d](https://github.com/golusoris/goenvoy/commit/127fc2df0eef17326e41cd0ed1a46011ff3811fe))
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([d7c9c63](https://github.com/golusoris/goenvoy/commit/d7c9c635422bda81c3a2f8703e5573a1c62b217d))
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([#3](https://github.com/golusoris/goenvoy/issues/3)) ([b40adc4](https://github.com/golusoris/goenvoy/commit/b40adc47018b15d3224efa758b39326f7c6f7af1))
+* resolve golangci-lint CI errors across 6 packages ([1ef79c1](https://github.com/golusoris/goenvoy/commit/1ef79c17f6c98a701f5001405a7686fb35ddc3b9))
+
 ## [1.4.0](https://github.com/golusoris/goenvoy/compare/metadata/music/discogs/v1.3.2...metadata/music/discogs/v1.4.0) (2026-09-01)
 
 
