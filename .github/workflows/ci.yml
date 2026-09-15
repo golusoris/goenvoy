@@ -1,5 +1,13 @@
 name: CI
 
+# Per-module Go gates (lint, gosec, govulncheck, race test + coverage, build)
+# delegate to golusoris/golusoris's reusable ci-go.yml, one call per module in
+# the `discover` matrix (golusoris/golusoris#184). apidiff stays local: this
+# repo tags each module independently (release-please, tag-separator "/", e.g.
+# anime/shoko/v1.2.3), and ci-go.yml's apidiff job only knows a single global
+# `git describe` tag, which would compare against an unrelated module's most
+# recent release in this monorepo. pr-title and the aggregate status gate also
+# stay local.
 on:
   pull_request:
     branches: [main]
@@ -87,160 +95,55 @@ jobs:
 
           # The Gitea job image deliberately stays small and does not include
           # jq. Node is guaranteed because JavaScript actions require it.
-          modules=$(printf '%s\n' "$SELECTED" | node -e \
-            'let s=""; process.stdin.on("data", c => s += c); process.stdin.on("end", () => console.log(JSON.stringify(s.split(/\r?\n/).filter(Boolean))))')
+          # Each matrix entry also carries the module's coverage-threshold
+          # (tools/coverage-thresholds.json: per-module override, else the
+          # default) so the `ci` job below can pass it straight through to
+          # ci-go.yml's `coverage-threshold` input (0 = skip the gate, used
+          # for the umbrella packages that have no executable statements).
+          modules=$(printf '%s\n' "$SELECTED" | node -e '
+            const fs = require("fs");
+            let s = "";
+            process.stdin.on("data", (c) => { s += c; });
+            process.stdin.on("end", () => {
+              const mods = s.split(/\r?\n/).filter(Boolean);
+              const cfg = JSON.parse(fs.readFileSync("tools/coverage-thresholds.json", "utf8"));
+              const overrides = cfg.overrides || {};
+              const out = mods.map((m) => ({
+                module: m,
+                threshold: Object.prototype.hasOwnProperty.call(overrides, m) ? overrides[m] : cfg.default,
+              }));
+              console.log(JSON.stringify(out));
+            });
+          ')
           echo "modules=$modules" >> "$GITHUB_OUTPUT"
           echo "Selected matrix: $modules"
 
-  lint:
-    name: Lint ${{ matrix.module }}
+  # Lint, gosec, govulncheck, race test + coverage, and build for every
+  # selected module, via the framework's reusable workflow. `skip-apidiff` is
+  # set because this repo's apidiff needs per-module tag prefixes (see the
+  # `apidiff` job below) that the reusable job's global `git describe` can't
+  # reproduce in a 69-module monorepo.
+  ci:
+    name: CI (${{ matrix.module }})
     if: github.actor != 'renovate[bot]'
     needs: discover
-    runs-on: arc-cauda-golusoris-goenvoy
     strategy:
       fail-fast: false
       matrix:
-        module: ${{ fromJSON(needs.discover.outputs.modules) }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: ${{ matrix.module }}/go.mod
-          cache-dependency-path: ${{ matrix.module }}/go.mod
-      - name: Run go vet
-        working-directory: ${{ matrix.module }}
-        run: go vet ./...
-      - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9
-        with:
-          version: v2.13.2
-          working-directory: ${{ matrix.module }}
-          args: --config=${{ github.workspace }}/.golangci.yml --timeout=5m
-
-  gosec:
-    name: Security ${{ matrix.module }}
-    if: github.actor != 'renovate[bot]'
-    needs: discover
-    runs-on: arc-cauda-golusoris-goenvoy
+        include: ${{ fromJSON(needs.discover.outputs.modules) }}
     permissions:
       contents: read
-      security-events: write
-    strategy:
-      fail-fast: false
-      matrix:
-        module: ${{ fromJSON(needs.discover.outputs.modules) }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: ${{ matrix.module }}/go.mod
-          cache-dependency-path: ${{ matrix.module }}/go.mod
-      - name: gosec
-        working-directory: ${{ matrix.module }}
-        run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@v2.27.1
-          gosec -quiet -exclude-generated -fmt sarif -out gosec.sarif ./... || true
-          gosec -quiet -exclude-generated ./...
-      - name: Upload SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
-        with:
-          sarif_file: ${{ matrix.module }}/gosec.sarif
-        continue-on-error: true
-
-  vuln:
-    name: Vulnerabilities ${{ matrix.module }}
-    if: github.actor != 'renovate[bot]'
-    needs: discover
-    runs-on: arc-cauda-golusoris-goenvoy
-    strategy:
-      fail-fast: false
-      matrix:
-        module: ${{ fromJSON(needs.discover.outputs.modules) }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: ${{ matrix.module }}/go.mod
-          cache-dependency-path: ${{ matrix.module }}/go.mod
-      - name: govulncheck
-        working-directory: ${{ matrix.module }}
-        run: |
-          go install golang.org/x/vuln/cmd/govulncheck@v1.4.0
-          govulncheck ./...
-
-  test:
-    name: Test ${{ matrix.module }}
-    if: github.actor != 'renovate[bot]'
-    needs: discover
-    runs-on: arc-cauda-golusoris-goenvoy
-    strategy:
-      fail-fast: false
-      matrix:
-        module: ${{ fromJSON(needs.discover.outputs.modules) }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: ${{ matrix.module }}/go.mod
-          cache-dependency-path: ${{ matrix.module }}/go.mod
-      - name: Run tests
-        working-directory: ${{ matrix.module }}
-        run: go test -race -count=1 -timeout=5m -coverprofile=coverage.out -covermode=atomic ./...
-      - name: Coverage threshold
-        env:
-          MODULE: ${{ matrix.module }}
-        run: |
-          if [ ! -s "${MODULE}/coverage.out" ]; then
-            echo "no coverage.out — skipping threshold check"
-            exit 0
-          fi
-          MOD_KEY="${MODULE#./}"
-          THRESHOLD=$(jq -r --arg k "$MOD_KEY" '.overrides[$k] // .default' tools/coverage-thresholds.json)
-          COV=$(cd "$MODULE" && go tool cover -func=coverage.out | awk '/^total/{gsub("%","",$3); print $3}')
-          if [ -z "$COV" ]; then
-            echo "no 'total' line in coverage.out (module has no testable code) — skipping threshold check"
-            exit 0
-          fi
-          # When a module has only type/const declarations (no executable
-          # statements), go tool cover reports 0.0% and coverage.out has
-          # just the mode header — nothing to measure. Skip the gate.
-          if [ "$COV" = "0.0" ]; then
-            cov_lines=$(grep -cv '^mode:' "${MODULE}/coverage.out" || true)
-            if [ "$cov_lines" -eq 0 ]; then
-              echo "coverage.out has only the mode header (no executable statements in module) — skipping threshold check"
-              exit 0
-            fi
-          fi
-          echo "Coverage for ${MOD_KEY}: ${COV}% (threshold ${THRESHOLD}%)"
-          if awk -v c="$COV" -v t="$THRESHOLD" 'BEGIN { exit !(c+0 < t+0) }'; then
-            echo "::error::${MOD_KEY} coverage ${COV}% < ${THRESHOLD}% — add tests or raise the override (only when intentional)"
-            exit 1
-          fi
-      - name: Upload coverage
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: coverage-${{ hashFiles(format('{0}/go.mod', matrix.module)) }}
-          path: ${{ matrix.module }}/coverage.out
-          retention-days: 7
-
-  build:
-    name: Build ${{ matrix.module }}
-    if: github.actor != 'renovate[bot]'
-    needs: discover
-    runs-on: arc-cauda-golusoris-goenvoy
-    strategy:
-      fail-fast: false
-      matrix:
-        module: ${{ fromJSON(needs.discover.outputs.modules) }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: ${{ matrix.module }}/go.mod
-          cache-dependency-path: ${{ matrix.module }}/go.mod
-      - working-directory: ${{ matrix.module }}
-        run: go build ./...
+      security-events: write   # gosec SARIF upload inside ci-go.yml (capped by this grant)
+    uses: golusoris/golusoris/.github/workflows/ci-go.yml@d27d40393f29aa2c5c077e2d232f73ff9009a98f # v0.10.0
+    with:
+      runs-on: arc-cauda-golusoris-goenvoy
+      working-directory: ${{ matrix.module }}
+      go-version-file: ${{ matrix.module }}/go.mod
+      golangci-version: v2.13.2
+      test-timeout: 5m
+      needs-docker: false
+      coverage-threshold: ${{ matrix.threshold }}
+      skip-apidiff: true
 
   apidiff:
     name: apidiff ${{ matrix.module }}
@@ -250,7 +153,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: ${{ fromJSON(needs.discover.outputs.modules) }}
+        include: ${{ fromJSON(needs.discover.outputs.modules) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -335,21 +238,17 @@ jobs:
   status:
     name: CI Status
     if: always() && github.actor != 'renovate[bot]'
-    needs: [lint, gosec, vuln, test, build, apidiff]
+    needs: [ci, apidiff]
     runs-on: arc-cauda-golusoris-goenvoy
     steps:
       - name: Check results
         run: |
-          for j in lint gosec vuln test build apidiff; do
+          for j in ci apidiff; do
             case "$(eval echo \$${j}_result)" in ""|success|skipped) ;; *)
               echo "job $j: $(eval echo \$${j}_result)"; exit 1 ;;
             esac
           done
           echo "All checks passed."
         env:
-          lint_result: ${{ needs.lint.result }}
-          gosec_result: ${{ needs.gosec.result }}
-          vuln_result: ${{ needs.vuln.result }}
-          test_result: ${{ needs.test.result }}
-          build_result: ${{ needs.build.result }}
+          ci_result: ${{ needs.ci.result }}
           apidiff_result: ${{ needs.apidiff.result }}

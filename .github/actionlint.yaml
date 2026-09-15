@@ -1,0 +1,6 @@
+self-hosted-runner:
+  # Only goenvoy's own ARC runner-set label. golusoris/golusoris's ci-go.yml
+  # (consumed via `uses:` in ci.yml) carries its own actionlint config for its
+  # own labels; this file must not declare labels goenvoy doesn't own.
+  labels:
+    - arc-cauda-golusoris-goenvoy
