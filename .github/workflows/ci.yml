@@ -134,7 +134,7 @@ jobs:
     permissions:
       contents: read
       security-events: write   # gosec SARIF upload inside ci-go.yml (capped by this grant)
-    uses: golusoris/golusoris/.github/workflows/ci-go.yml@380b26797a8552c8b8aba03d53209b8997f2b1be # v0.10.1
+    uses: golusoris/golusoris/.github/workflows/ci-go.yml@4b22fc0dc3c1f9c779b77e78a292539655d2dc69 # v0.12.0
     with:
       runs-on: arc-cauda-golusoris-goenvoy
       working-directory: ${{ matrix.module }}
