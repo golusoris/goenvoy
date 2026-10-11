@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.2](https://github.com/golusoris/goenvoy/compare/metadata/music/discogs/v1.3.1...metadata/music/discogs/v1.3.2) (2026-10-11)
+
+
+### Bug Fixes
+
+* **ci:** stabilize canonical publication train ([#27](https://github.com/golusoris/goenvoy/issues/27)) ([9329bde](https://github.com/golusoris/goenvoy/commit/9329bdebcf3792bd92123806cce2f0080b2b5965))
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([d7c9c63](https://github.com/golusoris/goenvoy/commit/d7c9c635422bda81c3a2f8703e5573a1c62b217d))
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([#3](https://github.com/golusoris/goenvoy/issues/3)) ([b40adc4](https://github.com/golusoris/goenvoy/commit/b40adc47018b15d3224efa758b39326f7c6f7af1))
+
 ## [1.3.1](https://github.com/golusoris/goenvoy/compare/metadata/music/discogs/v1.3.0...metadata/music/discogs/v1.3.1) (2026-06-19)
 
 
