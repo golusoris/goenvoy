@@ -54,19 +54,19 @@ Adopted. Particular vigilance for a client-lib collection:
 
 C4 diagrams are omitted — each module is a single-file HTTP client with no sub-system architecture to diagram.
 
-**ADRs** live in [`docs/adr/`](../docs/adr/), Nygard format, one decision per file. Retroactively backfilled records capture every convention that's currently implicit:
+**ADRs** live in [`docs/adr/`](adr/), Nygard format, one decision per file. Retroactively backfilled records capture every convention that's currently implicit:
 
 | ADR | Title | Status |
 |---|---|---|
-| [0001](../docs/adr/0001-pure-stdlib.md) | Pure stdlib — no external dependencies | Accepted |
-| [0002](../docs/adr/0002-per-module-semver.md) | Per-module independent semver via `<path>/vX.Y.Z` tags | Accepted |
-| [0003](../docs/adr/0003-new-constructor-shape.md) | `New(baseURL, apiKey) → *Client` constructor shape | Accepted |
-| [0004](../docs/adr/0004-functional-options.md) | Functional-options configuration (`Option` + `With*`) | Accepted |
-| [0005](../docs/adr/0005-api-error-type.md) | Per-module `APIError` struct implementing `error` | Accepted |
-| [0006](../docs/adr/0006-httptest-only-tests.md) | `httptest`-only test policy — no live API calls | Accepted |
-| [0007](../docs/adr/0007-oauth2-flows.md) | OAuth2 flow helpers — device / auth-code / PKCE / refresh, per-module | Accepted |
-| [0008](../docs/adr/0008-non-rest-wire-protocols.md) | XML-RPC / JSON-RPC / GraphQL clients reuse the same stdlib patterns as REST | Accepted |
-| [0009](../docs/adr/0009-local-replace-directives.md) | Drop committed `replace ../` directives in favour of `go.work` | Accepted |
+| [0001](adr/0001-pure-stdlib.md) | Pure stdlib — no external dependencies | Accepted |
+| [0002](adr/0002-per-module-semver.md) | Per-module independent semver via `<path>/vX.Y.Z` tags | Accepted |
+| [0003](adr/0003-new-constructor-shape.md) | `New(baseURL, apiKey) → *Client` constructor shape | Accepted |
+| [0004](adr/0004-functional-options.md) | Functional-options configuration (`Option` + `With*`) | Accepted |
+| [0005](adr/0005-api-error-type.md) | Per-module `APIError` struct implementing `error` | Accepted |
+| [0006](adr/0006-httptest-only-tests.md) | `httptest`-only test policy — no live API calls | Accepted |
+| [0007](adr/0007-oauth2-flows.md) | OAuth2 flow helpers — device / auth-code / PKCE / refresh, per-module | Accepted |
+| [0008](adr/0008-non-rest-wire-protocols.md) | XML-RPC / JSON-RPC / GraphQL clients reuse the same stdlib patterns as REST | Accepted |
+| [0009](adr/0009-local-replace-directives.md) | Drop committed `replace ../` directives in favour of `go.work` | Accepted |
 | 0100 | *(next forward-looking ADR starts here)* | — |
 
 ---
