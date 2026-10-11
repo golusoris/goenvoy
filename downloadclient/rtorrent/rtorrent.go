@@ -107,11 +107,21 @@ type xmlParam struct {
 }
 
 type xmlValue struct {
-	String  *string   `xml:"string,omitempty"`
-	Int     *int      `xml:"i4,omitempty"`
-	Int8    *int      `xml:"i8,omitempty"`
-	Boolean *int      `xml:"boolean,omitempty"`
-	Array   *xmlArray `xml:"array,omitempty"`
+	String  *string    `xml:"string,omitempty"`
+	Int     *int       `xml:"i4,omitempty"`
+	Int8    *int       `xml:"i8,omitempty"`
+	Boolean *int       `xml:"boolean,omitempty"`
+	Array   *xmlArray  `xml:"array,omitempty"`
+	Struct  *xmlStruct `xml:"struct,omitempty"`
+}
+
+type xmlStruct struct {
+	Members []xmlMember `xml:"member"`
+}
+
+type xmlMember struct {
+	Name  string   `xml:"name"`
+	Value xmlValue `xml:"value"`
 }
 
 type xmlArray struct {
@@ -208,16 +218,37 @@ func (c *Client) do(ctx context.Context, call xmlMethodCall) (*xmlMethodResponse
 	return &xmlResp, nil
 }
 
+// parseFault reads the struct of faultCode and faultString that XML-RPC defines for a fault.
+// A bare string or integer is read as well.
 func parseFault(fault *xmlFault) (code int, msg string) {
-	// Fault value is a struct with faultCode and faultString members.
-	// For simplicity, extract from the raw value.
+	if fault.Value.Struct != nil {
+		return parseFaultStruct(fault.Value.Struct)
+	}
 	if fault.Value.String != nil {
 		return 0, *fault.Value.String
 	}
-	if fault.Value.Int != nil {
-		return *fault.Value.Int, ""
+	if n, ok := intOf(fault.Value); ok {
+		return n, ""
 	}
 	return -1, "unknown fault"
+}
+
+func parseFaultStruct(fault *xmlStruct) (code int, msg string) {
+	found := false
+	for _, m := range fault.Members {
+		switch m.Name {
+		case "faultCode":
+			code, _ = intOf(m.Value)
+			found = true
+		case "faultString":
+			msg = getStr(m.Value)
+			found = true
+		}
+	}
+	if !found {
+		return -1, "unknown fault"
+	}
+	return code, msg
 }
 
 func (c *Client) callString(ctx context.Context, method string, args ...string) (string, error) {
@@ -240,12 +271,8 @@ func (c *Client) callInt(ctx context.Context, method string, args ...string) (in
 		return 0, err
 	}
 	if resp.Params != nil && len(resp.Params.Param) > 0 {
-		v := resp.Params.Param[0].Value
-		if v.Int != nil {
-			return *v.Int, nil
-		}
-		if v.Int8 != nil {
-			return *v.Int8, nil
+		if n, ok := intOf(resp.Params.Param[0].Value); ok {
+			return n, nil
 		}
 	}
 	return 0, nil
@@ -336,12 +363,21 @@ func getStr(v xmlValue) string {
 	return ""
 }
 
-func getInt64(v xmlValue) int64 {
-	if v.Int != nil {
-		return int64(*v.Int)
-	}
+// intOf returns the integer of a value. rTorrent writes every integer as an i8, the 0 and 1 of
+// its yes-or-no commands included; i4 is what other XML-RPC servers write.
+func intOf(v xmlValue) (n int, ok bool) {
 	if v.Int8 != nil {
-		return int64(*v.Int8)
+		return *v.Int8, true
+	}
+	if v.Int != nil {
+		return *v.Int, true
+	}
+	return 0, false
+}
+
+func getInt64(v xmlValue) int64 {
+	if n, ok := intOf(v); ok {
+		return int64(n)
 	}
 	// Try parsing string value
 	if v.String != nil {
@@ -356,10 +392,8 @@ func getBool(v xmlValue) bool {
 	if v.Boolean != nil {
 		return *v.Boolean != 0
 	}
-	if v.Int != nil {
-		return *v.Int != 0
-	}
-	return false
+	n, _ := intOf(v)
+	return n != 0
 }
 
 // AddTorrentURL adds a torrent by URL or magnet link.
