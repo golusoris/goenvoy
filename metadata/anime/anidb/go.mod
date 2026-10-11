@@ -1,5 +1,5 @@
 module github.com/golusoris/goenvoy/metadata/anime/anidb
 
-go 1.26.7
+go 1.26.9
 
 require github.com/golusoris/goenvoy/metadata v1.3.1

@@ -1,3 +1,3 @@
 module github.com/golusoris/goenvoy/anime
 
-go 1.26.7
+go 1.26.9
