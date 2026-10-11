@@ -6,8 +6,8 @@ name: CI
 # repo tags each module independently (release-please, tag-separator "/", e.g.
 # anime/shoko/v1.2.3), and ci-go.yml's apidiff job only knows a single global
 # `git describe` tag, which would compare against an unrelated module's most
-# recent release in this monorepo. pr-title and the aggregate status gate also
-# stay local.
+# recent release in this monorepo. pr-title, the workflow-file gate
+# (tools/workflow-check.sh) and the aggregate status gate also stay local.
 on:
   pull_request:
     branches: [main]
@@ -37,6 +37,25 @@ jobs:
             exit 1
           fi
           echo "OK: $PR_TITLE"
+
+  # Runs on every pull request: a change that touches no module skips the
+  # matrices below, and the workflow files are then all that is left to gate.
+  workflows:
+    name: Workflows (actionlint, pinned actions)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Check refuses its planted cases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/workflow-check_test.sh
+      - name: Lint workflows and check action pins
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/workflow-check.sh
 
   discover:
     name: Discover modules
@@ -242,14 +261,17 @@ jobs:
   status:
     name: CI success
     if: always()
-    needs: [discover, ci, apidiff]
+    needs: [workflows, discover, ci, apidiff]
     runs-on: ubuntu-26.04
     steps:
       - name: Check results
         run: |
-          if [ "$discover_result" != success ]; then
-            echo "job discover: $discover_result"; exit 1
-          fi
+          for j in workflows discover; do
+            got="$(eval echo \$${j}_result)"
+            if [ "$got" != success ]; then
+              echo "job $j: $got"; exit 1
+            fi
+          done
           # A skipped matrix job counts only when discover selected no module.
           want=success
           if [ "$modules" = '[]' ]; then
@@ -265,6 +287,7 @@ jobs:
           echo "All checks passed."
         env:
           modules: ${{ needs.discover.outputs.modules }}
+          workflows_result: ${{ needs.workflows.result }}
           discover_result: ${{ needs.discover.result }}
           ci_result: ${{ needs.ci.result }}
           apidiff_result: ${{ needs.apidiff.result }}
