@@ -26,17 +26,36 @@ func xmlStringResponse(s string) string {
 
 func xmlIntResponse(n int) string {
 	return fmt.Sprintf(`<?xml version="1.0"?>
-<methodResponse><params><param><value><i4>%d</i4></value></param></params></methodResponse>`, n)
+<methodResponse><params><param><value><i8>%d</i8></value></param></params></methodResponse>`, n)
 }
 
 func xmlVoidResponse() string {
 	return `<?xml version="1.0"?>
-<methodResponse><params><param><value><i4>0</i4></value></param></params></methodResponse>`
+<methodResponse><params><param><value><i8>0</i8></value></param></params></methodResponse>`
 }
 
-func xmlFaultResponse(msg string) string {
-	return fmt.Sprintf(`<?xml version="1.0"?>
-<methodResponse><fault><value><string>%s</string></value></fault></methodResponse>`, msg)
+func xmlFaultResponse(value string) string {
+	return `<?xml version="1.0"?>
+<methodResponse><fault><value>` + value + `</value></fault></methodResponse>`
+}
+
+func xmlMember(name, value string) string {
+	return "<member><name>" + name + "</name><value>" + value + "</value></member>"
+}
+
+// xmlTorrentRow is one d.multicall2 row with the given values for d.is_open, d.is_active,
+// d.complete and d.is_hash_checking. An empty flag is a value without a typed element.
+func xmlTorrentRow(flags [4]string) string {
+	const (
+		str = "<value><string>x</string></value>"
+		num = "<value><i8>7</i8></value>"
+	)
+	row := str + str + num + num + num + num + num + num +
+		"<value>" + strings.Join(flags[:], "</value><value>") + "</value>" +
+		str + str + str + num + str
+	return `<?xml version="1.0"?>
+<methodResponse><params><param><value><array><data><value><array><data>` + row +
+		`</data></array></value></data></array></value></param></params></methodResponse>`
 }
 
 func xmlMulticallResponse() string {
@@ -51,10 +70,10 @@ func xmlMulticallResponse() string {
   <value><i8>50000</i8></value>
   <value><i8>8000000000</i8></value>
   <value><i8>2000</i8></value>
-  <value><i4>1</i4></value>
-  <value><i4>1</i4></value>
-  <value><i4>1</i4></value>
-  <value><i4>0</i4></value>
+  <value><i8>1</i8></value>
+  <value><i8>1</i8></value>
+  <value><i8>1</i8></value>
+  <value><i8>0</i8></value>
   <value><string>/downloads/Ubuntu</string></value>
   <value><string>/downloads</string></value>
   <value><string>linux</string></value>
@@ -70,10 +89,10 @@ func xmlMulticallResponse() string {
   <value><i8>10000</i8></value>
   <value><i8>500000000</i8></value>
   <value><i8>500</i8></value>
-  <value><i4>1</i4></value>
-  <value><i4>1</i4></value>
-  <value><i4>0</i4></value>
-  <value><i4>0</i4></value>
+  <value><i8>1</i8></value>
+  <value><i8>1</i8></value>
+  <value><i8>0</i8></value>
+  <value><i8>0</i8></value>
   <value><string>/downloads/Fedora</string></value>
   <value><string>/downloads</string></value>
   <value><string>linux</string></value>
@@ -128,11 +147,88 @@ func TestGetTorrents(t *testing.T) {
 	if torrents[0].Name != "Ubuntu 24.04" {
 		t.Errorf("Name = %q, want %q", torrents[0].Name, "Ubuntu 24.04")
 	}
-	if !torrents[0].IsComplete {
-		t.Error("IsComplete = false, want true")
+	if got := flagsOf(&torrents[0]); got != [4]bool{true, true, true, false} {
+		t.Errorf("flags = %v, want open, active and complete", got)
 	}
 	if torrents[1].Hash != "DEF456" {
 		t.Errorf("Hash = %q, want %q", torrents[1].Hash, "DEF456")
+	}
+	if got := flagsOf(&torrents[1]); got != [4]bool{true, true, false, false} {
+		t.Errorf("flags = %v, want open and active", got)
+	}
+}
+
+func flagsOf(t *rtorrent.Torrent) [4]bool {
+	return [4]bool{t.IsOpen, t.IsActive, t.IsComplete, t.IsHashChecking}
+}
+
+func getFlags(t *testing.T, flags [4]string) [4]bool {
+	t.Helper()
+	ts := newXMLRPCServer(t, "d.multicall2", xmlTorrentRow(flags))
+	defer ts.Close()
+
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	torrents, err := c.GetTorrents(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(torrents) != 1 {
+		t.Fatalf("len = %d, want 1", len(torrents))
+	}
+	return flagsOf(&torrents[0])
+}
+
+// rTorrent writes every number as an i8, the 0 and 1 of the d.is_* commands and of d.complete
+// included (rakshasa/rtorrent v0.16.25, src/rpc/xmlrpc_tinyxml2.cc, print_object_xml). The i4
+// and boolean rows are the other two encodings the client has always read.
+func TestGetTorrents_flagEncodings(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		flag string
+		want bool
+	}{
+		{"i8 one", "<i8>1</i8>", true},
+		{"i8 zero", "<i8>0</i8>", false},
+		{"i4 one", "<i4>1</i4>", true},
+		{"i4 zero", "<i4>0</i4>", false},
+		{"boolean one", "<boolean>1</boolean>", true},
+		{"boolean zero", "<boolean>0</boolean>", false},
+		{"no typed value", "", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			want := [4]bool{tc.want, tc.want, tc.want, tc.want}
+			if got := getFlags(t, [4]string{tc.flag, tc.flag, tc.flag, tc.flag}); got != want {
+				t.Errorf("flags = %v, want %v", got, want)
+			}
+		})
+	}
+}
+
+// Each flag is read from its own column: one set flag must not show up in another field.
+func TestGetTorrents_flagColumns(t *testing.T) {
+	t.Parallel()
+
+	names := [4]string{"open", "active", "complete", "hash checking"}
+	for i, name := range names {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			flags := [4]string{"<i8>0</i8>", "<i8>0</i8>", "<i8>0</i8>", "<i8>0</i8>"}
+			flags[i] = "<i8>1</i8>"
+			var want [4]bool
+			want[i] = true
+			if got := getFlags(t, flags); got != want {
+				t.Errorf("flags = %v, want %v", got, want)
+			}
+		})
 	}
 }
 
@@ -347,23 +443,54 @@ func TestSetDownloadLimit(t *testing.T) {
 	}
 }
 
+// A fault is a struct of faultCode and faultString; rTorrent writes the code as an i8
+// (rakshasa/rtorrent v0.16.25, src/rpc/xmlrpc_tinyxml2.cc, print_xmlrpc_fault).
 func TestAPIError(t *testing.T) {
 	t.Parallel()
 
-	ts := newXMLRPCServer(t, "d.start", xmlFaultResponse("Could not find info-hash."))
-	defer ts.Close()
+	const text = "Could not find info-hash."
+	code8 := xmlMember("faultCode", "<i8>-501</i8>")
+	code4 := xmlMember("faultCode", "<i4>-501</i4>")
+	message := xmlMember("faultString", "<string>"+text+"</string>")
+	cases := []struct {
+		name      string
+		fault     string
+		wantCode  int
+		wantText  string
+		wantError string
+	}{
+		{"struct as rTorrent writes it", "<struct>" + code8 + message + "</struct>", -501, text, "rtorrent: " + text},
+		{"struct with an i4 code", "<struct>" + code4 + message + "</struct>", -501, text, "rtorrent: " + text},
+		{"struct with the text first", "<struct>" + message + code8 + "</struct>", -501, text, "rtorrent: " + text},
+		{"struct with a code only", "<struct>" + code8 + "</struct>", -501, "", "rtorrent: fault code -501"},
+		{"struct without members", "<struct></struct>", -1, "unknown fault", "rtorrent: unknown fault"},
+		{"bare string", "<string>" + text + "</string>", 0, text, "rtorrent: " + text},
+		{"bare integer", "<i8>-501</i8>", -501, "", "rtorrent: fault code -501"},
+		{"no typed value", "", -1, "unknown fault", "rtorrent: unknown fault"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	c, err := rtorrent.New(ts.URL)
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	err = c.StartTorrent(context.Background(), "INVALID")
-	if err == nil {
-		t.Fatal("expected error")
-	}
-	var apiErr *rtorrent.APIError
-	if !errors.As(err, &apiErr) {
-		t.Fatalf("expected APIError, got %T", err)
+			ts := newXMLRPCServer(t, "d.start", xmlFaultResponse(tc.fault))
+			defer ts.Close()
+
+			c, err := rtorrent.New(ts.URL)
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+			err = c.StartTorrent(context.Background(), "INVALID")
+			var apiErr *rtorrent.APIError
+			if !errors.As(err, &apiErr) {
+				t.Fatalf("expected APIError, got %T (%v)", err, err)
+			}
+			if apiErr.FaultCode != tc.wantCode || apiErr.FaultString != tc.wantText {
+				t.Errorf("fault = %d, %q, want %d, %q", apiErr.FaultCode, apiErr.FaultString, tc.wantCode, tc.wantText)
+			}
+			if err.Error() != tc.wantError {
+				t.Errorf("Error() = %q, want %q", err.Error(), tc.wantError)
+			}
+		})
 	}
 }
 
