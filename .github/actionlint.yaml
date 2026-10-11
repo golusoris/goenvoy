@@ -1,6 +1,8 @@
 self-hosted-runner:
-  # Only goenvoy's own ARC runner-set label. golusoris/golusoris's ci-go.yml
-  # (consumed via `uses:` in ci.yml) carries its own actionlint config for its
-  # own labels; this file must not declare labels goenvoy doesn't own.
+  # Labels the pinned actionlint cannot know by itself: goenvoy's own
+  # self-hosted runner set, which the release and Scorecard workflows still
+  # name, and the ubuntu-26.04 hosted image. golusoris/golusoris's ci-go.yml
+  # (consumed via `uses:` in ci.yml) carries its own actionlint config.
   labels:
     - arc-cauda-golusoris-goenvoy
+    - ubuntu-26.04
