@@ -4,6 +4,13 @@
 
 - **BREAKING:** `New` now returns `(*Client, error)` and validates the endpoint URL. Callers must check the error.
 
+## [2.0.1](https://github.com/golusoris/goenvoy/compare/downloadclient/rtorrent/v2.0.0...downloadclient/rtorrent/v2.0.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* **downloadclient/rtorrent:** read rTorrent's i8 flags and fault struct ([#91](https://github.com/golusoris/goenvoy/issues/91)) ([ecccd62](https://github.com/golusoris/goenvoy/commit/ecccd627f210023ef81a409dbca18b5a04bcba6b)), closes [#89](https://github.com/golusoris/goenvoy/issues/89)
+
 ## [2.0.0](https://github.com/golusoris/goenvoy/compare/downloadclient/rtorrent/v1.3.0...downloadclient/rtorrent/v2.0.0) (2026-06-19)
 
 

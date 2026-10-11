@@ -4,6 +4,14 @@
 
 - **BREAKING:** `New` now returns `(*Client, error)` and validates the endpoint URL. Callers must check the error.
 
+## [2.0.1](https://github.com/golusoris/goenvoy/compare/metadata/adult/stashbox/v2.0.0...metadata/adult/stashbox/v2.0.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([d7c9c63](https://github.com/golusoris/goenvoy/commit/d7c9c635422bda81c3a2f8703e5573a1c62b217d))
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([#3](https://github.com/golusoris/goenvoy/issues/3)) ([b40adc4](https://github.com/golusoris/goenvoy/commit/b40adc47018b15d3224efa758b39326f7c6f7af1))
+
 ## [2.0.0](https://github.com/golusoris/goenvoy/compare/metadata/adult/stashbox/v1.3.0...metadata/adult/stashbox/v2.0.0) (2026-06-19)
 
 
