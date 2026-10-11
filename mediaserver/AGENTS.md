@@ -1,6 +1,6 @@
 # AGENTS — mediaserver
 
-> Per-category conventions for **mediaserver/** modules. Read repo-root [AGENTS.md](../AGENTS.md) + [.workingdir/PRINCIPLES.md](../.workingdir/PRINCIPLES.md) first.
+> Per-category conventions for **mediaserver/** modules. Read repo-root [AGENTS.md](../AGENTS.md) + [docs/principles.md](../docs/principles.md) first.
 
 ## What this category is
 

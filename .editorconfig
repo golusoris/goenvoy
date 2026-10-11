@@ -1,4 +1,4 @@
-# EditorConfig — per .workingdir/PRINCIPLES.md §2.7. https://editorconfig.org/
+# EditorConfig — per docs/principles.md §2.7. https://editorconfig.org/
 root = true
 
 [*]

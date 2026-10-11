@@ -19,7 +19,7 @@
 8. **Every merged commit: 0 lint · 0 gosec · 0 govulncheck · race-green** — **per module**. `//nolint` requires a same-line justification comment.
 9. **Breaking a public API requires a `Migration:` footer** in the commit body with before/after Go snippets. CI `apidiff` runs against the last tag.
 
-See [.workingdir/PRINCIPLES.md](.workingdir/PRINCIPLES.md) (the adapted §2 contract) for the full coding / security / testing rules.
+See [docs/principles.md](docs/principles.md) (the adapted §2 contract) for the full coding / security / testing rules.
 
 ## Repository layout
 
@@ -103,4 +103,4 @@ And repo-wide:
 
 ## When in doubt
 
-Read [.workingdir/PRINCIPLES.md](.workingdir/PRINCIPLES.md) for the full contract, then the per-category `AGENTS.md` for the area you're touching.
+Read [docs/principles.md](docs/principles.md) for the full contract, then the per-category `AGENTS.md` for the area you're touching.

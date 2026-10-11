@@ -77,7 +77,7 @@ First release of a module has no prior tag; `release-check.sh` skips apidiff →
 
 ## 6. Close the loop
 
-Comment the fix + released version on the downstream issue, then close it. Update `.workingdir/STATE.md` if the fix resolved a tracked audit finding.
+Comment the fix + released version on the downstream issue, then close it. Update the private `.workingdir/STATE.md` (local, never committed) if the fix resolved a tracked audit finding.
 
 ---
 
