@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   assign:
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     steps:
       - name: Assign PR author
         env:

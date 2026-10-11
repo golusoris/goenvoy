@@ -16,7 +16,7 @@ jobs:
   pr-title:
     name: PR title (Conventional Commits)
     if: github.event_name == 'pull_request'
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     steps:
       - name: Check PR title
         env:
@@ -32,7 +32,7 @@ jobs:
 
   discover:
     name: Discover modules
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     outputs:
       modules: ${{ steps.find.outputs.modules }}
     steps:
@@ -94,7 +94,7 @@ jobs:
   lint:
     name: Lint ${{ matrix.module }}
     needs: discover
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -117,7 +117,7 @@ jobs:
   gosec:
     name: Security ${{ matrix.module }}
     needs: discover
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       security-events: write
@@ -147,7 +147,7 @@ jobs:
   vuln:
     name: Vulnerabilities ${{ matrix.module }}
     needs: discover
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -167,7 +167,7 @@ jobs:
   test:
     name: Test ${{ matrix.module }}
     needs: discover
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -222,7 +222,7 @@ jobs:
   build:
     name: Build ${{ matrix.module }}
     needs: discover
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -239,7 +239,7 @@ jobs:
   apidiff:
     name: apidiff ${{ matrix.module }}
     needs: discover
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -332,7 +332,7 @@ jobs:
     name: CI success
     if: always()
     needs: [discover, lint, gosec, vuln, test, build, apidiff]
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     steps:
       - name: Check results
         run: |
