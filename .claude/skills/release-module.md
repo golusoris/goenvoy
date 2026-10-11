@@ -1,6 +1,6 @@
 ---
 name: release-module
-description: Tag a goenvoy module at the current commit and trigger the release workflow.
+description: Tag a goenvoy module by hand and trigger the release workflow, outside the release pull request.
 ---
 
 # Skill — `/release-module`
@@ -9,7 +9,9 @@ Cut the tag that triggers [release.yml](../../.github/workflows/release.yml) (co
 
 ## When to use
 
-The user says "release <module> <version>" after the corresponding `release(<module>): <version>` PR has been merged to `main`.
+Regular releases do not use this skill: [release-please.yml](../../.github/workflows/release-please.yml) keeps one release pull request current, and merging it creates the tags and the signed releases for every module it lists. To retry a release whose run failed, dispatch `release.yml` with the existing tag.
+
+Use this skill only when the user asks for a hand-cut tag of a version the release manifest (`.release-please-manifest.json`) already names.
 
 ## Expected arguments
 

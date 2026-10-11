@@ -7,7 +7,8 @@ name: CI
 # anime/shoko/v1.2.3), and ci-go.yml's apidiff job only knows a single global
 # `git describe` tag, which would compare against an unrelated module's most
 # recent release in this monorepo. pr-title, the workflow-file gate
-# (tools/workflow-check.sh) and the aggregate status gate also stay local.
+# (tools/workflow-check.sh), the release manifest gate
+# (tools/release-manifest.sh) and the aggregate status gate also stay local.
 on:
   pull_request:
     branches: [main]
@@ -39,7 +40,8 @@ jobs:
           echo "OK: $PR_TITLE"
 
   # Runs on every pull request: a change that touches no module skips the
-  # matrices below, and the workflow files are then all that is left to gate.
+  # matrices below, and the workflow files and the release manifest are then
+  # all that is left to gate.
   workflows:
     name: Workflows (actionlint, pinned actions)
     runs-on: ubuntu-26.04
@@ -56,6 +58,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash tools/workflow-check.sh
+      - name: Release manifest check refuses its planted cases
+        run: bash tools/release-manifest_test.sh
+      - name: Release manifest versions match the module paths
+        run: bash tools/release-manifest.sh check
+      - name: Release pull request CI dispatch refuses its planted cases
+        run: bash tools/release-pr-ci_test.sh
 
   discover:
     name: Discover modules
@@ -111,8 +119,8 @@ jobs:
             echo "Changed modules:"; printf '%s\n' "$SELECTED" | sed 's/^/  /'
           fi
 
-          # The Gitea job image deliberately stays small and does not include
-          # jq. Node is guaranteed because JavaScript actions require it.
+          # Node builds the matrix: it is always present, because JavaScript
+          # actions require it.
           # Each matrix entry also carries the module's coverage-threshold
           # (tools/coverage-thresholds.json: per-module override, else the
           # default) so the `ci` job below can pass it straight through to

@@ -5,10 +5,17 @@ on:
     tags:
       - '**/v[0-9]*.[0-9]*.[0-9]*'
       - '**/v[0-9]*.[0-9]*.[0-9]*-*'
+  # release-please.yml calls this once per tag it created.
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Existing tag to release, e.g. anime/v1.3.0.'
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing canonical tag to (re)release, e.g. anime/v1.3.0, when retrying a missed tag-triggered run.'
+        description: 'Existing tag to (re)release, e.g. anime/v1.3.0, when retrying a failed release run.'
         required: true
         type: string
 
@@ -17,8 +24,8 @@ permissions:
 
 concurrency:
   # One release run per tag. Tag releases are immutable, so serialising
-  # per tag prevents two dispatches (push + workflow_dispatch) racing on
-  # the same GH Release and clobbering each other's artefacts.
+  # per tag prevents two runs (call, push or dispatch) racing on the
+  # same GH Release and clobbering each other's artefacts.
   group: release-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
 
@@ -114,6 +121,8 @@ jobs:
           # Native Sigstore bundles contain the signature, certificate and
           # transparency-log proof, and OpenSSF Scorecard recognizes the
           # .sigstore.json suffix for Signed-Releases.
+          # The certificate names this file at the ref of the run: the tag
+          # for a tag push, the branch for a dispatch or a call.
           IDENTITY="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release.yml@${GITHUB_REF}"
           for f in "${BASENAME}.tar.gz" "${BASENAME}.checksums.txt" "${BASENAME}.sbom.spdx.json"; do
             cosign sign-blob --yes \

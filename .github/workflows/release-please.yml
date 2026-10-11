@@ -1,5 +1,9 @@
 name: release-please
 
+# Keeps one release pull request current. Merging that pull request is the
+# publish step: the run on the merge commit creates the module tags and GitHub
+# releases, then calls release.yml once per tag for the signed, attested
+# artefacts.
 on:
   push:
     branches: [main]
@@ -20,12 +24,63 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    outputs:
+      tags: ${{ steps.plan.outputs.tags }}
     steps:
-      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - id: rp
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-          # Gitea is canonical: this workflow prepares release metadata only.
-          # Immutable tags are created on Gitea after canonical CI succeeds,
-          # then the publisher forwards them to GitHub.
-          skip-github-release: true
+      - id: plan
+        name: List the tags this run created
+        env:
+          PATHS: ${{ steps.rp.outputs.paths_released }}
+        run: |
+          set -euo pipefail
+          tags="$(bash tools/release-manifest.sh tags "${PATHS:-[]}")"
+          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo "Tags created by this run: $tags"
+
+  # Tags and releases made with the repository token start no workflow, so
+  # release.yml is called here instead of waiting for its tag trigger.
+  release:
+    name: Release ${{ matrix.tag }}
+    needs: release-please
+    if: needs.release-please.outputs.tags != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        tag: ${{ fromJSON(needs.release-please.outputs.tags) }}
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ matrix.tag }}
+
+  # A pull request opened with the repository token gets no CI run of its own
+  # (its runs wait for approval), and main requires the CI success check. A
+  # dispatched run reports that check on the same commit.
+  release-pr-ci:
+    name: Run CI on the release pull request
+    needs: release-please
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Dispatch CI for a release branch head that has no run yet
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/release-pr-ci.sh "$GITHUB_REPOSITORY"
