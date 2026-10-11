@@ -1,8 +1,6 @@
-# Semgrep runs fully inside its pinned container through the ARC Docker sidecar.
-# The immutable cauda runner image supplies the verified Docker CLI and shares
-# /var/run/docker.sock with dind. Rulesets come from the public registry without
-# an account; `--config auto` is deliberately NOT used because it reports the
-# project URL.
+# Semgrep runs fully inside its pinned container on a GitHub-hosted runner.
+# Rulesets come from the public registry without an account; `--config auto`
+# is deliberately NOT used because it reports the project URL.
 name: Security scan
 
 on:
@@ -24,28 +22,21 @@ concurrency:
 jobs:
   semgrep:
     name: Semgrep analysis
-    if: github.actor != 'renovate[bot]'
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Verify the pinned Docker sidecar contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          command -v docker
-          docker info
 
       - name: Run Semgrep
         shell: bash
         run: |
           set -euo pipefail
-          # The dind daemon cannot bind-mount this workspace: separate containers,
-          # separate filesystems. Stream the tree in over stdin rather than
-          # reaching for a -v that would mount an empty directory.
+          # The tree is streamed in over stdin, so the scan does not depend on
+          # the daemon sharing a filesystem with the job. mirror.gcr.io is a
+          # pull-through mirror of Docker Hub that serves the same digest;
+          # hosted runners hit the anonymous Docker Hub pull limit.
           tar -cf - --exclude=.git . \
-            | docker run --rm -i semgrep/semgrep:1.144.0@sha256:10301f060aacf84078f9704fb1ba3a321df4ac46b009fd29c1c66880d1db8e77 \
+            | docker run --rm -i mirror.gcr.io/semgrep/semgrep:1.144.0@sha256:10301f060aacf84078f9704fb1ba3a321df4ac46b009fd29c1c66880d1db8e77 \
                 sh -ec 'mkdir -p /src && tar -xf - -C /src && \
                   semgrep scan \
                     --config p/golang \
