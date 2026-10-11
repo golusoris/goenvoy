@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   release-please:
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
       pull-requests: write

@@ -25,7 +25,7 @@ concurrency:
 jobs:
   fan-out:
     name: Validate every module
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     steps:
