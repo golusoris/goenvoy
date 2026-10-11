@@ -125,6 +125,8 @@ jobs:
   ci:
     name: CI (${{ matrix.module }})
     needs: discover
+    # An empty matrix is a job failure, so a change outside every module skips.
+    if: needs.discover.outputs.modules != '[]'
     strategy:
       fail-fast: false
       matrix:
@@ -146,6 +148,8 @@ jobs:
   apidiff:
     name: apidiff ${{ matrix.module }}
     needs: discover
+    # An empty matrix is a job failure, so a change outside every module skips.
+    if: needs.discover.outputs.modules != '[]'
     runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
@@ -246,13 +250,21 @@ jobs:
           if [ "$discover_result" != success ]; then
             echo "job discover: $discover_result"; exit 1
           fi
+          # A skipped matrix job counts only when discover selected no module.
+          want=success
+          if [ "$modules" = '[]' ]; then
+            want=skipped
+            echo "No module changed: the ci and apidiff matrices are empty and skipped."
+          fi
           for j in ci apidiff; do
-            case "$(eval echo \$${j}_result)" in success|skipped) ;; *)
-              echo "job $j: $(eval echo \$${j}_result)"; exit 1 ;;
-            esac
+            got="$(eval echo \$${j}_result)"
+            if [ "$got" != "$want" ]; then
+              echo "job $j: $got (expected $want)"; exit 1
+            fi
           done
           echo "All checks passed."
         env:
+          modules: ${{ needs.discover.outputs.modules }}
           discover_result: ${{ needs.discover.result }}
           ci_result: ${{ needs.ci.result }}
           apidiff_result: ${{ needs.apidiff.result }}
