@@ -32,8 +32,7 @@ ZIZMOR_IMAGE="ghcr.io/zizmorcore/zizmor:${ZIZMOR_VERSION}@${ZIZMOR_IMAGE_DIGEST}
 
 shopt -s nullglob
 FILES=()
-for f in "$ROOT"/.github/workflows/*.yml "$ROOT"/.github/workflows/*.yaml \
-         "$ROOT"/.gitea/workflows/*.yml "$ROOT"/.gitea/workflows/*.yaml; do
+for f in "$ROOT"/.github/workflows/*.yml "$ROOT"/.github/workflows/*.yaml; do
   FILES+=("${f#"$ROOT"/}")
 done
 if [ ${#FILES[@]} -eq 0 ]; then

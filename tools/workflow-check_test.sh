@@ -53,9 +53,6 @@ echo "ok   clean: accepted"
 plant tag-pin .github "actions/checkout@v7"
 expect_refusal tag-pin "unpinned-uses"
 
-plant tag-pin-gitea .gitea "actions/checkout@v7"
-expect_refusal tag-pin-gitea "unpinned-uses"
-
 plant stale-comment .github "$CHECKOUT # v4.0.0"
 expect_refusal stale-comment "ref-version-mismatch"
 
@@ -70,4 +67,4 @@ expect_refusal clean "is required" env -u GH_TOKEN -u GITHUB_TOKEN
 mkdir -p "$WORK/empty"
 expect_refusal empty "no workflow file"
 
-echo "workflow check: 1 accepted, 7 refused"
+echo "workflow check: 1 accepted, 6 refused"

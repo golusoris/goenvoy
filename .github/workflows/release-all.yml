@@ -1,8 +1,8 @@
 name: Release All Modules
 
-# Validation-only workflow for planning a lockstep release. Gitea is canonical;
-# this public workflow must never create tags. Once this validation succeeds,
-# create immutable tags on canonical Gitea and let its publisher forward them.
+# Validation-only workflow for planning a lockstep release. It never creates
+# tags: module tags and releases come from the release pull request
+# (release-please.yml).
 #
 # Use this to validate a proposed lockstep version without mutating public refs.
 
@@ -73,7 +73,7 @@ jobs:
           [ "$failed" -ne 0 ] && exit 1
           echo "All modules validated."
 
-      - name: Record the canonical release plan
+      - name: Record the release plan
         env:
           VERSION: ${{ inputs.version }}
         run: |
@@ -85,10 +85,10 @@ jobs:
             count=$((count + 1))
           done <<< "${{ steps.discover.outputs.modules }}"
           {
-            echo "### Canonical Gitea release plan"
+            echo "### Lockstep release plan"
             echo "- **Version:** $VERSION"
             echo "- **Validated module tags:** $count"
             echo
-            echo "No public refs were mutated. Create these immutable tags on canonical Gitea;"
-            echo "its publisher will forward them and trigger signed public releases."
+            echo "No public refs were mutated. Tags and signed releases are created when"
+            echo "the release pull request is merged."
           } >> "$GITHUB_STEP_SUMMARY"
