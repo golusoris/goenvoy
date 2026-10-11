@@ -62,7 +62,7 @@ jobs:
         run: bash tools/release-manifest_test.sh
       - name: Release manifest versions match the module paths
         run: bash tools/release-manifest.sh check
-      - name: Release pull request CI dispatch refuses its planted cases
+      - name: Release pull request run approval refuses its planted cases
         run: bash tools/release-pr-ci_test.sh
 
   discover:

@@ -64,9 +64,9 @@ jobs:
     with:
       tag: ${{ matrix.tag }}
 
-  # A pull request opened with the repository token gets no CI run of its own
-  # (its runs wait for approval), and main requires the CI success check. A
-  # dispatched run reports that check on the same commit.
+  # The CI runs of a pull request opened with the repository token wait for an
+  # approval, and main requires the CI success check. A dispatched run does not
+  # count for the pull request, so the waiting runs are approved here.
   release-pr-ci:
     name: Run CI on the release pull request
     needs: release-please
@@ -80,7 +80,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - name: Dispatch CI for a release branch head that has no run yet
+      - name: Approve the waiting runs on the release branch head
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash tools/release-pr-ci.sh "$GITHUB_REPOSITORY"
