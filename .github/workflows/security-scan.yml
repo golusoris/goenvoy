@@ -24,7 +24,6 @@ concurrency:
 jobs:
   semgrep:
     name: Semgrep analysis
-    if: github.actor != 'renovate[bot]'
     runs-on: arc-cauda-golusoris-goenvoy
     timeout-minutes: 20
     steps:

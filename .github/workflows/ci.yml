@@ -15,7 +15,7 @@ concurrency:
 jobs:
   pr-title:
     name: PR title (Conventional Commits)
-    if: github.actor != 'renovate[bot]' && github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request'
     runs-on: arc-cauda-golusoris-goenvoy
     steps:
       - name: Check PR title
@@ -32,7 +32,6 @@ jobs:
 
   discover:
     name: Discover modules
-    if: github.actor != 'renovate[bot]'
     runs-on: arc-cauda-golusoris-goenvoy
     outputs:
       modules: ${{ steps.find.outputs.modules }}
@@ -94,7 +93,6 @@ jobs:
 
   lint:
     name: Lint ${{ matrix.module }}
-    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -118,7 +116,6 @@ jobs:
 
   gosec:
     name: Security ${{ matrix.module }}
-    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     permissions:
@@ -149,7 +146,6 @@ jobs:
 
   vuln:
     name: Vulnerabilities ${{ matrix.module }}
-    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -170,7 +166,6 @@ jobs:
 
   test:
     name: Test ${{ matrix.module }}
-    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -226,7 +221,6 @@ jobs:
 
   build:
     name: Build ${{ matrix.module }}
-    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -244,7 +238,6 @@ jobs:
 
   apidiff:
     name: apidiff ${{ matrix.module }}
-    if: github.actor != 'renovate[bot]'
     needs: discover
     runs-on: arc-cauda-golusoris-goenvoy
     strategy:
@@ -332,21 +325,28 @@ jobs:
           fi
           echo "API backwards-compatible with $PREV_TAG."
 
+  # The single required CI check. It has no actor condition: a job skipped by
+  # a condition reports success to branch protection, so a skip here would let
+  # a pull request merge with no CI run.
   status:
-    name: CI Status
-    if: always() && github.actor != 'renovate[bot]'
-    needs: [lint, gosec, vuln, test, build, apidiff]
+    name: CI success
+    if: always()
+    needs: [discover, lint, gosec, vuln, test, build, apidiff]
     runs-on: arc-cauda-golusoris-goenvoy
     steps:
       - name: Check results
         run: |
+          if [ "$discover_result" != success ]; then
+            echo "job discover: $discover_result"; exit 1
+          fi
           for j in lint gosec vuln test build apidiff; do
-            case "$(eval echo \$${j}_result)" in ""|success|skipped) ;; *)
+            case "$(eval echo \$${j}_result)" in success|skipped) ;; *)
               echo "job $j: $(eval echo \$${j}_result)"; exit 1 ;;
             esac
           done
           echo "All checks passed."
         env:
+          discover_result: ${{ needs.discover.result }}
           lint_result: ${{ needs.lint.result }}
           gosec_result: ${{ needs.gosec.result }}
           vuln_result: ${{ needs.vuln.result }}
