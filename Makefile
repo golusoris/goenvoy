@@ -105,11 +105,8 @@ clean-all: ## Remove coverage artefacts
 ci-all: lint-all vet-all gosec-all vuln-all test-all coverage-check-all build-all ## Full local CI - matches GitHub Actions gates
 
 tools-install: ## Install pinned local tools used by CI and release checks
-	go install mvdan.cc/gofumpt@latest
-	go install github.com/daixiang0/gci@latest
-	go install github.com/segmentio/golines@latest
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
-	# gosec, govulncheck, apidiff: pinned in tools/go/go.mod (x/tools floor for Go 1.27.2 export data)
+	# gofumpt, gci, golines, gosec, govulncheck, apidiff: pinned in tools/go/go.mod (x/tools floor for Go 1.27.2 export data)
 	cd tools/go && go install tool
 
 doc: ## Local godoc server at :6060
