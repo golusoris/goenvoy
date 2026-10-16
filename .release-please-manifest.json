@@ -18,6 +18,7 @@
   "downloadclient/deluge": "2.0.0",
   "downloadclient/nzbget": "2.0.0",
   "downloadclient/qbit": "2.0.0",
+  "downloadclient/queue": "0.0.0",
   "downloadclient/rtorrent": "2.0.1",
   "downloadclient/sabnzbd": "2.0.0",
   "downloadclient/transmission": "2.0.0",

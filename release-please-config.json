@@ -40,6 +40,7 @@
     "downloadclient/deluge": { "package-name": "goenvoy/downloadclient/deluge", "component": "downloadclient/deluge" },
     "downloadclient/nzbget": { "package-name": "goenvoy/downloadclient/nzbget", "component": "downloadclient/nzbget" },
     "downloadclient/qbit": { "package-name": "goenvoy/downloadclient/qbit", "component": "downloadclient/qbit" },
+    "downloadclient/queue": { "package-name": "goenvoy/downloadclient/queue", "component": "downloadclient/queue" },
     "downloadclient/rtorrent": { "package-name": "goenvoy/downloadclient/rtorrent", "component": "downloadclient/rtorrent" },
     "downloadclient/sabnzbd": { "package-name": "goenvoy/downloadclient/sabnzbd", "component": "downloadclient/sabnzbd" },
     "downloadclient/transmission": { "package-name": "goenvoy/downloadclient/transmission", "component": "downloadclient/transmission" },

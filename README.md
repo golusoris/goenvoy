@@ -120,7 +120,8 @@ goenvoy/
 │   ├── deluge/       # Deluge JSON-RPC client
 │   ├── rtorrent/     # rTorrent XMLRPC client
 │   ├── sabnzbd/      # SABnzbd client
-│   └── nzbget/       # NZBGet JSON-RPC client
+│   ├── nzbget/       # NZBGet JSON-RPC client
+│   └── queue/        # Unified read-only queue snapshot
 ├── mediaserver/      # shared media server types
 │   ├── plex/         # Plex Media Server client
 │   ├── jellyfin/     # Jellyfin client
