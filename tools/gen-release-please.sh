@@ -8,7 +8,7 @@ set -euo pipefail
 CONFIG=release-please-config.json
 MANIFEST=.release-please-manifest.json
 
-mapfile -t MODS < <(find . -name 'go.mod' -not -path './.workingdir*/*' -exec dirname {} \; | sed 's|^\./||' | sort)
+mapfile -t MODS < <(find . -name 'go.mod' -not -path './.workingdir*/*' -not -path './tools/go/*' -exec dirname {} \; | sed 's|^\./||' | sort)
 
 # --- config ---
 {
