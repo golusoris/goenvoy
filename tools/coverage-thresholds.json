@@ -23,6 +23,7 @@
     "downloadclient/qbit": 70,
     "downloadclient/transmission": 70,
     "downloadclient/deluge": 70,
+    "downloadclient/queue": 70,
     "downloadclient/rtorrent": 70,
     "downloadclient/sabnzbd": 70,
     "downloadclient/nzbget": 70,

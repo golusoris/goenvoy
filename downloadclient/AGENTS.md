@@ -32,6 +32,7 @@ Service sub-modules **may** import `downloadclient` for the shared types but not
 | [downloadclient/deluge](deluge/) | Deluge (JSON-RPC) | [docs/upstream/downloadclient-deluge.md](../docs/upstream/downloadclient-deluge.md) |
 | [downloadclient/transmission](transmission/) | Transmission (JSON-RPC) | [docs/upstream/downloadclient-transmission.md](../docs/upstream/downloadclient-transmission.md) |
 | [downloadclient/qbit](qbit/) | qBittorrent WebUI API | [docs/upstream/downloadclient-qbit.md](../docs/upstream/downloadclient-qbit.md) |
+| [downloadclient/queue](queue/) | Unified read-only queue snapshot | — |
 | [downloadclient/rtorrent](rtorrent/) | rTorrent (XML-RPC) | [docs/upstream/downloadclient-rtorrent.md](../docs/upstream/downloadclient-rtorrent.md) |
 | [downloadclient/nzbget](nzbget/) | NZBGet (JSON-RPC) | [docs/upstream/downloadclient-nzbget.md](../docs/upstream/downloadclient-nzbget.md) |
 | [downloadclient/sabnzbd](sabnzbd/) | SABnzbd (HTTP GET API) | [docs/upstream/downloadclient-sabnzbd.md](../docs/upstream/downloadclient-sabnzbd.md) |
