@@ -1,10 +1,18 @@
 package seerr
 
+import (
+	"net"
+	"net/url"
+	"strconv"
+	"strings"
+)
+
 // User represents a Seerr user account.
 type User struct {
 	ID           int    `json:"id"`
 	Email        string `json:"email,omitempty"`
 	Username     string `json:"username,omitempty"`
+	DisplayName  string `json:"displayName,omitempty"`
 	PlexToken    string `json:"plexToken,omitempty"`
 	PlexUsername string `json:"plexUsername,omitempty"`
 	UserType     int    `json:"userType,omitempty"`
@@ -13,6 +21,27 @@ type User struct {
 	CreatedAt    string `json:"createdAt,omitempty"`
 	UpdatedAt    string `json:"updatedAt,omitempty"`
 	RequestCount int    `json:"requestCount,omitempty"`
+}
+
+// Name returns the first non-blank of DisplayName, Username, and Email.
+// It returns an empty string if u is nil or all are blank.
+func (u *User) Name() string {
+	if u == nil {
+		return ""
+	}
+	for _, s := range []string{u.DisplayName, u.Username, u.Email} {
+		if strings.TrimSpace(s) != "" {
+			return s
+		}
+	}
+	return ""
+}
+
+// RequestSeason represents a TV season in a media request.
+type RequestSeason struct {
+	ID           int `json:"id"`
+	SeasonNumber int `json:"seasonNumber"`
+	Status       int `json:"status"`
 }
 
 // MediaRequest represents a media request in Seerr.
@@ -28,6 +57,9 @@ type MediaRequest struct {
 	ServerID    int        `json:"serverId,omitempty"`
 	ProfileID   int        `json:"profileId,omitempty"`
 	RootFolder  string     `json:"rootFolder,omitempty"`
+	Type        string     `json:"type,omitempty"`
+	// Seasons lists the requested TV seasons; nil means the response carried no seasons field (movie requests).
+	Seasons *[]RequestSeason `json:"seasons,omitempty"`
 }
 
 // MediaInfo represents the media metadata and availability status.
@@ -39,6 +71,8 @@ type MediaInfo struct {
 	Requests  []MediaRequest `json:"requests,omitempty"`
 	CreatedAt string         `json:"createdAt,omitempty"`
 	UpdatedAt string         `json:"updatedAt,omitempty"`
+	MediaType string         `json:"mediaType,omitempty"`
+	Status4k  int            `json:"status4k"`
 }
 
 // MovieResult represents a movie search or discover result.
@@ -290,4 +324,40 @@ type QuotaDetail struct {
 	Used       int  `json:"used"`
 	Remaining  int  `json:"remaining"`
 	Restricted bool `json:"restricted"`
+}
+
+// ServiceSettings represents the configuration of a Sonarr or Radarr server in Seerr.
+type ServiceSettings struct {
+	ID                int    `json:"id"`
+	Name              string `json:"name"`
+	Hostname          string `json:"hostname"`
+	Port              int    `json:"port"`
+	APIKey            string `json:"apiKey"`
+	UseSSL            bool   `json:"useSsl"`
+	BaseURL           string `json:"baseUrl"`
+	Is4k              bool   `json:"is4k"`
+	IsDefault         bool   `json:"isDefault"`
+	ActiveProfileID   int    `json:"activeProfileId"`
+	ActiveProfileName string `json:"activeProfileName,omitempty"`
+	ActiveDirectory   string `json:"activeDirectory"`
+	ExternalURL       string `json:"externalUrl,omitempty"`
+	SyncEnabled       bool   `json:"syncEnabled"`
+	PreventSearch     bool   `json:"preventSearch"`
+}
+
+// URL rebuilds the service URL from the Hostname, Port, UseSSL, and BaseURL fields.
+func (s ServiceSettings) URL() string {
+	scheme := "http"
+	if s.UseSSL {
+		scheme = "https"
+	}
+	host := s.Hostname
+	if s.Port > 0 {
+		host = net.JoinHostPort(s.Hostname, strconv.Itoa(s.Port))
+	}
+	u := url.URL{Scheme: scheme, Host: host}
+	if p := strings.Trim(s.BaseURL, "/"); p != "" {
+		u.Path = "/" + p
+	}
+	return u.String()
 }
