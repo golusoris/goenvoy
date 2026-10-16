@@ -22,6 +22,30 @@ if [ ! -f "$REPO_ROOT/$MOD/go.mod" ]; then
   exit 1
 fi
 
+BIN_DIR=$(mktemp -d)
+PREV_WT=""
+cleanup() {
+  rm -rf "$BIN_DIR"
+  if [ -n "$PREV_WT" ] && [ -d "$PREV_WT" ]; then
+    git worktree remove --force "$PREV_WT" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+
+echo "==> building audit tools (gosec, govulncheck, apidiff)"
+(
+  cd "$REPO_ROOT/tools/go"
+  go build -o "$BIN_DIR/gosec" github.com/securego/gosec/v2/cmd/gosec
+  go build -o "$BIN_DIR/govulncheck" golang.org/x/vuln/cmd/govulncheck
+  go build -o "$BIN_DIR/apidiff" golang.org/x/exp/cmd/apidiff
+)
+
+XTOOLS_VER=$(go version -m "$BIN_DIR/gosec" | grep 'x/tools' | tail -n 1 | awk '{print $3}')
+if [ -z "$XTOOLS_VER" ] || ! printf '%s\n%s\n' "v0.50.0" "$XTOOLS_VER" | sort -V -C; then
+  echo "error: gosec x/tools version (${XTOOLS_VER:-missing}) < v0.50.0 floor" >&2
+  exit 1
+fi
+
 cd "$REPO_ROOT/$MOD"
 
 echo "==> go build"
@@ -59,39 +83,36 @@ else
   echo "!! golangci-lint not installed — skipping"
 fi
 
-if command -v govulncheck >/dev/null 2>&1; then
-  echo "==> govulncheck"
-  govulncheck ./...
-else
-  echo "!! govulncheck not installed — skipping (go install golang.org/x/vuln/cmd/govulncheck@latest)"
-fi
+echo "==> govulncheck"
+"$BIN_DIR/govulncheck" ./...
 
-if command -v gosec >/dev/null 2>&1; then
-  echo "==> gosec"
-  gosec -quiet -exclude-generated ./...
-else
-  echo "!! gosec not installed — skipping (go install github.com/securego/gosec/v2/cmd/gosec@latest)"
-fi
+echo "==> gosec"
+"$BIN_DIR/gosec" -quiet -exclude-generated ./...
 
 echo "==> apidiff vs previous tag"
-PREV=$(git tag --list "${MOD}/v*" --sort=-v:refname | head -1 || true)
+PREV=$(git tag --list "${MOD}/v*" --sort=-v:refname | head -n 1 || true)
 if [ -z "$PREV" ]; then
   echo "   no previous ${MOD}/v* tag — first release, skipping apidiff"
-elif ! command -v apidiff >/dev/null 2>&1; then
-  echo "!! apidiff not installed — skipping (go install golang.org/x/exp/cmd/apidiff@latest)"
 else
   MI=$(go list -m)
-  apidiff -m "$MI" . > /tmp/release-check-curr.txt 2>/dev/null || true
+  "$BIN_DIR/apidiff" -m -w "$BIN_DIR/curr.fp" "$MI"
   PREV_WT=$(mktemp -d)
   git worktree add --detach --quiet "$PREV_WT" "$PREV"
-  trap 'git worktree remove --force "$PREV_WT" >/dev/null 2>&1 || true' EXIT
-  apidiff -m "$MI" "$PREV_WT/$MOD" > /tmp/release-check-prev.txt 2>/dev/null || true
-  if apidiff /tmp/release-check-prev.txt /tmp/release-check-curr.txt; then
-    echo "   OK: compatible vs $PREV"
-  else
-    echo "!! Breaking API change vs $PREV — bump major or add BREAKING CHANGE footer"
+  ( cd "$PREV_WT/$MOD" && "$BIN_DIR/apidiff" -m -w "$BIN_DIR/prev.fp" "$MI" )
+  if [ ! -s "$BIN_DIR/prev.fp" ] || [ ! -s "$BIN_DIR/curr.fp" ]; then
+    echo "error: apidiff produced an empty fingerprint" >&2
     exit 1
   fi
+  if ! INCOMPAT=$("$BIN_DIR/apidiff" -incompatible -m "$BIN_DIR/prev.fp" "$BIN_DIR/curr.fp" 2>&1); then
+    echo "error: apidiff comparison failed: $INCOMPAT" >&2
+    exit 1
+  fi
+  if [ -n "$INCOMPAT" ]; then
+    echo "!! Breaking API change vs $PREV — bump major or add BREAKING CHANGE footer"
+    echo "$INCOMPAT"
+    exit 1
+  fi
+  echo "   OK: compatible vs $PREV"
 fi
 
 echo

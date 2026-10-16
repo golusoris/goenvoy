@@ -1,10 +1,7 @@
 .PHONY: help test-all coverage-check-all lint-all vet-all vuln-all gosec-all cover-all tidy-all build-all fmt-all golines-all ci-all list-modules clean-all tools-install doc
 
-MODULES := $(shell find . -name 'go.mod' -not -path './.workingdir/*' -not -path './.workingdir2/*' -exec dirname {} \; | sort)
+MODULES := $(shell find . -name 'go.mod' -not -path './.workingdir/*' -not -path './.workingdir2/*' -not -path './tools/go/*' -exec dirname {} \; | sort)
 GOLANGCI_LINT_VERSION := v2.13.2
-GOSEC_VERSION := v2.27.1
-GOVULNCHECK_VERSION := v1.4.0
-APIDIFF_VERSION := v0.0.0-20260410095643-746e56fc9e2f
 
 help:  ## Show this help
 	@awk 'BEGIN{FS=":.*?## "} /^[a-zA-Z_-]+:.*?## /{printf "  \033[36m%-16s\033[0m %s\n",$$1,$$2}' $(MAKEFILE_LIST)
@@ -108,13 +105,9 @@ clean-all: ## Remove coverage artefacts
 ci-all: lint-all vet-all gosec-all vuln-all test-all coverage-check-all build-all ## Full local CI - matches GitHub Actions gates
 
 tools-install: ## Install pinned local tools used by CI and release checks
-	go install mvdan.cc/gofumpt@latest
-	go install github.com/daixiang0/gci@latest
-	go install github.com/segmentio/golines@latest
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
-	go install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
-	go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
-	go install golang.org/x/exp/cmd/apidiff@$(APIDIFF_VERSION)
+	# gofumpt, gci, golines, gosec, govulncheck, apidiff: pinned in tools/go/go.mod (x/tools floor for Go 1.27.2 export data)
+	cd tools/go && go install tool
 
 doc: ## Local godoc server at :6060
 	@echo "Starting godoc server at http://localhost:6060"

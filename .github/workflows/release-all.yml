@@ -49,7 +49,7 @@ jobs:
       - name: Discover modules
         id: discover
         run: |
-          modules=$(find . -name 'go.mod' -not -path './.workingdir*/*' -exec dirname {} \; | sed 's|^\./||' | sort)
+          modules=$(find . -name 'go.mod' -not -path './.workingdir*/*' -not -path './tools/go/*' -exec dirname {} \; | sed 's|^\./||' | sort)
           count=$(echo "$modules" | wc -l)
           echo "Found $count modules"
           {

@@ -60,7 +60,7 @@ while IFS= read -r modfile; do
 EOF
   created=$((created + 1))
   echo "created: $dir/AGENTS.md"
-done < <(find . -mindepth 3 -name 'go.mod' -not -path './.workingdir*/*')
+done < <(find . -mindepth 3 -name 'go.mod' -not -path './.workingdir*/*' -not -path './tools/go/*')
 
 echo
 echo "bootstrap complete: ${created} created, ${skipped} skipped (already existed)"

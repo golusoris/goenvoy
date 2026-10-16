@@ -6,7 +6,7 @@ set -euo pipefail
 OUT=.github/dependabot.yml
 
 # Collect + sort module directories, stripped of leading './'.
-mapfile -t MODS < <(find . -name 'go.mod' -not -path './.workingdir*/*' -exec dirname {} \; | sed 's|^\./||' | sort)
+mapfile -t MODS < <(find . -name 'go.mod' -not -path './.workingdir*/*' -not -path './tools/go/*' -exec dirname {} \; | sed 's|^\./||' | sort)
 
 {
   cat <<'EOF'

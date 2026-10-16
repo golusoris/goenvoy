@@ -83,7 +83,7 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
         run: |
           set -uo pipefail
-          ALL=$(find . -name go.mod -not -path './.workingdir/*' -exec dirname {} \; | sed 's#^\./##' | sort)
+          ALL=$(find . -name go.mod -not -path './.workingdir/*' -not -path './tools/go/*' -exec dirname {} \; | sed 's#^\./##' | sort)
 
           # Diff base: PR base for pull_request, the pushed-from commit otherwise.
           if [ "$EVENT" = "pull_request" ]; then DIFF_BASE="$BASE_SHA"; else DIFF_BASE="$BEFORE_SHA"; fi
