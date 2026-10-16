@@ -1,0 +1,5 @@
+module github.com/golusoris/goenvoy/arr/cleanuparr
+
+go 1.26.9
+
+require github.com/golusoris/goenvoy/arr/v2 v2.1.0
