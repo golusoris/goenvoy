@@ -26,6 +26,7 @@
     "arr": { "package-name": "goenvoy/arr", "component": "arr" },
     "arr/autobrr": { "package-name": "goenvoy/arr/autobrr", "component": "arr/autobrr" },
     "arr/bazarr": { "package-name": "goenvoy/arr/bazarr", "component": "arr/bazarr" },
+    "arr/cleanuparr": { "package-name": "goenvoy/arr/cleanuparr", "component": "arr/cleanuparr" },
     "arr/jackett": { "package-name": "goenvoy/arr/jackett", "component": "arr/jackett" },
     "arr/lidarr": { "package-name": "goenvoy/arr/lidarr", "component": "arr/lidarr" },
     "arr/mylar": { "package-name": "goenvoy/arr/mylar", "component": "arr/mylar" },

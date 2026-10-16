@@ -101,6 +101,7 @@ goenvoy/
 │   ├── bazarr/       # Bazarr client
 │   ├── seerr/        # Seerr client
 │   ├── autobrr/      # Autobrr client
+│   ├── cleanuparr/   # Cleanuparr client
 │   ├── mylar/        # Mylar3 client
 │   ├── jackett/      # Jackett client
 │   └── nzbhydra/     # NZBHydra2 client
