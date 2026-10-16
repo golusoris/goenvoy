@@ -411,3 +411,21 @@ func (c *Client) GetIssueCount(ctx context.Context) (*IssueCount, error) {
 	}
 	return &out, nil
 }
+
+// GetSonarrSettings returns the configured Sonarr server settings in Seerr.
+func (c *Client) GetSonarrSettings(ctx context.Context) ([]ServiceSettings, error) {
+	var out []ServiceSettings
+	if err := c.base.Get(ctx, "/api/v1/settings/sonarr", &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetRadarrSettings returns the configured Radarr server settings in Seerr.
+func (c *Client) GetRadarrSettings(ctx context.Context) ([]ServiceSettings, error) {
+	var out []ServiceSettings
+	if err := c.base.Get(ctx, "/api/v1/settings/radarr", &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}

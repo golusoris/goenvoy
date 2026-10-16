@@ -821,3 +821,487 @@ func TestReopenIssue(t *testing.T) {
 		t.Errorf("ID = %d", got.ID)
 	}
 }
+
+func TestGetSonarrSettings(t *testing.T) {
+	t.Parallel()
+
+	want := []seerr.ServiceSettings{
+		{
+			ID:                1,
+			Name:              "Sonarr 4K",
+			Hostname:          "sonarr.lan",
+			Port:              8989,
+			APIKey:            "sk",
+			UseSSL:            false,
+			BaseURL:           "/sonarr/",
+			Is4k:              true,
+			IsDefault:         true,
+			ActiveProfileID:   1,
+			ActiveProfileName: "Ultra-HD",
+			ActiveDirectory:   "/media/tv4k",
+		},
+	}
+
+	t.Run("positive decode", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, http.MethodGet, "/api/v1/settings/sonarr", want)
+		defer srv.Close()
+
+		c, err := seerr.New(srv.URL, "test-key")
+		if err != nil {
+			t.Fatalf("seerr.New: %v", err)
+		}
+		got, err := c.GetSonarrSettings(context.Background())
+		if err != nil {
+			t.Fatalf("GetSonarrSettings: %v", err)
+		}
+		if len(got) != 1 {
+			t.Fatalf("len = %d, want 1", len(got))
+		}
+		if got[0].Name != "Sonarr 4K" {
+			t.Errorf("Name = %q, want %q", got[0].Name, "Sonarr 4K")
+		}
+		if got[0].Port != 8989 {
+			t.Errorf("Port = %d, want 8989", got[0].Port)
+		}
+		if got[0].ActiveDirectory != "/media/tv4k" {
+			t.Errorf("ActiveDirectory = %q, want %q", got[0].ActiveDirectory, "/media/tv4k")
+		}
+	})
+
+	t.Run("negative HTTP 500", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"message":"Sonarr unavailable"}`))
+		}))
+		defer srv.Close()
+
+		c, err := seerr.New(srv.URL, "test-key")
+		if err != nil {
+			t.Fatalf("seerr.New: %v", err)
+		}
+		got, err := c.GetSonarrSettings(context.Background())
+		if err == nil {
+			t.Fatal("expected error on HTTP 500, got nil")
+		}
+		if got != nil {
+			t.Errorf("got = %v, want nil", got)
+		}
+		var apiErr *arr.APIError
+		if !errors.As(err, &apiErr) {
+			t.Fatalf("expected *arr.APIError, got %T", err)
+		}
+		if apiErr.StatusCode != http.StatusInternalServerError {
+			t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusInternalServerError)
+		}
+	})
+
+	t.Run("boundary empty array", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, http.MethodGet, "/api/v1/settings/sonarr", []seerr.ServiceSettings{})
+		defer srv.Close()
+
+		c, err := seerr.New(srv.URL, "test-key")
+		if err != nil {
+			t.Fatalf("seerr.New: %v", err)
+		}
+		got, err := c.GetSonarrSettings(context.Background())
+		if err != nil {
+			t.Fatalf("GetSonarrSettings: %v", err)
+		}
+		if len(got) != 0 {
+			t.Errorf("len = %d, want 0", len(got))
+		}
+		if got == nil {
+			t.Error("expected non-nil empty slice")
+		}
+	})
+}
+
+func TestGetRadarrSettings(t *testing.T) {
+	t.Parallel()
+
+	want := []seerr.ServiceSettings{
+		{
+			ID:                0,
+			Name:              "Radarr",
+			Hostname:          "radarr.lan",
+			Port:              7878,
+			APIKey:            "rk",
+			UseSSL:            true,
+			BaseURL:           "",
+			Is4k:              false,
+			IsDefault:         true,
+			ActiveProfileID:   2,
+			ActiveProfileName: "HD-1080p",
+			ActiveDirectory:   "/media/movies",
+		},
+	}
+
+	t.Run("positive decode", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, http.MethodGet, "/api/v1/settings/radarr", want)
+		defer srv.Close()
+
+		c, err := seerr.New(srv.URL, "test-key")
+		if err != nil {
+			t.Fatalf("seerr.New: %v", err)
+		}
+		got, err := c.GetRadarrSettings(context.Background())
+		if err != nil {
+			t.Fatalf("GetRadarrSettings: %v", err)
+		}
+		if len(got) != 1 {
+			t.Fatalf("len = %d, want 1", len(got))
+		}
+		if got[0].Name != "Radarr" {
+			t.Errorf("Name = %q, want %q", got[0].Name, "Radarr")
+		}
+		if got[0].Port != 7878 {
+			t.Errorf("Port = %d, want 7878", got[0].Port)
+		}
+		if !got[0].UseSSL {
+			t.Errorf("UseSSL = %v, want true", got[0].UseSSL)
+		}
+	})
+
+	t.Run("negative HTTP 500", func(t *testing.T) {
+		t.Parallel()
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"message":"Radarr unavailable"}`))
+		}))
+		defer srv.Close()
+
+		c, err := seerr.New(srv.URL, "test-key")
+		if err != nil {
+			t.Fatalf("seerr.New: %v", err)
+		}
+		got, err := c.GetRadarrSettings(context.Background())
+		if err == nil {
+			t.Fatal("expected error on HTTP 500, got nil")
+		}
+		if got != nil {
+			t.Errorf("got = %v, want nil", got)
+		}
+		var apiErr *arr.APIError
+		if !errors.As(err, &apiErr) {
+			t.Fatalf("expected *arr.APIError, got %T", err)
+		}
+		if apiErr.StatusCode != http.StatusInternalServerError {
+			t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusInternalServerError)
+		}
+	})
+
+	t.Run("boundary empty array", func(t *testing.T) {
+		t.Parallel()
+		srv := newTestServer(t, http.MethodGet, "/api/v1/settings/radarr", []seerr.ServiceSettings{})
+		defer srv.Close()
+
+		c, err := seerr.New(srv.URL, "test-key")
+		if err != nil {
+			t.Fatalf("seerr.New: %v", err)
+		}
+		got, err := c.GetRadarrSettings(context.Background())
+		if err != nil {
+			t.Fatalf("GetRadarrSettings: %v", err)
+		}
+		if len(got) != 0 {
+			t.Errorf("len = %d, want 0", len(got))
+		}
+		if got == nil {
+			t.Error("expected non-nil empty slice")
+		}
+	})
+}
+
+func TestServiceSettings_URL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		settings seerr.ServiceSettings
+		want     string
+	}{
+		{
+			name:     "http with port and empty base",
+			settings: seerr.ServiceSettings{Hostname: "sonarr.lan", Port: 8989, UseSSL: false, BaseURL: ""},
+			want:     "http://sonarr.lan:8989",
+		},
+		{
+			name:     "https with port and base path with slashes",
+			settings: seerr.ServiceSettings{Hostname: "radarr.lan", Port: 7878, UseSSL: true, BaseURL: "/radarr/"},
+			want:     "https://radarr.lan:7878/radarr",
+		},
+		{
+			name:     "no port (port 0) omitted",
+			settings: seerr.ServiceSettings{Hostname: "10.0.0.5", Port: 0, UseSSL: false, BaseURL: "arr"},
+			want:     "http://10.0.0.5/arr",
+		},
+		{
+			name:     "negative port omitted",
+			settings: seerr.ServiceSettings{Hostname: "10.0.0.5", Port: -1, UseSSL: false, BaseURL: ""},
+			want:     "http://10.0.0.5",
+		},
+		{
+			name:     "IPv6 host with port",
+			settings: seerr.ServiceSettings{Hostname: "::1", Port: 8989, UseSSL: false, BaseURL: ""},
+			want:     "http://[::1]:8989",
+		},
+		{
+			name:     "IPv6 host with port and ssl",
+			settings: seerr.ServiceSettings{Hostname: "2001:db8::1", Port: 8989, UseSSL: true, BaseURL: "/sonarr"},
+			want:     "https://[2001:db8::1]:8989/sonarr",
+		},
+		{
+			name:     "IPv6 host without port",
+			settings: seerr.ServiceSettings{Hostname: "::1", Port: 0, UseSSL: false, BaseURL: ""},
+			want:     "http://::1",
+		},
+		{
+			name:     "base with redundant slashes",
+			settings: seerr.ServiceSettings{Hostname: "media.lan", Port: 8080, UseSSL: false, BaseURL: "///sonarr///"},
+			want:     "http://media.lan:8080/sonarr",
+		},
+		{
+			name:     "single slash base becomes empty path",
+			settings: seerr.ServiceSettings{Hostname: "media.lan", Port: 8080, UseSSL: false, BaseURL: "/"},
+			want:     "http://media.lan:8080",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := tc.settings.URL()
+			if got != tc.want {
+				t.Errorf("URL() = %q, want %q", got, tc.want)
+			}
+			if len(got) == 0 {
+				t.Error("expected non-empty URL string")
+			}
+		})
+	}
+}
+
+func TestUser_Name(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		user *seerr.User
+		want string
+	}{
+		{
+			name: "nil user returns empty",
+			user: nil,
+			want: "",
+		},
+		{
+			name: "all empty returns empty",
+			user: &seerr.User{},
+			want: "",
+		},
+		{
+			name: "all blank whitespace returns empty",
+			user: &seerr.User{DisplayName: "   ", Username: "\t", Email: " \n "},
+			want: "",
+		},
+		{
+			name: "display name preferred over username and email",
+			user: &seerr.User{DisplayName: "Alice", Username: "alice_w", Email: "alice@example.com"},
+			want: "Alice",
+		},
+		{
+			name: "username fallback when display name empty",
+			user: &seerr.User{DisplayName: "", Username: "bob", Email: "bob@example.com"},
+			want: "bob",
+		},
+		{
+			name: "username fallback when display name whitespace",
+			user: &seerr.User{DisplayName: "   ", Username: "bob", Email: "bob@example.com"},
+			want: "bob",
+		},
+		{
+			name: "email fallback when display name and username empty",
+			user: &seerr.User{DisplayName: "", Username: "", Email: "carol@example.com"},
+			want: "carol@example.com",
+		},
+		{
+			name: "email fallback when display name and username whitespace",
+			user: &seerr.User{DisplayName: "  ", Username: "\t", Email: "carol@example.com"},
+			want: "carol@example.com",
+		},
+		{
+			name: "preserves display name with surrounding spaces",
+			user: &seerr.User{DisplayName: " Dave ", Username: "dave", Email: "dave@example.com"},
+			want: " Dave ",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := tc.user.Name()
+			if got != tc.want {
+				t.Errorf("Name() = %q, want %q", got, tc.want)
+			}
+			if tc.want == "" && len(got) != 0 {
+				t.Errorf("len(got) = %d, want 0", len(got))
+			}
+			if tc.want != "" && len(got) == 0 {
+				t.Error("expected non-empty string")
+			}
+		})
+	}
+}
+
+func TestMediaRequest_DecodeProcessingFields(t *testing.T) {
+	t.Parallel()
+
+	fixture := json.RawMessage(`{
+		"pageInfo": {"page": 1, "pages": 1, "results": 3},
+		"results": [
+			{
+				"id": 11,
+				"type": "movie",
+				"status": 2,
+				"is4k": false,
+				"serverId": 0,
+				"createdAt": "2026-09-20T10:00:00.000Z",
+				"requestedBy": {
+					"displayName": "Alice",
+					"username": "alice",
+					"email": "alice@example.com"
+				},
+				"media": {
+					"id": 5,
+					"mediaType": "movie",
+					"tmdbId": 603,
+					"status": 3,
+					"status4k": 1
+				}
+			},
+			{
+				"id": 12,
+				"type": "tv",
+				"status": 2,
+				"is4k": true,
+				"serverId": 1,
+				"requestedBy": {
+					"username": "bob"
+				},
+				"seasons": [
+					{"id": 1, "seasonNumber": 1, "status": 2},
+					{"id": 2, "seasonNumber": 2, "status": 2}
+				],
+				"media": {
+					"id": 6,
+					"mediaType": "tv",
+					"tmdbId": 1396,
+					"status": 4,
+					"status4k": 2
+				}
+			},
+			{
+				"id": 13,
+				"type": "tv",
+				"status": 2,
+				"is4k": false,
+				"serverId": 1,
+				"requestedBy": {
+					"username": "carol"
+				},
+				"seasons": [],
+				"media": {
+					"id": 7,
+					"mediaType": "tv",
+					"tmdbId": 1397,
+					"status": 4,
+					"status4k": 0
+				}
+			}
+		]
+	}`)
+
+	srv := newTestServer(t, http.MethodGet, "/api/v1/request?take=20&skip=0&filter=processing", fixture)
+	defer srv.Close()
+
+	c, err := seerr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("seerr.New: %v", err)
+	}
+
+	results, pageInfo, err := c.GetRequests(context.Background(), 20, 0, "processing")
+	if err != nil {
+		t.Fatalf("GetRequests: %v", err)
+	}
+	if len(results) != 3 {
+		t.Fatalf("len = %d, want 3", len(results))
+	}
+	if pageInfo.Results != 3 {
+		t.Errorf("PageInfo.Results = %d, want 3", pageInfo.Results)
+	}
+
+	// Movie request assertions
+	movieReq := results[0]
+	if movieReq.Type != "movie" {
+		t.Errorf("movieReq.Type = %q, want %q", movieReq.Type, "movie")
+	}
+	if movieReq.Media == nil || movieReq.Media.MediaType != "movie" {
+		t.Errorf("movieReq.Media.MediaType = %v, want %q", movieReq.Media, "movie")
+	}
+	if movieReq.Media.Status4k != 1 {
+		t.Errorf("movieReq.Media.Status4k = %d, want 1", movieReq.Media.Status4k)
+	}
+	if movieReq.RequestedBy == nil || movieReq.RequestedBy.DisplayName != "Alice" {
+		t.Errorf("movieReq.RequestedBy.DisplayName = %v, want %q", movieReq.RequestedBy, "Alice")
+	}
+	if movieReq.RequestedBy.Name() != "Alice" {
+		t.Errorf("movieReq.RequestedBy.Name() = %q, want %q", movieReq.RequestedBy.Name(), "Alice")
+	}
+	if movieReq.Seasons != nil {
+		t.Errorf("movieReq.Seasons = %v, want nil", movieReq.Seasons)
+	}
+
+	// TV request assertions
+	tvReq := results[1]
+	if tvReq.Type != "tv" {
+		t.Errorf("tvReq.Type = %q, want %q", tvReq.Type, "tv")
+	}
+	if tvReq.Media == nil || tvReq.Media.MediaType != "tv" {
+		t.Errorf("tvReq.Media.MediaType = %v, want %q", tvReq.Media, "tv")
+	}
+	if tvReq.Media.Status4k != 2 {
+		t.Errorf("tvReq.Media.Status4k = %d, want 2", tvReq.Media.Status4k)
+	}
+	if tvReq.Seasons == nil {
+		t.Fatal("tvReq.Seasons is nil, want non-nil pointer")
+	}
+	tvSeasons := *tvReq.Seasons
+	if len(tvSeasons) != 2 {
+		t.Fatalf("tvSeasons len = %d, want 2", len(tvSeasons))
+	}
+	if tvSeasons[0].SeasonNumber != 1 || tvSeasons[0].Status != 2 || tvSeasons[0].ID != 1 {
+		t.Errorf("tvSeasons[0] = %+v, want ID=1 SeasonNumber=1 Status=2", tvSeasons[0])
+	}
+	if tvSeasons[1].SeasonNumber != 2 || tvSeasons[1].Status != 2 || tvSeasons[1].ID != 2 {
+		t.Errorf("tvSeasons[1] = %+v, want ID=2 SeasonNumber=2 Status=2", tvSeasons[1])
+	}
+	if tvReq.RequestedBy == nil || tvReq.RequestedBy.Name() != "bob" {
+		t.Errorf("tvReq.RequestedBy.Name() = %v, want %q", tvReq.RequestedBy, "bob")
+	}
+
+	// TV request boundary case: empty seasons slice
+	tvEmptyReq := results[2]
+	if tvEmptyReq.Type != "tv" {
+		t.Errorf("tvEmptyReq.Type = %q, want %q", tvEmptyReq.Type, "tv")
+	}
+	if tvEmptyReq.Seasons == nil {
+		t.Fatal("tvEmptyReq.Seasons is nil, want non-nil pointer to empty slice")
+	}
+	if len(*tvEmptyReq.Seasons) != 0 {
+		t.Errorf("len(*tvEmptyReq.Seasons) = %d, want 0", len(*tvEmptyReq.Seasons))
+	}
+}
