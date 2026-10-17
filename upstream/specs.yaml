@@ -63,3 +63,17 @@ specs:
     path: src/Readarr.Api.V1/openapi.json
     sha256: 67816240e90b225d897fa713bd3f842f90d26d4c73cb522d8a8b59d32391cad8
     license: GPL-3.0
+  - name: whisparr-v2
+    repository: Whisparr/Whisparr
+    branch: api-docs
+    commit: dff667ed86dbf6d29fa9bb93b2eaa5b3d790e78f
+    path: src/Whisparr.Api.V3/openapi.json
+    sha256: 3e0fe9411588f7394f289f1047d270de6808414f3c4e936b67ff52605a676cbd
+    license: GPL-3.0
+  - name: whisparr-v3
+    repository: Whisparr/Whisparr
+    branch: eros-api-docs
+    commit: 0f81d8d0787bbd283de5bef33c94ef314b6ab3d8
+    path: src/Whisparr.Api.V3/openapi.json
+    sha256: 07b95c7e4f87184a9a876587f1da25e5cbfbffce79f08262407f2ebad03d60a1
+    license: GPL-3.0
