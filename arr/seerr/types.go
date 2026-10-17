@@ -54,10 +54,15 @@ type MediaRequest struct {
 	RequestedBy *User      `json:"requestedBy,omitempty"`
 	ModifiedBy  *User      `json:"modifiedBy,omitempty"`
 	Is4k        bool       `json:"is4k"`
-	ServerID    int        `json:"serverId,omitempty"`
-	ProfileID   int        `json:"profileId,omitempty"`
-	RootFolder  string     `json:"rootFolder,omitempty"`
-	Type        string     `json:"type,omitempty"`
+	// ServerID is the Sonarr or Radarr server the request goes to. Seerr numbers servers
+	// from 0, so read ServerAssigned to tell server 0 from a request without a server.
+	ServerID int `json:"serverId,omitempty"`
+	// ServerAssigned reports whether the response carried a non-null serverId. Set it with
+	// ServerID 0 to encode server 0, which omitempty would otherwise drop.
+	ServerAssigned bool   `json:"-"`
+	ProfileID      int    `json:"profileId,omitempty"`
+	RootFolder     string `json:"rootFolder,omitempty"`
+	Type           string `json:"type,omitempty"`
 	// Seasons lists the requested TV seasons; nil means the response carried no seasons field (movie requests).
 	Seasons *[]RequestSeason `json:"seasons,omitempty"`
 }
@@ -292,12 +297,15 @@ type StatusResponse struct {
 
 // CreateRequestBody is the payload when creating a new media request.
 type CreateRequestBody struct {
-	MediaType         string `json:"mediaType"`
-	MediaID           int    `json:"mediaId"`
-	TvdbID            int    `json:"tvdbId,omitempty"`
-	Seasons           any    `json:"seasons,omitempty"`
-	Is4k              bool   `json:"is4k,omitempty"`
+	MediaType string `json:"mediaType"`
+	MediaID   int    `json:"mediaId"`
+	TvdbID    int    `json:"tvdbId,omitempty"`
+	Seasons   any    `json:"seasons,omitempty"`
+	Is4k      bool   `json:"is4k,omitempty"`
+	// ServerID picks the Sonarr or Radarr server. Seerr numbers servers from 0, so set
+	// ServerAssigned to send server 0; without it, 0 means Seerr's default server.
 	ServerID          int    `json:"serverId,omitempty"`
+	ServerAssigned    bool   `json:"-"`
 	ProfileID         int    `json:"profileId,omitempty"`
 	RootFolder        string `json:"rootFolder,omitempty"`
 	LanguageProfileID int    `json:"languageProfileId,omitempty"`

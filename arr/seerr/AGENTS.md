@@ -21,9 +21,11 @@ Search and discover endpoints take a `page` query param.
 - MediaRequest Type and Seasons (*[]RequestSeason; nil means response carried no seasons field, e.g. movie requests) decoding for TV show requests.
 - MediaInfo MediaType and Status4k decoding for media classification and 4K availability.
 - User DisplayName decoding and (*User).Name() fallback resolution.
+- MediaRequest.ServerAssigned tells server 0 from a request without a server (null or absent serverId); CreateRequestBody.ServerAssigned sends server 0.
 - ServiceSettings retrieval for Sonarr (GetSonarrSettings) and Radarr (GetRadarrSettings).
 - ServiceSettings.URL() helper for rebuilding downstream service URLs with proper IPv6 and path handling.
 
 ## Known quirks
 
+- Seerr numbers Sonarr and Radarr servers from 0 (`server/routes/settings/{sonarr,radarr}.ts`) and stores null for a request without a server (`server/entity/MediaRequest.ts`), so `ServerID` 0 is ambiguous on its own; read `ServerAssigned`.
 - Client targets Overseerr; Jellyseerr is wire-compatible with the same endpoints.
