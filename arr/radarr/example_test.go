@@ -31,3 +31,44 @@ func Example() {
 	}
 	fmt.Printf("Total movies: %d\n", len(movies))
 }
+
+func ExampleClient_GetQueueWithOptions() {
+	client, err := radarr.New("http://localhost:7878", "your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx := context.Background()
+
+	queue, err := client.GetQueueWithOptions(ctx, radarr.QueueOptions{
+		Page:           1,
+		PageSize:       20,
+		IncludeUnknown: false,
+		IncludeParent:  false, // ignored by Radarr
+		IncludeItem:    true,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Queue records: %d\n", len(queue.Records))
+}
+
+func ExampleClient_DeleteQueueItemWithOptions() {
+	client, err := radarr.New("http://localhost:7878", "your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx := context.Background()
+
+	err = client.DeleteQueueItemWithOptions(ctx, 42, radarr.QueueDeleteOptions{
+		RemoveFromClient: true,
+		Blocklist:        false,
+		SkipRedownload:   true,
+		ChangeCategory:   false,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}

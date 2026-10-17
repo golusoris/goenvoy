@@ -11,3 +11,7 @@
 ## Auth model
 
 API key passed as `X-Api-Key` header via `arr.BaseClient`.
+
+## API notes
+
+Queue management: `GetQueueWithOptions` and `DeleteQueueItemWithOptions` support advanced filtering, nested inclusion, and extended deletion flags.
