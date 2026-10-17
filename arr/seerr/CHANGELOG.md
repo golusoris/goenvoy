@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.3.1...arr/seerr/v1.4.0) (2026-10-17)
+
+
+### Features
+
+* **arr/seerr:** decode request processing fields and service settings ([#98](https://github.com/golusoris/goenvoy/issues/98)) ([6bf8f0f](https://github.com/golusoris/goenvoy/commit/6bf8f0fb28e04db5ae56f00407d4a39b1beb9b80))
+
 ## [1.3.1](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.3.0...arr/seerr/v1.3.1) (2026-06-19)
 
 

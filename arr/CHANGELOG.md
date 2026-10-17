@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/golusoris/goenvoy/compare/arr/v2.1.0...arr/v2.2.0) (2026-10-17)
+
+
+### Features
+
+* **arr/cleanuparr:** add a read-only Cleanuparr client ([#97](https://github.com/golusoris/goenvoy/issues/97)) ([5afd85d](https://github.com/golusoris/goenvoy/commit/5afd85d612c57d1ab46a27e5743c7b059772582c))
+
 ## [2.1.0](https://github.com/golusoris/goenvoy/compare/arr/v2.0.0...arr/v2.1.0) (2026-04-15)
 
 
