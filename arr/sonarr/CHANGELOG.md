@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/golusoris/goenvoy/compare/arr/sonarr/v1.3.1...arr/sonarr/v1.4.0) (2026-10-17)
+
+
+### Features
+
+* **arr:** add queue options to sonarr, radarr, lidarr and readarr ([#110](https://github.com/golusoris/goenvoy/issues/110)) ([42f31c1](https://github.com/golusoris/goenvoy/commit/42f31c115d9afc057f6433fb25dd991924360a72))
+
 ## [1.3.1](https://github.com/golusoris/goenvoy/compare/arr/sonarr/v1.3.0...arr/sonarr/v1.3.1) (2026-06-19)
 
 
