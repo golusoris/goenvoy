@@ -15,3 +15,7 @@ API key passed as `X-Api-Key` header via `arr.BaseClient`.
 ## Pagination
 
 Paged endpoints (queue, history, wanted, blocklist, log) take `page` and `pageSize` query params.
+
+## API notes
+
+Queue management: `GetQueueWithOptions` and `DeleteQueueItemWithOptions` support advanced filtering, nested inclusion, and extended deletion flags.
