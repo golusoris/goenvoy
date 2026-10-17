@@ -127,7 +127,7 @@ func TestCommittedManifest(t *testing.T) {
 	for _, p := range pins {
 		names = append(names, p.Name)
 	}
-	want := []string{"sonarr", "radarr", "lidarr", "seerr", "bookshelf", "chaptarr", "readarr-faustvii"}
+	want := []string{"sonarr", "radarr", "lidarr", "seerr", "bookshelf", "chaptarr", "readarr-faustvii", "whisparr-v2", "whisparr-v3"}
 	if !slices.Equal(names, want) {
 		t.Errorf("pinned specs = %q, want %q", names, want)
 	}
