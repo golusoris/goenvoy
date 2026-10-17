@@ -15,8 +15,8 @@
 specs:
   - name: sonarr
     repository: Sonarr/Sonarr
-    tag: v4.0.20.3014
-    commit: cab419ade8ac7fcab5bf80394ee492abd35d5f5a
+    tag: v6.4.4.10685
+    commit: a96bf7c3ecb23cb76993770727285dc17a613fbc
     path: src/Sonarr.Api.V3/openapi.json
     sha256: 03108f7f6b20300b84af879392ac44947cd3d3c19c073184e5fbf94e127165f9
     license: GPL-3.0
