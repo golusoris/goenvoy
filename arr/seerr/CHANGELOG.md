@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.4.0...arr/seerr/v1.5.0) (2026-10-17)
+
+
+### Features
+
+* **arr/seerr:** tell server 0 from a request without a server ([#104](https://github.com/golusoris/goenvoy/issues/104)) ([3ea04bb](https://github.com/golusoris/goenvoy/commit/3ea04bb89e4abf3175f90d349bcc1555a6f8c276)), closes [#103](https://github.com/golusoris/goenvoy/issues/103)
+
 ## [1.4.0](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.3.1...arr/seerr/v1.4.0) (2026-10-17)
 
 
