@@ -33,6 +33,25 @@
       "depNameTemplate": "ghcr.io/zizmorcore/zizmor",
       "versioningTemplate": "docker",
       "autoReplaceStringTemplate": "ZIZMOR_VERSION={{{newValue}}}\\nZIZMOR_IMAGE_DIGEST={{{newDigest}}}"
+    },
+    {
+      "customType": "regex",
+      "description": "Upstream OpenAPI spec pins on a release: repository, release tag and commit of each entry, in this order (upstream/README.md).",
+      "managerFilePatterns": ["/^upstream/specs\\.yaml$/"],
+      "matchStrings": [
+        "- name: (?<depName>\\S+)\\n +repository: (?<packageName>\\S+)\\n +tag: (?<currentValue>\\S+)\\n +commit: (?<currentDigest>[0-9a-f]{40})\\n"
+      ],
+      "datasourceTemplate": "github-tags",
+      "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "description": "Upstream OpenAPI spec pins on a branch, for a project that tags no release: repository, branch and commit of each entry, in this order. github-digest dates the newest commit, so minimumReleaseAge applies (upstream/README.md).",
+      "managerFilePatterns": ["/^upstream/specs\\.yaml$/"],
+      "matchStrings": [
+        "- name: (?<depName>\\S+)\\n +repository: (?<packageName>\\S+)\\n +branch: (?<currentValue>\\S+)\\n +commit: (?<currentDigest>[0-9a-f]{40})\\n"
+      ],
+      "datasourceTemplate": "github-digest"
     }
   ],
   "gomod": {
@@ -55,6 +74,11 @@
       "description": "Major bumps require review.",
       "matchUpdateTypes": ["major"],
       "labels": ["dependencies", "breaking-change"],
+      "automerge": false
+    },
+    {
+      "description": "A spec pin bump is merged by a person: the check proves only that the file is unchanged, not that the clients of each consumer still fit (upstream/README.md).",
+      "matchFileNames": ["upstream/specs.yaml"],
       "automerge": false
     }
   ]

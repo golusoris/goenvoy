@@ -1,4 +1,4 @@
-.PHONY: help test-all coverage-check-all lint-all vet-all vuln-all gosec-all cover-all tidy-all build-all fmt-all golines-all ci-all list-modules clean-all tools-install doc
+.PHONY: help test-all coverage-check-all lint-all vet-all vuln-all gosec-all cover-all tidy-all build-all fmt-all golines-all ci-all list-modules clean-all tools-install doc upstream-specs
 
 MODULES := $(shell find . -name 'go.mod' -not -path './.workingdir/*' -not -path './.workingdir2/*' -not -path './tools/go/*' -exec dirname {} \; | sort)
 GOLANGCI_LINT_VERSION := v2.13.2
@@ -108,6 +108,10 @@ tools-install: ## Install pinned local tools used by CI and release checks
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	# gofumpt, gci, golines, gosec, govulncheck, apidiff: pinned in tools/go/go.mod (x/tools floor for Go 1.27.2 export data)
 	cd tools/go && go install tool
+
+upstream-specs: ## Upstream OpenAPI spec pins: planted cases, then every pinned file against its sha256
+	cd tools/go && go vet ./upstreamspec/ && go test -count=1 ./upstreamspec/
+	cd tools/go && go run ./upstreamspec check -manifest ../../upstream/specs.yaml
 
 doc: ## Local godoc server at :6060
 	@echo "Starting godoc server at http://localhost:6060"

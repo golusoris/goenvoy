@@ -1,0 +1,65 @@
+# Upstream OpenAPI specs, pinned once for every consumer (README.md in this folder).
+#
+# Each entry fixes one spec file at one commit of an upstream release, with the sha256 of that
+# file. No spec bytes are committed: the Sonarr, Radarr, Lidarr and Readarr-fork specs are
+# GPL-3.0 and this repository is MIT. `make upstream-specs` downloads every pinned file and
+# refuses one whose sha256 differs; nothing is written to disk.
+#
+# Renovate reads repository, tag and commit, in this order (customManagers in renovate.json), and
+# proposes the next stable upstream release. A project that tags no release is pinned with
+# `branch` in the place of `tag`; Renovate then proposes the newest commit of that branch. When
+# the spec file changed with the proposed commit, the sha256 no longer fits and the check fails
+# until the pin is renewed by hand; the failure prints the sha256 of the new file.
+#
+# prefix: the part of each request path the spec leaves to its `servers` entry.
+specs:
+  - name: sonarr
+    repository: Sonarr/Sonarr
+    tag: v4.0.20.3014
+    commit: cab419ade8ac7fcab5bf80394ee492abd35d5f5a
+    path: src/Sonarr.Api.V3/openapi.json
+    sha256: 03108f7f6b20300b84af879392ac44947cd3d3c19c073184e5fbf94e127165f9
+    license: GPL-3.0
+  - name: radarr
+    repository: Radarr/Radarr
+    tag: v6.4.4.10685
+    commit: a96bf7c3ecb23cb76993770727285dc17a613fbc
+    path: src/Radarr.Api.V3/openapi.json
+    sha256: 95ea9062485118d6a8abed8250b9bfbf94e4de0f55e9c5611da6805864f9a26e
+    license: GPL-3.0
+  - name: lidarr
+    repository: Lidarr/Lidarr
+    tag: v3.1.0.4875
+    commit: 350860e524029b7fb4165ed14fbcabb11217ada2
+    path: src/Lidarr.Api.V1/openapi.json
+    sha256: 4ae9e79e9662898ed4704ce80f091161587a9f0d664f9e518b11a038616e491f
+    license: GPL-3.0
+  - name: seerr
+    repository: seerr-team/seerr
+    tag: v3.5.0
+    commit: e2f24cb46079746936516c723b09820360f95113
+    path: seerr-api.yml
+    sha256: 9533fc4ce04a5e68ef3d7c2deef5a25c43b560dbde07c361eb0f736fce66bf56
+    license: MIT
+    prefix: /api/v1
+  - name: bookshelf
+    repository: pennydreadful/bookshelf
+    branch: develop
+    commit: 3ac41f7e31427684a37138e8e539b7e6c7b73869
+    path: src/Readarr.Api.V1/openapi.json
+    sha256: 4c4704911b1e65fe8cdf55fd69b717c75a2c5cbb21ee2db387ef55db691680e8
+    license: GPL-3.0
+  - name: chaptarr
+    repository: Chaptarr/chaptarr
+    tag: v0.9.965
+    commit: e67374f4b3fed01bbf08f18672add944062fcb49
+    path: src/Chaptarr.Api.V1/openapi.json
+    sha256: 1444bc8e56f39a741070b4434a63dea7a18b9ef7e6f0f2fb105a2882a2a352d6
+    license: GPL-3.0
+  - name: readarr-faustvii
+    repository: Faustvii/Readarr
+    tag: v0.10.0
+    commit: 7f02ffa52997c92165c541a38be154054debc285
+    path: src/Readarr.Api.V1/openapi.json
+    sha256: 67816240e90b225d897fa713bd3f842f90d26d4c73cb522d8a8b59d32391cad8
+    license: GPL-3.0
