@@ -81,12 +81,7 @@ func (c *Client) BrowseFileSystem(ctx context.Context, path string, includeFiles
 
 // GetFileSystemType returns the filesystem type for a path.
 func (c *Client) GetFileSystemType(ctx context.Context, path string) (string, error) {
-	var out string
-	endpoint := "/api/v1/filesystem/type?path=" + url.QueryEscape(path)
-	if err := c.base.Get(ctx, endpoint, &out); err != nil {
-		return "", err
-	}
-	return out, nil
+	return arr.GetValue[string](ctx, c.base, "/api/v1/filesystem/type?path="+url.QueryEscape(path))
 }
 
 // GetFileSystemMediaFiles returns media files at the given path.

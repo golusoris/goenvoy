@@ -21,12 +21,7 @@ func (c *Client) GetLogFiles(ctx context.Context) ([]arr.LogFileResource, error)
 
 // GetLogFileContent returns the content of a specific log file by filename.
 func (c *Client) GetLogFileContent(ctx context.Context, filename string) (string, error) {
-	path := "/api/v1/log/file/" + url.PathEscape(filename)
-	b, err := c.base.GetRaw(ctx, path)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
+	return c.base.GetText(ctx, "/api/v1/log/file/"+url.PathEscape(filename))
 }
 
 // GetUpdateLogFiles returns a list of update log files.
@@ -36,12 +31,7 @@ func (c *Client) GetUpdateLogFiles(ctx context.Context) ([]arr.LogFileResource, 
 
 // GetUpdateLogFileContent returns the content of a specific update log file.
 func (c *Client) GetUpdateLogFileContent(ctx context.Context, filename string) (string, error) {
-	path := "/api/v1/log/file/update/" + url.PathEscape(filename)
-	b, err := c.base.GetRaw(ctx, path)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
+	return c.base.GetText(ctx, "/api/v1/log/file/update/"+url.PathEscape(filename))
 }
 
 // ---------- System ----------.

@@ -619,12 +619,7 @@ func (c *Client) GetLogFiles(ctx context.Context) ([]arr.LogFileResource, error)
 
 // GetLogFileContent returns the content of a specific log file by filename.
 func (c *Client) GetLogFileContent(ctx context.Context, filename string) (string, error) {
-	path := "/api/v1/log/file/" + url.PathEscape(filename)
-	b, err := c.base.GetRaw(ctx, path)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
+	return c.base.GetText(ctx, "/api/v1/log/file/"+url.PathEscape(filename))
 }
 
 // GetUpdateLogFiles returns a list of update log files.
@@ -634,12 +629,7 @@ func (c *Client) GetUpdateLogFiles(ctx context.Context) ([]arr.LogFileResource, 
 
 // GetUpdateLogFileContent returns the content of a specific update log file.
 func (c *Client) GetUpdateLogFileContent(ctx context.Context, filename string) (string, error) {
-	path := "/api/v1/log/file/update/" + url.PathEscape(filename)
-	b, err := c.base.GetRaw(ctx, path)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
+	return c.base.GetText(ctx, "/api/v1/log/file/update/"+url.PathEscape(filename))
 }
 
 // ---------- System ----------.
@@ -721,12 +711,7 @@ func (c *Client) BrowseFileSystem(ctx context.Context, path string) (map[string]
 
 // GetFileSystemType returns the filesystem type for the given path.
 func (c *Client) GetFileSystemType(ctx context.Context, path string) (string, error) {
-	var out string
-	reqPath := "/api/v1/filesystem/type?path=" + url.QueryEscape(path)
-	if err := c.base.Get(ctx, reqPath, &out); err != nil {
-		return "", err
-	}
-	return out, nil
+	return arr.GetValue[string](ctx, c.base, "/api/v1/filesystem/type?path="+url.QueryEscape(path))
 }
 
 // ---------- Search Extended ----------.
