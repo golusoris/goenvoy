@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/golusoris/goenvoy/metadata"
 )
@@ -25,25 +24,17 @@ const (
 type Client struct {
 	*metadata.BaseClient
 	authURL string
-
-	mu           sync.RWMutex // Why: guards onToken/accessToken/refreshToken mutated via Set*/token refresh.
-	onToken      TokenCallback
-	accessToken  string
-	refreshToken string
+	oauth   metadata.OAuthState[TokenCallback]
 }
 
 // SetAccessToken sets a pre-existing OAuth2 access token.
 func (c *Client) SetAccessToken(token string) {
-	c.mu.Lock()
-	c.accessToken = token
-	c.mu.Unlock()
+	c.oauth.SetAccessToken(token)
 }
 
 // SetRefreshToken sets a pre-existing OAuth2 refresh token.
 func (c *Client) SetRefreshToken(token string) {
-	c.mu.Lock()
-	c.refreshToken = token
-	c.mu.Unlock()
+	c.oauth.SetRefreshToken(token)
 }
 
 // TokenCallback is called whenever a new token pair is obtained.
@@ -51,9 +42,7 @@ type TokenCallback func(token Token)
 
 // SetTokenCallback sets a callback invoked when tokens change.
 func (c *Client) SetTokenCallback(cb TokenCallback) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.onToken = cb
+	c.oauth.SetTokenCallback(cb)
 }
 
 // New creates a Kitsu [Client].
@@ -106,9 +95,7 @@ func (c *Client) get(ctx context.Context, path string) ([]byte, error) {
 	req.Header.Set("Accept", jsonAPIMediaType)
 	req.Header.Set("User-Agent", c.UserAgent())
 
-	c.mu.RLock()
-	token := c.accessToken
-	c.mu.RUnlock()
+	token := c.oauth.AccessToken()
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -280,9 +267,7 @@ func (c *Client) Authenticate(ctx context.Context, username, password string) (*
 
 // RefreshToken uses the stored refresh token to obtain a new access token.
 func (c *Client) RefreshToken(ctx context.Context) (*Token, error) {
-	c.mu.RLock()
-	rt := c.refreshToken
-	c.mu.RUnlock()
+	rt := c.oauth.RefreshToken()
 	if rt == "" {
 		return nil, errors.New("kitsu: no refresh token available")
 	}
@@ -323,12 +308,7 @@ func (c *Client) tokenRequest(ctx context.Context, data url.Values) (*Token, err
 		return nil, fmt.Errorf("kitsu: decode token response: %w", err)
 	}
 
-	c.mu.Lock()
-	c.accessToken = token.AccessToken
-	c.refreshToken = token.RefreshToken
-	cb := c.onToken
-	c.mu.Unlock()
-	if cb != nil {
+	if cb := c.oauth.StoreTokens(token.AccessToken, token.RefreshToken); cb != nil {
 		cb(token)
 	}
 	return &token, nil
