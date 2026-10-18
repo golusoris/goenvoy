@@ -1,0 +1,7 @@
+# GO-2026-5932 covers golang.org/x/crypto/openpgp in every x/crypto release
+# and has no fixed version. No tool here imports that package: go list -deps
+# tool lists 685 packages without it (checked 2026-10-18). Re-check by expiry.
+[[IgnoredVulns]]
+id = "GO-2026-5932"
+ignoreUntil = 2027-01-09
+reason = "golang.org/x/crypto/openpgp is in no tool's import graph (go list -deps tool, 2026-10-18); the advisory has no fixed version."
