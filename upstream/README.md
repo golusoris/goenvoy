@@ -28,7 +28,9 @@ does not read every pin), and then checks every pin against the live file. The C
 
 Renovate reads repository, tag and commit of each entry (the two `customManagers` for
 `upstream/specs.yaml` in `renovate.json`) and proposes the next stable release, or the newest
-commit of a pinned branch. When the spec file is unchanged at the new commit, the sha256 still
+commit of a pinned branch. A tag pin is asked of the repository's GitHub releases, not its tags:
+a release carries the pre-release flag, and a tag list also offers tags another project pushed
+into the repository. When the spec file is unchanged at the new commit, the sha256 still
 fits and the check passes. When it changed, the check fails and prints the sha256 it found; a
 person reviews the spec change, puts the new sha256 into the entry, and merges. A pin bump is
 never merged automatically, because the sha256 shows only whether the file changed, not whether

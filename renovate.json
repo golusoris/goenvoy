@@ -41,7 +41,7 @@
       "matchStrings": [
         "- name: (?<depName>\\S+)\\n +repository: (?<packageName>\\S+)\\n +tag: (?<currentValue>\\S+)\\n +commit: (?<currentDigest>[0-9a-f]{40})\\n"
       ],
-      "datasourceTemplate": "github-tags",
+      "datasourceTemplate": "github-releases",
       "versioningTemplate": "loose"
     },
     {

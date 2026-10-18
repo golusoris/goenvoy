@@ -15,10 +15,12 @@ const (
 	committedManifest     = `/^upstream/specs\.yaml$/`
 	committedManifestPath = "../../../upstream/specs.yaml"
 	manifestFile          = "upstream/specs.yaml"
-	// tagSource lists the tags of a repository with the date of each. branchSource resolves a
+	// tagSource lists the releases of a repository with the date and pre-release flag of each;
+	// a tag list would also offer tags another project pushed into the repository (Sonarr/Sonarr
+	// carries Radarr's). branchSource resolves a
 	// branch to its newest commit and dates it; git-refs would do the first but gives no date,
 	// and Renovate holds an update without one for as long as minimumReleaseAge is set.
-	tagSource    = "github-tags"
+	tagSource    = "github-releases"
 	branchSource = "github-digest"
 	// readers is the number of custom managers that read the manifest: one per datasource.
 	readers = 2
@@ -53,7 +55,7 @@ type packageRule struct {
 // reading is what Renovate takes from one manifest entry, and the datasource it asks about it.
 type reading struct{ datasource, repository, ref, commit string }
 
-// wanted returns the reading that keeps p current: a tag pin is asked of the tags of its
+// wanted returns the reading that keeps p current: a tag pin is asked of the releases of its
 // repository, a branch pin of the newest commit of its branch.
 func wanted(p pin) reading {
 	if p.Branch != "" {
@@ -254,14 +256,14 @@ func TestRenovateRefuses(t *testing.T) {
 			t.Helper()
 			managerOf(t, c, tagSource).ManagerFilePatterns = []string{"specs.yaml"}
 		}, "1 custom manager(s) read"},
-		{"a datasource that lists releases only", func(t *testing.T, c *renovateConfig, _ *string) {
+		{"a datasource that lists every tag", func(t *testing.T, c *renovateConfig, _ *string) {
 			t.Helper()
-			managerOf(t, c, tagSource).DatasourceTemplate = "github-releases"
-		}, `datasourceTemplate is "github-releases"`},
+			managerOf(t, c, tagSource).DatasourceTemplate = "github-tags"
+		}, `datasourceTemplate is "github-tags"`},
 		{"the default versioning for tags", func(t *testing.T, c *renovateConfig, _ *string) {
 			t.Helper()
 			managerOf(t, c, tagSource).VersioningTemplate = ""
-		}, `the github-tags manager: versioningTemplate is ""`},
+		}, `the github-releases manager: versioningTemplate is ""`},
 		{"a pattern that does not compile", func(t *testing.T, c *renovateConfig, _ *string) {
 			t.Helper()
 			managerOf(t, c, tagSource).MatchStrings = []string{"("}
@@ -270,7 +272,7 @@ func TestRenovateRefuses(t *testing.T) {
 			t.Helper()
 			branches := managerOf(t, c, branchSource)
 			branches.DatasourceTemplate, branches.VersioningTemplate = tagSource, "loose"
-		}, ": Renovate reads {datasource:github-tags"},
+		}, ": Renovate reads {datasource:github-releases"},
 		{"no rule keeps the pins from automerge", func(_ *testing.T, c *renovateConfig, _ *string) {
 			c.PackageRules = slices.DeleteFunc(c.PackageRules, func(r packageRule) bool {
 				return slices.Contains(r.MatchFileNames, manifestFile)
