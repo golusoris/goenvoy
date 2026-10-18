@@ -1,12 +1,12 @@
 package whisparr
 
-import "context"
+import (
+	"context"
+
+	"github.com/golusoris/goenvoy/arr/v2"
+)
 
 // GetImportListMovies returns movies available from import lists.
 func (c *ClientV3) GetImportListMovies(ctx context.Context) ([]Movie, error) {
-	var out []Movie
-	if err := c.base.Get(ctx, "/api/v3/importlist/movie", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Movie](ctx, c.base, "/api/v3/importlist/movie")
 }

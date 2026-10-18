@@ -3,15 +3,13 @@ package radarr
 import (
 	"context"
 	"fmt"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetCollections returns all movie collections.
 func (c *Client) GetCollections(ctx context.Context) ([]Collection, error) {
-	var out []Collection
-	if err := c.base.Get(ctx, "/api/v3/collection", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Collection](ctx, c.base, "/api/v3/collection")
 }
 
 // GetCollection returns a single collection by its database ID.

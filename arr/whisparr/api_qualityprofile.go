@@ -9,38 +9,22 @@ import (
 
 // GetQualityProfiles returns all quality profiles.
 func (c *api) GetQualityProfiles(ctx context.Context) ([]arr.QualityProfile, error) {
-	var out []arr.QualityProfile
-	if err := c.base.Get(ctx, "/api/v3/qualityprofile", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.QualityProfile](ctx, c.base, "/api/v3/qualityprofile")
 }
 
 // GetQualityProfile returns a quality profile by ID.
 func (c *api) GetQualityProfile(ctx context.Context, id int) (*arr.QualityProfile, error) {
-	var out arr.QualityProfile
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/qualityprofile/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.QualityProfile](ctx, c.base, fmt.Sprintf("/api/v3/qualityprofile/%d", id))
 }
 
 // CreateQualityProfile creates a new quality profile.
 func (c *api) CreateQualityProfile(ctx context.Context, qp *arr.QualityProfile) (*arr.QualityProfile, error) {
-	var out arr.QualityProfile
-	if err := c.base.Post(ctx, "/api/v3/qualityprofile", qp, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.QualityProfile](ctx, c.base, "/api/v3/qualityprofile", qp)
 }
 
 // UpdateQualityProfile updates an existing quality profile.
 func (c *api) UpdateQualityProfile(ctx context.Context, qp *arr.QualityProfile) (*arr.QualityProfile, error) {
-	var out arr.QualityProfile
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v3/qualityprofile/%d", qp.ID), qp, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.QualityProfile](ctx, c.base, fmt.Sprintf("/api/v3/qualityprofile/%d", qp.ID), qp)
 }
 
 // DeleteQualityProfile deletes a quality profile by ID.
@@ -50,9 +34,5 @@ func (c *api) DeleteQualityProfile(ctx context.Context, id int) error {
 
 // GetQualityProfileSchema returns the quality profile schema.
 func (c *api) GetQualityProfileSchema(ctx context.Context) (*arr.QualityProfile, error) {
-	var out arr.QualityProfile
-	if err := c.base.Get(ctx, "/api/v3/qualityprofile/schema", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.QualityProfile](ctx, c.base, "/api/v3/qualityprofile/schema")
 }

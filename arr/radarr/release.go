@@ -9,38 +9,22 @@ import (
 
 // GetReleaseProfiles returns all release profiles.
 func (c *Client) GetReleaseProfiles(ctx context.Context) ([]arr.ReleaseProfileResource, error) {
-	var out []arr.ReleaseProfileResource
-	if err := c.base.Get(ctx, "/api/v3/releaseprofile", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ReleaseProfileResource](ctx, c.base, "/api/v3/releaseprofile")
 }
 
 // GetReleaseProfile returns a single release profile by ID.
 func (c *Client) GetReleaseProfile(ctx context.Context, id int) (*arr.ReleaseProfileResource, error) {
-	var out arr.ReleaseProfileResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/releaseprofile/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.ReleaseProfileResource](ctx, c.base, fmt.Sprintf("/api/v3/releaseprofile/%d", id))
 }
 
 // CreateReleaseProfile creates a new release profile.
 func (c *Client) CreateReleaseProfile(ctx context.Context, rp *arr.ReleaseProfileResource) (*arr.ReleaseProfileResource, error) {
-	var out arr.ReleaseProfileResource
-	if err := c.base.Post(ctx, "/api/v3/releaseprofile", rp, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.ReleaseProfileResource](ctx, c.base, "/api/v3/releaseprofile", rp)
 }
 
 // UpdateReleaseProfile updates an existing release profile.
 func (c *Client) UpdateReleaseProfile(ctx context.Context, rp *arr.ReleaseProfileResource) (*arr.ReleaseProfileResource, error) {
-	var out arr.ReleaseProfileResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v3/releaseprofile/%d", rp.ID), rp, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.ReleaseProfileResource](ctx, c.base, fmt.Sprintf("/api/v3/releaseprofile/%d", rp.ID), rp)
 }
 
 // DeleteReleaseProfile removes a release profile.

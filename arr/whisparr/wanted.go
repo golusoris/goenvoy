@@ -19,11 +19,7 @@ func (c *Client) GetWantedMissing(ctx context.Context, page, pageSize int) (*arr
 
 // GetWantedMissingByID returns a single missing episode by ID.
 func (c *Client) GetWantedMissingByID(ctx context.Context, id int) (*Episode, error) {
-	var out Episode
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/wanted/missing/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Episode](ctx, c.base, fmt.Sprintf("/api/v3/wanted/missing/%d", id))
 }
 
 // GetWantedCutoff returns cutoff unmet episodes (paged).
@@ -38,9 +34,5 @@ func (c *Client) GetWantedCutoff(ctx context.Context, page, pageSize int) (*arr.
 
 // GetWantedCutoffByID returns a single cutoff-unmet episode by ID.
 func (c *Client) GetWantedCutoffByID(ctx context.Context, id int) (*Episode, error) {
-	var out Episode
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/wanted/cutoff/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Episode](ctx, c.base, fmt.Sprintf("/api/v3/wanted/cutoff/%d", id))
 }

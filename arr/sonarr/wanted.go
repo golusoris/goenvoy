@@ -31,22 +31,14 @@ func (c *Client) GetWantedCutoff(ctx context.Context, page, pageSize int) (*arr.
 
 // GetWantedCutoffByID returns a single wanted cutoff record by its ID.
 func (c *Client) GetWantedCutoffByID(ctx context.Context, id int) (*Episode, error) {
-	var out Episode
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/wanted/cutoff/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Episode](ctx, c.base, fmt.Sprintf("/api/v3/wanted/cutoff/%d", id))
 }
 
 // ---------- Wanted: Missing By ID ----------.
 
 // GetWantedMissingByID returns a single wanted missing record by its ID.
 func (c *Client) GetWantedMissingByID(ctx context.Context, id int) (*Episode, error) {
-	var out Episode
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/wanted/missing/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Episode](ctx, c.base, fmt.Sprintf("/api/v3/wanted/missing/%d", id))
 }
 
 // ---------- Config By-ID Gets ----------.

@@ -9,38 +9,22 @@ import (
 
 // GetNotifications returns all configured notifications.
 func (c *api) GetNotifications(ctx context.Context) ([]arr.ProviderResource, error) {
-	var out []arr.ProviderResource
-	if err := c.base.Get(ctx, "/api/v3/notification", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ProviderResource](ctx, c.base, "/api/v3/notification")
 }
 
 // GetNotification returns a single notification by ID.
 func (c *api) GetNotification(ctx context.Context, id int) (*arr.ProviderResource, error) {
-	var out arr.ProviderResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/notification/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.ProviderResource](ctx, c.base, fmt.Sprintf("/api/v3/notification/%d", id))
 }
 
 // CreateNotification creates a new notification.
 func (c *api) CreateNotification(ctx context.Context, n *arr.ProviderResource) (*arr.ProviderResource, error) {
-	var out arr.ProviderResource
-	if err := c.base.Post(ctx, "/api/v3/notification", n, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.ProviderResource](ctx, c.base, "/api/v3/notification", n)
 }
 
 // UpdateNotification updates an existing notification.
 func (c *api) UpdateNotification(ctx context.Context, n *arr.ProviderResource) (*arr.ProviderResource, error) {
-	var out arr.ProviderResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v3/notification/%d", n.ID), n, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.ProviderResource](ctx, c.base, fmt.Sprintf("/api/v3/notification/%d", n.ID), n)
 }
 
 // DeleteNotification deletes a notification by ID.
@@ -50,11 +34,7 @@ func (c *api) DeleteNotification(ctx context.Context, id int) error {
 
 // GetNotificationSchema returns the schema for all notification types.
 func (c *api) GetNotificationSchema(ctx context.Context) ([]arr.ProviderResource, error) {
-	var out []arr.ProviderResource
-	if err := c.base.Get(ctx, "/api/v3/notification/schema", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ProviderResource](ctx, c.base, "/api/v3/notification/schema")
 }
 
 // TestNotification tests a notification configuration.

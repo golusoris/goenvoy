@@ -4,15 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetAllSeries returns every series configured in Sonarr.
 func (c *Client) GetAllSeries(ctx context.Context) ([]Series, error) {
-	var out []Series
-	if err := c.base.Get(ctx, "/api/v3/series", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Series](ctx, c.base, "/api/v3/series")
 }
 
 // GetSeries returns a single series by its database ID.
@@ -27,11 +25,7 @@ func (c *Client) GetSeries(ctx context.Context, id int) (*Series, error) {
 
 // AddSeries adds a new series to Sonarr.
 func (c *Client) AddSeries(ctx context.Context, series *Series) (*Series, error) {
-	var out Series
-	if err := c.base.Post(ctx, "/api/v3/series", series, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Series](ctx, c.base, "/api/v3/series", series)
 }
 
 // UpdateSeries updates an existing series. Set moveFiles to true to relocate
@@ -71,11 +65,7 @@ func (c *Client) UpdateSeasonPass(ctx context.Context, pass SeasonPassResource) 
 
 // EditSeries applies bulk edits to multiple series.
 func (c *Client) EditSeries(ctx context.Context, editor *SeriesEditorResource) ([]Series, error) {
-	var out []Series
-	if err := c.base.Put(ctx, "/api/v3/series/editor", editor, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[Series](ctx, c.base, "/api/v3/series/editor", editor)
 }
 
 // DeleteManySeries deletes multiple series at once.
@@ -85,11 +75,7 @@ func (c *Client) DeleteManySeries(ctx context.Context, editor *SeriesEditorResou
 
 // ImportSeries imports one or more series in bulk.
 func (c *Client) ImportSeries(ctx context.Context, series []Series) ([]Series, error) {
-	var out []Series
-	if err := c.base.Post(ctx, "/api/v3/series/import", series, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PostList[Series](ctx, c.base, "/api/v3/series/import", series)
 }
 
 // ---------- Wanted ----------.

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetCalendar returns episodes airing between start and end dates.
@@ -29,9 +31,5 @@ func (c *Client) Parse(ctx context.Context, title string) (*V2ParseResult, error
 
 // GetCalendarByID returns a single calendar entry by ID.
 func (c *Client) GetCalendarByID(ctx context.Context, id int) (*Episode, error) {
-	var out Episode
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/calendar/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Episode](ctx, c.base, fmt.Sprintf("/api/v3/calendar/%d", id))
 }

@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetAllMovies returns every movie/scene configured in the instance.
 func (c *ClientV3) GetAllMovies(ctx context.Context) ([]Movie, error) {
-	var out []Movie
-	if err := c.base.Get(ctx, "/api/v3/movie", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Movie](ctx, c.base, "/api/v3/movie")
 }
 
 // GetMovie returns a single movie/scene by its database ID.
@@ -28,11 +26,7 @@ func (c *ClientV3) GetMovie(ctx context.Context, id int) (*Movie, error) {
 
 // AddMovie adds a new movie/scene.
 func (c *ClientV3) AddMovie(ctx context.Context, movie *Movie) (*Movie, error) {
-	var out Movie
-	if err := c.base.Post(ctx, "/api/v3/movie", movie, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Movie](ctx, c.base, "/api/v3/movie", movie)
 }
 
 // UpdateMovie updates an existing movie/scene. Set moveFiles to true to
@@ -125,11 +119,7 @@ func (c *ClientV3) GetMovieFiles(ctx context.Context, movieID int) ([]MovieFile,
 
 // UpdateMovieFile updates a movie file.
 func (c *ClientV3) UpdateMovieFile(ctx context.Context, mf *MovieFile) (*MovieFile, error) {
-	var out MovieFile
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v3/moviefile/%d", mf.ID), mf, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[MovieFile](ctx, c.base, fmt.Sprintf("/api/v3/moviefile/%d", mf.ID), mf)
 }
 
 // EditMovieFiles bulk edits movie files.

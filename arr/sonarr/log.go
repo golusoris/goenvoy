@@ -20,20 +20,12 @@ func (c *Client) GetLogs(ctx context.Context, page, pageSize int) (*arr.PagingRe
 
 // GetLogFiles returns the list of available log files.
 func (c *Client) GetLogFiles(ctx context.Context) ([]arr.LogFileResource, error) {
-	var out []arr.LogFileResource
-	if err := c.base.Get(ctx, "/api/v3/log/file", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.LogFileResource](ctx, c.base, "/api/v3/log/file")
 }
 
 // GetUpdateLogFiles returns the list of available update log files.
 func (c *Client) GetUpdateLogFiles(ctx context.Context) ([]arr.LogFileResource, error) {
-	var out []arr.LogFileResource
-	if err := c.base.Get(ctx, "/api/v3/log/file/update", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.LogFileResource](ctx, c.base, "/api/v3/log/file/update")
 }
 
 // ---------- Config: Naming ----------.
