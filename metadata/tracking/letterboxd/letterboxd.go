@@ -25,39 +25,33 @@ type TokenCallback func(accessToken string, expiresIn int)
 // Client is a Letterboxd v0 API client.
 type Client struct {
 	*metadata.BaseClient
-	mu           sync.RWMutex // Why: guards accessToken/onToken/tokenExpiry mutated via Set*/token refresh.
-	accessToken  string
-	clientID     string
-	clientSecret string
-	onToken      TokenCallback
-	tokenExpiry  time.Time
+	clientID string
+	oauth    metadata.OAuthState[TokenCallback]
+
+	mu          sync.Mutex // Why: serializes token refresh and guards tokenExpiry.
+	tokenExpiry time.Time
 }
 
 // New creates a Letterboxd [Client] using the given OAuth2 Bearer token.
 func New(accessToken string, opts ...metadata.Option) *Client {
 	bc := metadata.NewBaseClient(defaultBaseURL, "letterboxd", opts...)
-	return &Client{BaseClient: bc, accessToken: accessToken}
+	c := &Client{BaseClient: bc}
+	c.oauth.SetAccessToken(accessToken)
+	return c
 }
 
 // NewWithClientCredentials creates a Letterboxd [Client] that automatically
 // acquires and refreshes an OAuth2 access token using the client_credentials grant.
 func NewWithClientCredentials(clientID, clientSecret string, opts ...metadata.Option) *Client {
 	bc := metadata.NewBaseClient(defaultBaseURL, "letterboxd", opts...)
-	return &Client{BaseClient: bc, clientID: clientID, clientSecret: clientSecret}
+	c := &Client{BaseClient: bc, clientID: clientID}
+	c.oauth.SetClientSecret(clientSecret)
+	return c
 }
 
 // SetTokenCallback sets a callback for token lifecycle events.
 func (c *Client) SetTokenCallback(cb TokenCallback) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.onToken = cb
-}
-
-// getAccessToken returns the current access token under the read lock.
-func (c *Client) getAccessToken() string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.accessToken
+	c.oauth.SetTokenCallback(cb)
 }
 
 // tokenResponse is the OAuth2 token endpoint response.
@@ -81,14 +75,14 @@ func (c *Client) ensureToken(ctx context.Context) error {
 		}
 	}()
 
-	if c.accessToken != "" && time.Now().Before(c.tokenExpiry) {
+	if c.oauth.AccessToken() != "" && time.Now().Before(c.tokenExpiry) {
 		return nil
 	}
 
 	form := url.Values{
 		"grant_type":    {"client_credentials"},
 		"client_id":     {c.clientID},
-		"client_secret": {c.clientSecret},
+		"client_secret": {c.oauth.ClientSecret()},
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
@@ -120,9 +114,8 @@ func (c *Client) ensureToken(ctx context.Context) error {
 		return fmt.Errorf("letterboxd: decode token response: %w", err)
 	}
 
-	c.accessToken = tok.AccessToken
+	cb := c.oauth.StoreAccessToken(tok.AccessToken)
 	c.tokenExpiry = time.Now().Add(time.Duration(tok.ExpiresIn)*time.Second - 30*time.Second)
-	cb := c.onToken
 	c.mu.Unlock()
 	unlocked = true
 
@@ -139,7 +132,7 @@ func (c *Client) get(ctx context.Context, path string, dst any) error {
 	}
 
 	c.SetAuth(func(req *http.Request) {
-		req.Header.Set("Authorization", "Bearer "+c.getAccessToken())
+		req.Header.Set("Authorization", "Bearer "+c.oauth.AccessToken())
 	})
 
 	body, status, err := c.DoRaw(ctx, http.MethodGet, path, http.NoBody)
@@ -178,7 +171,7 @@ func (c *Client) doJSON(ctx context.Context, method, path string, payload, dst a
 	}
 
 	c.SetAuth(func(req *http.Request) {
-		req.Header.Set("Authorization", "Bearer "+c.getAccessToken())
+		req.Header.Set("Authorization", "Bearer "+c.oauth.AccessToken())
 		if payload != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
