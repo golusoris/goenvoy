@@ -9,22 +9,14 @@ import (
 
 // GetBookFiles returns all book files for the given author.
 func (c *Client) GetBookFiles(ctx context.Context, authorID int) ([]BookFile, error) {
-	var out []BookFile
 	path := fmt.Sprintf("/api/v1/bookfile?authorId=%d", authorID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[BookFile](ctx, c.base, path)
 }
 
 // GetBookFile returns a single book file by its database ID.
 func (c *Client) GetBookFile(ctx context.Context, id int) (*BookFile, error) {
-	var out BookFile
 	path := fmt.Sprintf("/api/v1/bookfile/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[BookFile](ctx, c.base, path)
 }
 
 // DeleteBookFile removes a single book file by its database ID.

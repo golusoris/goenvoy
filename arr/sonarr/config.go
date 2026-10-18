@@ -84,12 +84,8 @@ func (c *Client) GetImportListConfig(ctx context.Context) (*ImportListConfigReso
 
 // UpdateImportListConfig updates the global import list configuration.
 func (c *Client) UpdateImportListConfig(ctx context.Context, cfg *ImportListConfigResource) (*ImportListConfigResource, error) {
-	var out ImportListConfigResource
 	path := fmt.Sprintf("/api/v3/config/importlist/%d", cfg.ID)
-	if err := c.base.Put(ctx, path, cfg, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[ImportListConfigResource](ctx, c.base, path, cfg)
 }
 
 // ---------- Import List Exclusion Bulk ----------.

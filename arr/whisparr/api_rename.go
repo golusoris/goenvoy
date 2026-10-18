@@ -9,12 +9,8 @@ import (
 
 // GetManualImport returns items available for manual import.
 func (c *api) GetManualImport(ctx context.Context, folder string) ([]arr.ManualImportResource, error) {
-	var out []arr.ManualImportResource
 	path := "/api/v3/manualimport?folder=" + url.QueryEscape(folder)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ManualImportResource](ctx, c.base, path)
 }
 
 // ProcessManualImport re-evaluates manual import candidates (POST /api/v3/manualimport)

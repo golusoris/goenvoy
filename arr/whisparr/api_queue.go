@@ -9,12 +9,8 @@ import (
 
 // GetQueue returns the download queue (paged).
 func (c *api) GetQueue(ctx context.Context, page, pageSize int) (*arr.PagingResource[arr.QueueRecord], error) {
-	var out arr.PagingResource[arr.QueueRecord]
 	path := fmt.Sprintf("/api/v3/queue?page=%d&pageSize=%d", page, pageSize)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.PagingResource[arr.QueueRecord]](ctx, c.base, path)
 }
 
 // DeleteQueueItem removes an item from the download queue.

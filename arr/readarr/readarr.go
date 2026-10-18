@@ -23,12 +23,8 @@ func New(baseURL, apiKey string, opts ...arr.Option) (*Client, error) {
 
 // Search searches for authors and books by term.
 func (c *Client) Search(ctx context.Context, term string) ([]Author, error) {
-	var out []Author
 	path := "/api/v1/search?term=" + url.QueryEscape(term)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Author](ctx, c.base, path)
 }
 
 // ReprocessManualImport reprocesses manual imports.

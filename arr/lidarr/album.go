@@ -10,22 +10,14 @@ import (
 
 // GetAlbums returns albums for the given artist.
 func (c *Client) GetAlbums(ctx context.Context, artistID int) ([]Album, error) {
-	var out []Album
 	path := fmt.Sprintf("/api/v1/album?artistId=%d", artistID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Album](ctx, c.base, path)
 }
 
 // GetAlbum returns a single album by its database ID.
 func (c *Client) GetAlbum(ctx context.Context, id int) (*Album, error) {
-	var out Album
 	path := fmt.Sprintf("/api/v1/album/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Album](ctx, c.base, path)
 }
 
 // AddAlbum adds a new album to Lidarr.
@@ -35,12 +27,8 @@ func (c *Client) AddAlbum(ctx context.Context, album *Album) (*Album, error) {
 
 // UpdateAlbum updates an existing album.
 func (c *Client) UpdateAlbum(ctx context.Context, album *Album) (*Album, error) {
-	var out Album
 	path := fmt.Sprintf("/api/v1/album/%d", album.ID)
-	if err := c.base.Put(ctx, path, album, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[Album](ctx, c.base, path, album)
 }
 
 // DeleteAlbum removes an album.
@@ -51,12 +39,8 @@ func (c *Client) DeleteAlbum(ctx context.Context, id int, deleteFiles, addImport
 
 // LookupAlbum searches for an album by name.
 func (c *Client) LookupAlbum(ctx context.Context, term string) ([]Album, error) {
-	var out []Album
 	path := "/api/v1/album/lookup?term=" + url.QueryEscape(term)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Album](ctx, c.base, path)
 }
 
 // MonitorAlbums sets the monitored status for a list of albums.

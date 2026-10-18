@@ -32,12 +32,8 @@ func (c *Client) GetIndexers(ctx context.Context) ([]Indexer, error) {
 
 // GetIndexer returns a single indexer by its database ID.
 func (c *Client) GetIndexer(ctx context.Context, id int) (*Indexer, error) {
-	var out Indexer
 	path := fmt.Sprintf("/api/v1/indexer/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Indexer](ctx, c.base, path)
 }
 
 // AddIndexer adds a new indexer to Prowlarr.
@@ -47,12 +43,8 @@ func (c *Client) AddIndexer(ctx context.Context, indexer *Indexer) (*Indexer, er
 
 // UpdateIndexer updates an existing indexer.
 func (c *Client) UpdateIndexer(ctx context.Context, indexer *Indexer) (*Indexer, error) {
-	var out Indexer
 	path := fmt.Sprintf("/api/v1/indexer/%d", indexer.ID)
-	if err := c.base.Put(ctx, path, indexer, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[Indexer](ctx, c.base, path, indexer)
 }
 
 // DeleteIndexer removes an indexer by its database ID.
@@ -73,12 +65,8 @@ func (c *Client) GetApplications(ctx context.Context) ([]Application, error) {
 
 // GetApplication returns a single application by its database ID.
 func (c *Client) GetApplication(ctx context.Context, id int) (*Application, error) {
-	var out Application
 	path := fmt.Sprintf("/api/v1/applications/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Application](ctx, c.base, path)
 }
 
 // AddApplication adds a new application to Prowlarr.
@@ -88,12 +76,8 @@ func (c *Client) AddApplication(ctx context.Context, app *Application) (*Applica
 
 // UpdateApplication updates an existing application.
 func (c *Client) UpdateApplication(ctx context.Context, app *Application) (*Application, error) {
-	var out Application
 	path := fmt.Sprintf("/api/v1/applications/%d", app.ID)
-	if err := c.base.Put(ctx, path, app, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[Application](ctx, c.base, path, app)
 }
 
 // DeleteApplication removes a connected application by its ID.
@@ -109,12 +93,8 @@ func (c *Client) GetAppProfiles(ctx context.Context) ([]AppProfile, error) {
 
 // GetAppProfile returns a single app profile by its ID.
 func (c *Client) GetAppProfile(ctx context.Context, id int) (*AppProfile, error) {
-	var out AppProfile
 	path := fmt.Sprintf("/api/v1/appprofile/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[AppProfile](ctx, c.base, path)
 }
 
 // AddAppProfile creates a new app profile.
@@ -124,12 +104,8 @@ func (c *Client) AddAppProfile(ctx context.Context, profile *AppProfile) (*AppPr
 
 // UpdateAppProfile updates an existing app profile.
 func (c *Client) UpdateAppProfile(ctx context.Context, profile *AppProfile) (*AppProfile, error) {
-	var out AppProfile
 	path := fmt.Sprintf("/api/v1/appprofile/%d", profile.ID)
-	if err := c.base.Put(ctx, path, profile, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[AppProfile](ctx, c.base, path, profile)
 }
 
 // DeleteAppProfile removes an app profile by its ID.
@@ -150,7 +126,6 @@ type SearchOptions struct {
 
 // Search performs a search across configured indexers.
 func (c *Client) Search(ctx context.Context, opts *SearchOptions) ([]Release, error) {
-	var out []Release
 	params := url.Values{}
 	if opts.Query != "" {
 		params.Set("query", opts.Query)
@@ -178,10 +153,7 @@ func (c *Client) Search(ctx context.Context, opts *SearchOptions) ([]Release, er
 	if encoded := params.Encode(); encoded != "" {
 		path += "?" + encoded
 	}
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Release](ctx, c.base, path)
 }
 
 // GrabRelease sends a release to the download client.
@@ -206,12 +178,8 @@ func (c *Client) GetCommands(ctx context.Context) ([]arr.CommandResponse, error)
 
 // GetCommand returns the status of a single command by its ID.
 func (c *Client) GetCommand(ctx context.Context, id int) (*arr.CommandResponse, error) {
-	var out arr.CommandResponse
 	path := fmt.Sprintf("/api/v1/command/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.CommandResponse](ctx, c.base, path)
 }
 
 // GetHealth returns current health check results.
@@ -236,37 +204,24 @@ func (c *Client) CreateTag(ctx context.Context, label string) (*arr.Tag, error) 
 
 // GetHistory returns the indexer history with pagination.
 func (c *Client) GetHistory(ctx context.Context, page, pageSize int) (*arr.PagingResource[HistoryRecord], error) {
-	var out arr.PagingResource[HistoryRecord]
 	path := fmt.Sprintf("/api/v1/history?page=%d&pageSize=%d", page, pageSize)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.PagingResource[HistoryRecord]](ctx, c.base, path)
 }
 
 // GetHistorySince returns history events since a specific date (RFC 3339 timestamp).
 func (c *Client) GetHistorySince(ctx context.Context, date string) ([]HistoryRecord, error) {
-	var out []HistoryRecord
 	path := "/api/v1/history/since?date=" + url.QueryEscape(date)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[HistoryRecord](ctx, c.base, path)
 }
 
 // GetHistoryByIndexer returns history events for a specific indexer.
 func (c *Client) GetHistoryByIndexer(ctx context.Context, indexerID, limit int) ([]HistoryRecord, error) {
-	var out []HistoryRecord
 	path := fmt.Sprintf("/api/v1/history/indexer?indexerId=%d&limit=%d", indexerID, limit)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[HistoryRecord](ctx, c.base, path)
 }
 
 // GetIndexerStats returns aggregated indexer statistics for the given date range.
 func (c *Client) GetIndexerStats(ctx context.Context, startDate, endDate string) (*IndexerStats, error) {
-	var out IndexerStats
 	params := []string{}
 	if startDate != "" {
 		params = append(params, "startDate="+url.QueryEscape(startDate))
@@ -278,10 +233,7 @@ func (c *Client) GetIndexerStats(ctx context.Context, startDate, endDate string)
 	if len(params) > 0 {
 		path += "?" + strings.Join(params, "&")
 	}
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[IndexerStats](ctx, c.base, path)
 }
 
 // GetIndexerStatuses returns the status of all indexers (including disabled ones).
@@ -656,12 +608,8 @@ func (c *Client) RestoreBackup(ctx context.Context, id int) error {
 
 // GetLogs returns log entries with pagination.
 func (c *Client) GetLogs(ctx context.Context, page, pageSize int) (*arr.PagingResource[arr.LogRecord], error) {
-	var out arr.PagingResource[arr.LogRecord]
 	path := fmt.Sprintf("/api/v1/log?page=%d&pageSize=%d", page, pageSize)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.PagingResource[arr.LogRecord]](ctx, c.base, path)
 }
 
 // GetLogFiles returns a list of log files.

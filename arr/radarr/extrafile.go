@@ -3,16 +3,14 @@ package radarr
 import (
 	"context"
 	"fmt"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetExtraFiles returns extra files for a given movie.
 func (c *Client) GetExtraFiles(ctx context.Context, movieID int) ([]ExtraFileResource, error) {
-	var out []ExtraFileResource
 	path := fmt.Sprintf("/api/v3/extrafile?movieId=%d", movieID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[ExtraFileResource](ctx, c.base, path)
 }
 
 // ---------- Import List Exclusion extras ----------.

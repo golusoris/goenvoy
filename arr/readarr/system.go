@@ -80,12 +80,8 @@ func (c *Client) Ping(ctx context.Context) error {
 
 // BrowseFileSystem returns directory/file listings for the given path.
 func (c *Client) BrowseFileSystem(ctx context.Context, path string) (*FileSystemResource, error) {
-	var out FileSystemResource
 	reqPath := "/api/v1/filesystem?path=" + url.QueryEscape(path)
-	if err := c.base.Get(ctx, reqPath, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[FileSystemResource](ctx, c.base, reqPath)
 }
 
 // GetFileSystemType returns the filesystem type for the given path.
@@ -100,12 +96,8 @@ func (c *Client) GetFileSystemType(ctx context.Context, path string) (string, er
 
 // GetFileSystemMediaFiles returns media files for the given path.
 func (c *Client) GetFileSystemMediaFiles(ctx context.Context, path string) ([]FileSystemEntry, error) {
-	var out []FileSystemEntry
 	reqPath := "/api/v1/filesystem/mediafiles?path=" + url.QueryEscape(path)
-	if err := c.base.Get(ctx, reqPath, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[FileSystemEntry](ctx, c.base, reqPath)
 }
 
 // ---------- Book File Update ----------.

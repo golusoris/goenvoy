@@ -9,32 +9,20 @@ import (
 
 // GetEpisodes returns all episodes for the given series.
 func (c *Client) GetEpisodes(ctx context.Context, seriesID int) ([]Episode, error) {
-	var out []Episode
 	path := fmt.Sprintf("/api/v3/episode?seriesId=%d", seriesID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Episode](ctx, c.base, path)
 }
 
 // GetEpisode returns a single episode by its database ID.
 func (c *Client) GetEpisode(ctx context.Context, id int) (*Episode, error) {
-	var out Episode
 	path := fmt.Sprintf("/api/v3/episode/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Episode](ctx, c.base, path)
 }
 
 // UpdateEpisode updates the metadata for an episode (typically the monitored flag).
 func (c *Client) UpdateEpisode(ctx context.Context, episode *Episode) (*Episode, error) {
-	var out Episode
 	path := fmt.Sprintf("/api/v3/episode/%d", episode.ID)
-	if err := c.base.Put(ctx, path, episode, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[Episode](ctx, c.base, path, episode)
 }
 
 // MonitorEpisodes sets the monitored flag for a batch of episode IDs.
@@ -45,22 +33,14 @@ func (c *Client) MonitorEpisodes(ctx context.Context, episodeIDs []int, monitore
 
 // GetEpisodeFiles returns all episode files for the given series.
 func (c *Client) GetEpisodeFiles(ctx context.Context, seriesID int) ([]EpisodeFile, error) {
-	var out []EpisodeFile
 	path := fmt.Sprintf("/api/v3/episodefile?seriesId=%d", seriesID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[EpisodeFile](ctx, c.base, path)
 }
 
 // GetEpisodeFile returns a single episode file by its database ID.
 func (c *Client) GetEpisodeFile(ctx context.Context, id int) (*EpisodeFile, error) {
-	var out EpisodeFile
 	path := fmt.Sprintf("/api/v3/episodefile/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[EpisodeFile](ctx, c.base, path)
 }
 
 // DeleteEpisodeFile removes a single episode file by its database ID.
@@ -78,12 +58,8 @@ func (c *Client) DeleteEpisodeFiles(ctx context.Context, ids []int) error {
 // UpdateEpisodeFile updates an individual episode file's metadata
 // (quality, language, etc.).
 func (c *Client) UpdateEpisodeFile(ctx context.Context, ef *EpisodeFile) (*EpisodeFile, error) {
-	var out EpisodeFile
 	path := fmt.Sprintf("/api/v3/episodefile/%d", ef.ID)
-	if err := c.base.Put(ctx, path, ef, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[EpisodeFile](ctx, c.base, path, ef)
 }
 
 // EditEpisodeFiles performs a bulk update of episode file metadata

@@ -61,12 +61,8 @@ func (c *api) GetFileSystemType(ctx context.Context, path string) (string, error
 
 // GetFileSystemMediaFiles returns media files in a path.
 func (c *api) GetFileSystemMediaFiles(ctx context.Context, path string) ([]map[string]any, error) {
-	var out []map[string]any
 	reqPath := "/api/v3/filesystem/mediafiles?path=" + url.QueryEscape(path)
-	if err := c.base.Get(ctx, reqPath, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[map[string]any](ctx, c.base, reqPath)
 }
 
 // GetSystemRoutes returns all API routes.

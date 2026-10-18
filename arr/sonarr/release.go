@@ -36,12 +36,8 @@ func (c *Client) DeleteReleaseProfile(ctx context.Context, id int) error {
 
 // SearchReleases searches for releases matching the given episode IDs.
 func (c *Client) SearchReleases(ctx context.Context, episodeID int) ([]arr.ReleaseResource, error) {
-	var out []arr.ReleaseResource
 	path := fmt.Sprintf("/api/v3/release?episodeId=%d", episodeID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ReleaseResource](ctx, c.base, path)
 }
 
 // PushRelease manually pushes a download for a release.

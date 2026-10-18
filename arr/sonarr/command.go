@@ -19,12 +19,8 @@ func (c *Client) GetCommands(ctx context.Context) ([]arr.CommandResponse, error)
 
 // GetCommand returns the status of a single command by its ID.
 func (c *Client) GetCommand(ctx context.Context, id int) (*arr.CommandResponse, error) {
-	var out arr.CommandResponse
 	path := fmt.Sprintf("/api/v3/command/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.CommandResponse](ctx, c.base, path)
 }
 
 // DeleteCommand cancels/deletes a pending command by ID.

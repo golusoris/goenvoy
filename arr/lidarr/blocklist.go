@@ -9,12 +9,8 @@ import (
 
 // GetBlocklist returns the blocklisted releases with pagination.
 func (c *Client) GetBlocklist(ctx context.Context, page, pageSize int) (*arr.PagingResource[arr.BlocklistResource], error) {
-	var out arr.PagingResource[arr.BlocklistResource]
 	path := fmt.Sprintf("/api/v1/blocklist?page=%d&pageSize=%d", page, pageSize)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.PagingResource[arr.BlocklistResource]](ctx, c.base, path)
 }
 
 // DeleteBlocklistItem removes a single blocklist entry.

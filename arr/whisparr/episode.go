@@ -9,32 +9,20 @@ import (
 
 // GetEpisodes returns all episodes for a series.
 func (c *Client) GetEpisodes(ctx context.Context, seriesID int) ([]Episode, error) {
-	var out []Episode
 	path := fmt.Sprintf("/api/v3/episode?seriesId=%d", seriesID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Episode](ctx, c.base, path)
 }
 
 // GetEpisode returns a single episode by ID.
 func (c *Client) GetEpisode(ctx context.Context, id int) (*Episode, error) {
-	var out Episode
 	path := fmt.Sprintf("/api/v3/episode/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Episode](ctx, c.base, path)
 }
 
 // GetEpisodeFiles returns all episode files for a series.
 func (c *Client) GetEpisodeFiles(ctx context.Context, seriesID int) ([]EpisodeFile, error) {
-	var out []EpisodeFile
 	path := fmt.Sprintf("/api/v3/episodefile?seriesId=%d", seriesID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[EpisodeFile](ctx, c.base, path)
 }
 
 // DeleteEpisodeFile deletes an episode file by ID.

@@ -23,10 +23,6 @@ func New(baseURL, apiKey string, opts ...arr.Option) (*Client, error) {
 
 // Search performs a general search and returns matching artists and albums.
 func (c *Client) Search(ctx context.Context, term string) ([]SearchResult, error) {
-	var out []SearchResult
 	path := "/api/v1/search?term=" + url.QueryEscape(term)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[SearchResult](ctx, c.base, path)
 }

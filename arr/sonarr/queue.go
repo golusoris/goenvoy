@@ -46,12 +46,8 @@ type QueueDeleteOptions struct {
 
 // GetQueue returns the current download queue with pagination.
 func (c *Client) GetQueue(ctx context.Context, page, pageSize int) (*arr.PagingResource[arr.QueueRecord], error) {
-	var out arr.PagingResource[arr.QueueRecord]
 	path := fmt.Sprintf("/api/v3/queue?page=%d&pageSize=%d", page, pageSize)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.PagingResource[arr.QueueRecord]](ctx, c.base, path)
 }
 
 // GetQueueWithOptions returns the download queue using advanced filtering and inclusion options.
@@ -69,12 +65,8 @@ func (c *Client) GetQueueWithOptions(ctx context.Context, opts QueueOptions) (*a
 		q.Set("includeEpisode", "true")
 	}
 
-	var out arr.PagingResource[QueueRecord]
 	path := "/api/v3/queue?" + q.Encode()
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.PagingResource[QueueRecord]](ctx, c.base, path)
 }
 
 // DeleteQueueItem removes an item from the download queue.

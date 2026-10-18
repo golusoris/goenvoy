@@ -9,22 +9,14 @@ import (
 
 // GetWantedMissing returns albums with missing tracks (paginated).
 func (c *Client) GetWantedMissing(ctx context.Context, page, pageSize int) (*arr.PagingResource[Album], error) {
-	var out arr.PagingResource[Album]
 	path := fmt.Sprintf("/api/v1/wanted/missing?page=%d&pageSize=%d", page, pageSize)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.PagingResource[Album]](ctx, c.base, path)
 }
 
 // GetWantedCutoff returns albums not meeting quality cutoff (paginated).
 func (c *Client) GetWantedCutoff(ctx context.Context, page, pageSize int) (*arr.PagingResource[Album], error) {
-	var out arr.PagingResource[Album]
 	path := fmt.Sprintf("/api/v1/wanted/cutoff?page=%d&pageSize=%d", page, pageSize)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.PagingResource[Album]](ctx, c.base, path)
 }
 
 // GetWantedMissingByID returns a single wanted missing record by its ID.

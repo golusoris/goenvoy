@@ -34,12 +34,8 @@ func (c *Client) DeleteDelayProfile(ctx context.Context, id int) error {
 
 // ReorderDelayProfile moves a delay profile to a new position.
 func (c *Client) ReorderDelayProfile(ctx context.Context, id, afterID int) ([]arr.DelayProfileResource, error) {
-	var out []arr.DelayProfileResource
 	path := fmt.Sprintf("/api/v3/delayprofile/reorder/%d?after=%d", id, afterID)
-	if err := c.base.Put(ctx, path, nil, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[arr.DelayProfileResource](ctx, c.base, path, nil)
 }
 
 // ---------- Notifications ----------.

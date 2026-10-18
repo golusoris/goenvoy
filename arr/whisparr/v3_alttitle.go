@@ -9,12 +9,8 @@ import (
 
 // GetAlternativeTitles returns alternative titles for a movie.
 func (c *ClientV3) GetAlternativeTitles(ctx context.Context, movieID int) ([]AlternativeTitleResource, error) {
-	var out []AlternativeTitleResource
 	path := fmt.Sprintf("/api/v3/alttitle?movieId=%d", movieID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[AlternativeTitleResource](ctx, c.base, path)
 }
 
 // GetAlternativeTitle returns a single alternative title by ID.

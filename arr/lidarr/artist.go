@@ -15,12 +15,8 @@ func (c *Client) GetAllArtists(ctx context.Context) ([]Artist, error) {
 
 // GetArtist returns a single artist by its database ID.
 func (c *Client) GetArtist(ctx context.Context, id int) (*Artist, error) {
-	var out Artist
 	path := fmt.Sprintf("/api/v1/artist/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Artist](ctx, c.base, path)
 }
 
 // AddArtist adds a new artist to Lidarr.
@@ -31,12 +27,8 @@ func (c *Client) AddArtist(ctx context.Context, artist *Artist) (*Artist, error)
 // UpdateArtist updates an existing artist. Set moveFiles to true to relocate
 // files when the artist path changes.
 func (c *Client) UpdateArtist(ctx context.Context, artist *Artist, moveFiles bool) (*Artist, error) {
-	var out Artist
 	path := fmt.Sprintf("/api/v1/artist/%d?moveFiles=%t", artist.ID, moveFiles)
-	if err := c.base.Put(ctx, path, artist, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[Artist](ctx, c.base, path, artist)
 }
 
 // DeleteArtist removes an artist. Set deleteFiles to true to also delete
@@ -48,12 +40,8 @@ func (c *Client) DeleteArtist(ctx context.Context, id int, deleteFiles, addImpor
 
 // LookupArtist searches for an artist by name.
 func (c *Client) LookupArtist(ctx context.Context, term string) ([]Artist, error) {
-	var out []Artist
 	path := "/api/v1/artist/lookup?term=" + url.QueryEscape(term)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Artist](ctx, c.base, path)
 }
 
 // EditArtists performs a batch update on multiple artists.

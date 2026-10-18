@@ -72,12 +72,8 @@ func (c *Client) GetTask(ctx context.Context, id int) (*arr.TaskResource, error)
 
 // BrowseFileSystem returns directories and files at the given path.
 func (c *Client) BrowseFileSystem(ctx context.Context, path string, includeFiles bool) (*FileSystemResource, error) {
-	var out FileSystemResource
 	endpoint := fmt.Sprintf("/api/v3/filesystem?path=%s&includeFiles=%t", url.QueryEscape(path), includeFiles)
-	if err := c.base.Get(ctx, endpoint, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[FileSystemResource](ctx, c.base, endpoint)
 }
 
 // GetFileSystemType returns the filesystem type (e.g. local, network) for a path.
@@ -92,12 +88,8 @@ func (c *Client) GetFileSystemType(ctx context.Context, path string) (string, er
 
 // GetFileSystemMediaFiles returns media files at the given path.
 func (c *Client) GetFileSystemMediaFiles(ctx context.Context, path string) ([]string, error) {
-	var out []string
 	endpoint := "/api/v3/filesystem/mediafiles?path=" + url.QueryEscape(path)
-	if err := c.base.Get(ctx, endpoint, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[string](ctx, c.base, endpoint)
 }
 
 // ---------- Ping ----------.

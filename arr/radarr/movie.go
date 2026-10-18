@@ -30,12 +30,8 @@ func (c *Client) GetAllMovies(ctx context.Context) ([]Movie, error) {
 
 // GetMovie returns a single movie by its database ID.
 func (c *Client) GetMovie(ctx context.Context, id int) (*Movie, error) {
-	var out Movie
 	path := fmt.Sprintf("/api/v3/movie/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Movie](ctx, c.base, path)
 }
 
 // AddMovie adds a new movie to Radarr.
@@ -46,12 +42,8 @@ func (c *Client) AddMovie(ctx context.Context, movie *Movie) (*Movie, error) {
 // UpdateMovie updates an existing movie. Set moveFiles to true to relocate
 // files when the movie path changes.
 func (c *Client) UpdateMovie(ctx context.Context, movie *Movie, moveFiles bool) (*Movie, error) {
-	var out Movie
 	path := fmt.Sprintf("/api/v3/movie/%d?moveFiles=%t", movie.ID, moveFiles)
-	if err := c.base.Put(ctx, path, movie, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[Movie](ctx, c.base, path, movie)
 }
 
 // DeleteMovie removes a movie. Set deleteFiles to true to also delete
@@ -63,52 +55,32 @@ func (c *Client) DeleteMovie(ctx context.Context, id int, deleteFiles, addImport
 
 // LookupMovie searches for a movie by term (title).
 func (c *Client) LookupMovie(ctx context.Context, term string) ([]Movie, error) {
-	var out []Movie
 	path := "/api/v3/movie/lookup?term=" + url.QueryEscape(term)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Movie](ctx, c.base, path)
 }
 
 // LookupMovieByTmdbID looks up a movie by its TMDb ID.
 func (c *Client) LookupMovieByTmdbID(ctx context.Context, tmdbID int) (*Movie, error) {
-	var out Movie
 	path := fmt.Sprintf("/api/v3/movie/lookup/tmdb?tmdbId=%d", tmdbID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Movie](ctx, c.base, path)
 }
 
 // LookupMovieByImdbID looks up a movie by its IMDb ID.
 func (c *Client) LookupMovieByImdbID(ctx context.Context, imdbID string) (*Movie, error) {
-	var out Movie
 	path := "/api/v3/movie/lookup/imdb?imdbId=" + url.QueryEscape(imdbID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Movie](ctx, c.base, path)
 }
 
 // GetMovieFiles returns all movie files for the given movie IDs.
 func (c *Client) GetMovieFiles(ctx context.Context, movieID int) ([]MovieFile, error) {
-	var out []MovieFile
 	path := fmt.Sprintf("/api/v3/moviefile?movieId=%d", movieID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[MovieFile](ctx, c.base, path)
 }
 
 // GetMovieFile returns a single movie file by its database ID.
 func (c *Client) GetMovieFile(ctx context.Context, id int) (*MovieFile, error) {
-	var out MovieFile
 	path := fmt.Sprintf("/api/v3/moviefile/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[MovieFile](ctx, c.base, path)
 }
 
 // DeleteMovieFile removes a single movie file by its database ID.
@@ -138,12 +110,8 @@ func (c *Client) ImportMovies(ctx context.Context, movies []Movie) ([]Movie, err
 // UpdateMovieFile updates an individual movie file's metadata
 // (quality, language, etc.).
 func (c *Client) UpdateMovieFile(ctx context.Context, mf *MovieFile) (*MovieFile, error) {
-	var out MovieFile
 	path := fmt.Sprintf("/api/v3/moviefile/%d", mf.ID)
-	if err := c.base.Put(ctx, path, mf, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[MovieFile](ctx, c.base, path, mf)
 }
 
 // EditMovieFiles performs a bulk update of movie file metadata
