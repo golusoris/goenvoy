@@ -4,15 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetAllArtists returns every artist configured in Lidarr.
 func (c *Client) GetAllArtists(ctx context.Context) ([]Artist, error) {
-	var out []Artist
-	if err := c.base.Get(ctx, "/api/v1/artist", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Artist](ctx, c.base, "/api/v1/artist")
 }
 
 // GetArtist returns a single artist by its database ID.
@@ -27,11 +25,7 @@ func (c *Client) GetArtist(ctx context.Context, id int) (*Artist, error) {
 
 // AddArtist adds a new artist to Lidarr.
 func (c *Client) AddArtist(ctx context.Context, artist *Artist) (*Artist, error) {
-	var out Artist
-	if err := c.base.Post(ctx, "/api/v1/artist", artist, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Artist](ctx, c.base, "/api/v1/artist", artist)
 }
 
 // UpdateArtist updates an existing artist. Set moveFiles to true to relocate

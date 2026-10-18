@@ -33,9 +33,5 @@ func (c *Client) Search(ctx context.Context, term string) ([]Author, error) {
 
 // ReprocessManualImport reprocesses manual imports.
 func (c *Client) ReprocessManualImport(ctx context.Context, items []arr.ManualImportReprocessResource) ([]arr.ManualImportResource, error) {
-	var out []arr.ManualImportResource
-	if err := c.base.Post(ctx, "/api/v1/manualimport", items, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PostList[arr.ManualImportResource](ctx, c.base, "/api/v1/manualimport", items)
 }

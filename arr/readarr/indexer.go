@@ -9,38 +9,22 @@ import (
 
 // GetIndexers returns all configured indexers.
 func (c *Client) GetIndexers(ctx context.Context) ([]arr.ProviderResource, error) {
-	var out []arr.ProviderResource
-	if err := c.base.Get(ctx, "/api/v1/indexer", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ProviderResource](ctx, c.base, "/api/v1/indexer")
 }
 
 // GetIndexer returns a single indexer by its ID.
 func (c *Client) GetIndexer(ctx context.Context, id int) (*arr.ProviderResource, error) {
-	var out arr.ProviderResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/indexer/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.ProviderResource](ctx, c.base, fmt.Sprintf("/api/v1/indexer/%d", id))
 }
 
 // CreateIndexer creates a new indexer.
 func (c *Client) CreateIndexer(ctx context.Context, idx *arr.ProviderResource) (*arr.ProviderResource, error) {
-	var out arr.ProviderResource
-	if err := c.base.Post(ctx, "/api/v1/indexer", idx, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.ProviderResource](ctx, c.base, "/api/v1/indexer", idx)
 }
 
 // UpdateIndexer updates an existing indexer.
 func (c *Client) UpdateIndexer(ctx context.Context, idx *arr.ProviderResource) (*arr.ProviderResource, error) {
-	var out arr.ProviderResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/indexer/%d", idx.ID), idx, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.ProviderResource](ctx, c.base, fmt.Sprintf("/api/v1/indexer/%d", idx.ID), idx)
 }
 
 // DeleteIndexer deletes an indexer by ID.
@@ -50,11 +34,7 @@ func (c *Client) DeleteIndexer(ctx context.Context, id int) error {
 
 // GetIndexerSchema returns the schema for all indexer types.
 func (c *Client) GetIndexerSchema(ctx context.Context) ([]arr.ProviderResource, error) {
-	var out []arr.ProviderResource
-	if err := c.base.Get(ctx, "/api/v1/indexer/schema", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ProviderResource](ctx, c.base, "/api/v1/indexer/schema")
 }
 
 // TestIndexer tests an indexer configuration.
@@ -69,11 +49,7 @@ func (c *Client) TestAllIndexers(ctx context.Context) error {
 
 // BulkUpdateIndexers updates multiple indexers at once.
 func (c *Client) BulkUpdateIndexers(ctx context.Context, bulk *arr.ProviderBulkResource) ([]arr.ProviderResource, error) {
-	var out []arr.ProviderResource
-	if err := c.base.Put(ctx, "/api/v1/indexer/bulk", bulk, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[arr.ProviderResource](ctx, c.base, "/api/v1/indexer/bulk", bulk)
 }
 
 // BulkDeleteIndexers deletes multiple indexers at once.
@@ -85,11 +61,7 @@ func (c *Client) BulkDeleteIndexers(ctx context.Context, ids []int) error {
 
 // GetIndexerFlags returns the list of indexer flags.
 func (c *Client) GetIndexerFlags(ctx context.Context) ([]arr.IndexerFlagResource, error) {
-	var out []arr.IndexerFlagResource
-	if err := c.base.Get(ctx, "/api/v1/indexerflag", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.IndexerFlagResource](ctx, c.base, "/api/v1/indexerflag")
 }
 
 // ---------- File System ----------.

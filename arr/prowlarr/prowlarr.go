@@ -27,11 +27,7 @@ func New(baseURL, apiKey string, opts ...arr.Option) (*Client, error) {
 
 // GetIndexers returns all configured indexers.
 func (c *Client) GetIndexers(ctx context.Context) ([]Indexer, error) {
-	var out []Indexer
-	if err := c.base.Get(ctx, "/api/v1/indexer", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Indexer](ctx, c.base, "/api/v1/indexer")
 }
 
 // GetIndexer returns a single indexer by its database ID.
@@ -46,11 +42,7 @@ func (c *Client) GetIndexer(ctx context.Context, id int) (*Indexer, error) {
 
 // AddIndexer adds a new indexer to Prowlarr.
 func (c *Client) AddIndexer(ctx context.Context, indexer *Indexer) (*Indexer, error) {
-	var out Indexer
-	if err := c.base.Post(ctx, "/api/v1/indexer", indexer, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Indexer](ctx, c.base, "/api/v1/indexer", indexer)
 }
 
 // UpdateIndexer updates an existing indexer.
@@ -71,20 +63,12 @@ func (c *Client) DeleteIndexer(ctx context.Context, id int) error {
 
 // GetIndexerCategories returns the global list of Newznab/Torznab categories.
 func (c *Client) GetIndexerCategories(ctx context.Context) ([]IndexerCategory, error) {
-	var out []IndexerCategory
-	if err := c.base.Get(ctx, "/api/v1/indexer/categories", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[IndexerCategory](ctx, c.base, "/api/v1/indexer/categories")
 }
 
 // GetApplications returns all connected PVR applications.
 func (c *Client) GetApplications(ctx context.Context) ([]Application, error) {
-	var out []Application
-	if err := c.base.Get(ctx, "/api/v1/applications", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Application](ctx, c.base, "/api/v1/applications")
 }
 
 // GetApplication returns a single application by its database ID.
@@ -99,11 +83,7 @@ func (c *Client) GetApplication(ctx context.Context, id int) (*Application, erro
 
 // AddApplication adds a new application to Prowlarr.
 func (c *Client) AddApplication(ctx context.Context, app *Application) (*Application, error) {
-	var out Application
-	if err := c.base.Post(ctx, "/api/v1/applications", app, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Application](ctx, c.base, "/api/v1/applications", app)
 }
 
 // UpdateApplication updates an existing application.
@@ -124,11 +104,7 @@ func (c *Client) DeleteApplication(ctx context.Context, id int) error {
 
 // GetAppProfiles returns all app profiles.
 func (c *Client) GetAppProfiles(ctx context.Context) ([]AppProfile, error) {
-	var out []AppProfile
-	if err := c.base.Get(ctx, "/api/v1/appprofile", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[AppProfile](ctx, c.base, "/api/v1/appprofile")
 }
 
 // GetAppProfile returns a single app profile by its ID.
@@ -143,11 +119,7 @@ func (c *Client) GetAppProfile(ctx context.Context, id int) (*AppProfile, error)
 
 // AddAppProfile creates a new app profile.
 func (c *Client) AddAppProfile(ctx context.Context, profile *AppProfile) (*AppProfile, error) {
-	var out AppProfile
-	if err := c.base.Post(ctx, "/api/v1/appprofile", profile, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[AppProfile](ctx, c.base, "/api/v1/appprofile", profile)
 }
 
 // UpdateAppProfile updates an existing app profile.
@@ -214,38 +186,22 @@ func (c *Client) Search(ctx context.Context, opts *SearchOptions) ([]Release, er
 
 // GrabRelease sends a release to the download client.
 func (c *Client) GrabRelease(ctx context.Context, release *Release) (*Release, error) {
-	var out Release
-	if err := c.base.Post(ctx, "/api/v1/search", release, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Release](ctx, c.base, "/api/v1/search", release)
 }
 
 // GetDownloadClients returns all configured download clients.
 func (c *Client) GetDownloadClients(ctx context.Context) ([]DownloadClientResource, error) {
-	var out []DownloadClientResource
-	if err := c.base.Get(ctx, "/api/v1/downloadclient", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[DownloadClientResource](ctx, c.base, "/api/v1/downloadclient")
 }
 
 // SendCommand triggers a named command.
 func (c *Client) SendCommand(ctx context.Context, cmd arr.CommandRequest) (*arr.CommandResponse, error) {
-	var out arr.CommandResponse
-	if err := c.base.Post(ctx, "/api/v1/command", cmd, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.CommandResponse](ctx, c.base, "/api/v1/command", cmd)
 }
 
 // GetCommands returns all currently queued or running commands.
 func (c *Client) GetCommands(ctx context.Context) ([]arr.CommandResponse, error) {
-	var out []arr.CommandResponse
-	if err := c.base.Get(ctx, "/api/v1/command", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.CommandResponse](ctx, c.base, "/api/v1/command")
 }
 
 // GetCommand returns the status of a single command by its ID.
@@ -260,38 +216,22 @@ func (c *Client) GetCommand(ctx context.Context, id int) (*arr.CommandResponse, 
 
 // GetHealth returns current health check results.
 func (c *Client) GetHealth(ctx context.Context) ([]arr.HealthCheck, error) {
-	var out []arr.HealthCheck
-	if err := c.base.Get(ctx, "/api/v1/health", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.HealthCheck](ctx, c.base, "/api/v1/health")
 }
 
 // GetSystemStatus returns Prowlarr system information.
 func (c *Client) GetSystemStatus(ctx context.Context) (*arr.StatusResponse, error) {
-	var out arr.StatusResponse
-	if err := c.base.Get(ctx, "/api/v1/system/status", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.StatusResponse](ctx, c.base, "/api/v1/system/status")
 }
 
 // GetTags returns all tags.
 func (c *Client) GetTags(ctx context.Context) ([]arr.Tag, error) {
-	var out []arr.Tag
-	if err := c.base.Get(ctx, "/api/v1/tag", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.Tag](ctx, c.base, "/api/v1/tag")
 }
 
 // CreateTag creates a new tag and returns it with its assigned ID.
 func (c *Client) CreateTag(ctx context.Context, label string) (*arr.Tag, error) {
-	var out arr.Tag
-	if err := c.base.Post(ctx, "/api/v1/tag", arr.Tag{Label: label}, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.Tag](ctx, c.base, "/api/v1/tag", arr.Tag{Label: label})
 }
 
 // GetHistory returns the indexer history with pagination.
@@ -346,22 +286,14 @@ func (c *Client) GetIndexerStats(ctx context.Context, startDate, endDate string)
 
 // GetIndexerStatuses returns the status of all indexers (including disabled ones).
 func (c *Client) GetIndexerStatuses(ctx context.Context) ([]IndexerStatus, error) {
-	var out []IndexerStatus
-	if err := c.base.Get(ctx, "/api/v1/indexerstatus", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[IndexerStatus](ctx, c.base, "/api/v1/indexerstatus")
 }
 
 // ---------- Indexer Extended ----------.
 
 // GetIndexerSchema returns the schema for all indexer types.
 func (c *Client) GetIndexerSchema(ctx context.Context) ([]Indexer, error) {
-	var out []Indexer
-	if err := c.base.Get(ctx, "/api/v1/indexer/schema", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Indexer](ctx, c.base, "/api/v1/indexer/schema")
 }
 
 // TestIndexer tests an indexer configuration.
@@ -376,11 +308,7 @@ func (c *Client) TestAllIndexers(ctx context.Context) error {
 
 // BulkUpdateIndexers updates multiple indexers at once.
 func (c *Client) BulkUpdateIndexers(ctx context.Context, bulk *IndexerBulkResource) ([]Indexer, error) {
-	var out []Indexer
-	if err := c.base.Put(ctx, "/api/v1/indexer/bulk", bulk, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[Indexer](ctx, c.base, "/api/v1/indexer/bulk", bulk)
 }
 
 // BulkDeleteIndexers deletes multiple indexers at once.
@@ -400,38 +328,22 @@ func (c *Client) IndexerAction(ctx context.Context, name string, body *Indexer) 
 
 // GetIndexerProxies returns all configured indexer proxies.
 func (c *Client) GetIndexerProxies(ctx context.Context) ([]IndexerProxyResource, error) {
-	var out []IndexerProxyResource
-	if err := c.base.Get(ctx, "/api/v1/indexerproxy", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[IndexerProxyResource](ctx, c.base, "/api/v1/indexerproxy")
 }
 
 // GetIndexerProxy returns a single indexer proxy by its ID.
 func (c *Client) GetIndexerProxy(ctx context.Context, id int) (*IndexerProxyResource, error) {
-	var out IndexerProxyResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/indexerproxy/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[IndexerProxyResource](ctx, c.base, fmt.Sprintf("/api/v1/indexerproxy/%d", id))
 }
 
 // CreateIndexerProxy creates a new indexer proxy.
 func (c *Client) CreateIndexerProxy(ctx context.Context, proxy *IndexerProxyResource) (*IndexerProxyResource, error) {
-	var out IndexerProxyResource
-	if err := c.base.Post(ctx, "/api/v1/indexerproxy", proxy, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[IndexerProxyResource](ctx, c.base, "/api/v1/indexerproxy", proxy)
 }
 
 // UpdateIndexerProxy updates an existing indexer proxy.
 func (c *Client) UpdateIndexerProxy(ctx context.Context, proxy *IndexerProxyResource) (*IndexerProxyResource, error) {
-	var out IndexerProxyResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/indexerproxy/%d", proxy.ID), proxy, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[IndexerProxyResource](ctx, c.base, fmt.Sprintf("/api/v1/indexerproxy/%d", proxy.ID), proxy)
 }
 
 // DeleteIndexerProxy deletes an indexer proxy by ID.
@@ -441,11 +353,7 @@ func (c *Client) DeleteIndexerProxy(ctx context.Context, id int) error {
 
 // GetIndexerProxySchema returns the schema for all indexer proxy types.
 func (c *Client) GetIndexerProxySchema(ctx context.Context) ([]IndexerProxyResource, error) {
-	var out []IndexerProxyResource
-	if err := c.base.Get(ctx, "/api/v1/indexerproxy/schema", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[IndexerProxyResource](ctx, c.base, "/api/v1/indexerproxy/schema")
 }
 
 // TestIndexerProxy tests an indexer proxy configuration.
@@ -468,11 +376,7 @@ func (c *Client) IndexerProxyAction(ctx context.Context, name string, body *Inde
 
 // GetApplicationSchema returns the schema for all application types.
 func (c *Client) GetApplicationSchema(ctx context.Context) ([]Application, error) {
-	var out []Application
-	if err := c.base.Get(ctx, "/api/v1/applications/schema", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Application](ctx, c.base, "/api/v1/applications/schema")
 }
 
 // TestApplication tests an application configuration.
@@ -487,11 +391,7 @@ func (c *Client) TestAllApplications(ctx context.Context) error {
 
 // BulkUpdateApplications updates multiple applications at once.
 func (c *Client) BulkUpdateApplications(ctx context.Context, bulk *ApplicationBulkResource) ([]Application, error) {
-	var out []Application
-	if err := c.base.Put(ctx, "/api/v1/applications/bulk", bulk, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[Application](ctx, c.base, "/api/v1/applications/bulk", bulk)
 }
 
 // BulkDeleteApplications deletes multiple applications at once.
@@ -511,40 +411,24 @@ func (c *Client) ApplicationAction(ctx context.Context, name string, body *Appli
 
 // GetAppProfileSchema returns the app profile schema.
 func (c *Client) GetAppProfileSchema(ctx context.Context) (*AppProfile, error) {
-	var out AppProfile
-	if err := c.base.Get(ctx, "/api/v1/appprofile/schema", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[AppProfile](ctx, c.base, "/api/v1/appprofile/schema")
 }
 
 // ---------- Download Clients Extended ----------.
 
 // GetDownloadClient returns a single download client by its ID.
 func (c *Client) GetDownloadClient(ctx context.Context, id int) (*DownloadClientResource, error) {
-	var out DownloadClientResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/downloadclient/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[DownloadClientResource](ctx, c.base, fmt.Sprintf("/api/v1/downloadclient/%d", id))
 }
 
 // CreateDownloadClient creates a new download client.
 func (c *Client) CreateDownloadClient(ctx context.Context, dc *DownloadClientResource) (*DownloadClientResource, error) {
-	var out DownloadClientResource
-	if err := c.base.Post(ctx, "/api/v1/downloadclient", dc, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[DownloadClientResource](ctx, c.base, "/api/v1/downloadclient", dc)
 }
 
 // UpdateDownloadClient updates an existing download client.
 func (c *Client) UpdateDownloadClient(ctx context.Context, dc *DownloadClientResource) (*DownloadClientResource, error) {
-	var out DownloadClientResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/downloadclient/%d", dc.ID), dc, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[DownloadClientResource](ctx, c.base, fmt.Sprintf("/api/v1/downloadclient/%d", dc.ID), dc)
 }
 
 // DeleteDownloadClient deletes a download client by ID.
@@ -554,11 +438,7 @@ func (c *Client) DeleteDownloadClient(ctx context.Context, id int) error {
 
 // GetDownloadClientSchema returns the schema for all download client types.
 func (c *Client) GetDownloadClientSchema(ctx context.Context) ([]DownloadClientResource, error) {
-	var out []DownloadClientResource
-	if err := c.base.Get(ctx, "/api/v1/downloadclient/schema", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[DownloadClientResource](ctx, c.base, "/api/v1/downloadclient/schema")
 }
 
 // TestDownloadClient tests a download client configuration.
@@ -573,11 +453,7 @@ func (c *Client) TestAllDownloadClients(ctx context.Context) error {
 
 // BulkUpdateDownloadClients updates multiple download clients at once.
 func (c *Client) BulkUpdateDownloadClients(ctx context.Context, bulk *arr.ProviderBulkResource) ([]DownloadClientResource, error) {
-	var out []DownloadClientResource
-	if err := c.base.Put(ctx, "/api/v1/downloadclient/bulk", bulk, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[DownloadClientResource](ctx, c.base, "/api/v1/downloadclient/bulk", bulk)
 }
 
 // BulkDeleteDownloadClients deletes multiple download clients at once.
@@ -597,38 +473,22 @@ func (c *Client) DownloadClientAction(ctx context.Context, name string, body *Do
 
 // GetNotifications returns all configured notifications.
 func (c *Client) GetNotifications(ctx context.Context) ([]arr.ProviderResource, error) {
-	var out []arr.ProviderResource
-	if err := c.base.Get(ctx, "/api/v1/notification", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ProviderResource](ctx, c.base, "/api/v1/notification")
 }
 
 // GetNotification returns a single notification by its ID.
 func (c *Client) GetNotification(ctx context.Context, id int) (*arr.ProviderResource, error) {
-	var out arr.ProviderResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/notification/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.ProviderResource](ctx, c.base, fmt.Sprintf("/api/v1/notification/%d", id))
 }
 
 // CreateNotification creates a new notification.
 func (c *Client) CreateNotification(ctx context.Context, n *arr.ProviderResource) (*arr.ProviderResource, error) {
-	var out arr.ProviderResource
-	if err := c.base.Post(ctx, "/api/v1/notification", n, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.ProviderResource](ctx, c.base, "/api/v1/notification", n)
 }
 
 // UpdateNotification updates an existing notification.
 func (c *Client) UpdateNotification(ctx context.Context, n *arr.ProviderResource) (*arr.ProviderResource, error) {
-	var out arr.ProviderResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/notification/%d", n.ID), n, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.ProviderResource](ctx, c.base, fmt.Sprintf("/api/v1/notification/%d", n.ID), n)
 }
 
 // DeleteNotification deletes a notification by ID.
@@ -638,11 +498,7 @@ func (c *Client) DeleteNotification(ctx context.Context, id int) error {
 
 // GetNotificationSchema returns the schema for all notification types.
 func (c *Client) GetNotificationSchema(ctx context.Context) ([]arr.ProviderResource, error) {
-	var out []arr.ProviderResource
-	if err := c.base.Get(ctx, "/api/v1/notification/schema", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ProviderResource](ctx, c.base, "/api/v1/notification/schema")
 }
 
 // TestNotification tests a notification configuration.
@@ -665,150 +521,86 @@ func (c *Client) NotificationAction(ctx context.Context, name string, body *arr.
 
 // GetDownloadClientConfig returns the download client configuration.
 func (c *Client) GetDownloadClientConfig(ctx context.Context) (*arr.DownloadClientConfigResource, error) {
-	var out arr.DownloadClientConfigResource
-	if err := c.base.Get(ctx, "/api/v1/config/downloadclient", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.DownloadClientConfigResource](ctx, c.base, "/api/v1/config/downloadclient")
 }
 
 // GetDownloadClientConfigByID returns the download client config by its ID.
 func (c *Client) GetDownloadClientConfigByID(ctx context.Context, id int) (*arr.DownloadClientConfigResource, error) {
-	var out arr.DownloadClientConfigResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/config/downloadclient/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.DownloadClientConfigResource](ctx, c.base, fmt.Sprintf("/api/v1/config/downloadclient/%d", id))
 }
 
 // UpdateDownloadClientConfig updates the download client configuration.
 func (c *Client) UpdateDownloadClientConfig(ctx context.Context, config *arr.DownloadClientConfigResource) (*arr.DownloadClientConfigResource, error) {
-	var out arr.DownloadClientConfigResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/config/downloadclient/%d", config.ID), config, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.DownloadClientConfigResource](ctx, c.base, fmt.Sprintf("/api/v1/config/downloadclient/%d", config.ID), config)
 }
 
 // GetHostConfig returns the host configuration.
 func (c *Client) GetHostConfig(ctx context.Context) (*arr.HostConfigResource, error) {
-	var out arr.HostConfigResource
-	if err := c.base.Get(ctx, "/api/v1/config/host", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.HostConfigResource](ctx, c.base, "/api/v1/config/host")
 }
 
 // GetHostConfigByID returns the host config by its ID.
 func (c *Client) GetHostConfigByID(ctx context.Context, id int) (*arr.HostConfigResource, error) {
-	var out arr.HostConfigResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/config/host/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.HostConfigResource](ctx, c.base, fmt.Sprintf("/api/v1/config/host/%d", id))
 }
 
 // UpdateHostConfig updates the host configuration.
 func (c *Client) UpdateHostConfig(ctx context.Context, config *arr.HostConfigResource) (*arr.HostConfigResource, error) {
-	var out arr.HostConfigResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/config/host/%d", config.ID), config, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.HostConfigResource](ctx, c.base, fmt.Sprintf("/api/v1/config/host/%d", config.ID), config)
 }
 
 // GetUIConfig returns the UI configuration.
 func (c *Client) GetUIConfig(ctx context.Context) (*arr.UIConfigResource, error) {
-	var out arr.UIConfigResource
-	if err := c.base.Get(ctx, "/api/v1/config/ui", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.UIConfigResource](ctx, c.base, "/api/v1/config/ui")
 }
 
 // GetUIConfigByID returns the UI config by its ID.
 func (c *Client) GetUIConfigByID(ctx context.Context, id int) (*arr.UIConfigResource, error) {
-	var out arr.UIConfigResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/config/ui/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.UIConfigResource](ctx, c.base, fmt.Sprintf("/api/v1/config/ui/%d", id))
 }
 
 // UpdateUIConfig updates the UI configuration.
 func (c *Client) UpdateUIConfig(ctx context.Context, config *arr.UIConfigResource) (*arr.UIConfigResource, error) {
-	var out arr.UIConfigResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/config/ui/%d", config.ID), config, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.UIConfigResource](ctx, c.base, fmt.Sprintf("/api/v1/config/ui/%d", config.ID), config)
 }
 
 // ---------- Development Config ----------.
 
 // GetDevelopmentConfig returns the development configuration.
 func (c *Client) GetDevelopmentConfig(ctx context.Context) (*DevelopmentConfigResource, error) {
-	var out DevelopmentConfigResource
-	if err := c.base.Get(ctx, "/api/v1/config/development", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[DevelopmentConfigResource](ctx, c.base, "/api/v1/config/development")
 }
 
 // GetDevelopmentConfigByID returns the development config by its ID.
 func (c *Client) GetDevelopmentConfigByID(ctx context.Context, id int) (*DevelopmentConfigResource, error) {
-	var out DevelopmentConfigResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/config/development/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[DevelopmentConfigResource](ctx, c.base, fmt.Sprintf("/api/v1/config/development/%d", id))
 }
 
 // UpdateDevelopmentConfig updates the development configuration.
 func (c *Client) UpdateDevelopmentConfig(ctx context.Context, config *DevelopmentConfigResource) (*DevelopmentConfigResource, error) {
-	var out DevelopmentConfigResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/config/development/%d", config.ID), config, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[DevelopmentConfigResource](ctx, c.base, fmt.Sprintf("/api/v1/config/development/%d", config.ID), config)
 }
 
 // ---------- Custom Filters ----------.
 
 // GetCustomFilters returns all custom filters.
 func (c *Client) GetCustomFilters(ctx context.Context) ([]arr.CustomFilterResource, error) {
-	var out []arr.CustomFilterResource
-	if err := c.base.Get(ctx, "/api/v1/customfilter", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.CustomFilterResource](ctx, c.base, "/api/v1/customfilter")
 }
 
 // GetCustomFilter returns a single custom filter by its ID.
 func (c *Client) GetCustomFilter(ctx context.Context, id int) (*arr.CustomFilterResource, error) {
-	var out arr.CustomFilterResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/customfilter/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.CustomFilterResource](ctx, c.base, fmt.Sprintf("/api/v1/customfilter/%d", id))
 }
 
 // CreateCustomFilter creates a new custom filter.
 func (c *Client) CreateCustomFilter(ctx context.Context, filter *arr.CustomFilterResource) (*arr.CustomFilterResource, error) {
-	var out arr.CustomFilterResource
-	if err := c.base.Post(ctx, "/api/v1/customfilter", filter, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.CustomFilterResource](ctx, c.base, "/api/v1/customfilter", filter)
 }
 
 // UpdateCustomFilter updates an existing custom filter.
 func (c *Client) UpdateCustomFilter(ctx context.Context, filter *arr.CustomFilterResource) (*arr.CustomFilterResource, error) {
-	var out arr.CustomFilterResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/customfilter/%d", filter.ID), filter, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.CustomFilterResource](ctx, c.base, fmt.Sprintf("/api/v1/customfilter/%d", filter.ID), filter)
 }
 
 // DeleteCustomFilter deletes a custom filter by ID.
@@ -820,20 +612,12 @@ func (c *Client) DeleteCustomFilter(ctx context.Context, id int) error {
 
 // GetTag returns a single tag by its ID.
 func (c *Client) GetTag(ctx context.Context, id int) (*arr.Tag, error) {
-	var out arr.Tag
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/tag/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.Tag](ctx, c.base, fmt.Sprintf("/api/v1/tag/%d", id))
 }
 
 // UpdateTag updates an existing tag.
 func (c *Client) UpdateTag(ctx context.Context, tag *arr.Tag) (*arr.Tag, error) {
-	var out arr.Tag
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/tag/%d", tag.ID), tag, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.Tag](ctx, c.base, fmt.Sprintf("/api/v1/tag/%d", tag.ID), tag)
 }
 
 // DeleteTag deletes a tag by ID.
@@ -843,31 +627,19 @@ func (c *Client) DeleteTag(ctx context.Context, id int) error {
 
 // GetTagDetails returns all tags with details about their usage.
 func (c *Client) GetTagDetails(ctx context.Context) ([]arr.TagDetail, error) {
-	var out []arr.TagDetail
-	if err := c.base.Get(ctx, "/api/v1/tag/detail", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.TagDetail](ctx, c.base, "/api/v1/tag/detail")
 }
 
 // GetTagDetail returns a single tag detail by its ID.
 func (c *Client) GetTagDetail(ctx context.Context, id int) (*arr.TagDetail, error) {
-	var out arr.TagDetail
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/tag/detail/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.TagDetail](ctx, c.base, fmt.Sprintf("/api/v1/tag/detail/%d", id))
 }
 
 // ---------- Backups ----------.
 
 // GetBackups returns a list of all available backups.
 func (c *Client) GetBackups(ctx context.Context) ([]arr.Backup, error) {
-	var out []arr.Backup
-	if err := c.base.Get(ctx, "/api/v1/system/backup", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.Backup](ctx, c.base, "/api/v1/system/backup")
 }
 
 // DeleteBackup deletes a backup by ID.
@@ -894,11 +666,7 @@ func (c *Client) GetLogs(ctx context.Context, page, pageSize int) (*arr.PagingRe
 
 // GetLogFiles returns a list of log files.
 func (c *Client) GetLogFiles(ctx context.Context) ([]arr.LogFileResource, error) {
-	var out []arr.LogFileResource
-	if err := c.base.Get(ctx, "/api/v1/log/file", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.LogFileResource](ctx, c.base, "/api/v1/log/file")
 }
 
 // GetLogFileContent returns the content of a specific log file by filename.
@@ -913,11 +681,7 @@ func (c *Client) GetLogFileContent(ctx context.Context, filename string) (string
 
 // GetUpdateLogFiles returns a list of update log files.
 func (c *Client) GetUpdateLogFiles(ctx context.Context) ([]arr.LogFileResource, error) {
-	var out []arr.LogFileResource
-	if err := c.base.Get(ctx, "/api/v1/log/file/update", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.LogFileResource](ctx, c.base, "/api/v1/log/file/update")
 }
 
 // GetUpdateLogFileContent returns the content of a specific update log file.
@@ -934,47 +698,27 @@ func (c *Client) GetUpdateLogFileContent(ctx context.Context, filename string) (
 
 // GetTasks returns all scheduled tasks.
 func (c *Client) GetTasks(ctx context.Context) ([]arr.TaskResource, error) {
-	var out []arr.TaskResource
-	if err := c.base.Get(ctx, "/api/v1/system/task", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.TaskResource](ctx, c.base, "/api/v1/system/task")
 }
 
 // GetTask returns a single task by its ID.
 func (c *Client) GetTask(ctx context.Context, id int) (*arr.TaskResource, error) {
-	var out arr.TaskResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/system/task/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.TaskResource](ctx, c.base, fmt.Sprintf("/api/v1/system/task/%d", id))
 }
 
 // GetUpdates returns available application updates.
 func (c *Client) GetUpdates(ctx context.Context) ([]arr.UpdateResource, error) {
-	var out []arr.UpdateResource
-	if err := c.base.Get(ctx, "/api/v1/update", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.UpdateResource](ctx, c.base, "/api/v1/update")
 }
 
 // GetSystemRoutes returns all API routes.
 func (c *Client) GetSystemRoutes(ctx context.Context) ([]arr.SystemRouteResource, error) {
-	var out []arr.SystemRouteResource
-	if err := c.base.Get(ctx, "/api/v1/system/routes", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.SystemRouteResource](ctx, c.base, "/api/v1/system/routes")
 }
 
 // GetSystemRoutesDuplicate returns duplicate API routes.
 func (c *Client) GetSystemRoutesDuplicate(ctx context.Context) ([]arr.SystemRouteResource, error) {
-	var out []arr.SystemRouteResource
-	if err := c.base.Get(ctx, "/api/v1/system/routes/duplicate", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.SystemRouteResource](ctx, c.base, "/api/v1/system/routes/duplicate")
 }
 
 // Shutdown sends a shutdown command to Prowlarr.
@@ -1005,11 +749,7 @@ func (c *Client) GetLocalization(ctx context.Context) (map[string]string, error)
 
 // GetLocalizationOptions returns available localization language options.
 func (c *Client) GetLocalizationOptions(ctx context.Context) ([]LocalizationOption, error) {
-	var out []LocalizationOption
-	if err := c.base.Get(ctx, "/api/v1/localization/options", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[LocalizationOption](ctx, c.base, "/api/v1/localization/options")
 }
 
 // ---------- Ping ----------.
@@ -1045,11 +785,7 @@ func (c *Client) GetFileSystemType(ctx context.Context, path string) (string, er
 
 // GrabReleasesBulk sends multiple releases to the download client.
 func (c *Client) GrabReleasesBulk(ctx context.Context, releases []Release) (*Release, error) {
-	var out Release
-	if err := c.base.Post(ctx, "/api/v1/search/bulk", releases, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Release](ctx, c.base, "/api/v1/search/bulk", releases)
 }
 
 // ---------- Newznab ----------.

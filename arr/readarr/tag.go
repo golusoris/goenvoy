@@ -9,38 +9,22 @@ import (
 
 // GetTags returns all tags.
 func (c *Client) GetTags(ctx context.Context) ([]arr.Tag, error) {
-	var out []arr.Tag
-	if err := c.base.Get(ctx, "/api/v1/tag", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.Tag](ctx, c.base, "/api/v1/tag")
 }
 
 // CreateTag creates a new tag and returns it with its assigned ID.
 func (c *Client) CreateTag(ctx context.Context, label string) (*arr.Tag, error) {
-	var out arr.Tag
-	if err := c.base.Post(ctx, "/api/v1/tag", arr.Tag{Label: label}, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.Tag](ctx, c.base, "/api/v1/tag", arr.Tag{Label: label})
 }
 
 // GetTag returns a single tag by its ID.
 func (c *Client) GetTag(ctx context.Context, id int) (*arr.Tag, error) {
-	var out arr.Tag
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/tag/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.Tag](ctx, c.base, fmt.Sprintf("/api/v1/tag/%d", id))
 }
 
 // UpdateTag updates an existing tag.
 func (c *Client) UpdateTag(ctx context.Context, tag *arr.Tag) (*arr.Tag, error) {
-	var out arr.Tag
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/tag/%d", tag.ID), tag, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.Tag](ctx, c.base, fmt.Sprintf("/api/v1/tag/%d", tag.ID), tag)
 }
 
 // DeleteTag deletes a tag by ID.
@@ -50,20 +34,12 @@ func (c *Client) DeleteTag(ctx context.Context, id int) error {
 
 // GetTagDetails returns all tags with details about their usage.
 func (c *Client) GetTagDetails(ctx context.Context) ([]arr.TagDetail, error) {
-	var out []arr.TagDetail
-	if err := c.base.Get(ctx, "/api/v1/tag/detail", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.TagDetail](ctx, c.base, "/api/v1/tag/detail")
 }
 
 // GetTagDetail returns a single tag detail by its ID.
 func (c *Client) GetTagDetail(ctx context.Context, id int) (*arr.TagDetail, error) {
-	var out arr.TagDetail
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/tag/detail/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.TagDetail](ctx, c.base, fmt.Sprintf("/api/v1/tag/detail/%d", id))
 }
 
 // ---------- Root Folders extended ----------.

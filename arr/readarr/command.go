@@ -9,20 +9,12 @@ import (
 
 // SendCommand triggers a named command (e.g. "RefreshAuthor", "BookSearch").
 func (c *Client) SendCommand(ctx context.Context, cmd arr.CommandRequest) (*arr.CommandResponse, error) {
-	var out arr.CommandResponse
-	if err := c.base.Post(ctx, "/api/v1/command", cmd, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.CommandResponse](ctx, c.base, "/api/v1/command", cmd)
 }
 
 // GetCommands returns all currently queued or running commands.
 func (c *Client) GetCommands(ctx context.Context) ([]arr.CommandResponse, error) {
-	var out []arr.CommandResponse
-	if err := c.base.Get(ctx, "/api/v1/command", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.CommandResponse](ctx, c.base, "/api/v1/command")
 }
 
 // GetCommand returns the status of a single command by its ID.

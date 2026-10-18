@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetBooks returns books for the given author.
@@ -28,11 +30,7 @@ func (c *Client) GetBook(ctx context.Context, id int) (*Book, error) {
 
 // AddBook adds a new book to Readarr.
 func (c *Client) AddBook(ctx context.Context, book *Book) (*Book, error) {
-	var out Book
-	if err := c.base.Post(ctx, "/api/v1/book", book, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Book](ctx, c.base, "/api/v1/book", book)
 }
 
 // UpdateBook updates an existing book.
@@ -83,9 +81,5 @@ func (c *Client) Bookshelf(ctx context.Context, shelf *BookshelfResource) error 
 
 // GetBookOverview returns an overview for a specific book.
 func (c *Client) GetBookOverview(ctx context.Context, id int) (*Book, error) {
-	var out Book
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/book/%d/overview", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Book](ctx, c.base, fmt.Sprintf("/api/v1/book/%d/overview", id))
 }

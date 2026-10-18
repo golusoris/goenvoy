@@ -3,6 +3,8 @@ package readarr
 import (
 	"context"
 	"fmt"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetBookFiles returns all book files for the given author.
@@ -39,20 +41,12 @@ func (c *Client) DeleteBookFiles(ctx context.Context, ids []int) error {
 
 // UpdateBookFile updates a single book file.
 func (c *Client) UpdateBookFile(ctx context.Context, file *BookFile) (*BookFile, error) {
-	var out BookFile
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/bookfile/%d", file.ID), file, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[BookFile](ctx, c.base, fmt.Sprintf("/api/v1/bookfile/%d", file.ID), file)
 }
 
 // EditBookFilesBulk updates multiple book files at once.
 func (c *Client) EditBookFilesBulk(ctx context.Context, editor *BookFileListResource) ([]BookFile, error) {
-	var out []BookFile
-	if err := c.base.Put(ctx, "/api/v1/bookfile/editor", editor, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[BookFile](ctx, c.base, "/api/v1/bookfile/editor", editor)
 }
 
 // ---------- Bookshelf ----------.
