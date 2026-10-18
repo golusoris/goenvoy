@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/golusoris/goenvoy/compare/arr/v2.2.0...arr/v2.3.0) (2026-10-18)
+
+
+### Features
+
+* **arr:** add typed request helpers beside BaseClient ([#121](https://github.com/golusoris/goenvoy/issues/121)) ([788ff61](https://github.com/golusoris/goenvoy/commit/788ff61607deef78945f98a52cded4a6b0fd77d4))
+
 ## [2.2.0](https://github.com/golusoris/goenvoy/compare/arr/v2.1.0...arr/v2.2.0) (2026-10-17)
 
 

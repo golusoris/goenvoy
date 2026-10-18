@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/golusoris/goenvoy/compare/arr/whisparr/v1.4.0...arr/whisparr/v1.4.1) (2026-10-18)
+
+
+### Code Refactoring
+
+* **arr/whisparr:** share identical v2 and v3 methods through one embedded type ([#119](https://github.com/golusoris/goenvoy/issues/119)) ([b58593f](https://github.com/golusoris/goenvoy/commit/b58593fad1d03aeddad3fb3486810db384561152))
+
 ## [1.4.0](https://github.com/golusoris/goenvoy/compare/arr/whisparr/v1.3.1...arr/whisparr/v1.4.0) (2026-10-18)
 
 

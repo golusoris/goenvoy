@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/golusoris/goenvoy/compare/metadata/adult/tpdb/v1.3.2...metadata/adult/tpdb/v1.3.3) (2026-10-18)
+
+
+### Code Refactoring
+
+* **metadata/adult/tpdb:** delegate LookupByHash to FindSceneByHash ([#120](https://github.com/golusoris/goenvoy/issues/120)) ([d4c9758](https://github.com/golusoris/goenvoy/commit/d4c97586df4675a0606e4c2fa9c65a6dcd335607))
+
 ## [1.3.2](https://github.com/golusoris/goenvoy/compare/metadata/adult/tpdb/v1.3.1...metadata/adult/tpdb/v1.3.2) (2026-10-11)
 
 
