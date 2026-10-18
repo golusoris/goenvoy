@@ -4,4 +4,4 @@
 [[IgnoredVulns]]
 id = "GO-2026-5932"
 ignoreUntil = 2027-01-09
-reason = "golang.org/x/crypto/openpgp is in no tool's import graph (go list -deps tool, 2026-10-18); the advisory has no fixed version."
+reason = "category A, interval 2026-10-18 to 2027-01-09; re-read the advisory for a fixed version at expiry. golang.org/x/crypto/openpgp is in no tool's import graph (go list -deps tool, 2026-10-18); the advisory has no fixed version."
