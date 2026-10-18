@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/golusoris/goenvoy/compare/metadata/v1.3.1...metadata/v1.4.0) (2026-10-18)
+
+
+### Features
+
+* **metadata:** add OAuthState, PostAs and PageParams helpers ([#131](https://github.com/golusoris/goenvoy/issues/131)) ([da8c868](https://github.com/golusoris/goenvoy/commit/da8c8689c038e79e25bb8c42ac16a8a6fa871677))
+
 ## [1.3.1](https://github.com/golusoris/goenvoy/compare/metadata/v1.3.0...metadata/v1.3.1) (2026-06-19)
 
 

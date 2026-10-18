@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.0](https://github.com/golusoris/goenvoy/compare/arr/v2.3.0...arr/v2.4.0) (2026-10-18)
+
+
+### Features
+
+* **arr:** add GetValue, GetText and SendManualImport helpers ([#130](https://github.com/golusoris/goenvoy/issues/130)) ([a305d72](https://github.com/golusoris/goenvoy/commit/a305d728d03b2334dc30ef73023509f1d70ef310))
+
 ## [2.3.0](https://github.com/golusoris/goenvoy/compare/arr/v2.2.0...arr/v2.3.0) (2026-10-18)
 
 
