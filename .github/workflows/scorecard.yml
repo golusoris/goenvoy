@@ -1,8 +1,14 @@
-# Manual only for now: this workflow returns on push and schedule when it
-# moves from the self-hosted runner set below to a hosted runner.
+# Runs on a GitHub-hosted runner; the self-hosted set it used is gone.
 name: Scorecard
 
 on:
+  push:
+    branches: [main]
+  # scorecard-action accepts the default branch and pull request events only.
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '15 6 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -11,7 +17,8 @@ permissions:
 jobs:
   analysis:
     name: Scorecard Analysis
-    runs-on: arc-cauda-golusoris-goenvoy
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
     permissions:
       contents: read
       security-events: write
@@ -24,7 +31,8 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          publish_results: true
+          # No id-token reaches the OpenSSF API from a pull request.
+          publish_results: ${{ github.event_name != 'pull_request' }}
           repo_token: ${{ secrets.SCORECARD_TOKEN || github.token }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
