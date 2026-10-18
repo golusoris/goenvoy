@@ -108,20 +108,12 @@ func (c *Client) GrabQueueItems(ctx context.Context, ids []int) error {
 
 // GetQueueDetails returns all queue items without pagination.
 func (c *Client) GetQueueDetails(ctx context.Context) ([]arr.QueueRecord, error) {
-	var out []arr.QueueRecord
-	if err := c.base.Get(ctx, "/api/v3/queue/details", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.QueueRecord](ctx, c.base, "/api/v3/queue/details")
 }
 
 // GetQueueStatus returns the overall queue status counts.
 func (c *Client) GetQueueStatus(ctx context.Context) (*arr.QueueStatusResource, error) {
-	var out arr.QueueStatusResource
-	if err := c.base.Get(ctx, "/api/v3/queue/status", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.QueueStatusResource](ctx, c.base, "/api/v3/queue/status")
 }
 
 // ---------- History extras ----------.

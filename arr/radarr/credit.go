@@ -3,6 +3,8 @@ package radarr
 import (
 	"context"
 	"fmt"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetCredits returns cast and crew credits for a movie.
@@ -17,11 +19,7 @@ func (c *Client) GetCredits(ctx context.Context, movieID int) ([]Credit, error) 
 
 // GetCreditByID returns a single credit by its ID.
 func (c *Client) GetCreditByID(ctx context.Context, id int) (*Credit, error) {
-	var out Credit
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/credit/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Credit](ctx, c.base, fmt.Sprintf("/api/v3/credit/%d", id))
 }
 
 // ---------- Config By-ID Gets ----------.

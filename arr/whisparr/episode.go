@@ -3,6 +3,8 @@ package whisparr
 import (
 	"context"
 	"fmt"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetEpisodes returns all episodes for a series.
@@ -43,38 +45,22 @@ func (c *Client) DeleteEpisodeFile(ctx context.Context, id int) error {
 
 // UpdateEpisode updates an episode (e.g. monitored status).
 func (c *Client) UpdateEpisode(ctx context.Context, ep *Episode) (*Episode, error) {
-	var out Episode
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v3/episode/%d", ep.ID), ep, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[Episode](ctx, c.base, fmt.Sprintf("/api/v3/episode/%d", ep.ID), ep)
 }
 
 // MonitorEpisodes sets the monitored status for multiple episodes.
 func (c *Client) MonitorEpisodes(ctx context.Context, req *EpisodesMonitoredResource) ([]Episode, error) {
-	var out []Episode
-	if err := c.base.Put(ctx, "/api/v3/episode/monitor", req, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[Episode](ctx, c.base, "/api/v3/episode/monitor", req)
 }
 
 // GetEpisodeFile returns a single episode file by ID.
 func (c *Client) GetEpisodeFile(ctx context.Context, id int) (*EpisodeFile, error) {
-	var out EpisodeFile
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/episodefile/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[EpisodeFile](ctx, c.base, fmt.Sprintf("/api/v3/episodefile/%d", id))
 }
 
 // UpdateEpisodeFile updates an episode file (quality, language).
 func (c *Client) UpdateEpisodeFile(ctx context.Context, ef *EpisodeFile) (*EpisodeFile, error) {
-	var out EpisodeFile
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v3/episodefile/%d", ef.ID), ef, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[EpisodeFile](ctx, c.base, fmt.Sprintf("/api/v3/episodefile/%d", ef.ID), ef)
 }
 
 // EditEpisodeFiles bulk edits episode files.
@@ -91,9 +77,5 @@ func (c *Client) BulkDeleteEpisodeFiles(ctx context.Context, ids []int) error {
 
 // BulkUpdateEpisodeFiles updates multiple episode files.
 func (c *Client) BulkUpdateEpisodeFiles(ctx context.Context, editor *EpisodeFileEditorResource) ([]EpisodeFile, error) {
-	var out []EpisodeFile
-	if err := c.base.Put(ctx, "/api/v3/episodefile/bulk", editor, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[EpisodeFile](ctx, c.base, "/api/v3/episodefile/bulk", editor)
 }

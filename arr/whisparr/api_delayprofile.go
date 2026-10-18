@@ -9,38 +9,22 @@ import (
 
 // GetDelayProfiles returns all delay profiles.
 func (c *api) GetDelayProfiles(ctx context.Context) ([]arr.DelayProfileResource, error) {
-	var out []arr.DelayProfileResource
-	if err := c.base.Get(ctx, "/api/v3/delayprofile", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.DelayProfileResource](ctx, c.base, "/api/v3/delayprofile")
 }
 
 // GetDelayProfile returns a single delay profile by ID.
 func (c *api) GetDelayProfile(ctx context.Context, id int) (*arr.DelayProfileResource, error) {
-	var out arr.DelayProfileResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/delayprofile/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.DelayProfileResource](ctx, c.base, fmt.Sprintf("/api/v3/delayprofile/%d", id))
 }
 
 // CreateDelayProfile creates a new delay profile.
 func (c *api) CreateDelayProfile(ctx context.Context, dp *arr.DelayProfileResource) (*arr.DelayProfileResource, error) {
-	var out arr.DelayProfileResource
-	if err := c.base.Post(ctx, "/api/v3/delayprofile", dp, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.DelayProfileResource](ctx, c.base, "/api/v3/delayprofile", dp)
 }
 
 // UpdateDelayProfile updates an existing delay profile.
 func (c *api) UpdateDelayProfile(ctx context.Context, dp *arr.DelayProfileResource) (*arr.DelayProfileResource, error) {
-	var out arr.DelayProfileResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v3/delayprofile/%d", dp.ID), dp, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.DelayProfileResource](ctx, c.base, fmt.Sprintf("/api/v3/delayprofile/%d", dp.ID), dp)
 }
 
 // DeleteDelayProfile deletes a delay profile by ID.

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // DeleteMovies performs a batch delete of multiple movies.
@@ -13,29 +15,17 @@ func (c *Client) DeleteMovies(ctx context.Context, editor *MovieEditorResource) 
 
 // GetAlternativeTitles returns all alternative titles.
 func (c *Client) GetAlternativeTitles(ctx context.Context) ([]AlternativeTitleResource, error) {
-	var out []AlternativeTitleResource
-	if err := c.base.Get(ctx, "/api/v3/alttitle", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[AlternativeTitleResource](ctx, c.base, "/api/v3/alttitle")
 }
 
 // GetAlternativeTitle returns a single alternative title by ID.
 func (c *Client) GetAlternativeTitle(ctx context.Context, id int) (*AlternativeTitleResource, error) {
-	var out AlternativeTitleResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/alttitle/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[AlternativeTitleResource](ctx, c.base, fmt.Sprintf("/api/v3/alttitle/%d", id))
 }
 
 // GetAllMovies returns every movie configured in Radarr.
 func (c *Client) GetAllMovies(ctx context.Context) ([]Movie, error) {
-	var out []Movie
-	if err := c.base.Get(ctx, "/api/v3/movie", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Movie](ctx, c.base, "/api/v3/movie")
 }
 
 // GetMovie returns a single movie by its database ID.
@@ -50,11 +40,7 @@ func (c *Client) GetMovie(ctx context.Context, id int) (*Movie, error) {
 
 // AddMovie adds a new movie to Radarr.
 func (c *Client) AddMovie(ctx context.Context, movie *Movie) (*Movie, error) {
-	var out Movie
-	if err := c.base.Post(ctx, "/api/v3/movie", movie, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Movie](ctx, c.base, "/api/v3/movie", movie)
 }
 
 // UpdateMovie updates an existing movie. Set moveFiles to true to relocate
@@ -144,11 +130,7 @@ func (c *Client) EditMovies(ctx context.Context, editor *MovieEditorResource) er
 
 // ImportMovies imports one or more movies in bulk.
 func (c *Client) ImportMovies(ctx context.Context, movies []Movie) ([]Movie, error) {
-	var out []Movie
-	if err := c.base.Post(ctx, "/api/v3/movie/import", movies, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PostList[Movie](ctx, c.base, "/api/v3/movie/import", movies)
 }
 
 // ---------- Wanted ----------.
@@ -174,11 +156,7 @@ func (c *Client) EditMovieFiles(ctx context.Context, editor *MovieFileEditorReso
 
 // UpdateMovieFilesBulk performs a bulk update of movie file properties.
 func (c *Client) UpdateMovieFilesBulk(ctx context.Context, editor *MovieFileEditorResource) ([]MovieFile, error) {
-	var out []MovieFile
-	if err := c.base.Put(ctx, "/api/v3/moviefile/bulk", editor, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[MovieFile](ctx, c.base, "/api/v3/moviefile/bulk", editor)
 }
 
 // ---------- Movie Folder ----------.

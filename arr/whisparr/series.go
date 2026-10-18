@@ -4,15 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetAllSeries returns every series configured in the instance.
 func (c *Client) GetAllSeries(ctx context.Context) ([]Series, error) {
-	var out []Series
-	if err := c.base.Get(ctx, "/api/v3/series", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Series](ctx, c.base, "/api/v3/series")
 }
 
 // GetSeries returns a single series by its database ID.
@@ -27,11 +25,7 @@ func (c *Client) GetSeries(ctx context.Context, id int) (*Series, error) {
 
 // AddSeries adds a new series.
 func (c *Client) AddSeries(ctx context.Context, series *Series) (*Series, error) {
-	var out Series
-	if err := c.base.Post(ctx, "/api/v3/series", series, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Series](ctx, c.base, "/api/v3/series", series)
 }
 
 // UpdateSeries updates an existing series. Set moveFiles to true to relocate

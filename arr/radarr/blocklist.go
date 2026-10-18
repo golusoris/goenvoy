@@ -31,11 +31,7 @@ func (c *Client) DeleteBlocklistBulk(ctx context.Context, ids []int) error {
 
 // GetBlocklistMovies returns blocklisted movies.
 func (c *Client) GetBlocklistMovies(ctx context.Context) ([]arr.BlocklistResource, error) {
-	var out []arr.BlocklistResource
-	if err := c.base.Get(ctx, "/api/v3/blocklist/movie", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.BlocklistResource](ctx, c.base, "/api/v3/blocklist/movie")
 }
 
 // ---------- Credit By ID ----------.

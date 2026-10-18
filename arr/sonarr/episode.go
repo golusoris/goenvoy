@@ -3,6 +3,8 @@ package sonarr
 import (
 	"context"
 	"fmt"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetEpisodes returns all episodes for the given series.
@@ -94,11 +96,7 @@ func (c *Client) EditEpisodeFiles(ctx context.Context, editor *EpisodeFileEditor
 
 // UpdateEpisodeFilesBulk performs a bulk update of episode file properties.
 func (c *Client) UpdateEpisodeFilesBulk(ctx context.Context, editor *EpisodeFileEditorResource) ([]EpisodeFile, error) {
-	var out []EpisodeFile
-	if err := c.base.Put(ctx, "/api/v3/episodefile/bulk", editor, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[EpisodeFile](ctx, c.base, "/api/v3/episodefile/bulk", editor)
 }
 
 // ---------- Update Log File Content ----------.

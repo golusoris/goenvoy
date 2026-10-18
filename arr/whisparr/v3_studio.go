@@ -3,15 +3,13 @@ package whisparr
 import (
 	"context"
 	"fmt"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetStudios returns all studios.
 func (c *ClientV3) GetStudios(ctx context.Context) ([]Studio, error) {
-	var out []Studio
-	if err := c.base.Get(ctx, "/api/v3/studio", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Studio](ctx, c.base, "/api/v3/studio")
 }
 
 // GetStudio returns a single studio by ID.
@@ -26,11 +24,7 @@ func (c *ClientV3) GetStudio(ctx context.Context, id int) (*Studio, error) {
 
 // AddStudio adds a new studio to the instance.
 func (c *ClientV3) AddStudio(ctx context.Context, studio *Studio) (*Studio, error) {
-	var out Studio
-	if err := c.base.Post(ctx, "/api/v3/studio", studio, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Studio](ctx, c.base, "/api/v3/studio", studio)
 }
 
 // UpdateStudio updates an existing studio.

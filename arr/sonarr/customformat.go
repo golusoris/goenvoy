@@ -9,38 +9,22 @@ import (
 
 // GetCustomFormats returns all custom formats.
 func (c *Client) GetCustomFormats(ctx context.Context) ([]arr.CustomFormatResource, error) {
-	var out []arr.CustomFormatResource
-	if err := c.base.Get(ctx, "/api/v3/customformat", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.CustomFormatResource](ctx, c.base, "/api/v3/customformat")
 }
 
 // GetCustomFormat returns a single custom format by ID.
 func (c *Client) GetCustomFormat(ctx context.Context, id int) (*arr.CustomFormatResource, error) {
-	var out arr.CustomFormatResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/customformat/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.CustomFormatResource](ctx, c.base, fmt.Sprintf("/api/v3/customformat/%d", id))
 }
 
 // CreateCustomFormat creates a new custom format.
 func (c *Client) CreateCustomFormat(ctx context.Context, cf *arr.CustomFormatResource) (*arr.CustomFormatResource, error) {
-	var out arr.CustomFormatResource
-	if err := c.base.Post(ctx, "/api/v3/customformat", cf, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.CustomFormatResource](ctx, c.base, "/api/v3/customformat", cf)
 }
 
 // UpdateCustomFormat updates an existing custom format.
 func (c *Client) UpdateCustomFormat(ctx context.Context, cf *arr.CustomFormatResource) (*arr.CustomFormatResource, error) {
-	var out arr.CustomFormatResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v3/customformat/%d", cf.ID), cf, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.CustomFormatResource](ctx, c.base, fmt.Sprintf("/api/v3/customformat/%d", cf.ID), cf)
 }
 
 // DeleteCustomFormat removes a custom format.
@@ -50,22 +34,14 @@ func (c *Client) DeleteCustomFormat(ctx context.Context, id int) error {
 
 // GetCustomFormatSchema returns the schema for custom format specifications.
 func (c *Client) GetCustomFormatSchema(ctx context.Context) ([]arr.CustomFormatSpecification, error) {
-	var out []arr.CustomFormatSpecification
-	if err := c.base.Get(ctx, "/api/v3/customformat/schema", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.CustomFormatSpecification](ctx, c.base, "/api/v3/customformat/schema")
 }
 
 // ---------- Delay Profiles ----------.
 
 // UpdateCustomFormatsBulk performs a bulk update of custom formats.
 func (c *Client) UpdateCustomFormatsBulk(ctx context.Context, body *arr.CustomFormatBulkResource) ([]arr.CustomFormatResource, error) {
-	var out []arr.CustomFormatResource
-	if err := c.base.Put(ctx, "/api/v3/customformat/bulk", body, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[arr.CustomFormatResource](ctx, c.base, "/api/v3/customformat/bulk", body)
 }
 
 // DeleteCustomFormatsBulk bulk-deletes custom formats by IDs.

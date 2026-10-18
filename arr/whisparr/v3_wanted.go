@@ -19,11 +19,7 @@ func (c *ClientV3) GetWantedMissing(ctx context.Context, page, pageSize int) (*a
 
 // GetWantedMissingByID returns a single missing movie by ID.
 func (c *ClientV3) GetWantedMissingByID(ctx context.Context, id int) (*Movie, error) {
-	var out Movie
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/wanted/missing/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Movie](ctx, c.base, fmt.Sprintf("/api/v3/wanted/missing/%d", id))
 }
 
 // GetWantedCutoff returns cutoff-unmet movies (paged).
@@ -38,9 +34,5 @@ func (c *ClientV3) GetWantedCutoff(ctx context.Context, page, pageSize int) (*ar
 
 // GetWantedCutoffByID returns a single cutoff-unmet movie by ID.
 func (c *ClientV3) GetWantedCutoffByID(ctx context.Context, id int) (*Movie, error) {
-	var out Movie
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/wanted/cutoff/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Movie](ctx, c.base, fmt.Sprintf("/api/v3/wanted/cutoff/%d", id))
 }

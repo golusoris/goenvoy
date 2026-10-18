@@ -3,6 +3,8 @@ package whisparr
 import (
 	"context"
 	"fmt"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetAlternativeTitles returns alternative titles for a movie.
@@ -17,9 +19,5 @@ func (c *ClientV3) GetAlternativeTitles(ctx context.Context, movieID int) ([]Alt
 
 // GetAlternativeTitle returns a single alternative title by ID.
 func (c *ClientV3) GetAlternativeTitle(ctx context.Context, id int) (*AlternativeTitleResource, error) {
-	var out AlternativeTitleResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/alttitle/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[AlternativeTitleResource](ctx, c.base, fmt.Sprintf("/api/v3/alttitle/%d", id))
 }

@@ -8,9 +8,5 @@ import (
 
 // GetUpdates returns available application updates.
 func (c *api) GetUpdates(ctx context.Context) ([]arr.UpdateResource, error) {
-	var out []arr.UpdateResource
-	if err := c.base.Get(ctx, "/api/v3/update", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.UpdateResource](ctx, c.base, "/api/v3/update")
 }

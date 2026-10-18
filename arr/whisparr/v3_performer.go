@@ -3,15 +3,13 @@ package whisparr
 import (
 	"context"
 	"fmt"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetPerformers returns all performers.
 func (c *ClientV3) GetPerformers(ctx context.Context) ([]Performer, error) {
-	var out []Performer
-	if err := c.base.Get(ctx, "/api/v3/performer", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Performer](ctx, c.base, "/api/v3/performer")
 }
 
 // GetPerformer returns a single performer by ID.
@@ -26,11 +24,7 @@ func (c *ClientV3) GetPerformer(ctx context.Context, id int) (*Performer, error)
 
 // AddPerformer adds a new performer to the instance.
 func (c *ClientV3) AddPerformer(ctx context.Context, performer *Performer) (*Performer, error) {
-	var out Performer
-	if err := c.base.Post(ctx, "/api/v3/performer", performer, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Performer](ctx, c.base, "/api/v3/performer", performer)
 }
 
 // UpdatePerformer updates an existing performer.

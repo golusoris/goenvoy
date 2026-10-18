@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetCalendar returns movies/scenes releasing between start and end dates.
@@ -29,9 +31,5 @@ func (c *ClientV3) Parse(ctx context.Context, title string) (*ParseResultV3, err
 
 // GetCalendarByID returns a single calendar entry by ID.
 func (c *ClientV3) GetCalendarByID(ctx context.Context, id int) (*Movie, error) {
-	var out Movie
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/calendar/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Movie](ctx, c.base, fmt.Sprintf("/api/v3/calendar/%d", id))
 }

@@ -11,38 +11,22 @@ import (
 
 // GetSystemStatus returns Sonarr system information.
 func (c *Client) GetSystemStatus(ctx context.Context) (*arr.StatusResponse, error) {
-	var out arr.StatusResponse
-	if err := c.base.Get(ctx, "/api/v3/system/status", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.StatusResponse](ctx, c.base, "/api/v3/system/status")
 }
 
 // GetHealth returns current health check results.
 func (c *Client) GetHealth(ctx context.Context) ([]arr.HealthCheck, error) {
-	var out []arr.HealthCheck
-	if err := c.base.Get(ctx, "/api/v3/health", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.HealthCheck](ctx, c.base, "/api/v3/health")
 }
 
 // GetDiskSpace returns disk usage information for configured paths.
 func (c *Client) GetDiskSpace(ctx context.Context) ([]arr.DiskSpace, error) {
-	var out []arr.DiskSpace
-	if err := c.base.Get(ctx, "/api/v3/diskspace", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.DiskSpace](ctx, c.base, "/api/v3/diskspace")
 }
 
 // GetBackups returns all available backup files.
 func (c *Client) GetBackups(ctx context.Context) ([]arr.Backup, error) {
-	var out []arr.Backup
-	if err := c.base.Get(ctx, "/api/v3/system/backup", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.Backup](ctx, c.base, "/api/v3/system/backup")
 }
 
 // DeleteBackup removes a backup file by ID.
@@ -59,20 +43,12 @@ func (c *Client) RestoreBackup(ctx context.Context, id int) error {
 
 // GetSystemRoutes returns all registered API routes.
 func (c *Client) GetSystemRoutes(ctx context.Context) ([]arr.SystemRouteResource, error) {
-	var out []arr.SystemRouteResource
-	if err := c.base.Get(ctx, "/api/v3/system/routes", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.SystemRouteResource](ctx, c.base, "/api/v3/system/routes")
 }
 
 // GetSystemRoutesDuplicate returns duplicate API routes.
 func (c *Client) GetSystemRoutesDuplicate(ctx context.Context) ([]arr.SystemRouteResource, error) {
-	var out []arr.SystemRouteResource
-	if err := c.base.Get(ctx, "/api/v3/system/routes/duplicate", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.SystemRouteResource](ctx, c.base, "/api/v3/system/routes/duplicate")
 }
 
 // Shutdown sends a shutdown command to Sonarr.
@@ -89,20 +65,12 @@ func (c *Client) Restart(ctx context.Context) error {
 
 // GetTasks returns all scheduled tasks.
 func (c *Client) GetTasks(ctx context.Context) ([]arr.TaskResource, error) {
-	var out []arr.TaskResource
-	if err := c.base.Get(ctx, "/api/v3/system/task", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.TaskResource](ctx, c.base, "/api/v3/system/task")
 }
 
 // GetTask returns a single scheduled task by ID.
 func (c *Client) GetTask(ctx context.Context, id int) (*arr.TaskResource, error) {
-	var out arr.TaskResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/system/task/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.TaskResource](ctx, c.base, fmt.Sprintf("/api/v3/system/task/%d", id))
 }
 
 // ---------- Updates ----------.

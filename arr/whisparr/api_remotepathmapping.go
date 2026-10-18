@@ -9,38 +9,22 @@ import (
 
 // GetRemotePathMappings returns all remote path mappings.
 func (c *api) GetRemotePathMappings(ctx context.Context) ([]arr.RemotePathMappingResource, error) {
-	var out []arr.RemotePathMappingResource
-	if err := c.base.Get(ctx, "/api/v3/remotepathmapping", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.RemotePathMappingResource](ctx, c.base, "/api/v3/remotepathmapping")
 }
 
 // GetRemotePathMapping returns a remote path mapping by ID.
 func (c *api) GetRemotePathMapping(ctx context.Context, id int) (*arr.RemotePathMappingResource, error) {
-	var out arr.RemotePathMappingResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v3/remotepathmapping/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.RemotePathMappingResource](ctx, c.base, fmt.Sprintf("/api/v3/remotepathmapping/%d", id))
 }
 
 // CreateRemotePathMapping creates a new remote path mapping.
 func (c *api) CreateRemotePathMapping(ctx context.Context, rpm *arr.RemotePathMappingResource) (*arr.RemotePathMappingResource, error) {
-	var out arr.RemotePathMappingResource
-	if err := c.base.Post(ctx, "/api/v3/remotepathmapping", rpm, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.RemotePathMappingResource](ctx, c.base, "/api/v3/remotepathmapping", rpm)
 }
 
 // UpdateRemotePathMapping updates an existing remote path mapping.
 func (c *api) UpdateRemotePathMapping(ctx context.Context, rpm *arr.RemotePathMappingResource) (*arr.RemotePathMappingResource, error) {
-	var out arr.RemotePathMappingResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v3/remotepathmapping/%d", rpm.ID), rpm, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.RemotePathMappingResource](ctx, c.base, fmt.Sprintf("/api/v3/remotepathmapping/%d", rpm.ID), rpm)
 }
 
 // DeleteRemotePathMapping deletes a remote path mapping by ID.
