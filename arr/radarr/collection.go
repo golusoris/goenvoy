@@ -14,22 +14,14 @@ func (c *Client) GetCollections(ctx context.Context) ([]Collection, error) {
 
 // GetCollection returns a single collection by its database ID.
 func (c *Client) GetCollection(ctx context.Context, id int) (*Collection, error) {
-	var out Collection
 	path := fmt.Sprintf("/api/v3/collection/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Collection](ctx, c.base, path)
 }
 
 // UpdateCollection updates an existing collection.
 func (c *Client) UpdateCollection(ctx context.Context, collection *Collection) (*Collection, error) {
-	var out Collection
 	path := fmt.Sprintf("/api/v3/collection/%d", collection.ID)
-	if err := c.base.Put(ctx, path, collection, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[Collection](ctx, c.base, path, collection)
 }
 
 // UpdateCollections performs a bulk update on multiple collections.

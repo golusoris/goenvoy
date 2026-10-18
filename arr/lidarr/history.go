@@ -10,32 +10,20 @@ import (
 
 // GetHistory returns the download history with pagination.
 func (c *Client) GetHistory(ctx context.Context, page, pageSize int) (*arr.PagingResource[HistoryRecord], error) {
-	var out arr.PagingResource[HistoryRecord]
 	path := fmt.Sprintf("/api/v1/history?page=%d&pageSize=%d", page, pageSize)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.PagingResource[HistoryRecord]](ctx, c.base, path)
 }
 
 // GetHistoryArtist returns history for a specific artist.
 func (c *Client) GetHistoryArtist(ctx context.Context, artistID int) ([]HistoryRecord, error) {
-	var out []HistoryRecord
 	path := fmt.Sprintf("/api/v1/history/artist?artistId=%d", artistID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[HistoryRecord](ctx, c.base, path)
 }
 
 // GetHistorySince returns history records since a given date.
 func (c *Client) GetHistorySince(ctx context.Context, date string) ([]HistoryRecord, error) {
-	var out []HistoryRecord
 	path := "/api/v1/history/since?date=" + url.QueryEscape(date)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[HistoryRecord](ctx, c.base, path)
 }
 
 // MarkHistoryFailed marks a history item as failed.

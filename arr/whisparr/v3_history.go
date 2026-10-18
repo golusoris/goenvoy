@@ -10,30 +10,18 @@ import (
 
 // GetHistory returns history records (paged).
 func (c *ClientV3) GetHistory(ctx context.Context, page, pageSize int) (*arr.PagingResource[HistoryRecordV3], error) {
-	var out arr.PagingResource[HistoryRecordV3]
 	path := fmt.Sprintf("/api/v3/history?page=%d&pageSize=%d", page, pageSize)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.PagingResource[HistoryRecordV3]](ctx, c.base, path)
 }
 
 // GetHistorySince returns history since a specific date.
 func (c *ClientV3) GetHistorySince(ctx context.Context, date string) ([]HistoryRecordV3, error) {
-	var out []HistoryRecordV3
 	path := "/api/v3/history/since?date=" + url.QueryEscape(date)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[HistoryRecordV3](ctx, c.base, path)
 }
 
 // GetHistoryMovie returns history for a specific movie.
 func (c *ClientV3) GetHistoryMovie(ctx context.Context, movieID int) ([]HistoryRecordV3, error) {
-	var out []HistoryRecordV3
 	path := fmt.Sprintf("/api/v3/history/movie?movieId=%d", movieID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[HistoryRecordV3](ctx, c.base, path)
 }

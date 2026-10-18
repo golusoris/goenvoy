@@ -10,22 +10,14 @@ import (
 
 // GetBooks returns books for the given author.
 func (c *Client) GetBooks(ctx context.Context, authorID int) ([]Book, error) {
-	var out []Book
 	path := fmt.Sprintf("/api/v1/book?authorId=%d", authorID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Book](ctx, c.base, path)
 }
 
 // GetBook returns a single book by its database ID.
 func (c *Client) GetBook(ctx context.Context, id int) (*Book, error) {
-	var out Book
 	path := fmt.Sprintf("/api/v1/book/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Book](ctx, c.base, path)
 }
 
 // AddBook adds a new book to Readarr.
@@ -35,12 +27,8 @@ func (c *Client) AddBook(ctx context.Context, book *Book) (*Book, error) {
 
 // UpdateBook updates an existing book.
 func (c *Client) UpdateBook(ctx context.Context, book *Book) (*Book, error) {
-	var out Book
 	path := fmt.Sprintf("/api/v1/book/%d", book.ID)
-	if err := c.base.Put(ctx, path, book, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[Book](ctx, c.base, path, book)
 }
 
 // DeleteBook removes a book.
@@ -51,12 +39,8 @@ func (c *Client) DeleteBook(ctx context.Context, id int, deleteFiles, addImportL
 
 // LookupBook searches for a book by term.
 func (c *Client) LookupBook(ctx context.Context, term string) ([]Book, error) {
-	var out []Book
 	path := "/api/v1/book/lookup?term=" + url.QueryEscape(term)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Book](ctx, c.base, path)
 }
 
 // MonitorBooks sets the monitored status for a list of books.

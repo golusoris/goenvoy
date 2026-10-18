@@ -36,12 +36,8 @@ func (c *Client) DeleteReleaseProfile(ctx context.Context, id int) error {
 
 // SearchReleases searches for releases using the configured indexers.
 func (c *Client) SearchReleases(ctx context.Context, bookID int) ([]arr.ReleaseResource, error) {
-	var out []arr.ReleaseResource
 	path := fmt.Sprintf("/api/v1/release?bookId=%d", bookID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ReleaseResource](ctx, c.base, path)
 }
 
 // GrabRelease grabs a release for download.

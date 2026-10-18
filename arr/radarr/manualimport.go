@@ -119,11 +119,7 @@ func (c *Client) GetManualImportCandidates(ctx context.Context, opts ManualImpor
 	}
 	q.Set("filterExistingFiles", strconv.FormatBool(opts.FilterExistingFiles))
 
-	var out []ManualImportCandidate
-	if err := c.base.Get(ctx, "/api/v3/manualimport?"+q.Encode(), &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[ManualImportCandidate](ctx, c.base, "/api/v3/manualimport?"+q.Encode())
 }
 
 // SendManualImport queues the ManualImport command, which imports the given files.
@@ -138,9 +134,5 @@ func (c *Client) SendManualImport(ctx context.Context, mode ImportMode, files []
 		return nil, ErrInvalidImportMode
 	}
 	body := manualImportCommand{Name: "ManualImport", ImportMode: mode, Files: files}
-	var out arr.CommandResponse
-	if err := c.base.Post(ctx, "/api/v3/command", body, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.CommandResponse](ctx, c.base, "/api/v3/command", body)
 }

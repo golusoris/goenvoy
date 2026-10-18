@@ -10,25 +10,17 @@ import (
 
 // GetRenameList returns proposed renames for a series.
 func (c *Client) GetRenameList(ctx context.Context, seriesID int) ([]arr.RenameEpisodeResource, error) {
-	var out []arr.RenameEpisodeResource
 	path := fmt.Sprintf("/api/v3/rename?seriesId=%d", seriesID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.RenameEpisodeResource](ctx, c.base, path)
 }
 
 // ---------- Manual Import ----------.
 
 // GetManualImport returns files available for manual import.
 func (c *Client) GetManualImport(ctx context.Context, folder, downloadID string) ([]arr.ManualImportResource, error) {
-	var out []arr.ManualImportResource
 	path := fmt.Sprintf("/api/v3/manualimport?folder=%s&downloadId=%s",
 		url.QueryEscape(folder), url.QueryEscape(downloadID))
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ManualImportResource](ctx, c.base, path)
 }
 
 // ProcessManualImport re-evaluates manual import candidates (POST /api/v3/manualimport)

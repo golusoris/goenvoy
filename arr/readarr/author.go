@@ -15,12 +15,8 @@ func (c *Client) GetAllAuthors(ctx context.Context) ([]Author, error) {
 
 // GetAuthor returns a single author by its database ID.
 func (c *Client) GetAuthor(ctx context.Context, id int) (*Author, error) {
-	var out Author
 	path := fmt.Sprintf("/api/v1/author/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Author](ctx, c.base, path)
 }
 
 // AddAuthor adds a new author to Readarr.
@@ -31,12 +27,8 @@ func (c *Client) AddAuthor(ctx context.Context, author *Author) (*Author, error)
 // UpdateAuthor updates an existing author. Set moveFiles to true to relocate
 // files when the author path changes.
 func (c *Client) UpdateAuthor(ctx context.Context, author *Author, moveFiles bool) (*Author, error) {
-	var out Author
 	path := fmt.Sprintf("/api/v1/author/%d?moveFiles=%t", author.ID, moveFiles)
-	if err := c.base.Put(ctx, path, author, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[Author](ctx, c.base, path, author)
 }
 
 // DeleteAuthor removes an author. Set deleteFiles to true to also delete
@@ -48,12 +40,8 @@ func (c *Client) DeleteAuthor(ctx context.Context, id int, deleteFiles, addImpor
 
 // LookupAuthor searches for an author by name.
 func (c *Client) LookupAuthor(ctx context.Context, term string) ([]Author, error) {
-	var out []Author
 	path := "/api/v1/author/lookup?term=" + url.QueryEscape(term)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Author](ctx, c.base, path)
 }
 
 // EditAuthors performs a batch update on multiple authors.

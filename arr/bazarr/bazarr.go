@@ -31,7 +31,6 @@ type dataWrapper[T any] struct {
 // GetSeries returns series metadata. Pass seriesIDs to filter specific series,
 // or empty to get a paginated list.
 func (c *Client) GetSeries(ctx context.Context, start, length int, seriesIDs ...int) (*PagedResponse[Series], error) {
-	var out PagedResponse[Series]
 	params := url.Values{}
 	params.Set("start", strconv.Itoa(start))
 	params.Set("length", strconv.Itoa(length))
@@ -39,10 +38,7 @@ func (c *Client) GetSeries(ctx context.Context, start, length int, seriesIDs ...
 		params.Add("seriesid[]", strconv.Itoa(id))
 	}
 	path := "/api/series?" + params.Encode()
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[PagedResponse[Series]](ctx, c.base, path)
 }
 
 // SetSeriesProfile updates the language profile for one or more series.
@@ -66,7 +62,6 @@ func (c *Client) RunSeriesAction(ctx context.Context, seriesID int, action strin
 
 // GetEpisodes returns episodes for the given series or episode IDs.
 func (c *Client) GetEpisodes(ctx context.Context, seriesIDs, episodeIDs []int) (*PagedResponse[Episode], error) {
-	var out PagedResponse[Episode]
 	params := url.Values{}
 	for _, id := range seriesIDs {
 		params.Add("seriesid[]", strconv.Itoa(id))
@@ -75,25 +70,17 @@ func (c *Client) GetEpisodes(ctx context.Context, seriesIDs, episodeIDs []int) (
 		params.Add("episodeid[]", strconv.Itoa(id))
 	}
 	path := "/api/episodes?" + params.Encode()
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[PagedResponse[Episode]](ctx, c.base, path)
 }
 
 // GetWantedEpisodes returns episodes missing subtitles.
 func (c *Client) GetWantedEpisodes(ctx context.Context, start, length int) (*PagedResponse[WantedEpisode], error) {
-	var out PagedResponse[WantedEpisode]
 	path := fmt.Sprintf("/api/episodes/wanted?start=%d&length=%d", start, length)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[PagedResponse[WantedEpisode]](ctx, c.base, path)
 }
 
 // GetEpisodeHistory returns subtitle history events for episodes.
 func (c *Client) GetEpisodeHistory(ctx context.Context, start, length int, episodeID *int) (*PagedResponse[EpisodeHistoryRecord], error) {
-	var out PagedResponse[EpisodeHistoryRecord]
 	params := url.Values{}
 	params.Set("start", strconv.Itoa(start))
 	params.Set("length", strconv.Itoa(length))
@@ -101,10 +88,7 @@ func (c *Client) GetEpisodeHistory(ctx context.Context, start, length int, episo
 		params.Set("episodeid", strconv.Itoa(*episodeID))
 	}
 	path := "/api/episodes/history?" + params.Encode()
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[PagedResponse[EpisodeHistoryRecord]](ctx, c.base, path)
 }
 
 // DownloadEpisodeSubtitle triggers a subtitle download for a specific episode.
@@ -135,7 +119,6 @@ func (c *Client) DeleteEpisodeSubtitle(ctx context.Context, seriesID, episodeID 
 // GetMovies returns movie metadata. Pass radarrIDs to filter specific movies,
 // or empty to get a paginated list.
 func (c *Client) GetMovies(ctx context.Context, start, length int, radarrIDs ...int) (*PagedResponse[Movie], error) {
-	var out PagedResponse[Movie]
 	params := url.Values{}
 	params.Set("start", strconv.Itoa(start))
 	params.Set("length", strconv.Itoa(length))
@@ -143,10 +126,7 @@ func (c *Client) GetMovies(ctx context.Context, start, length int, radarrIDs ...
 		params.Add("radarrid[]", strconv.Itoa(id))
 	}
 	path := "/api/movies?" + params.Encode()
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[PagedResponse[Movie]](ctx, c.base, path)
 }
 
 // SetMovieProfile updates the language profile for one or more movies.
@@ -170,17 +150,12 @@ func (c *Client) RunMovieAction(ctx context.Context, radarrID int, action string
 
 // GetWantedMovies returns movies missing subtitles.
 func (c *Client) GetWantedMovies(ctx context.Context, start, length int) (*PagedResponse[WantedMovie], error) {
-	var out PagedResponse[WantedMovie]
 	path := fmt.Sprintf("/api/movies/wanted?start=%d&length=%d", start, length)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[PagedResponse[WantedMovie]](ctx, c.base, path)
 }
 
 // GetMovieHistory returns subtitle history events for movies.
 func (c *Client) GetMovieHistory(ctx context.Context, start, length int, radarrID *int) (*PagedResponse[MovieHistoryRecord], error) {
-	var out PagedResponse[MovieHistoryRecord]
 	params := url.Values{}
 	params.Set("start", strconv.Itoa(start))
 	params.Set("length", strconv.Itoa(length))
@@ -188,10 +163,7 @@ func (c *Client) GetMovieHistory(ctx context.Context, start, length int, radarrI
 		params.Set("radarrid", strconv.Itoa(*radarrID))
 	}
 	path := "/api/movies/history?" + params.Encode()
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[PagedResponse[MovieHistoryRecord]](ctx, c.base, path)
 }
 
 // DownloadMovieSubtitle triggers a subtitle download for a specific movie.
@@ -234,11 +206,7 @@ func (c *Client) ResetProviders(ctx context.Context) error {
 
 // GetBadges returns the badge counts for the Bazarr UI.
 func (c *Client) GetBadges(ctx context.Context) (*BadgeCounts, error) {
-	var out BadgeCounts
-	if err := c.base.Get(ctx, "/api/badges", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[BadgeCounts](ctx, c.base, "/api/badges")
 }
 
 // GetSystemStatus returns Bazarr environment and version information.

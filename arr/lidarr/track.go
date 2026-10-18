@@ -9,42 +9,26 @@ import (
 
 // GetTracks returns tracks for the given artist and album.
 func (c *Client) GetTracks(ctx context.Context, artistID, albumID int) ([]Track, error) {
-	var out []Track
 	path := fmt.Sprintf("/api/v1/track?artistId=%d&albumId=%d", artistID, albumID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Track](ctx, c.base, path)
 }
 
 // GetTrack returns a single track by its database ID.
 func (c *Client) GetTrack(ctx context.Context, id int) (*Track, error) {
-	var out Track
 	path := fmt.Sprintf("/api/v1/track/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Track](ctx, c.base, path)
 }
 
 // GetTrackFiles returns all track files for the given artist.
 func (c *Client) GetTrackFiles(ctx context.Context, artistID int) ([]TrackFile, error) {
-	var out []TrackFile
 	path := fmt.Sprintf("/api/v1/trackfile?artistId=%d", artistID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[TrackFile](ctx, c.base, path)
 }
 
 // GetTrackFile returns a single track file by its database ID.
 func (c *Client) GetTrackFile(ctx context.Context, id int) (*TrackFile, error) {
-	var out TrackFile
 	path := fmt.Sprintf("/api/v1/trackfile/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[TrackFile](ctx, c.base, path)
 }
 
 // DeleteTrackFile removes a single track file by its database ID.

@@ -10,24 +10,16 @@ import (
 
 // GetRenameList returns a list of track files that would be renamed.
 func (c *Client) GetRenameList(ctx context.Context, artistID int) ([]RenameTrackResource, error) {
-	var out []RenameTrackResource
 	path := fmt.Sprintf("/api/v1/rename?artistId=%d", artistID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[RenameTrackResource](ctx, c.base, path)
 }
 
 // ---------- Retag ----------.
 
 // GetManualImport returns a list of items available for manual import.
 func (c *Client) GetManualImport(ctx context.Context, folder string) ([]arr.ManualImportResource, error) {
-	var out []arr.ManualImportResource
 	path := "/api/v1/manualimport?folder=" + url.QueryEscape(folder)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ManualImportResource](ctx, c.base, path)
 }
 
 // ProcessManualImport re-evaluates manual import candidates (POST /api/v1/manualimport)
@@ -40,10 +32,6 @@ func (c *Client) ProcessManualImport(ctx context.Context, imports []arr.ManualIm
 
 // GetRetag returns a list of track files that would be retagged.
 func (c *Client) GetRetag(ctx context.Context, artistID int) ([]RetagResource, error) {
-	var out []RetagResource
 	path := fmt.Sprintf("/api/v1/retag?artistId=%d", artistID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[RetagResource](ctx, c.base, path)
 }

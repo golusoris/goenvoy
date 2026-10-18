@@ -31,12 +31,8 @@ func (c *Client) DeleteRootFolder(ctx context.Context, id int) error {
 
 // UpdateRootFolder updates an existing root folder.
 func (c *Client) UpdateRootFolder(ctx context.Context, rf *arr.RootFolder) (*arr.RootFolder, error) {
-	var out arr.RootFolder
 	path := fmt.Sprintf("/api/v3/rootfolder/%d", rf.ID)
-	if err := c.base.Put(ctx, path, rf, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.RootFolder](ctx, c.base, path, rf)
 }
 
 // ---------- FileSystem ----------.

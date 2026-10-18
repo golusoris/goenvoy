@@ -14,12 +14,8 @@ func (c *ClientV3) GetPerformers(ctx context.Context) ([]Performer, error) {
 
 // GetPerformer returns a single performer by ID.
 func (c *ClientV3) GetPerformer(ctx context.Context, id int) (*Performer, error) {
-	var out Performer
 	path := fmt.Sprintf("/api/v3/performer/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Performer](ctx, c.base, path)
 }
 
 // AddPerformer adds a new performer to the instance.
@@ -29,12 +25,8 @@ func (c *ClientV3) AddPerformer(ctx context.Context, performer *Performer) (*Per
 
 // UpdatePerformer updates an existing performer.
 func (c *ClientV3) UpdatePerformer(ctx context.Context, performer *Performer) (*Performer, error) {
-	var out Performer
 	path := fmt.Sprintf("/api/v3/performer/%d", performer.ID)
-	if err := c.base.Put(ctx, path, performer, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[Performer](ctx, c.base, path, performer)
 }
 
 // DeletePerformer removes a performer by ID.

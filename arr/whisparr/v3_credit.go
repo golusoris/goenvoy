@@ -9,12 +9,8 @@ import (
 
 // GetCredits returns all credits for a movie/scene.
 func (c *ClientV3) GetCredits(ctx context.Context, movieID int) ([]Credit, error) {
-	var out []Credit
 	path := fmt.Sprintf("/api/v3/credit?movieId=%d", movieID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Credit](ctx, c.base, path)
 }
 
 // GetCredit returns a single credit by ID.

@@ -15,12 +15,8 @@ func (c *Client) GetAllSeries(ctx context.Context) ([]Series, error) {
 
 // GetSeries returns a single series by its database ID.
 func (c *Client) GetSeries(ctx context.Context, id int) (*Series, error) {
-	var out Series
 	path := fmt.Sprintf("/api/v3/series/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Series](ctx, c.base, path)
 }
 
 // AddSeries adds a new series to Sonarr.
@@ -31,12 +27,8 @@ func (c *Client) AddSeries(ctx context.Context, series *Series) (*Series, error)
 // UpdateSeries updates an existing series. Set moveFiles to true to relocate
 // files when the series path changes.
 func (c *Client) UpdateSeries(ctx context.Context, series *Series, moveFiles bool) (*Series, error) {
-	var out Series
 	path := fmt.Sprintf("/api/v3/series/%d?moveFiles=%t", series.ID, moveFiles)
-	if err := c.base.Put(ctx, path, series, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[Series](ctx, c.base, path, series)
 }
 
 // DeleteSeries removes a series. Set deleteFiles to true to also delete
@@ -48,12 +40,8 @@ func (c *Client) DeleteSeries(ctx context.Context, id int, deleteFiles, addImpor
 
 // LookupSeries searches for a series by term (title or TVDB ID slug).
 func (c *Client) LookupSeries(ctx context.Context, term string) ([]Series, error) {
-	var out []Series
 	path := "/api/v3/series/lookup?term=" + url.QueryEscape(term)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Series](ctx, c.base, path)
 }
 
 // UpdateSeasonPass updates monitored status for multiple series and seasons.

@@ -91,12 +91,8 @@ func (c *Client) TestAllImportLists(ctx context.Context) error {
 
 // GetImportListExclusionsPaged returns a paginated list of import list exclusions.
 func (c *Client) GetImportListExclusionsPaged(ctx context.Context, page, pageSize int) (*arr.PagingResource[arr.ImportListExclusionResource], error) {
-	var out arr.PagingResource[arr.ImportListExclusionResource]
 	path := fmt.Sprintf("/api/v3/importlistexclusion/paged?page=%d&pageSize=%d", page, pageSize)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.PagingResource[arr.ImportListExclusionResource]](ctx, c.base, path)
 }
 
 // DeleteImportListExclusionsBulk bulk-deletes import list exclusions by IDs.

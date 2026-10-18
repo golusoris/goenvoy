@@ -24,80 +24,48 @@ func New(baseURL, apiKey string, opts ...arr.Option) (*Client, error) {
 
 // GetStatus returns the current Seerr server status.
 func (c *Client) GetStatus(ctx context.Context) (*StatusResponse, error) {
-	var out StatusResponse
-	if err := c.base.Get(ctx, "/api/v1/status", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[StatusResponse](ctx, c.base, "/api/v1/status")
 }
 
 // GetMe returns the currently authenticated user.
 func (c *Client) GetMe(ctx context.Context) (*User, error) {
-	var out User
-	if err := c.base.Get(ctx, "/api/v1/auth/me", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[User](ctx, c.base, "/api/v1/auth/me")
 }
 
 // Search performs a multi-search for movies, TV shows, and people.
 func (c *Client) Search(ctx context.Context, query string, page int) (*SearchResults, error) {
-	var out SearchResults
 	path := fmt.Sprintf("/api/v1/search?query=%s&page=%d", url.QueryEscape(query), page)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[SearchResults](ctx, c.base, path)
 }
 
 // DiscoverMovies returns a paginated list of discovered movies.
 func (c *Client) DiscoverMovies(ctx context.Context, page int) (*SearchResults, error) {
-	var out SearchResults
 	path := fmt.Sprintf("/api/v1/discover/movies?page=%d", page)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[SearchResults](ctx, c.base, path)
 }
 
 // DiscoverTV returns a paginated list of discovered TV shows.
 func (c *Client) DiscoverTV(ctx context.Context, page int) (*SearchResults, error) {
-	var out SearchResults
 	path := fmt.Sprintf("/api/v1/discover/tv?page=%d", page)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[SearchResults](ctx, c.base, path)
 }
 
 // DiscoverTrending returns currently trending movies and TV shows.
 func (c *Client) DiscoverTrending(ctx context.Context, page int) (*SearchResults, error) {
-	var out SearchResults
 	path := fmt.Sprintf("/api/v1/discover/trending?page=%d", page)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[SearchResults](ctx, c.base, path)
 }
 
 // DiscoverUpcomingMovies returns upcoming movies.
 func (c *Client) DiscoverUpcomingMovies(ctx context.Context, page int) (*SearchResults, error) {
-	var out SearchResults
 	path := fmt.Sprintf("/api/v1/discover/movies/upcoming?page=%d", page)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[SearchResults](ctx, c.base, path)
 }
 
 // DiscoverUpcomingTV returns upcoming TV shows.
 func (c *Client) DiscoverUpcomingTV(ctx context.Context, page int) (*SearchResults, error) {
-	var out SearchResults
 	path := fmt.Sprintf("/api/v1/discover/tv/upcoming?page=%d", page)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[SearchResults](ctx, c.base, path)
 }
 
 // pagedRequests is the list-requests response shape.
@@ -121,21 +89,13 @@ func (c *Client) GetRequests(ctx context.Context, take, skip int, filter string)
 
 // GetRequest returns a single media request by its ID.
 func (c *Client) GetRequest(ctx context.Context, id int) (*MediaRequest, error) {
-	var out MediaRequest
 	path := fmt.Sprintf("/api/v1/request/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[MediaRequest](ctx, c.base, path)
 }
 
 // CreateRequest creates a new media request.
 func (c *Client) CreateRequest(ctx context.Context, body *CreateRequestBody) (*MediaRequest, error) {
-	var out MediaRequest
-	if err := c.base.Post(ctx, "/api/v1/request", body, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[MediaRequest](ctx, c.base, "/api/v1/request", body)
 }
 
 // DeleteRequest removes a media request by its ID.
@@ -146,111 +106,67 @@ func (c *Client) DeleteRequest(ctx context.Context, id int) error {
 
 // ApproveRequest approves a pending request.
 func (c *Client) ApproveRequest(ctx context.Context, id int) (*MediaRequest, error) {
-	var out MediaRequest
 	path := fmt.Sprintf("/api/v1/request/%d/approve", id)
-	if err := c.base.Post(ctx, path, nil, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[MediaRequest](ctx, c.base, path, nil)
 }
 
 // DeclineRequest declines a pending request.
 func (c *Client) DeclineRequest(ctx context.Context, id int) (*MediaRequest, error) {
-	var out MediaRequest
 	path := fmt.Sprintf("/api/v1/request/%d/decline", id)
-	if err := c.base.Post(ctx, path, nil, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[MediaRequest](ctx, c.base, path, nil)
 }
 
 // RetryRequest retries a failed request.
 func (c *Client) RetryRequest(ctx context.Context, id int) (*MediaRequest, error) {
-	var out MediaRequest
 	path := fmt.Sprintf("/api/v1/request/%d/retry", id)
-	if err := c.base.Post(ctx, path, nil, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[MediaRequest](ctx, c.base, path, nil)
 }
 
 // GetRequestCount returns aggregate request count statistics.
 func (c *Client) GetRequestCount(ctx context.Context) (*RequestCount, error) {
-	var out RequestCount
-	if err := c.base.Get(ctx, "/api/v1/request/count", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[RequestCount](ctx, c.base, "/api/v1/request/count")
 }
 
 // GetMovie returns full details for a movie by its TMDB ID.
 func (c *Client) GetMovie(ctx context.Context, tmdbID int) (*MovieDetails, error) {
-	var out MovieDetails
 	path := fmt.Sprintf("/api/v1/movie/%d", tmdbID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[MovieDetails](ctx, c.base, path)
 }
 
 // GetMovieRecommendations returns recommended movies for a given TMDB ID.
 func (c *Client) GetMovieRecommendations(ctx context.Context, tmdbID, page int) (*SearchResults, error) {
-	var out SearchResults
 	path := fmt.Sprintf("/api/v1/movie/%d/recommendations?page=%d", tmdbID, page)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[SearchResults](ctx, c.base, path)
 }
 
 // GetMovieSimilar returns similar movies for a given TMDB ID.
 func (c *Client) GetMovieSimilar(ctx context.Context, tmdbID, page int) (*SearchResults, error) {
-	var out SearchResults
 	path := fmt.Sprintf("/api/v1/movie/%d/similar?page=%d", tmdbID, page)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[SearchResults](ctx, c.base, path)
 }
 
 // GetTV returns full details for a TV show by its TMDB ID.
 func (c *Client) GetTV(ctx context.Context, tmdbID int) (*TvDetails, error) {
-	var out TvDetails
 	path := fmt.Sprintf("/api/v1/tv/%d", tmdbID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[TvDetails](ctx, c.base, path)
 }
 
 // GetTVSeason returns details and episodes for a specific season.
 func (c *Client) GetTVSeason(ctx context.Context, tmdbID, seasonNumber int) (*Season, error) {
-	var out Season
 	path := fmt.Sprintf("/api/v1/tv/%d/season/%d", tmdbID, seasonNumber)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Season](ctx, c.base, path)
 }
 
 // GetTVRecommendations returns recommended TV shows for a given TMDB ID.
 func (c *Client) GetTVRecommendations(ctx context.Context, tmdbID, page int) (*SearchResults, error) {
-	var out SearchResults
 	path := fmt.Sprintf("/api/v1/tv/%d/recommendations?page=%d", tmdbID, page)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[SearchResults](ctx, c.base, path)
 }
 
 // GetTVSimilar returns similar TV shows for a given TMDB ID.
 func (c *Client) GetTVSimilar(ctx context.Context, tmdbID, page int) (*SearchResults, error) {
-	var out SearchResults
 	path := fmt.Sprintf("/api/v1/tv/%d/similar?page=%d", tmdbID, page)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[SearchResults](ctx, c.base, path)
 }
 
 // pagedMedia is the list-media response shape.
@@ -277,13 +193,9 @@ func (c *Client) DeleteMedia(ctx context.Context, id int) error {
 
 // UpdateMediaStatus updates a media item's availability status.
 func (c *Client) UpdateMediaStatus(ctx context.Context, id int, status string, is4k bool) (*MediaInfo, error) {
-	var out MediaInfo
 	path := fmt.Sprintf("/api/v1/media/%d/%s", id, status)
 	body := map[string]bool{"is4k": is4k}
-	if err := c.base.Post(ctx, path, body, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[MediaInfo](ctx, c.base, path, body)
 }
 
 // pagedUsers is the list-users response shape.
@@ -304,12 +216,8 @@ func (c *Client) GetUsers(ctx context.Context, take, skip int) ([]User, *PageInf
 
 // GetUser returns a single user by their ID.
 func (c *Client) GetUser(ctx context.Context, id int) (*User, error) {
-	var out User
 	path := fmt.Sprintf("/api/v1/user/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[User](ctx, c.base, path)
 }
 
 // DeleteUser removes a user by their ID.
@@ -320,12 +228,8 @@ func (c *Client) DeleteUser(ctx context.Context, id int) error {
 
 // GetUserQuota returns the request quota for a specific user.
 func (c *Client) GetUserQuota(ctx context.Context, userID int) (*UserQuota, error) {
-	var out UserQuota
 	path := fmt.Sprintf("/api/v1/user/%d/quota", userID)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[UserQuota](ctx, c.base, path)
 }
 
 // pagedIssues is the list-issues response shape.
@@ -349,21 +253,13 @@ func (c *Client) GetIssues(ctx context.Context, take, skip int, filter string) (
 
 // GetIssue returns a single issue by its ID.
 func (c *Client) GetIssue(ctx context.Context, id int) (*Issue, error) {
-	var out Issue
 	path := fmt.Sprintf("/api/v1/issue/%d", id)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Issue](ctx, c.base, path)
 }
 
 // CreateIssue creates a new issue report.
 func (c *Client) CreateIssue(ctx context.Context, body *CreateIssueBody) (*Issue, error) {
-	var out Issue
-	if err := c.base.Post(ctx, "/api/v1/issue", body, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Issue](ctx, c.base, "/api/v1/issue", body)
 }
 
 // DeleteIssue removes an issue by its ID.
@@ -374,58 +270,34 @@ func (c *Client) DeleteIssue(ctx context.Context, id int) error {
 
 // AddIssueComment adds a comment to an existing issue.
 func (c *Client) AddIssueComment(ctx context.Context, issueID int, message string) (*Issue, error) {
-	var out Issue
 	path := fmt.Sprintf("/api/v1/issue/%d/comment", issueID)
 	body := map[string]string{"message": message}
-	if err := c.base.Post(ctx, path, body, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Issue](ctx, c.base, path, body)
 }
 
 // ResolveIssue marks an issue as resolved.
 func (c *Client) ResolveIssue(ctx context.Context, id int) (*Issue, error) {
-	var out Issue
 	path := fmt.Sprintf("/api/v1/issue/%d/resolved", id)
-	if err := c.base.Post(ctx, path, nil, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Issue](ctx, c.base, path, nil)
 }
 
 // ReopenIssue reopens a resolved issue.
 func (c *Client) ReopenIssue(ctx context.Context, id int) (*Issue, error) {
-	var out Issue
 	path := fmt.Sprintf("/api/v1/issue/%d/open", id)
-	if err := c.base.Post(ctx, path, nil, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Issue](ctx, c.base, path, nil)
 }
 
 // GetIssueCount returns aggregate issue count statistics.
 func (c *Client) GetIssueCount(ctx context.Context) (*IssueCount, error) {
-	var out IssueCount
-	if err := c.base.Get(ctx, "/api/v1/issue/count", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[IssueCount](ctx, c.base, "/api/v1/issue/count")
 }
 
 // GetSonarrSettings returns the configured Sonarr server settings in Seerr.
 func (c *Client) GetSonarrSettings(ctx context.Context) ([]ServiceSettings, error) {
-	var out []ServiceSettings
-	if err := c.base.Get(ctx, "/api/v1/settings/sonarr", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[ServiceSettings](ctx, c.base, "/api/v1/settings/sonarr")
 }
 
 // GetRadarrSettings returns the configured Radarr server settings in Seerr.
 func (c *Client) GetRadarrSettings(ctx context.Context) ([]ServiceSettings, error) {
-	var out []ServiceSettings
-	if err := c.base.Get(ctx, "/api/v1/settings/radarr", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[ServiceSettings](ctx, c.base, "/api/v1/settings/radarr")
 }

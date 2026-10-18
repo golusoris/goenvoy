@@ -10,12 +10,8 @@ import (
 
 // GetLogs returns log entries with pagination.
 func (c *Client) GetLogs(ctx context.Context, page, pageSize int) (*arr.PagingResource[arr.LogRecord], error) {
-	var out arr.PagingResource[arr.LogRecord]
 	path := fmt.Sprintf("/api/v1/log?page=%d&pageSize=%d", page, pageSize)
-	if err := c.base.Get(ctx, path, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.PagingResource[arr.LogRecord]](ctx, c.base, path)
 }
 
 // GetLogFiles returns a list of log files.
