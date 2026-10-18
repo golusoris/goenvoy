@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.5.0...arr/seerr/v1.5.1) (2026-10-18)
+
+
+### Code Refactoring
+
+* **arr:** fold the request tail of the remaining arr methods onto the arr/v2 helpers ([#126](https://github.com/golusoris/goenvoy/issues/126)) ([21144ce](https://github.com/golusoris/goenvoy/commit/21144ce9e343c81b8ce667cdc6378fcace46ba91))
+
 ## [1.5.0](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.4.0...arr/seerr/v1.5.0) (2026-10-17)
 
 
