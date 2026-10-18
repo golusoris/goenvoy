@@ -34,6 +34,10 @@ Migration:
 
 The `Migration:` block is **required** for breaking changes. CI (`apidiff`) fails without it.
 
+## Review
+
+goenvoy has a single maintainer and no review bot. Pull requests merge once the required checks pass and need no approving review; the `praetor-main-protection` ruleset requires zero approvals, signed commits and linear history. This holds until a second maintainer joins.
+
 ## CI gates (per module)
 
 Every PR runs per module in a matrix:
