@@ -452,15 +452,9 @@ func (c *Client) GetJav(ctx context.Context, id string) (*Jav, error) {
 
 // Hashes.
 
-// LookupByHash resolves content by hash, searching across scenes, movies, and JAV.
+// LookupByHash resolves content by hash; it queries the scene hash endpoint, as [Client.FindSceneByHash] does.
 func (c *Client) LookupByHash(ctx context.Context, hash string) ([]Scene, error) {
-	var resp listResponse[Scene]
-	p := url.Values{}
-	p.Set("hash", hash)
-	if err := c.get(ctx, "/scenes", p, &resp); err != nil {
-		return nil, err
-	}
-	return resp.Data, nil
+	return c.FindSceneByHash(ctx, hash)
 }
 
 // Changes.
