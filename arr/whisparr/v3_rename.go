@@ -18,7 +18,8 @@ func (c *ClientV3) GetManualImport(ctx context.Context, folder string) ([]arr.Ma
 	return out, nil
 }
 
-// ProcessManualImport triggers processing of manual import selections.
+// ProcessManualImport re-evaluates manual import candidates (POST /api/v3/manualimport)
+// and imports nothing; importing is the ManualImport command.
 func (c *ClientV3) ProcessManualImport(ctx context.Context, items []arr.ManualImportReprocessResource) error {
 	return c.base.Post(ctx, "/api/v3/manualimport", items, nil)
 }

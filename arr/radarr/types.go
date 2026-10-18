@@ -140,6 +140,8 @@ type Quality struct {
 	Name       string `json:"name"`
 	Source     string `json:"source"`
 	Resolution int    `json:"resolution"`
+	// Modifier is e.g. "none", "remux" or "brdisk".
+	Modifier string `json:"modifier,omitempty"`
 }
 
 // Revision tracks repack and version information for a release.

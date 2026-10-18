@@ -31,7 +31,8 @@ func (c *Client) GetManualImport(ctx context.Context, folder, downloadID string)
 	return out, nil
 }
 
-// ProcessManualImport confirms and processes a manual import.
+// ProcessManualImport re-evaluates manual import candidates (POST /api/v3/manualimport)
+// and imports nothing; SendManualImport imports files.
 func (c *Client) ProcessManualImport(ctx context.Context, imports []arr.ManualImportReprocessResource) error {
 	return c.base.Post(ctx, "/api/v3/manualimport", imports, nil)
 }
