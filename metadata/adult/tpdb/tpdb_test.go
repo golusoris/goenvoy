@@ -606,3 +606,20 @@ func TestFindSceneByHash(t *testing.T) {
 		t.Errorf("Title = %q, want %q", result[0].Title, "Hashed Scene")
 	}
 }
+
+func TestLookupByHash(t *testing.T) {
+	t.Parallel()
+
+	scenes := []tpdb.Scene{{ID: 78, Title: "Looked Up"}}
+	ts := newListServer(t, "/scenes", "hash-token", scenes)
+	defer ts.Close()
+
+	c := tpdb.New("hash-token", metadata.WithBaseURL(ts.URL))
+	result, err := c.LookupByHash(context.Background(), "abc123def456")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result) != 1 || result[0].ID != 78 {
+		t.Fatalf("result = %+v, want one scene with ID 78", result)
+	}
+}
