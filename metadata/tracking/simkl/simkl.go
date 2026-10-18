@@ -27,18 +27,14 @@ type Client struct {
 	*metadata.BaseClient
 	clientID string
 
-	mu           sync.RWMutex // Why: guards all fields mutated via Set* and by OAuth token flows.
-	clientSecret string
-	calBaseURL   string
-	onToken      TokenCallback
-	accessToken  string
+	mu         sync.RWMutex // Why: guards calBaseURL mutated via SetCalendarURL.
+	calBaseURL string
+	oauth      metadata.OAuthState[TokenCallback]
 }
 
 // SetClientSecret sets the client secret needed for OAuth2 flows.
 func (c *Client) SetClientSecret(secret string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.clientSecret = secret
+	c.oauth.SetClientSecret(secret)
 }
 
 // SetCalendarURL overrides the default Simkl calendar (CDN) base URL.
@@ -50,9 +46,7 @@ func (c *Client) SetCalendarURL(u string) {
 
 // SetAccessToken sets a pre-existing OAuth2 access token.
 func (c *Client) SetAccessToken(token string) {
-	c.mu.Lock()
-	c.accessToken = token
-	c.mu.Unlock()
+	c.oauth.SetAccessToken(token)
 }
 
 // TokenCallback is called when a new access token is obtained.
@@ -60,21 +54,13 @@ type TokenCallback func(accessToken string)
 
 // SetTokenCallback sets a callback invoked when a new token is obtained.
 func (c *Client) SetTokenCallback(cb TokenCallback) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.onToken = cb
+	c.oauth.SetTokenCallback(cb)
 }
 
 func (c *Client) getCalBaseURL() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.calBaseURL
-}
-
-func (c *Client) getClientSecret() string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.clientSecret
 }
 
 // New creates a Simkl [Client] using the given client ID (API key).
@@ -128,9 +114,7 @@ func (c *Client) doGet(ctx context.Context, baseURL, path string, params url.Val
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent())
 
-	c.mu.RLock()
-	token := c.accessToken
-	c.mu.RUnlock()
+	token := c.oauth.AccessToken()
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -168,17 +152,6 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 
 func (c *Client) getCal(ctx context.Context, path string, dst any) error {
 	return c.doGet(ctx, c.getCalBaseURL(), path, nil, dst)
-}
-
-func pageParams(page, limit int) url.Values {
-	p := url.Values{}
-	if page > 0 {
-		p.Set("page", strconv.Itoa(page))
-	}
-	if limit > 0 {
-		p.Set("limit", strconv.Itoa(limit))
-	}
-	return p
 }
 
 // Movies.
@@ -252,7 +225,7 @@ func (c *Client) ShowGenres(ctx context.Context, genre string, page, limit int) 
 		genre = defaultFilter
 	}
 	var out []GenreItem
-	if err := c.get(ctx, "/tv/genres/"+url.PathEscape(genre), pageParams(page, limit), &out); err != nil {
+	if err := c.get(ctx, "/tv/genres/"+url.PathEscape(genre), metadata.PageParams(page, limit), &out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -265,7 +238,7 @@ func (c *Client) ShowPremieres(ctx context.Context, param string, page, limit in
 		param = "new"
 	}
 	var out []PremiereItem
-	if err := c.get(ctx, "/tv/premieres/"+url.PathEscape(param), pageParams(page, limit), &out); err != nil {
+	if err := c.get(ctx, "/tv/premieres/"+url.PathEscape(param), metadata.PageParams(page, limit), &out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -343,7 +316,7 @@ func (c *Client) AnimeGenres(ctx context.Context, genre string, page, limit int)
 		genre = defaultFilter
 	}
 	var out []GenreItem
-	if err := c.get(ctx, "/anime/genres/"+url.PathEscape(genre), pageParams(page, limit), &out); err != nil {
+	if err := c.get(ctx, "/anime/genres/"+url.PathEscape(genre), metadata.PageParams(page, limit), &out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -355,7 +328,7 @@ func (c *Client) AnimePremieres(ctx context.Context, param string, page, limit i
 		param = "new"
 	}
 	var out []PremiereItem
-	if err := c.get(ctx, "/anime/premieres/"+url.PathEscape(param), pageParams(page, limit), &out); err != nil {
+	if err := c.get(ctx, "/anime/premieres/"+url.PathEscape(param), metadata.PageParams(page, limit), &out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -407,7 +380,7 @@ func (c *Client) SearchByID(ctx context.Context, idType, idValue string) ([]Sear
 // SearchText searches for movies, shows, or anime by text query.
 // searchType should be "tv", "anime", or "movie".
 func (c *Client) SearchText(ctx context.Context, searchType, query string, page, limit int) ([]SearchResult, error) {
-	p := pageParams(page, limit)
+	p := metadata.PageParams(page, limit)
 	p.Set("q", query)
 	p.Set("extended", "full")
 	var out []SearchResult
@@ -495,9 +468,7 @@ func (c *Client) post(ctx context.Context, path string, body, dst any) error {
 	req.Header.Set("Simkl-Api-Key", c.clientID)
 	req.Header.Set("User-Agent", c.UserAgent())
 
-	c.mu.RLock()
-	token := c.accessToken
-	c.mu.RUnlock()
+	token := c.oauth.AccessToken()
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -532,14 +503,9 @@ func (c *Client) post(ctx context.Context, path string, body, dst any) error {
 // GetDeviceCode starts the Simkl PIN-based device code flow.
 // Display the returned UserCode and VerificationURL to the user.
 func (c *Client) GetDeviceCode(ctx context.Context) (*DeviceCode, error) {
-	var out DeviceCode
-	err := c.post(ctx, "/oauth/pin", map[string]string{
+	return metadata.PostAs[DeviceCode](ctx, c.post, "/oauth/pin", map[string]string{
 		"client_id": c.clientID,
-	}, &out)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
+	})
 }
 
 // PollDeviceToken polls for the PIN/device token after the user has authorized the app.
@@ -575,11 +541,7 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (string,
 			}
 			switch result.Result {
 			case "OK":
-				c.mu.Lock()
-				c.accessToken = result.AccessToken
-				cb := c.onToken
-				c.mu.Unlock()
-				if cb != nil {
+				if cb := c.oauth.StoreAccessToken(result.AccessToken); cb != nil {
 					cb(result.AccessToken)
 				}
 				return result.AccessToken, nil
@@ -602,18 +564,14 @@ func (c *Client) ExchangeCode(ctx context.Context, code, redirectURI string) (st
 	err := c.post(ctx, "/oauth/token", map[string]string{
 		"code":          code,
 		"client_id":     c.clientID,
-		"client_secret": c.getClientSecret(),
+		"client_secret": c.oauth.ClientSecret(),
 		"redirect_uri":  redirectURI,
 		"grant_type":    "authorization_code",
 	}, &result)
 	if err != nil {
 		return "", err
 	}
-	c.mu.Lock()
-	c.accessToken = result.AccessToken
-	cb := c.onToken
-	c.mu.Unlock()
-	if cb != nil {
+	if cb := c.oauth.StoreAccessToken(result.AccessToken); cb != nil {
 		cb(result.AccessToken)
 	}
 	return result.AccessToken, nil
@@ -629,9 +587,7 @@ func (c *Client) del(ctx context.Context, path string) error {
 	req.Header.Set("Simkl-Api-Key", c.clientID)
 	req.Header.Set("User-Agent", c.UserAgent())
 
-	c.mu.RLock()
-	token := c.accessToken
-	c.mu.RUnlock()
+	token := c.oauth.AccessToken()
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -700,11 +656,7 @@ func (c *Client) GetWatchlistRatings(ctx context.Context, mediaType, status, fie
 
 // SearchRandom finds a random item based on filters.
 func (c *Client) SearchRandom(ctx context.Context, params *RandomSearchParams) (*RandomResult, error) {
-	var out RandomResult
-	if err := c.post(ctx, "/search/random", params, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[RandomResult](ctx, c.post, "/search/random", params)
 }
 
 // Movie Genres.
@@ -715,7 +667,7 @@ func (c *Client) MovieGenres(ctx context.Context, genre string, page, limit int)
 		genre = defaultFilter
 	}
 	var out []GenreItem
-	if err := c.get(ctx, "/movies/genres/"+url.PathEscape(genre), pageParams(page, limit), &out); err != nil {
+	if err := c.get(ctx, "/movies/genres/"+url.PathEscape(genre), metadata.PageParams(page, limit), &out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -739,39 +691,23 @@ func (c *Client) BestMovies(ctx context.Context, filter string) ([]BestItem, err
 
 // ScrobbleStart starts a scrobble session for the given item.
 func (c *Client) ScrobbleStart(ctx context.Context, item *ScrobbleRequest) (*ScrobbleResponse, error) {
-	var out ScrobbleResponse
-	if err := c.post(ctx, "/scrobble/start", item, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[ScrobbleResponse](ctx, c.post, "/scrobble/start", item)
 }
 
 // ScrobblePause pauses the current scrobble session.
 func (c *Client) ScrobblePause(ctx context.Context, item *ScrobbleRequest) (*ScrobbleResponse, error) {
-	var out ScrobbleResponse
-	if err := c.post(ctx, "/scrobble/pause", item, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[ScrobbleResponse](ctx, c.post, "/scrobble/pause", item)
 }
 
 // ScrobbleStop stops the current scrobble session.
 // If progress >= 80%, the item is marked as watched.
 func (c *Client) ScrobbleStop(ctx context.Context, item *ScrobbleRequest) (*ScrobbleResponse, error) {
-	var out ScrobbleResponse
-	if err := c.post(ctx, "/scrobble/stop", item, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[ScrobbleResponse](ctx, c.post, "/scrobble/stop", item)
 }
 
 // ScrobbleCheckin checks in to an item without real-time tracking.
 func (c *Client) ScrobbleCheckin(ctx context.Context, item *ScrobbleRequest) (*ScrobbleResponse, error) {
-	var out ScrobbleResponse
-	if err := c.post(ctx, "/scrobble/checkin", item, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[ScrobbleResponse](ctx, c.post, "/scrobble/checkin", item)
 }
 
 // Sync.
@@ -813,20 +749,12 @@ func (c *Client) GetAllItems(ctx context.Context, mediaType, status, extended, d
 
 // AddToHistory adds items to the user's watched history.
 func (c *Client) AddToHistory(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/history", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/history", items)
 }
 
 // RemoveFromHistory removes items from the user's watched history.
 func (c *Client) RemoveFromHistory(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/history/remove", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/history/remove", items)
 }
 
 // GetSyncRatings returns all user ratings, optionally filtered by type and rating.
@@ -853,29 +781,17 @@ func (c *Client) GetSyncRatings(ctx context.Context, mediaType, rating, dateFrom
 
 // AddRatings adds ratings for movies and/or shows.
 func (c *Client) AddRatings(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/ratings", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/ratings", items)
 }
 
 // RemoveRatings removes ratings for movies and/or shows.
 func (c *Client) RemoveRatings(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/ratings/remove", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/ratings/remove", items)
 }
 
 // AddToList adds items to a specific Simkl watchlist (e.g., plantowatch, watching).
 func (c *Client) AddToList(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/add-to-list", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/add-to-list", items)
 }
 
 // GetPlaybacks retrieves paused playback sessions.
@@ -926,9 +842,7 @@ func (c *Client) CheckIfWatched(ctx context.Context, items []WatchedCheckItem, e
 	req.Header.Set("Simkl-Api-Key", c.clientID)
 	req.Header.Set("User-Agent", c.UserAgent())
 
-	c.mu.RLock()
-	token := c.accessToken
-	c.mu.RUnlock()
+	token := c.oauth.AccessToken()
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}

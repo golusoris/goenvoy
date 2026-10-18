@@ -28,19 +28,14 @@ type Client struct {
 	*metadata.BaseClient
 	clientID string
 
-	mu           sync.RWMutex // Why: guards all fields mutated by Set* and by tokenRequest.
-	clientSecret string
-	authURL      string
-	onToken      TokenCallback
-	accessToken  string
-	refreshToken string
+	mu      sync.RWMutex // Why: guards authURL mutated by SetAuthURL.
+	authURL string
+	oauth   metadata.OAuthState[TokenCallback]
 }
 
 // SetClientSecret sets the client secret (required for confidential clients).
 func (c *Client) SetClientSecret(secret string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.clientSecret = secret
+	c.oauth.SetClientSecret(secret)
 }
 
 // SetAuthURL overrides the default OAuth2 authorization URL.
@@ -52,16 +47,12 @@ func (c *Client) SetAuthURL(u string) {
 
 // SetAccessToken sets a pre-existing OAuth2 access token.
 func (c *Client) SetAccessToken(token string) {
-	c.mu.Lock()
-	c.accessToken = token
-	c.mu.Unlock()
+	c.oauth.SetAccessToken(token)
 }
 
 // SetRefreshToken sets a pre-existing OAuth2 refresh token.
 func (c *Client) SetRefreshToken(token string) {
-	c.mu.Lock()
-	c.refreshToken = token
-	c.mu.Unlock()
+	c.oauth.SetRefreshToken(token)
 }
 
 // TokenCallback is called whenever a new token pair is obtained.
@@ -69,21 +60,13 @@ type TokenCallback func(token Token)
 
 // SetTokenCallback sets a callback invoked when tokens change.
 func (c *Client) SetTokenCallback(cb TokenCallback) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.onToken = cb
+	c.oauth.SetTokenCallback(cb)
 }
 
 func (c *Client) getAuthURL() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.authURL
-}
-
-func (c *Client) getClientSecret() string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.clientSecret
 }
 
 // New creates a [Client] using the given MAL API client ID.
@@ -132,9 +115,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent())
 
-	c.mu.RLock()
-	token := c.accessToken
-	c.mu.RUnlock()
+	token := c.oauth.AccessToken()
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	} else {
@@ -395,7 +376,7 @@ func (c *Client) ExchangeCode(ctx context.Context, code string, pkce *PKCEChalle
 		"code":          {code},
 		"code_verifier": {pkce.CodeVerifier},
 	}
-	if cs := c.getClientSecret(); cs != "" {
+	if cs := c.oauth.ClientSecret(); cs != "" {
 		data.Set("client_secret", cs)
 	}
 	if redirectURI != "" {
@@ -406,10 +387,7 @@ func (c *Client) ExchangeCode(ctx context.Context, code string, pkce *PKCEChalle
 
 // RefreshToken uses the stored refresh token to obtain a new access token.
 func (c *Client) RefreshToken(ctx context.Context) (*Token, error) {
-	c.mu.RLock()
-	rt := c.refreshToken
-	cs := c.clientSecret
-	c.mu.RUnlock()
+	rt, cs := c.oauth.RefreshCredentials()
 	if rt == "" {
 		return nil, errors.New("mal: no refresh token available")
 	}
@@ -458,12 +436,7 @@ func (c *Client) tokenRequest(ctx context.Context, data url.Values) (*Token, err
 		return nil, fmt.Errorf("mal: decode token response: %w", err)
 	}
 
-	c.mu.Lock()
-	c.accessToken = token.AccessToken
-	c.refreshToken = token.RefreshToken
-	cb := c.onToken
-	c.mu.Unlock()
-	if cb != nil {
+	if cb := c.oauth.StoreTokens(token.AccessToken, token.RefreshToken); cb != nil {
 		cb(token)
 	}
 	return &token, nil

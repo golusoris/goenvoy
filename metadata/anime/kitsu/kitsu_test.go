@@ -540,9 +540,7 @@ func TestBearerTokenInHeader(t *testing.T) {
 		gotAuth = r.Header.Get("Authorization")
 		respondResource(w, "1", "anime", map[string]any{"slug": "test"})
 	})
-	c.mu.Lock()
-	c.accessToken = "kitsu-tok"
-	c.mu.Unlock()
+	c.SetAccessToken("kitsu-tok")
 
 	_, err := c.GetAnime(context.Background(), 1)
 	if err != nil {

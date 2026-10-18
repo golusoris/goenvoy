@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/golusoris/goenvoy/metadata"
@@ -25,33 +24,22 @@ const (
 type Client struct {
 	*metadata.BaseClient
 	clientID string
-
-	mu           sync.RWMutex // Why: guards all fields mutated via Set* and by OAuth token flows.
-	clientSecret string
-	onToken      TokenCallback
-	accessToken  string
-	refreshToken string
+	oauth    metadata.OAuthState[TokenCallback]
 }
 
 // SetClientSecret sets the client secret needed for OAuth2 flows.
 func (c *Client) SetClientSecret(secret string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.clientSecret = secret
+	c.oauth.SetClientSecret(secret)
 }
 
 // SetAccessToken sets a pre-existing OAuth2 access token.
 func (c *Client) SetAccessToken(token string) {
-	c.mu.Lock()
-	c.accessToken = token
-	c.mu.Unlock()
+	c.oauth.SetAccessToken(token)
 }
 
 // SetRefreshToken sets a pre-existing OAuth2 refresh token.
 func (c *Client) SetRefreshToken(token string) {
-	c.mu.Lock()
-	c.refreshToken = token
-	c.mu.Unlock()
+	c.oauth.SetRefreshToken(token)
 }
 
 // TokenCallback is called whenever a new token pair is obtained (via refresh or exchange).
@@ -60,15 +48,7 @@ type TokenCallback func(token Token)
 
 // SetTokenCallback sets a callback invoked whenever tokens are refreshed or exchanged.
 func (c *Client) SetTokenCallback(cb TokenCallback) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.onToken = cb
-}
-
-func (c *Client) getClientSecret() string {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.clientSecret
+	c.oauth.SetTokenCallback(cb)
 }
 
 // New creates a Trakt [Client] using the given client ID (API key).
@@ -140,9 +120,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent())
 
-	c.mu.RLock()
-	token := c.accessToken
-	c.mu.RUnlock()
+	token := c.oauth.AccessToken()
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -176,19 +154,8 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 	return &pg, nil
 }
 
-func pageParams(page, limit int) url.Values {
-	p := url.Values{}
-	if page > 0 {
-		p.Set("page", strconv.Itoa(page))
-	}
-	if limit > 0 {
-		p.Set("limit", strconv.Itoa(limit))
-	}
-	return p
-}
-
 func extendedParams(page, limit int) url.Values {
-	p := pageParams(page, limit)
+	p := metadata.PageParams(page, limit)
 	p.Set("extended", "full")
 	return p
 }
@@ -544,7 +511,7 @@ func (c *Client) GetPerson(ctx context.Context, idOrSlug string) (*Person, error
 // SearchText searches Trakt by text query.
 // searchType can be "movie", "show", "episode", "person", or a comma-separated combination.
 func (c *Client) SearchText(ctx context.Context, query, searchType string, page, limit int) ([]SearchResult, *PaginationHeaders, error) {
-	params := pageParams(page, limit)
+	params := metadata.PageParams(page, limit)
 	params.Set("query", query)
 	var out []SearchResult
 	pg, err := c.get(ctx, "/search/"+url.PathEscape(searchType), params, &out)
@@ -732,20 +699,12 @@ func (c *Client) GetWatchlist(ctx context.Context, mediaType string, page, limit
 
 // AddToWatchlist adds items to the user's watchlist.
 func (c *Client) AddToWatchlist(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/watchlist", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/watchlist", items)
 }
 
 // RemoveFromWatchlist removes items from the user's watchlist.
 func (c *Client) RemoveFromWatchlist(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/watchlist/remove", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/watchlist/remove", items)
 }
 
 // Collection (authenticated).
@@ -762,20 +721,12 @@ func (c *Client) GetCollection(ctx context.Context, mediaType string, page, limi
 
 // AddToCollection adds items to the user's collection.
 func (c *Client) AddToCollection(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/collection", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/collection", items)
 }
 
 // RemoveFromCollection removes items from the user's collection.
 func (c *Client) RemoveFromCollection(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/collection/remove", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/collection/remove", items)
 }
 
 // History (authenticated).
@@ -796,20 +747,12 @@ func (c *Client) GetHistory(ctx context.Context, mediaType string, page, limit i
 
 // AddToHistory adds items to the user's watch history.
 func (c *Client) AddToHistory(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/history", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/history", items)
 }
 
 // RemoveFromHistory removes items from the user's watch history.
 func (c *Client) RemoveFromHistory(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/history/remove", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/history/remove", items)
 }
 
 // Ratings (authenticated).
@@ -830,20 +773,12 @@ func (c *Client) GetRatings(ctx context.Context, mediaType string) ([]RatedItem,
 
 // AddRatings adds ratings for items.
 func (c *Client) AddRatings(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/ratings", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/ratings", items)
 }
 
 // RemoveRatings removes ratings for items.
 func (c *Client) RemoveRatings(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/ratings/remove", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/ratings/remove", items)
 }
 
 // User lists (authenticated).
@@ -860,11 +795,7 @@ func (c *Client) GetUserLists(ctx context.Context) ([]UserList, error) {
 
 // CreateList creates a new custom list.
 func (c *Client) CreateList(ctx context.Context, list *UserList) (*UserList, error) {
-	var out UserList
-	if err := c.post(ctx, "/users/me/lists", list, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[UserList](ctx, c.post, "/users/me/lists", list)
 }
 
 // UpdateList updates an existing custom list.
@@ -889,60 +820,36 @@ func (c *Client) GetListItems(ctx context.Context, idOrSlug string, page, limit 
 
 // AddListItems adds items to a custom list.
 func (c *Client) AddListItems(ctx context.Context, idOrSlug string, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/users/me/lists/"+url.PathEscape(idOrSlug)+"/items", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/users/me/lists/"+url.PathEscape(idOrSlug)+"/items", items)
 }
 
 // RemoveListItems removes items from a custom list.
 func (c *Client) RemoveListItems(ctx context.Context, idOrSlug string, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/users/me/lists/"+url.PathEscape(idOrSlug)+"/items/remove", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/users/me/lists/"+url.PathEscape(idOrSlug)+"/items/remove", items)
 }
 
 // Scrobble (authenticated).
 
 // ScrobbleStart starts watching an item.
 func (c *Client) ScrobbleStart(ctx context.Context, req *ScrobbleRequest) (*ScrobbleResponse, error) {
-	var out ScrobbleResponse
-	if err := c.post(ctx, "/scrobble/start", req, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[ScrobbleResponse](ctx, c.post, "/scrobble/start", req)
 }
 
 // ScrobblePause pauses watching an item.
 func (c *Client) ScrobblePause(ctx context.Context, req *ScrobbleRequest) (*ScrobbleResponse, error) {
-	var out ScrobbleResponse
-	if err := c.post(ctx, "/scrobble/pause", req, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[ScrobbleResponse](ctx, c.post, "/scrobble/pause", req)
 }
 
 // ScrobbleStop stops watching an item.
 func (c *Client) ScrobbleStop(ctx context.Context, req *ScrobbleRequest) (*ScrobbleResponse, error) {
-	var out ScrobbleResponse
-	if err := c.post(ctx, "/scrobble/stop", req, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[ScrobbleResponse](ctx, c.post, "/scrobble/stop", req)
 }
 
 // Checkin (authenticated).
 
 // Checkin checks in to a movie or episode.
 func (c *Client) Checkin(ctx context.Context, req *CheckinRequest) (*CheckinResponse, error) {
-	var out CheckinResponse
-	if err := c.post(ctx, "/checkin", req, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[CheckinResponse](ctx, c.post, "/checkin", req)
 }
 
 // CancelCheckin cancels the active checkin.
@@ -1013,7 +920,7 @@ func (c *Client) GetMovieComments(ctx context.Context, idOrSlug, sort string, pa
 		path += "/" + url.PathEscape(sort)
 	}
 	var out []Comment
-	pg, err := c.get(ctx, path, pageParams(page, limit), &out)
+	pg, err := c.get(ctx, path, metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1040,7 +947,7 @@ func (c *Client) GetMovieLists(ctx context.Context, idOrSlug, listType, sort str
 		}
 	}
 	var out []UserList
-	pg, err := c.get(ctx, path, pageParams(page, limit), &out)
+	pg, err := c.get(ctx, path, metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1066,7 +973,7 @@ func (c *Client) GetShowComments(ctx context.Context, idOrSlug, sort string, pag
 		path += "/" + url.PathEscape(sort)
 	}
 	var out []Comment
-	pg, err := c.get(ctx, path, pageParams(page, limit), &out)
+	pg, err := c.get(ctx, path, metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1093,7 +1000,7 @@ func (c *Client) GetShowLists(ctx context.Context, idOrSlug, listType, sort stri
 		}
 	}
 	var out []UserList
-	pg, err := c.get(ctx, path, pageParams(page, limit), &out)
+	pg, err := c.get(ctx, path, metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1139,7 +1046,7 @@ func (c *Client) GetSeasonComments(ctx context.Context, showID string, season in
 		path += "/" + url.PathEscape(sort)
 	}
 	var out []Comment
-	pg, err := c.get(ctx, path, pageParams(page, limit), &out)
+	pg, err := c.get(ctx, path, metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1196,7 +1103,7 @@ func (c *Client) GetSeasonLists(ctx context.Context, showID string, season int, 
 		}
 	}
 	var out []UserList
-	pg, err := c.get(ctx, path, pageParams(page, limit), &out)
+	pg, err := c.get(ctx, path, metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1226,7 +1133,7 @@ func (c *Client) GetEpisodeComments(ctx context.Context, showID string, season, 
 		path += "/" + url.PathEscape(sort)
 	}
 	var out []Comment
-	pg, err := c.get(ctx, path, pageParams(page, limit), &out)
+	pg, err := c.get(ctx, path, metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1243,7 +1150,7 @@ func (c *Client) GetEpisodeLists(ctx context.Context, showID string, season, epi
 		}
 	}
 	var out []UserList
-	pg, err := c.get(ctx, path, pageParams(page, limit), &out)
+	pg, err := c.get(ctx, path, metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1302,7 +1209,7 @@ func (c *Client) GetPersonLists(ctx context.Context, idOrSlug, listType, sort st
 		}
 	}
 	var out []UserList
-	pg, err := c.get(ctx, path, pageParams(page, limit), &out)
+	pg, err := c.get(ctx, path, metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1391,11 +1298,7 @@ func (c *Client) GetComment(ctx context.Context, id int) (*Comment, error) {
 
 // PostComment creates a new comment on a media item.
 func (c *Client) PostComment(ctx context.Context, req *CommentRequest) (*Comment, error) {
-	var out Comment
-	if err := c.post(ctx, "/comments", req, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[Comment](ctx, c.post, "/comments", req)
 }
 
 // UpdateComment updates an existing comment.
@@ -1414,7 +1317,7 @@ func (c *Client) DeleteComment(ctx context.Context, id int) error {
 // GetCommentReplies returns replies to a comment.
 func (c *Client) GetCommentReplies(ctx context.Context, id, page, limit int) ([]Comment, *PaginationHeaders, error) {
 	var out []Comment
-	pg, err := c.get(ctx, "/comments/"+strconv.Itoa(id)+"/replies", pageParams(page, limit), &out)
+	pg, err := c.get(ctx, "/comments/"+strconv.Itoa(id)+"/replies", metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1423,11 +1326,7 @@ func (c *Client) GetCommentReplies(ctx context.Context, id, page, limit int) ([]
 
 // PostCommentReply posts a reply to a comment.
 func (c *Client) PostCommentReply(ctx context.Context, id int, req *CommentRequest) (*Comment, error) {
-	var out Comment
-	if err := c.post(ctx, "/comments/"+strconv.Itoa(id)+"/replies", req, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[Comment](ctx, c.post, "/comments/"+strconv.Itoa(id)+"/replies", req)
 }
 
 // GetCommentItem returns the media item attached to a comment.
@@ -1459,7 +1358,7 @@ func (c *Client) TrendingComments(ctx context.Context, commentType, mediaType st
 			path += "/" + url.PathEscape(mediaType)
 		}
 	}
-	params := pageParams(page, limit)
+	params := metadata.PageParams(page, limit)
 	if includeReplies {
 		params.Set("include_replies", "true")
 	}
@@ -1480,7 +1379,7 @@ func (c *Client) RecentComments(ctx context.Context, commentType, mediaType stri
 			path += "/" + url.PathEscape(mediaType)
 		}
 	}
-	params := pageParams(page, limit)
+	params := metadata.PageParams(page, limit)
 	if includeReplies {
 		params.Set("include_replies", "true")
 	}
@@ -1501,7 +1400,7 @@ func (c *Client) UpdatedComments(ctx context.Context, commentType, mediaType str
 			path += "/" + url.PathEscape(mediaType)
 		}
 	}
-	params := pageParams(page, limit)
+	params := metadata.PageParams(page, limit)
 	if includeReplies {
 		params.Set("include_replies", "true")
 	}
@@ -1518,7 +1417,7 @@ func (c *Client) UpdatedComments(ctx context.Context, commentType, mediaType str
 // GetNotes returns the authenticated user's notes.
 func (c *Client) GetNotes(ctx context.Context, page, limit int) ([]NoteItem, *PaginationHeaders, error) {
 	var out []NoteItem
-	pg, err := c.get(ctx, "/notes", pageParams(page, limit), &out)
+	pg, err := c.get(ctx, "/notes", metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1537,11 +1436,7 @@ func (c *Client) GetNote(ctx context.Context, id int) (*NoteItem, error) {
 
 // AddNote creates a new note.
 func (c *Client) AddNote(ctx context.Context, req *NoteRequest) (*NoteItem, error) {
-	var out NoteItem
-	if err := c.post(ctx, "/notes", req, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[NoteItem](ctx, c.post, "/notes", req)
 }
 
 // UpdateNote updates an existing note.
@@ -1611,20 +1506,12 @@ func (c *Client) GetFavorites(ctx context.Context, mediaType string, page, limit
 
 // AddToFavorites adds items to favorites.
 func (c *Client) AddToFavorites(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/favorites", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/favorites", items)
 }
 
 // RemoveFromFavorites removes items from favorites.
 func (c *Client) RemoveFromFavorites(ctx context.Context, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/sync/favorites/remove", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/sync/favorites/remove", items)
 }
 
 // User by username (public).
@@ -1808,7 +1695,7 @@ func (c *Client) GetUserFollowing(ctx context.Context, username string) ([]UserF
 // GetUpdatedMovieIDs returns just the Trakt IDs of movies updated since the given date.
 func (c *Client) GetUpdatedMovieIDs(ctx context.Context, startDate string, page, limit int) ([]int, *PaginationHeaders, error) {
 	var out []int
-	pg, err := c.get(ctx, "/movies/updates/id/"+url.PathEscape(startDate), pageParams(page, limit), &out)
+	pg, err := c.get(ctx, "/movies/updates/id/"+url.PathEscape(startDate), metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1818,7 +1705,7 @@ func (c *Client) GetUpdatedMovieIDs(ctx context.Context, startDate string, page,
 // GetUpdatedShowIDs returns just the Trakt IDs of shows updated since the given date.
 func (c *Client) GetUpdatedShowIDs(ctx context.Context, startDate string, page, limit int) ([]int, *PaginationHeaders, error) {
 	var out []int
-	pg, err := c.get(ctx, "/shows/updates/id/"+url.PathEscape(startDate), pageParams(page, limit), &out)
+	pg, err := c.get(ctx, "/shows/updates/id/"+url.PathEscape(startDate), metadata.PageParams(page, limit), &out)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1845,20 +1732,12 @@ func (c *Client) GetHiddenItems(ctx context.Context, section, mediaType string, 
 
 // AddHiddenItems hides items from a section.
 func (c *Client) AddHiddenItems(ctx context.Context, section string, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/users/hidden/"+url.PathEscape(section), items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/users/hidden/"+url.PathEscape(section), items)
 }
 
 // RemoveHiddenItems unhides items from a section.
 func (c *Client) RemoveHiddenItems(ctx context.Context, section string, items *SyncItems) (*SyncResponse, error) {
-	var out SyncResponse
-	if err := c.post(ctx, "/users/hidden/"+url.PathEscape(section)+"/remove", items, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return metadata.PostAs[SyncResponse](ctx, c.post, "/users/hidden/"+url.PathEscape(section)+"/remove", items)
 }
 
 // User watching.
@@ -1916,9 +1795,7 @@ func (c *Client) post(ctx context.Context, path string, body, dst any) error {
 	req.Header.Set("Trakt-Api-Version", apiVersion)
 	req.Header.Set("User-Agent", c.UserAgent())
 
-	c.mu.RLock()
-	token := c.accessToken
-	c.mu.RUnlock()
+	token := c.oauth.AccessToken()
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -1961,9 +1838,7 @@ func (c *Client) del(ctx context.Context, path string) error {
 	req.Header.Set("Trakt-Api-Version", apiVersion)
 	req.Header.Set("User-Agent", c.UserAgent())
 
-	c.mu.RLock()
-	token := c.accessToken
-	c.mu.RUnlock()
+	token := c.oauth.AccessToken()
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -2006,9 +1881,7 @@ func (c *Client) put(ctx context.Context, path string, body any) error {
 	req.Header.Set("Trakt-Api-Version", apiVersion)
 	req.Header.Set("User-Agent", c.UserAgent())
 
-	c.mu.RLock()
-	token := c.accessToken
-	c.mu.RUnlock()
+	token := c.oauth.AccessToken()
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -2037,14 +1910,9 @@ func (c *Client) put(ctx context.Context, path string, body any) error {
 // GetDeviceCode starts the OAuth2 device code flow.
 // Display the returned UserCode and VerificationURL to the user.
 func (c *Client) GetDeviceCode(ctx context.Context) (*DeviceCode, error) {
-	var out DeviceCode
-	err := c.post(ctx, "/oauth/device/code", map[string]string{
+	return metadata.PostAs[DeviceCode](ctx, c.post, "/oauth/device/code", map[string]string{
 		"client_id": c.clientID,
-	}, &out)
-	if err != nil {
-		return nil, err
-	}
-	return &out, nil
+	})
 }
 
 // PollDeviceToken polls for the device token after the user has authorized the app.
@@ -2058,7 +1926,7 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (*Token,
 	body := map[string]string{
 		"code":          code.DeviceCode,
 		"client_id":     c.clientID,
-		"client_secret": c.getClientSecret(),
+		"client_secret": c.oauth.ClientSecret(),
 	}
 
 	for {
@@ -2104,7 +1972,7 @@ func (c *Client) ExchangeCode(ctx context.Context, code, redirectURI string) (*T
 	err := c.post(ctx, "/oauth/token", map[string]string{
 		"code":          code,
 		"client_id":     c.clientID,
-		"client_secret": c.getClientSecret(),
+		"client_secret": c.oauth.ClientSecret(),
 		"redirect_uri":  redirectURI,
 		"grant_type":    "authorization_code",
 	}, &token)
@@ -2117,10 +1985,7 @@ func (c *Client) ExchangeCode(ctx context.Context, code, redirectURI string) (*T
 
 // RefreshToken uses the refresh token to obtain a new access token.
 func (c *Client) RefreshToken(ctx context.Context, redirectURI string) (*Token, error) {
-	c.mu.RLock()
-	rt := c.refreshToken
-	cs := c.clientSecret
-	c.mu.RUnlock()
+	rt, cs := c.oauth.RefreshCredentials()
 	if rt == "" {
 		return nil, errors.New("trakt: no refresh token available")
 	}
@@ -2142,10 +2007,8 @@ func (c *Client) RefreshToken(ctx context.Context, redirectURI string) (*Token, 
 
 // RevokeToken revokes the current access token.
 func (c *Client) RevokeToken(ctx context.Context) error {
-	c.mu.RLock()
-	token := c.accessToken
-	cs := c.clientSecret
-	c.mu.RUnlock()
+	token := c.oauth.AccessToken()
+	cs := c.oauth.ClientSecret()
 
 	return c.post(ctx, "/oauth/revoke", map[string]string{
 		"token":         token,
@@ -2155,12 +2018,7 @@ func (c *Client) RevokeToken(ctx context.Context) error {
 }
 
 func (c *Client) storeToken(t *Token) {
-	c.mu.Lock()
-	c.accessToken = t.AccessToken
-	c.refreshToken = t.RefreshToken
-	cb := c.onToken
-	c.mu.Unlock()
-	if cb != nil {
+	if cb := c.oauth.StoreTokens(t.AccessToken, t.RefreshToken); cb != nil {
 		cb(*t)
 	}
 }
