@@ -10,6 +10,8 @@ Clients for the *arr stack and adjacent automation tools — Sonarr, Radarr, Rea
 
 The root of the category is itself a small module ([arr/types.go](types.go)) containing types shared across services — `SystemStatus`, `RootFolder`, `Tag`, `QualityProfile`, `LanguageProfile`. Every *arr service returns these in (near-)identical shape.
 
+Typed request helpers live beside `BaseClient` in [arr/resource.go](resource.go): `GetOne`, `GetList`, `PostOne`, `PostList`, `PutOne`, `PutList`. A service method whose body is one request plus a decode calls the helper instead of repeating the `var out` block.
+
 Service sub-modules **may** import `arr` for the shared types. This is the only in-repo import edge allowed — no service imports another service.
 
 ## Shared conventions in this category
