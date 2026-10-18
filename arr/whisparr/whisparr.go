@@ -6,7 +6,7 @@ import (
 
 // Client is a Whisparr v2 (Sonarr-based) API client.
 type Client struct {
-	base *arr.BaseClient
+	api
 }
 
 // New creates a Whisparr v2 [Client] for the instance at baseURL.
@@ -15,5 +15,5 @@ func New(baseURL, apiKey string, opts ...arr.Option) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{base: base}, nil
+	return &Client{api: api{base: base}}, nil
 }

@@ -44,5 +44,3 @@ func (c *ClientV3) GetWantedCutoffByID(ctx context.Context, id int) (*Movie, err
 	}
 	return &out, nil
 }
-
-// ---------- Ping ----------.

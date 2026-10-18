@@ -25,8 +25,6 @@ func (c *Client) GetLanguage(ctx context.Context, id int) (*arr.LanguageResource
 	return &out, nil
 }
 
-// ---------- Language Profiles ----------.
-
 // GetLanguageProfiles returns all language profiles.
 func (c *Client) GetLanguageProfiles(ctx context.Context) ([]LanguageProfileResource, error) {
 	var out []LanguageProfileResource
@@ -76,25 +74,3 @@ func (c *Client) GetLanguageProfileSchema(ctx context.Context) (*LanguageProfile
 	}
 	return &out, nil
 }
-
-// ---------- Localization ----------.
-
-// GetLocalization returns localization strings.
-func (c *Client) GetLocalization(ctx context.Context) (map[string]string, error) {
-	var out map[string]string
-	if err := c.base.Get(ctx, "/api/v3/localization", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// GetLocalizationLanguage returns the current localization language.
-func (c *Client) GetLocalizationLanguage(ctx context.Context) (*LocalizationLanguageResource, error) {
-	var out LocalizationLanguageResource
-	if err := c.base.Get(ctx, "/api/v3/localization/language", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// ---------- Logs ----------.

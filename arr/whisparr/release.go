@@ -17,26 +17,6 @@ func (c *Client) SearchReleases(ctx context.Context, episodeID int) ([]arr.Relea
 	return out, nil
 }
 
-// GrabRelease sends a release to the download client.
-func (c *Client) GrabRelease(ctx context.Context, release *arr.ReleaseResource) (*arr.ReleaseResource, error) {
-	var out arr.ReleaseResource
-	if err := c.base.Post(ctx, "/api/v3/release", release, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
-}
-
-// PushRelease pushes a release for processing.
-func (c *Client) PushRelease(ctx context.Context, push *arr.ReleasePushResource) ([]arr.ReleaseResource, error) {
-	var out []arr.ReleaseResource
-	if err := c.base.Post(ctx, "/api/v3/release/push", push, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// ---------- Release Profiles ----------.
-
 // GetReleaseProfiles returns all release profiles.
 func (c *Client) GetReleaseProfiles(ctx context.Context) ([]arr.ReleaseProfileResource, error) {
 	var out []arr.ReleaseProfileResource
@@ -77,5 +57,3 @@ func (c *Client) UpdateReleaseProfile(ctx context.Context, rp *arr.ReleaseProfil
 func (c *Client) DeleteReleaseProfile(ctx context.Context, id int) error {
 	return c.base.Delete(ctx, fmt.Sprintf("/api/v3/releaseprofile/%d", id), nil, nil)
 }
-
-// ---------- Remote Path Mappings ----------.

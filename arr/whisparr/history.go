@@ -37,10 +37,3 @@ func (c *Client) GetHistorySeries(ctx context.Context, seriesID int) ([]V2Histor
 	}
 	return out, nil
 }
-
-// MarkHistoryFailed marks a history item as failed.
-func (c *Client) MarkHistoryFailed(ctx context.Context, id int) error {
-	return c.base.Post(ctx, fmt.Sprintf("/api/v3/history/failed/%d", id), nil, nil)
-}
-
-// ---------- Import Lists ----------.

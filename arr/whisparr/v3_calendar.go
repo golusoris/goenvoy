@@ -35,5 +35,3 @@ func (c *ClientV3) GetCalendarByID(ctx context.Context, id int) (*Movie, error) 
 	}
 	return &out, nil
 }
-
-// ---------- Command Extended ----------.
