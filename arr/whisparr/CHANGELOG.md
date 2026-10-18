@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/golusoris/goenvoy/compare/arr/whisparr/v1.3.1...arr/whisparr/v1.4.0) (2026-10-18)
+
+
+### Features
+
+* **arr:** add typed manual import candidates and the ManualImport command to sonarr and radarr ([#112](https://github.com/golusoris/goenvoy/issues/112)) ([e77d452](https://github.com/golusoris/goenvoy/commit/e77d45263f3b8406c6cc01f206d60a7331293327))
+
 ## [1.3.1](https://github.com/golusoris/goenvoy/compare/arr/whisparr/v1.3.0...arr/whisparr/v1.3.1) (2026-06-19)
 
 
