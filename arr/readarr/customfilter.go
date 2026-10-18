@@ -9,38 +9,22 @@ import (
 
 // GetCustomFilters returns all custom filters.
 func (c *Client) GetCustomFilters(ctx context.Context) ([]arr.CustomFilterResource, error) {
-	var out []arr.CustomFilterResource
-	if err := c.base.Get(ctx, "/api/v1/customfilter", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.CustomFilterResource](ctx, c.base, "/api/v1/customfilter")
 }
 
 // GetCustomFilter returns a single custom filter by its ID.
 func (c *Client) GetCustomFilter(ctx context.Context, id int) (*arr.CustomFilterResource, error) {
-	var out arr.CustomFilterResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/customfilter/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.CustomFilterResource](ctx, c.base, fmt.Sprintf("/api/v1/customfilter/%d", id))
 }
 
 // CreateCustomFilter creates a new custom filter.
 func (c *Client) CreateCustomFilter(ctx context.Context, filter *arr.CustomFilterResource) (*arr.CustomFilterResource, error) {
-	var out arr.CustomFilterResource
-	if err := c.base.Post(ctx, "/api/v1/customfilter", filter, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.CustomFilterResource](ctx, c.base, "/api/v1/customfilter", filter)
 }
 
 // UpdateCustomFilter updates an existing custom filter.
 func (c *Client) UpdateCustomFilter(ctx context.Context, filter *arr.CustomFilterResource) (*arr.CustomFilterResource, error) {
-	var out arr.CustomFilterResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/customfilter/%d", filter.ID), filter, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.CustomFilterResource](ctx, c.base, fmt.Sprintf("/api/v1/customfilter/%d", filter.ID), filter)
 }
 
 // DeleteCustomFilter deletes a custom filter by ID.

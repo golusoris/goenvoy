@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetAlbums returns albums for the given artist.
@@ -28,11 +30,7 @@ func (c *Client) GetAlbum(ctx context.Context, id int) (*Album, error) {
 
 // AddAlbum adds a new album to Lidarr.
 func (c *Client) AddAlbum(ctx context.Context, album *Album) (*Album, error) {
-	var out Album
-	if err := c.base.Post(ctx, "/api/v1/album", album, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Album](ctx, c.base, "/api/v1/album", album)
 }
 
 // UpdateAlbum updates an existing album.

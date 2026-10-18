@@ -3,6 +3,8 @@ package lidarr
 import (
 	"context"
 	"fmt"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetTracks returns tracks for the given artist and album.
@@ -59,20 +61,12 @@ func (c *Client) DeleteTrackFiles(ctx context.Context, ids []int) error {
 
 // UpdateTrackFile updates a single track file.
 func (c *Client) UpdateTrackFile(ctx context.Context, tf *TrackFile) (*TrackFile, error) {
-	var out TrackFile
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/trackfile/%d", tf.ID), tf, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[TrackFile](ctx, c.base, fmt.Sprintf("/api/v1/trackfile/%d", tf.ID), tf)
 }
 
 // EditTrackFiles performs a bulk edit of track file properties.
 func (c *Client) EditTrackFiles(ctx context.Context, editor *TrackFileEditorResource) ([]TrackFile, error) {
-	var out []TrackFile
-	if err := c.base.Put(ctx, "/api/v1/trackfile/editor", editor, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[TrackFile](ctx, c.base, "/api/v1/trackfile/editor", editor)
 }
 
 // ---------- Album Studio ----------.

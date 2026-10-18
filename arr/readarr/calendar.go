@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetCalendar returns books with releases between start and end (RFC 3339 timestamps).
@@ -29,11 +31,7 @@ func (c *Client) Parse(ctx context.Context, title string) (*ParseResult, error) 
 
 // GetCalendarByID returns a single calendar entry by its ID.
 func (c *Client) GetCalendarByID(ctx context.Context, id int) (*Book, error) {
-	var out Book
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/calendar/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Book](ctx, c.base, fmt.Sprintf("/api/v1/calendar/%d", id))
 }
 
 // ---------- Wanted By ID ----------.

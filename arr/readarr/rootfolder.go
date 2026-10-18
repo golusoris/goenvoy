@@ -9,38 +9,22 @@ import (
 
 // GetRootFolders returns all configured root folders.
 func (c *Client) GetRootFolders(ctx context.Context) ([]arr.RootFolder, error) {
-	var out []arr.RootFolder
-	if err := c.base.Get(ctx, "/api/v1/rootfolder", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.RootFolder](ctx, c.base, "/api/v1/rootfolder")
 }
 
 // GetRootFolder returns a single root folder by its ID.
 func (c *Client) GetRootFolder(ctx context.Context, id int) (*arr.RootFolder, error) {
-	var out arr.RootFolder
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/rootfolder/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.RootFolder](ctx, c.base, fmt.Sprintf("/api/v1/rootfolder/%d", id))
 }
 
 // CreateRootFolder creates a new root folder.
 func (c *Client) CreateRootFolder(ctx context.Context, folder *arr.RootFolder) (*arr.RootFolder, error) {
-	var out arr.RootFolder
-	if err := c.base.Post(ctx, "/api/v1/rootfolder", folder, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.RootFolder](ctx, c.base, "/api/v1/rootfolder", folder)
 }
 
 // UpdateRootFolder updates an existing root folder.
 func (c *Client) UpdateRootFolder(ctx context.Context, folder *arr.RootFolder) (*arr.RootFolder, error) {
-	var out arr.RootFolder
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/rootfolder/%d", folder.ID), folder, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.RootFolder](ctx, c.base, fmt.Sprintf("/api/v1/rootfolder/%d", folder.ID), folder)
 }
 
 // DeleteRootFolder deletes a root folder by ID.

@@ -4,15 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+
+	"github.com/golusoris/goenvoy/arr/v2"
 )
 
 // GetAllAuthors returns every author configured in Readarr.
 func (c *Client) GetAllAuthors(ctx context.Context) ([]Author, error) {
-	var out []Author
-	if err := c.base.Get(ctx, "/api/v1/author", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[Author](ctx, c.base, "/api/v1/author")
 }
 
 // GetAuthor returns a single author by its database ID.
@@ -27,11 +25,7 @@ func (c *Client) GetAuthor(ctx context.Context, id int) (*Author, error) {
 
 // AddAuthor adds a new author to Readarr.
 func (c *Client) AddAuthor(ctx context.Context, author *Author) (*Author, error) {
-	var out Author
-	if err := c.base.Post(ctx, "/api/v1/author", author, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[Author](ctx, c.base, "/api/v1/author", author)
 }
 
 // UpdateAuthor updates an existing author. Set moveFiles to true to relocate

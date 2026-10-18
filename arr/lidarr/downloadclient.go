@@ -9,38 +9,22 @@ import (
 
 // GetDownloadClients returns all download client configurations.
 func (c *Client) GetDownloadClients(ctx context.Context) ([]arr.ProviderResource, error) {
-	var out []arr.ProviderResource
-	if err := c.base.Get(ctx, "/api/v1/downloadclient", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ProviderResource](ctx, c.base, "/api/v1/downloadclient")
 }
 
 // GetDownloadClient returns a single download client by ID.
 func (c *Client) GetDownloadClient(ctx context.Context, id int) (*arr.ProviderResource, error) {
-	var out arr.ProviderResource
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/downloadclient/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.ProviderResource](ctx, c.base, fmt.Sprintf("/api/v1/downloadclient/%d", id))
 }
 
 // CreateDownloadClient creates a new download client.
 func (c *Client) CreateDownloadClient(ctx context.Context, dc *arr.ProviderResource) (*arr.ProviderResource, error) {
-	var out arr.ProviderResource
-	if err := c.base.Post(ctx, "/api/v1/downloadclient", dc, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PostOne[arr.ProviderResource](ctx, c.base, "/api/v1/downloadclient", dc)
 }
 
 // UpdateDownloadClient updates an existing download client.
 func (c *Client) UpdateDownloadClient(ctx context.Context, dc *arr.ProviderResource) (*arr.ProviderResource, error) {
-	var out arr.ProviderResource
-	if err := c.base.Put(ctx, fmt.Sprintf("/api/v1/downloadclient/%d", dc.ID), dc, &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.PutOne[arr.ProviderResource](ctx, c.base, fmt.Sprintf("/api/v1/downloadclient/%d", dc.ID), dc)
 }
 
 // DeleteDownloadClient removes a download client.
@@ -50,11 +34,7 @@ func (c *Client) DeleteDownloadClient(ctx context.Context, id int) error {
 
 // GetDownloadClientSchema returns available download client implementations.
 func (c *Client) GetDownloadClientSchema(ctx context.Context) ([]arr.ProviderResource, error) {
-	var out []arr.ProviderResource
-	if err := c.base.Get(ctx, "/api/v1/downloadclient/schema", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.ProviderResource](ctx, c.base, "/api/v1/downloadclient/schema")
 }
 
 // TestDownloadClient sends a test for a download client configuration.
@@ -69,11 +49,7 @@ func (c *Client) TestAllDownloadClients(ctx context.Context) error {
 
 // UpdateDownloadClientsBulk performs a bulk update of download clients.
 func (c *Client) UpdateDownloadClientsBulk(ctx context.Context, bulk *arr.ProviderBulkResource) ([]arr.ProviderResource, error) {
-	var out []arr.ProviderResource
-	if err := c.base.Put(ctx, "/api/v1/downloadclient/bulk", bulk, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.PutList[arr.ProviderResource](ctx, c.base, "/api/v1/downloadclient/bulk", bulk)
 }
 
 // DeleteDownloadClientsBulk bulk-deletes download clients by IDs.

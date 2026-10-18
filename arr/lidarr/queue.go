@@ -110,20 +110,12 @@ func (c *Client) GrabQueueItems(ctx context.Context, ids []int) error {
 
 // GetQueueDetails returns detailed queue information.
 func (c *Client) GetQueueDetails(ctx context.Context) ([]arr.QueueRecord, error) {
-	var out []arr.QueueRecord
-	if err := c.base.Get(ctx, "/api/v1/queue/details", &out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return arr.GetList[arr.QueueRecord](ctx, c.base, "/api/v1/queue/details")
 }
 
 // GetQueueStatus returns the current queue status.
 func (c *Client) GetQueueStatus(ctx context.Context) (*arr.QueueStatusResource, error) {
-	var out arr.QueueStatusResource
-	if err := c.base.Get(ctx, "/api/v1/queue/status", &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[arr.QueueStatusResource](ctx, c.base, "/api/v1/queue/status")
 }
 
 // ---------- History Extended ----------.

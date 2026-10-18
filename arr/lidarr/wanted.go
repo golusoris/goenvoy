@@ -29,20 +29,12 @@ func (c *Client) GetWantedCutoff(ctx context.Context, page, pageSize int) (*arr.
 
 // GetWantedMissingByID returns a single wanted missing record by its ID.
 func (c *Client) GetWantedMissingByID(ctx context.Context, id int) (*Album, error) {
-	var out Album
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/wanted/missing/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Album](ctx, c.base, fmt.Sprintf("/api/v1/wanted/missing/%d", id))
 }
 
 // GetWantedCutoffByID returns a single wanted cutoff record by its ID.
 func (c *Client) GetWantedCutoffByID(ctx context.Context, id int) (*Album, error) {
-	var out Album
-	if err := c.base.Get(ctx, fmt.Sprintf("/api/v1/wanted/cutoff/%d", id), &out); err != nil {
-		return nil, err
-	}
-	return &out, nil
+	return arr.GetOne[Album](ctx, c.base, fmt.Sprintf("/api/v1/wanted/cutoff/%d", id))
 }
 
 // ---------- Config By ID ----------.
