@@ -113,8 +113,6 @@ func (c *ClientV3) ImportMovie(ctx context.Context, movies []Movie) error {
 	return c.base.Post(ctx, "/api/v3/movie/import", movies, nil)
 }
 
-// ---------- Movie File Extended ----------.
-
 // GetMovieFiles returns all movie files.
 func (c *ClientV3) GetMovieFiles(ctx context.Context, movieID int) ([]MovieFile, error) {
 	var out []MovieFile
@@ -158,8 +156,6 @@ func (c *ClientV3) LookupMovieByIMDB(ctx context.Context, imdbID string) (*Movie
 	}
 	return &out, nil
 }
-
-// ---------- Naming Config ----------.
 
 // GetMovieList returns all movies matching a list of IDs.
 func (c *ClientV3) GetMovieList(ctx context.Context, movieIDs []int) ([]Movie, error) {

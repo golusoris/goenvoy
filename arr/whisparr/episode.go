@@ -59,8 +59,6 @@ func (c *Client) MonitorEpisodes(ctx context.Context, req *EpisodesMonitoredReso
 	return out, nil
 }
 
-// ---------- Episode Files Extended ----------.
-
 // GetEpisodeFile returns a single episode file by ID.
 func (c *Client) GetEpisodeFile(ctx context.Context, id int) (*EpisodeFile, error) {
 	var out EpisodeFile

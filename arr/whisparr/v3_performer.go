@@ -58,5 +58,3 @@ func (c *ClientV3) EditPerformers(ctx context.Context, editor *PerformerEditorRe
 func (c *ClientV3) DeletePerformersBulk(ctx context.Context, editor *PerformerEditorResource) error {
 	return c.base.Delete(ctx, "/api/v3/performer/editor", editor, nil)
 }
-
-// ---------- Studio Editor ----------.

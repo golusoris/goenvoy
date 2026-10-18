@@ -58,5 +58,3 @@ func (c *ClientV3) EditStudios(ctx context.Context, editor *StudioEditorResource
 func (c *ClientV3) DeleteStudiosBulk(ctx context.Context, editor *StudioEditorResource) error {
 	return c.base.Delete(ctx, "/api/v3/studio/editor", editor, nil)
 }
-
-// ---------- Quality Definitions ----------.

@@ -66,8 +66,6 @@ func (c *Client) UpdateSeasonPass(ctx context.Context, pass SeasonPassResource) 
 	return c.base.Post(ctx, "/api/v3/seasonpass", pass, nil)
 }
 
-// ---------- AutoTagging ----------.
-
 // EditSeries applies bulk edits to multiple series.
 func (c *Client) EditSeries(ctx context.Context, editor *SeriesEditorResource) error {
 	return c.base.Put(ctx, "/api/v3/series/editor", editor, nil)
@@ -77,8 +75,6 @@ func (c *Client) EditSeries(ctx context.Context, editor *SeriesEditorResource) e
 func (c *Client) ImportSeries(ctx context.Context, series []Series) error {
 	return c.base.Post(ctx, "/api/v3/series/import", series, nil)
 }
-
-// ---------- System Extended ----------.
 
 // DeleteSeriesBulk deletes multiple series according to the editor payload.
 func (c *Client) DeleteSeriesBulk(ctx context.Context, editor *SeriesEditorResource) error {

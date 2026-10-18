@@ -35,5 +35,3 @@ func (c *Client) GetCalendarByID(ctx context.Context, id int) (*Episode, error) 
 	}
 	return &out, nil
 }
-
-// ---------- Command Extended ----------.

@@ -37,10 +37,3 @@ func (c *ClientV3) GetHistoryMovie(ctx context.Context, movieID int) ([]HistoryR
 	}
 	return out, nil
 }
-
-// MarkHistoryFailed marks a history item as failed.
-func (c *ClientV3) MarkHistoryFailed(ctx context.Context, id int) error {
-	return c.base.Post(ctx, fmt.Sprintf("/api/v3/history/failed/%d", id), nil, nil)
-}
-
-// ---------- Host Config ----------.

@@ -44,5 +44,3 @@ func (c *Client) GetWantedCutoffByID(ctx context.Context, id int) (*Episode, err
 	}
 	return &out, nil
 }
-
-// ---------- Delay Profiles ----------.
