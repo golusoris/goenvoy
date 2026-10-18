@@ -15,11 +15,7 @@ type Client struct {
 
 // New creates a Seerr [Client] for the instance at baseURL.
 func New(baseURL, apiKey string, opts ...arr.Option) (*Client, error) {
-	base, err := arr.NewBaseClient(baseURL, apiKey, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &Client{base: base}, nil
+	return arr.NewServiceClient(baseURL, apiKey, func(b *arr.BaseClient) *Client { return &Client{base: b} }, opts...)
 }
 
 // GetStatus returns the current Seerr server status.
