@@ -2,4 +2,4 @@ module github.com/golusoris/goenvoy/arr/lidarr
 
 go 1.26.9
 
-require github.com/golusoris/goenvoy/arr/v2 v2.3.0
+require github.com/golusoris/goenvoy/arr/v2 v2.4.0

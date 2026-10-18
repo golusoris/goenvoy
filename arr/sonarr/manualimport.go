@@ -89,12 +89,6 @@ type ManualImportFile struct {
 	DownloadID    string       `json:"downloadId,omitempty"`
 }
 
-type manualImportCommand struct {
-	Name       string             `json:"name"`
-	ImportMode ImportMode         `json:"importMode"`
-	Files      []ManualImportFile `json:"files"`
-}
-
 // ImportFile converts the candidate into a command file. It reports false when
 // the candidate is not mapped to a series and at least one episode; rejections
 // are left for the caller to judge.
@@ -148,14 +142,5 @@ func (c *Client) GetManualImportCandidates(ctx context.Context, opts ManualImpor
 // SendManualImport queues the ManualImport command, which imports the given files.
 // The command runs asynchronously: the reply only proves it was queued.
 func (c *Client) SendManualImport(ctx context.Context, mode ImportMode, files []ManualImportFile) (*arr.CommandResponse, error) {
-	if len(files) == 0 {
-		return nil, ErrNoImportFiles
-	}
-	switch mode {
-	case ImportModeAuto, ImportModeMove, ImportModeCopy:
-	default:
-		return nil, ErrInvalidImportMode
-	}
-	body := manualImportCommand{Name: "ManualImport", ImportMode: mode, Files: files}
-	return arr.PostOne[arr.CommandResponse](ctx, c.base, "/api/v3/command", body)
+	return arr.SendManualImport(ctx, c.base, "/api/v3/command", mode, files, ErrNoImportFiles, ErrInvalidImportMode)
 }
