@@ -69,6 +69,16 @@ func NewBaseClient(baseURL, apiKey string, opts ...Option) (*BaseClient, error) 
 	return c, nil
 }
 
+// NewServiceClient builds a [BaseClient] and hands it to wrap, so a service
+// constructor is one call. It returns the [NewBaseClient] error unchanged.
+func NewServiceClient[C any](baseURL, apiKey string, wrap func(*BaseClient) *C, opts ...Option) (*C, error) {
+	base, err := NewBaseClient(baseURL, apiKey, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return wrap(base), nil
+}
+
 // Get performs an authenticated GET request and decodes the JSON response into dst.
 func (c *BaseClient) Get(ctx context.Context, path string, dst any) error {
 	return c.do(ctx, http.MethodGet, path, nil, dst)
