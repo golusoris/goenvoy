@@ -10,6 +10,8 @@ Clients for external metadata providers: movies, TV, anime, music, games, books,
 
 The category root ([metadata/types.go](types.go)) defines types shared across sub-categories — `Rating`, `Image`, `Person`, `Episode`, `Season`. Service sub-modules (e.g. `metadata/video/tmdb`) **may** import `metadata` for these types but not each other.
 
+Shared helpers beside `BaseClient`: [metadata/oauth.go](oauth.go) `OAuthState[CB]` (client secret, token pair, token callback under one lock; held as a named field, not embedded) and [metadata/request.go](request.go) `PostAs[T]` (one POST plus decode) and `PageParams` (page + limit query).
+
 ## Sub-categories
 
 | Sub-category | Services | Typical auth |
