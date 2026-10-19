@@ -111,7 +111,8 @@ func (c *Client) Authenticate(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) do(ctx context.Context, method, path string, body, v any) error {
+// ensureAuth checks if a token is present and authenticates if missing.
+func (c *Client) ensureAuth(ctx context.Context) error {
 	c.mu.RLock()
 	needAuth := c.token == ""
 	c.mu.RUnlock()
@@ -120,29 +121,28 @@ func (c *Client) do(ctx context.Context, method, path string, body, v any) error
 			return err
 		}
 	}
+	return nil
+}
 
+// sendWithRetry sends the request and retries once on 401 Unauthorized.
+func (c *Client) sendWithRetry(ctx context.Context, method, path string, body any) (*http.Response, error) {
 	resp, err := c.send(ctx, method, path, body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if resp.StatusCode == http.StatusUnauthorized {
 		_ = resp.Body.Close()
 		if err := c.Authenticate(ctx); err != nil {
-			return err
+			return nil, err
 		}
-		resp, err = c.send(ctx, method, path, body)
-		if err != nil {
-			return err
-		}
+		return c.send(ctx, method, path, body)
 	}
-	defer resp.Body.Close()
+	return resp, nil
+}
 
-	rb, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("kavita: read response: %w", err)
-	}
-
+// parseResponse checks for error status codes and unmarshals the body.
+func parseResponse(resp *http.Response, rb []byte, v any) error {
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(rb)}
 	}
@@ -154,6 +154,25 @@ func (c *Client) do(ctx context.Context, method, path string, body, v any) error
 		return fmt.Errorf("kavita: decode response: %w", err)
 	}
 	return nil
+}
+
+func (c *Client) do(ctx context.Context, method, path string, body, v any) error {
+	if err := c.ensureAuth(ctx); err != nil {
+		return err
+	}
+
+	resp, err := c.sendWithRetry(ctx, method, path, body)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	rb, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("kavita: read response: %w", err)
+	}
+
+	return parseResponse(resp, rb, v)
 }
 
 func (c *Client) getToken() string {

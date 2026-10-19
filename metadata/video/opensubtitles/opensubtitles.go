@@ -44,6 +44,20 @@ func New(apiKey string, opts ...metadata.Option) *Client {
 	return c
 }
 
+// decodeResponse verifies HTTP status and unmarshals the response body.
+func decodeResponse(status int, respBody []byte, v any) error {
+	if status < 200 || status > 299 {
+		return &APIError{StatusCode: status, Status: strconv.Itoa(status), Body: string(respBody)}
+	}
+
+	if v != nil {
+		if err := json.Unmarshal(respBody, v); err != nil {
+			return fmt.Errorf("opensubtitles: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
 func (c *Client) do(ctx context.Context, method, path string, body, v any) error {
 	var bodyReader io.Reader = http.NoBody
 	if body != nil {
@@ -70,16 +84,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, v any) error
 		return err
 	}
 
-	if status < 200 || status > 299 {
-		return &APIError{StatusCode: status, Status: strconv.Itoa(status), Body: string(respBody)}
-	}
-
-	if v != nil {
-		if err := json.Unmarshal(respBody, v); err != nil {
-			return fmt.Errorf("opensubtitles: decode response: %w", err)
-		}
-	}
-	return nil
+	return decodeResponse(status, respBody, v)
 }
 
 func (c *Client) get(ctx context.Context, path string, params url.Values, v any) error {

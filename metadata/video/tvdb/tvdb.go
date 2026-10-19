@@ -350,42 +350,58 @@ func (c *Client) GetArtworkTypes(ctx context.Context) ([]ArtworkType, error) {
 	return out.Data, nil
 }
 
-// Search searches for series, movies, people, and companies.
-func (c *Client) Search(ctx context.Context, query string, params *SearchParams) ([]SearchResult, error) {
+// encodeSearchFilters sets entity and metadata filters on search query parameters.
+func encodeSearchFilters(q url.Values, params *SearchParams) {
+	if params.Type != "" {
+		q.Set("type", params.Type)
+	}
+	if params.Year > 0 {
+		q.Set("year", strconv.Itoa(params.Year))
+	}
+	if params.Company != "" {
+		q.Set("company", params.Company)
+	}
+	if params.Country != "" {
+		q.Set("country", params.Country)
+	}
+	if params.Director != "" {
+		q.Set("director", params.Director)
+	}
+	if params.Language != "" {
+		q.Set("language", params.Language)
+	}
+}
+
+// encodeSearchAttributes sets network, remote ID, and pagination query parameters.
+func encodeSearchAttributes(q url.Values, params *SearchParams) {
+	if params.Network != "" {
+		q.Set("network", params.Network)
+	}
+	if params.RemoteID != "" {
+		q.Set("remote_id", params.RemoteID)
+	}
+	if params.Offset > 0 {
+		q.Set("offset", strconv.Itoa(params.Offset))
+	}
+	if params.Limit > 0 {
+		q.Set("limit", strconv.Itoa(params.Limit))
+	}
+}
+
+// buildSearchParams constructs the search query parameters for Search.
+func buildSearchParams(query string, params *SearchParams) url.Values {
 	q := url.Values{}
 	q.Set("query", query)
 	if params != nil {
-		if params.Type != "" {
-			q.Set("type", params.Type)
-		}
-		if params.Year > 0 {
-			q.Set("year", strconv.Itoa(params.Year))
-		}
-		if params.Company != "" {
-			q.Set("company", params.Company)
-		}
-		if params.Country != "" {
-			q.Set("country", params.Country)
-		}
-		if params.Director != "" {
-			q.Set("director", params.Director)
-		}
-		if params.Language != "" {
-			q.Set("language", params.Language)
-		}
-		if params.Network != "" {
-			q.Set("network", params.Network)
-		}
-		if params.RemoteID != "" {
-			q.Set("remote_id", params.RemoteID)
-		}
-		if params.Offset > 0 {
-			q.Set("offset", strconv.Itoa(params.Offset))
-		}
-		if params.Limit > 0 {
-			q.Set("limit", strconv.Itoa(params.Limit))
-		}
+		encodeSearchFilters(q, params)
+		encodeSearchAttributes(q, params)
 	}
+	return q
+}
+
+// Search searches for series, movies, people, and companies.
+func (c *Client) Search(ctx context.Context, query string, params *SearchParams) ([]SearchResult, error) {
+	q := buildSearchParams(query, params)
 
 	var out response[[]SearchResult]
 	if err := c.get(ctx, "/search?"+q.Encode(), &out); err != nil {

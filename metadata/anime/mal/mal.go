@@ -97,10 +97,11 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("mal: HTTP %d", e.StatusCode)
 }
 
-func (c *Client) get(ctx context.Context, path string, params url.Values, dst any) error {
+// buildGetRequest creates an authorized GET request with query parameters.
+func (c *Client) buildGetRequest(ctx context.Context, path string, params url.Values) (*http.Request, error) {
 	u, err := url.Parse(c.BaseURL() + path)
 	if err != nil {
-		return fmt.Errorf("mal: parse URL: %w", err)
+		return nil, fmt.Errorf("mal: parse URL: %w", err)
 	}
 
 	if params != nil {
@@ -109,7 +110,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), http.NoBody)
 	if err != nil {
-		return fmt.Errorf("mal: create request: %w", err)
+		return nil, fmt.Errorf("mal: create request: %w", err)
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -120,6 +121,32 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 		req.Header.Set("Authorization", "Bearer "+token)
 	} else {
 		req.Header.Set("X-Mal-Client-Id", c.clientID)
+	}
+	return req, nil
+}
+
+// decodeResponse verifies HTTP status and unmarshals the response body.
+func decodeResponse(statusCode int, body []byte, dst any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		apiErr := &APIError{StatusCode: statusCode}
+		if err := json.Unmarshal(body, apiErr); err != nil {
+			apiErr.RawBody = string(body)
+		}
+		return apiErr
+	}
+
+	if dst != nil && len(body) > 0 {
+		if err := json.Unmarshal(body, dst); err != nil {
+			return fmt.Errorf("mal: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
+func (c *Client) get(ctx context.Context, path string, params url.Values, dst any) error {
+	req, err := c.buildGetRequest(ctx, path, params)
+	if err != nil {
+		return err
 	}
 
 	resp, err := c.HTTPClient().Do(req)
@@ -133,20 +160,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 		return fmt.Errorf("mal: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		apiErr := &APIError{StatusCode: resp.StatusCode}
-		if err := json.Unmarshal(body, apiErr); err != nil {
-			apiErr.RawBody = string(body)
-		}
-		return apiErr
-	}
-
-	if dst != nil && len(body) > 0 {
-		if err := json.Unmarshal(body, dst); err != nil {
-			return fmt.Errorf("mal: decode response: %w", err)
-		}
-	}
-	return nil
+	return decodeResponse(resp.StatusCode, body, dst)
 }
 
 // fieldsParam returns a url.Values with the fields parameter set from the given list.

@@ -107,24 +107,20 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("emby: HTTP %d", e.StatusCode)
 }
 
-func (c *Client) doRequest(ctx context.Context, method, path string, body, dst any) error {
-	u, err := url.Parse(c.rawBaseURL + path)
-	if err != nil {
-		return fmt.Errorf("emby: parse URL: %w", err)
-	}
-
+// buildRequest creates an HTTP request with JSON body and Emby auth headers.
+func (c *Client) buildRequest(ctx context.Context, method, rawURL string, body any) (*http.Request, error) {
 	var reqBody io.Reader = http.NoBody
 	if body != nil {
 		data, err := json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("emby: marshal request: %w", err)
+			return nil, fmt.Errorf("emby: marshal request: %w", err)
 		}
 		reqBody = bytes.NewReader(data)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, u.String(), reqBody)
+	req, err := http.NewRequestWithContext(ctx, method, rawURL, reqBody)
 	if err != nil {
-		return fmt.Errorf("emby: create request: %w", err)
+		return nil, fmt.Errorf("emby: create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -137,20 +133,13 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body, dst a
 	req.Header.Set("X-Emby-Device-Id", c.deviceID)
 	req.Header.Set("X-Emby-Device-Name", c.deviceName)
 	req.Header.Set("User-Agent", c.userAgent)
+	return req, nil
+}
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("emby: %s %s: %w", method, path, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("emby: read response: %w", err)
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		apiErr := &APIError{StatusCode: resp.StatusCode}
+// parseResponse checks for API errors and decodes the response body.
+func parseResponse(statusCode int, respBody []byte, dst any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		apiErr := &APIError{StatusCode: statusCode}
 		if jsonErr := json.Unmarshal(respBody, apiErr); jsonErr != nil {
 			apiErr.RawBody = string(respBody)
 		}
@@ -163,6 +152,31 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body, dst a
 		}
 	}
 	return nil
+}
+
+func (c *Client) doRequest(ctx context.Context, method, path string, body, dst any) error {
+	u, err := url.Parse(c.rawBaseURL + path)
+	if err != nil {
+		return fmt.Errorf("emby: parse URL: %w", err)
+	}
+
+	req, err := c.buildRequest(ctx, method, u.String(), body)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("emby: %s %s: %w", method, path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("emby: read response: %w", err)
+	}
+
+	return parseResponse(resp.StatusCode, respBody, dst)
 }
 
 func (c *Client) get(ctx context.Context, path string, params url.Values) ([]byte, error) {

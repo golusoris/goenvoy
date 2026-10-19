@@ -87,6 +87,25 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("deluge: %s (code %d)", e.Message, e.Code)
 }
 
+// decodeRPCResponse parses a JSON-RPC response body and unmarshals into dst.
+func decodeRPCResponse(r io.Reader, dst any) error {
+	var rpcResp rpcResponse
+	if err := json.NewDecoder(r).Decode(&rpcResp); err != nil {
+		return fmt.Errorf("deluge: decode response: %w", err)
+	}
+
+	if rpcResp.Error != nil {
+		return &APIError{Code: rpcResp.Error.Code, Message: rpcResp.Error.Message}
+	}
+
+	if dst != nil && len(rpcResp.Result) > 0 {
+		if err := json.Unmarshal(rpcResp.Result, dst); err != nil {
+			return fmt.Errorf("deluge: decode result: %w", err)
+		}
+	}
+	return nil
+}
+
 func (c *Client) call(ctx context.Context, method string, params []any, dst any) error {
 	id := int(c.requestID.Add(1))
 	reqBody := rpcRequest{
@@ -117,21 +136,7 @@ func (c *Client) call(ctx context.Context, method string, params []any, dst any)
 		return fmt.Errorf("deluge: HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
-	var rpcResp rpcResponse
-	if err := json.NewDecoder(resp.Body).Decode(&rpcResp); err != nil {
-		return fmt.Errorf("deluge: decode response: %w", err)
-	}
-
-	if rpcResp.Error != nil {
-		return &APIError{Code: rpcResp.Error.Code, Message: rpcResp.Error.Message}
-	}
-
-	if dst != nil && len(rpcResp.Result) > 0 {
-		if err := json.Unmarshal(rpcResp.Result, dst); err != nil {
-			return fmt.Errorf("deluge: decode result: %w", err)
-		}
-	}
-	return nil
+	return decodeRPCResponse(resp.Body, dst)
 }
 
 // Login authenticates with the Deluge web UI.

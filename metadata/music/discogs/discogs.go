@@ -80,27 +80,48 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, v any)
 	return nil
 }
 
-func (c *Client) doJSON(ctx context.Context, method, path string, payload, v any) error {
-	u := c.BaseURL() + path
-
+// newJSONRequest builds an authorized HTTP request with an optional JSON body.
+func (c *Client) newJSONRequest(ctx context.Context, method, targetURL string, payload any) (*http.Request, error) {
 	var bodyReader io.Reader = http.NoBody
 	if payload != nil {
 		b, err := json.Marshal(payload)
 		if err != nil {
-			return fmt.Errorf("discogs: marshal body: %w", err)
+			return nil, fmt.Errorf("discogs: marshal body: %w", err)
 		}
 		bodyReader = bytes.NewReader(b)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, u, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, method, targetURL, bodyReader)
 	if err != nil {
-		return fmt.Errorf("discogs: build request: %w", err)
+		return nil, fmt.Errorf("discogs: build request: %w", err)
 	}
 	req.Header.Set("Authorization", "Discogs token="+c.token)
 	req.Header.Set("User-Agent", c.UserAgent())
 	req.Header.Set("Accept", "application/json")
 	if payload != nil {
 		req.Header.Set("Content-Type", "application/json")
+	}
+	return req, nil
+}
+
+// decodeResponse checks HTTP status code and unmarshals the response body.
+func decodeResponse(resp *http.Response, body []byte, v any) error {
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+	}
+
+	if v != nil && len(body) > 0 {
+		if err := json.Unmarshal(body, v); err != nil {
+			return fmt.Errorf("discogs: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
+func (c *Client) doJSON(ctx context.Context, method, path string, payload, v any) error {
+	req, err := c.newJSONRequest(ctx, method, c.BaseURL()+path, payload)
+	if err != nil {
+		return err
 	}
 
 	resp, err := c.HTTPClient().Do(req)
@@ -114,16 +135,7 @@ func (c *Client) doJSON(ctx context.Context, method, path string, payload, v any
 		return fmt.Errorf("discogs: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
-	}
-
-	if v != nil && len(body) > 0 {
-		if err := json.Unmarshal(body, v); err != nil {
-			return fmt.Errorf("discogs: decode response: %w", err)
-		}
-	}
-	return nil
+	return decodeResponse(resp, body, v)
 }
 
 func (c *Client) post(ctx context.Context, path string, payload, v any) error {

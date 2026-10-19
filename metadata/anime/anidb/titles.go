@@ -76,6 +76,31 @@ func (c *Client) LoadTitleDump(ctx context.Context) error {
 	return nil
 }
 
+// scoreTitle computes a relevance score based on exact, prefix, or substring match.
+func scoreTitle(lowerTitle, lowerQuery string) float64 {
+	switch {
+	case lowerTitle == lowerQuery:
+		return 1.0
+	case strings.HasPrefix(lowerTitle, lowerQuery):
+		return 0.75
+	case strings.Contains(lowerTitle, lowerQuery):
+		return 0.5
+	default:
+		return 0
+	}
+}
+
+// sortAndLimit ranks title matches by score descending and truncates to limit.
+func sortAndLimit(results []TitleMatch, limit int) []TitleMatch {
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Score > results[j].Score
+	})
+	if limit > 0 && len(results) > limit {
+		return results[:limit]
+	}
+	return results
+}
+
 // SearchByTitle searches the loaded title dump for anime matching the query.
 // Results are ranked: exact match (1.0) > prefix match (0.75) > contains match (0.5).
 // Returns up to limit results sorted by score descending.
@@ -94,16 +119,8 @@ func (c *Client) SearchByTitle(query string, limit int) ([]TitleMatch, error) {
 	best := make(map[int]TitleMatch)
 
 	for _, e := range entries {
-		lowerTitle := strings.ToLower(e.Title)
-		var score float64
-		switch {
-		case lowerTitle == lowerQuery:
-			score = 1.0
-		case strings.HasPrefix(lowerTitle, lowerQuery):
-			score = 0.75
-		case strings.Contains(lowerTitle, lowerQuery):
-			score = 0.5
-		default:
+		score := scoreTitle(strings.ToLower(e.Title), lowerQuery)
+		if score == 0 {
 			continue
 		}
 
@@ -123,15 +140,7 @@ func (c *Client) SearchByTitle(query string, limit int) ([]TitleMatch, error) {
 		results = append(results, m)
 	}
 
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Score > results[j].Score
-	})
-
-	if limit > 0 && len(results) > limit {
-		results = results[:limit]
-	}
-
-	return results, nil
+	return sortAndLimit(results, limit), nil
 }
 
 // ParseTitleDump parses an AniDB anime titles dump from the given reader.

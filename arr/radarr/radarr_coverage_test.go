@@ -11,88 +11,101 @@ import (
 )
 
 // TestAutoTagging covers GetAutoTagging, GetAutoTag, CreateAutoTag, UpdateAutoTag, DeleteAutoTag, GetAutoTagSchema.
+func testAutoTaggingGet(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/autotagging", []arr.AutoTaggingResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetAutoTagging(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testAutoTaggingGetOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/autotagging/1", arr.AutoTaggingResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetAutoTag(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testAutoTaggingCreate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/autotagging", arr.AutoTaggingResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.CreateAutoTag(context.Background(), &arr.AutoTaggingResource{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testAutoTaggingUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/autotagging/1", arr.AutoTaggingResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateAutoTag(context.Background(), &arr.AutoTaggingResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testAutoTaggingDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/autotagging/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteAutoTag(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testAutoTaggingSchema(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/autotagging/schema", []arr.AutoTaggingSpecification{{Name: "x"}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetAutoTagSchema(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
 func TestAutoTagging(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetAutoTagging", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/autotagging", []arr.AutoTaggingResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetAutoTagging(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetAutoTag", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/autotagging/1", arr.AutoTaggingResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetAutoTag(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("CreateAutoTag", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/autotagging", arr.AutoTaggingResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.CreateAutoTag(context.Background(), &arr.AutoTaggingResource{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateAutoTag", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/autotagging/1", arr.AutoTaggingResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateAutoTag(context.Background(), &arr.AutoTaggingResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("DeleteAutoTag", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/autotagging/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteAutoTag(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GetAutoTagSchema", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/autotagging/schema", []arr.AutoTaggingSpecification{{Name: "x"}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetAutoTagSchema(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
+	t.Run("GetAutoTagging", testAutoTaggingGet)
+	t.Run("GetAutoTag", testAutoTaggingGetOne)
+	t.Run("CreateAutoTag", testAutoTaggingCreate)
+	t.Run("UpdateAutoTag", testAutoTaggingUpdate)
+	t.Run("DeleteAutoTag", testAutoTaggingDelete)
+	t.Run("GetAutoTagSchema", testAutoTaggingSchema)
 }
 
 // TestBlocklist covers GetBlocklist, DeleteBlocklistItem, DeleteBlocklistBulk.
@@ -136,733 +149,847 @@ func TestBlocklist(t *testing.T) {
 }
 
 // TestCustomFilters covers GetCustomFilters, GetCustomFilter, CreateCustomFilter, UpdateCustomFilter, DeleteCustomFilter.
+func testCustomFiltersGetAll(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/customfilter", []arr.CustomFilterResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetCustomFilters(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testCustomFiltersGetOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/customfilter/1", arr.CustomFilterResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetCustomFilter(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testCustomFiltersCreate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/customfilter", arr.CustomFilterResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.CreateCustomFilter(context.Background(), &arr.CustomFilterResource{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testCustomFiltersUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/customfilter/1", arr.CustomFilterResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateCustomFilter(context.Background(), &arr.CustomFilterResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testCustomFiltersDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/customfilter/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteCustomFilter(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestCustomFilters(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetCustomFilters", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/customfilter", []arr.CustomFilterResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetCustomFilters(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetCustomFilter", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/customfilter/1", arr.CustomFilterResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetCustomFilter(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("CreateCustomFilter", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/customfilter", arr.CustomFilterResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.CreateCustomFilter(context.Background(), &arr.CustomFilterResource{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateCustomFilter", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/customfilter/1", arr.CustomFilterResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateCustomFilter(context.Background(), &arr.CustomFilterResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("DeleteCustomFilter", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/customfilter/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteCustomFilter(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
+	t.Run("GetCustomFilters", testCustomFiltersGetAll)
+	t.Run("GetCustomFilter", testCustomFiltersGetOne)
+	t.Run("CreateCustomFilter", testCustomFiltersCreate)
+	t.Run("UpdateCustomFilter", testCustomFiltersUpdate)
+	t.Run("DeleteCustomFilter", testCustomFiltersDelete)
 }
 
 // TestCustomFormats covers GetCustomFormats, GetCustomFormat, CreateCustomFormat, UpdateCustomFormat, DeleteCustomFormat, GetCustomFormatSchema.
+func testCustomFormatsGetAll(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/customformat", []arr.CustomFormatResource{{ID: 1, Name: "x"}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetCustomFormats(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testCustomFormatsGetOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/customformat/1", arr.CustomFormatResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetCustomFormat(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testCustomFormatsCreate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/customformat", arr.CustomFormatResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.CreateCustomFormat(context.Background(), &arr.CustomFormatResource{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testCustomFormatsUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/customformat/1", arr.CustomFormatResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateCustomFormat(context.Background(), &arr.CustomFormatResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testCustomFormatsDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/customformat/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteCustomFormat(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testCustomFormatsSchema(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/customformat/schema", []arr.CustomFormatSpecification{{Name: "x"}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetCustomFormatSchema(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
 func TestCustomFormats(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetCustomFormats", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/customformat", []arr.CustomFormatResource{{ID: 1, Name: "x"}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetCustomFormats(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetCustomFormat", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/customformat/1", arr.CustomFormatResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetCustomFormat(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("CreateCustomFormat", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/customformat", arr.CustomFormatResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.CreateCustomFormat(context.Background(), &arr.CustomFormatResource{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateCustomFormat", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/customformat/1", arr.CustomFormatResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateCustomFormat(context.Background(), &arr.CustomFormatResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("DeleteCustomFormat", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/customformat/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteCustomFormat(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GetCustomFormatSchema", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/customformat/schema", []arr.CustomFormatSpecification{{Name: "x"}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetCustomFormatSchema(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
+	t.Run("GetCustomFormats", testCustomFormatsGetAll)
+	t.Run("GetCustomFormat", testCustomFormatsGetOne)
+	t.Run("CreateCustomFormat", testCustomFormatsCreate)
+	t.Run("UpdateCustomFormat", testCustomFormatsUpdate)
+	t.Run("DeleteCustomFormat", testCustomFormatsDelete)
+	t.Run("GetCustomFormatSchema", testCustomFormatsSchema)
 }
 
 // TestDelayProfiles covers GetDelayProfiles, GetDelayProfile, CreateDelayProfile, UpdateDelayProfile, DeleteDelayProfile, ReorderDelayProfile.
+func testDelayProfilesGetAll(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/delayprofile", []arr.DelayProfileResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetDelayProfiles(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testDelayProfilesGetOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/delayprofile/1", arr.DelayProfileResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetDelayProfile(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testDelayProfilesCreate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/delayprofile", arr.DelayProfileResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.CreateDelayProfile(context.Background(), &arr.DelayProfileResource{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testDelayProfilesUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/delayprofile/1", arr.DelayProfileResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateDelayProfile(context.Background(), &arr.DelayProfileResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testDelayProfilesDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/delayprofile/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteDelayProfile(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testDelayProfilesReorder(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/delayprofile/reorder/1?after=2", []arr.DelayProfileResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.ReorderDelayProfile(context.Background(), 1, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
 func TestDelayProfiles(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetDelayProfiles", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/delayprofile", []arr.DelayProfileResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetDelayProfiles(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetDelayProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/delayprofile/1", arr.DelayProfileResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetDelayProfile(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("CreateDelayProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/delayprofile", arr.DelayProfileResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.CreateDelayProfile(context.Background(), &arr.DelayProfileResource{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateDelayProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/delayprofile/1", arr.DelayProfileResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateDelayProfile(context.Background(), &arr.DelayProfileResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("DeleteDelayProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/delayprofile/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteDelayProfile(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("ReorderDelayProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/delayprofile/reorder/1?after=2", []arr.DelayProfileResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.ReorderDelayProfile(context.Background(), 1, 2)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
+	t.Run("GetDelayProfiles", testDelayProfilesGetAll)
+	t.Run("GetDelayProfile", testDelayProfilesGetOne)
+	t.Run("CreateDelayProfile", testDelayProfilesCreate)
+	t.Run("UpdateDelayProfile", testDelayProfilesUpdate)
+	t.Run("DeleteDelayProfile", testDelayProfilesDelete)
+	t.Run("ReorderDelayProfile", testDelayProfilesReorder)
 }
 
 // TestDownloadClients covers GetDownloadClients, GetDownloadClient, CreateDownloadClient, UpdateDownloadClient, DeleteDownloadClient, GetDownloadClientSchema, TestDownloadClient.
+func testDownloadClientsGetAll(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/downloadclient", []arr.ProviderResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetDownloadClients(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testDownloadClientsGetOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/downloadclient/1", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetDownloadClient(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testDownloadClientsCreate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/downloadclient", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.CreateDownloadClient(context.Background(), &arr.ProviderResource{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testDownloadClientsUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/downloadclient/1", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateDownloadClient(context.Background(), &arr.ProviderResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testDownloadClientsDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/downloadclient/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteDownloadClient(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testDownloadClientsSchema(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/downloadclient/schema", []arr.ProviderResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetDownloadClientSchema(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testDownloadClientsTest(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/downloadclient/test", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.TestDownloadClient(context.Background(), &arr.ProviderResource{ID: 1}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDownloadClients(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetDownloadClients", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/downloadclient", []arr.ProviderResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetDownloadClients(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetDownloadClient", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/downloadclient/1", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetDownloadClient(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("CreateDownloadClient", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/downloadclient", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.CreateDownloadClient(context.Background(), &arr.ProviderResource{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateDownloadClient", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/downloadclient/1", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateDownloadClient(context.Background(), &arr.ProviderResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("DeleteDownloadClient", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/downloadclient/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteDownloadClient(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GetDownloadClientSchema", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/downloadclient/schema", []arr.ProviderResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetDownloadClientSchema(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("TestDownloadClient", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/downloadclient/test", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.TestDownloadClient(context.Background(), &arr.ProviderResource{ID: 1}); err != nil {
-			t.Fatal(err)
-		}
-	})
+	t.Run("GetDownloadClients", testDownloadClientsGetAll)
+	t.Run("GetDownloadClient", testDownloadClientsGetOne)
+	t.Run("CreateDownloadClient", testDownloadClientsCreate)
+	t.Run("UpdateDownloadClient", testDownloadClientsUpdate)
+	t.Run("DeleteDownloadClient", testDownloadClientsDelete)
+	t.Run("GetDownloadClientSchema", testDownloadClientsSchema)
+	t.Run("TestDownloadClient", testDownloadClientsTest)
 }
 
 // TestNotifications covers GetNotifications, GetNotification, CreateNotification, UpdateNotification, DeleteNotification, GetNotificationSchema, TestNotification.
+func testNotificationsGetAll(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/notification", []arr.ProviderResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetNotifications(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testNotificationsGetOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/notification/1", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetNotification(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testNotificationsCreate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/notification", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.CreateNotification(context.Background(), &arr.ProviderResource{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testNotificationsUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/notification/1", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateNotification(context.Background(), &arr.ProviderResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testNotificationsDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/notification/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteNotification(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testNotificationsSchema(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/notification/schema", []arr.ProviderResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetNotificationSchema(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testNotificationsTest(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/notification/test", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.TestNotification(context.Background(), &arr.ProviderResource{ID: 1}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestNotifications(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetNotifications", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/notification", []arr.ProviderResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetNotifications(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetNotification", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/notification/1", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetNotification(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("CreateNotification", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/notification", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.CreateNotification(context.Background(), &arr.ProviderResource{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateNotification", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/notification/1", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateNotification(context.Background(), &arr.ProviderResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("DeleteNotification", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/notification/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteNotification(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GetNotificationSchema", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/notification/schema", []arr.ProviderResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetNotificationSchema(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("TestNotification", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/notification/test", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.TestNotification(context.Background(), &arr.ProviderResource{ID: 1}); err != nil {
-			t.Fatal(err)
-		}
-	})
+	t.Run("GetNotifications", testNotificationsGetAll)
+	t.Run("GetNotification", testNotificationsGetOne)
+	t.Run("CreateNotification", testNotificationsCreate)
+	t.Run("UpdateNotification", testNotificationsUpdate)
+	t.Run("DeleteNotification", testNotificationsDelete)
+	t.Run("GetNotificationSchema", testNotificationsSchema)
+	t.Run("TestNotification", testNotificationsTest)
 }
 
 // TestMetadataConsumers covers GetMetadataConsumers, GetMetadataConsumer, CreateMetadataConsumer, UpdateMetadataConsumer, DeleteMetadataConsumer, GetMetadataSchema, TestMetadataConsumer.
+func testMetadataConsumersGetAll(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/metadata", []arr.ProviderResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetMetadataConsumers(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testMetadataConsumersGetOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/metadata/1", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetMetadataConsumer(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testMetadataConsumersCreate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/metadata", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.CreateMetadataConsumer(context.Background(), &arr.ProviderResource{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testMetadataConsumersUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/metadata/1", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateMetadataConsumer(context.Background(), &arr.ProviderResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testMetadataConsumersDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/metadata/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteMetadataConsumer(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testMetadataConsumersSchema(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/metadata/schema", []arr.ProviderResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetMetadataSchema(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testMetadataConsumersTest(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/metadata/test", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.TestMetadataConsumer(context.Background(), &arr.ProviderResource{ID: 1}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestMetadataConsumers(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetMetadataConsumers", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/metadata", []arr.ProviderResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetMetadataConsumers(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetMetadataConsumer", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/metadata/1", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetMetadataConsumer(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("CreateMetadataConsumer", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/metadata", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.CreateMetadataConsumer(context.Background(), &arr.ProviderResource{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateMetadataConsumer", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/metadata/1", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateMetadataConsumer(context.Background(), &arr.ProviderResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("DeleteMetadataConsumer", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/metadata/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteMetadataConsumer(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GetMetadataSchema", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/metadata/schema", []arr.ProviderResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetMetadataSchema(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("TestMetadataConsumer", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/metadata/test", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.TestMetadataConsumer(context.Background(), &arr.ProviderResource{ID: 1}); err != nil {
-			t.Fatal(err)
-		}
-	})
+	t.Run("GetMetadataConsumers", testMetadataConsumersGetAll)
+	t.Run("GetMetadataConsumer", testMetadataConsumersGetOne)
+	t.Run("CreateMetadataConsumer", testMetadataConsumersCreate)
+	t.Run("UpdateMetadataConsumer", testMetadataConsumersUpdate)
+	t.Run("DeleteMetadataConsumer", testMetadataConsumersDelete)
+	t.Run("GetMetadataSchema", testMetadataConsumersSchema)
+	t.Run("TestMetadataConsumer", testMetadataConsumersTest)
 }
 
 // TestIndexers covers GetIndexers, GetIndexer, CreateIndexer, UpdateIndexer, DeleteIndexer, GetIndexerSchema, TestIndexer, GetIndexerFlags.
+func testIndexersGetAll(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/indexer", []arr.ProviderResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetIndexers(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testIndexersGetOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/indexer/1", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetIndexer(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testIndexersCreate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/indexer", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.CreateIndexer(context.Background(), &arr.ProviderResource{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testIndexersUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/indexer/1", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateIndexer(context.Background(), &arr.ProviderResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testIndexersDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/indexer/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteIndexer(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testIndexersSchema(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/indexer/schema", []arr.ProviderResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetIndexerSchema(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testIndexersTest(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/indexer/test", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.TestIndexer(context.Background(), &arr.ProviderResource{ID: 1}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testIndexersFlags(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/indexerflag", []arr.IndexerFlagResource{{ID: 1, Name: "test"}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetIndexerFlags(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
 func TestIndexers(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetIndexers", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/indexer", []arr.ProviderResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetIndexers(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetIndexer", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/indexer/1", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetIndexer(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("CreateIndexer", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/indexer", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.CreateIndexer(context.Background(), &arr.ProviderResource{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateIndexer", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/indexer/1", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateIndexer(context.Background(), &arr.ProviderResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("DeleteIndexer", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/indexer/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteIndexer(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GetIndexerSchema", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/indexer/schema", []arr.ProviderResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetIndexerSchema(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("TestIndexer", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/indexer/test", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.TestIndexer(context.Background(), &arr.ProviderResource{ID: 1}); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GetIndexerFlags", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/indexerflag", []arr.IndexerFlagResource{{ID: 1, Name: "test"}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetIndexerFlags(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
+	t.Run("GetIndexers", testIndexersGetAll)
+	t.Run("GetIndexer", testIndexersGetOne)
+	t.Run("CreateIndexer", testIndexersCreate)
+	t.Run("UpdateIndexer", testIndexersUpdate)
+	t.Run("DeleteIndexer", testIndexersDelete)
+	t.Run("GetIndexerSchema", testIndexersSchema)
+	t.Run("TestIndexer", testIndexersTest)
+	t.Run("GetIndexerFlags", testIndexersFlags)
 }
 
 // TestImportLists covers GetImportLists, GetImportList, CreateImportList, UpdateImportList, DeleteImportList, GetImportListSchema, TestImportList.
+func testImportListsGetAll(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/importlist", []arr.ProviderResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetImportLists(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testImportListsGetOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/importlist/1", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetImportList(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testImportListsCreate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/importlist", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.CreateImportList(context.Background(), &arr.ProviderResource{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testImportListsUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/importlist/1", arr.ProviderResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateImportList(context.Background(), &arr.ProviderResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testImportListsDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/importlist/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteImportList(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testImportListsSchema(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/importlist/schema", []arr.ProviderResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetImportListSchema(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testImportListsTest(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/importlist/test", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.TestImportList(context.Background(), &arr.ProviderResource{ID: 1}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestImportLists(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetImportLists", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/importlist", []arr.ProviderResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetImportLists(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetImportList", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/importlist/1", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetImportList(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("CreateImportList", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/importlist", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.CreateImportList(context.Background(), &arr.ProviderResource{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateImportList", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/importlist/1", arr.ProviderResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateImportList(context.Background(), &arr.ProviderResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("DeleteImportList", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/importlist/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteImportList(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GetImportListSchema", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/importlist/schema", []arr.ProviderResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetImportListSchema(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("TestImportList", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/importlist/test", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.TestImportList(context.Background(), &arr.ProviderResource{ID: 1}); err != nil {
-			t.Fatal(err)
-		}
-	})
+	t.Run("GetImportLists", testImportListsGetAll)
+	t.Run("GetImportList", testImportListsGetOne)
+	t.Run("CreateImportList", testImportListsCreate)
+	t.Run("UpdateImportList", testImportListsUpdate)
+	t.Run("DeleteImportList", testImportListsDelete)
+	t.Run("GetImportListSchema", testImportListsSchema)
+	t.Run("TestImportList", testImportListsTest)
 }
 
 // TestImportListExclusionExtras covers CreateImportListExclusion, DeleteImportListExclusion.
@@ -895,60 +1022,69 @@ func TestImportListExclusionExtras(t *testing.T) {
 }
 
 // TestQualityProfiles covers GetQualityProfile, CreateQualityProfile, UpdateQualityProfile, DeleteQualityProfile.
+func testQualityProfilesGetOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/qualityprofile/1", arr.QualityProfile{ID: 1, Name: "Any"})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetQualityProfile(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "Any" {
+		t.Errorf("Name = %q", got.Name)
+	}
+}
+
+func testQualityProfilesCreate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/qualityprofile", arr.QualityProfile{ID: 1, Name: "HD"})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.CreateQualityProfile(context.Background(), &arr.QualityProfile{Name: "HD"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testQualityProfilesUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/qualityprofile/1", arr.QualityProfile{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateQualityProfile(context.Background(), &arr.QualityProfile{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testQualityProfilesDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/qualityprofile/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteQualityProfile(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestQualityProfiles(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetQualityProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/qualityprofile/1", arr.QualityProfile{ID: 1, Name: "Any"})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetQualityProfile(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.Name != "Any" {
-			t.Errorf("Name = %q", got.Name)
-		}
-	})
-
-	t.Run("CreateQualityProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/qualityprofile", arr.QualityProfile{ID: 1, Name: "HD"})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.CreateQualityProfile(context.Background(), &arr.QualityProfile{Name: "HD"})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateQualityProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/qualityprofile/1", arr.QualityProfile{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateQualityProfile(context.Background(), &arr.QualityProfile{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("DeleteQualityProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/qualityprofile/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteQualityProfile(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
+	t.Run("GetQualityProfile", testQualityProfilesGetOne)
+	t.Run("CreateQualityProfile", testQualityProfilesCreate)
+	t.Run("UpdateQualityProfile", testQualityProfilesUpdate)
+	t.Run("DeleteQualityProfile", testQualityProfilesDelete)
 }
 
 // TestQualityDefinitions covers GetQualityDefinitions, GetQualityDefinition, UpdateQualityDefinition.
@@ -999,145 +1135,167 @@ func TestQualityDefinitions(t *testing.T) {
 }
 
 // TestReleaseProfiles covers GetReleaseProfiles, GetReleaseProfile, CreateReleaseProfile, UpdateReleaseProfile, DeleteReleaseProfile.
+func testReleaseProfilesGetAll(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/releaseprofile", []arr.ReleaseProfileResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetReleaseProfiles(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testReleaseProfilesGetOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/releaseprofile/1", arr.ReleaseProfileResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetReleaseProfile(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testReleaseProfilesCreate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/releaseprofile", arr.ReleaseProfileResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.CreateReleaseProfile(context.Background(), &arr.ReleaseProfileResource{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testReleaseProfilesUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/releaseprofile/1", arr.ReleaseProfileResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateReleaseProfile(context.Background(), &arr.ReleaseProfileResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testReleaseProfilesDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/releaseprofile/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteReleaseProfile(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestReleaseProfiles(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetReleaseProfiles", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/releaseprofile", []arr.ReleaseProfileResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetReleaseProfiles(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetReleaseProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/releaseprofile/1", arr.ReleaseProfileResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetReleaseProfile(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("CreateReleaseProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/releaseprofile", arr.ReleaseProfileResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.CreateReleaseProfile(context.Background(), &arr.ReleaseProfileResource{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateReleaseProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/releaseprofile/1", arr.ReleaseProfileResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateReleaseProfile(context.Background(), &arr.ReleaseProfileResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("DeleteReleaseProfile", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/releaseprofile/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteReleaseProfile(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
+	t.Run("GetReleaseProfiles", testReleaseProfilesGetAll)
+	t.Run("GetReleaseProfile", testReleaseProfilesGetOne)
+	t.Run("CreateReleaseProfile", testReleaseProfilesCreate)
+	t.Run("UpdateReleaseProfile", testReleaseProfilesUpdate)
+	t.Run("DeleteReleaseProfile", testReleaseProfilesDelete)
 }
 
 // TestRemotePathMappings covers GetRemotePathMappings, GetRemotePathMapping, CreateRemotePathMapping, UpdateRemotePathMapping, DeleteRemotePathMapping.
+func testRemotePathMappingsGetAll(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/remotepathmapping", []arr.RemotePathMappingResource{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetRemotePathMappings(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testRemotePathMappingsGetOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/remotepathmapping/1", arr.RemotePathMappingResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetRemotePathMapping(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testRemotePathMappingsCreate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/remotepathmapping", arr.RemotePathMappingResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.CreateRemotePathMapping(context.Background(), &arr.RemotePathMappingResource{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testRemotePathMappingsUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/remotepathmapping/1", arr.RemotePathMappingResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateRemotePathMapping(context.Background(), &arr.RemotePathMappingResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testRemotePathMappingsDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/remotepathmapping/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteRemotePathMapping(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRemotePathMappings(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetRemotePathMappings", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/remotepathmapping", []arr.RemotePathMappingResource{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetRemotePathMappings(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetRemotePathMapping", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/remotepathmapping/1", arr.RemotePathMappingResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetRemotePathMapping(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("CreateRemotePathMapping", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/remotepathmapping", arr.RemotePathMappingResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.CreateRemotePathMapping(context.Background(), &arr.RemotePathMappingResource{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateRemotePathMapping", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/remotepathmapping/1", arr.RemotePathMappingResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateRemotePathMapping(context.Background(), &arr.RemotePathMappingResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("DeleteRemotePathMapping", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/remotepathmapping/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteRemotePathMapping(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
+	t.Run("GetRemotePathMappings", testRemotePathMappingsGetAll)
+	t.Run("GetRemotePathMapping", testRemotePathMappingsGetOne)
+	t.Run("CreateRemotePathMapping", testRemotePathMappingsCreate)
+	t.Run("UpdateRemotePathMapping", testRemotePathMappingsUpdate)
+	t.Run("DeleteRemotePathMapping", testRemotePathMappingsDelete)
 }
 
 // TestRootFolderExtras covers GetRootFolder, CreateRootFolder, DeleteRootFolder.
@@ -1184,310 +1342,357 @@ func TestRootFolderExtras(t *testing.T) {
 }
 
 // TestTagExtras covers GetTag, UpdateTag, DeleteTag, GetTagDetails, GetTagDetail.
+func testTagExtrasGet(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/tag/1", arr.Tag{ID: 1, Label: "4k"})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetTag(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Label != "4k" {
+		t.Errorf("Label = %q", got.Label)
+	}
+}
+
+func testTagExtrasUpdate(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/tag/1", arr.Tag{ID: 1, Label: "updated"})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateTag(context.Background(), &arr.Tag{ID: 1, Label: "updated"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Label != "updated" {
+		t.Errorf("Label = %q", got.Label)
+	}
+}
+
+func testTagExtrasDelete(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/tag/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteTag(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testTagExtrasDetails(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/tag/detail", []arr.TagDetail{{ID: 1, Label: "4k"}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetTagDetails(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testTagExtrasDetail(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/tag/detail/1", arr.TagDetail{ID: 1, Label: "4k"})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetTagDetail(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Label != "4k" {
+		t.Errorf("Label = %q", got.Label)
+	}
+}
+
 func TestTagExtras(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetTag", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/tag/1", arr.Tag{ID: 1, Label: "4k"})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetTag(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.Label != "4k" {
-			t.Errorf("Label = %q", got.Label)
-		}
-	})
-
-	t.Run("UpdateTag", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/tag/1", arr.Tag{ID: 1, Label: "updated"})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateTag(context.Background(), &arr.Tag{ID: 1, Label: "updated"})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.Label != "updated" {
-			t.Errorf("Label = %q", got.Label)
-		}
-	})
-
-	t.Run("DeleteTag", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/tag/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteTag(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GetTagDetails", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/tag/detail", []arr.TagDetail{{ID: 1, Label: "4k"}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetTagDetails(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetTagDetail", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/tag/detail/1", arr.TagDetail{ID: 1, Label: "4k"})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetTagDetail(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.Label != "4k" {
-			t.Errorf("Label = %q", got.Label)
-		}
-	})
+	t.Run("GetTag", testTagExtrasGet)
+	t.Run("UpdateTag", testTagExtrasUpdate)
+	t.Run("DeleteTag", testTagExtrasDelete)
+	t.Run("GetTagDetails", testTagExtrasDetails)
+	t.Run("GetTagDetail", testTagExtrasDetail)
 }
 
 // TestConfigs covers DownloadClientConfig, IndexerConfig, NamingConfig, HostConfig, UIConfig, MediaManagementConfig.
+func testConfigsGetDownloadClient(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/config/downloadclient", arr.DownloadClientConfigResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetDownloadClientConfig(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testConfigsUpdateDownloadClient(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/config/downloadclient/1", arr.DownloadClientConfigResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateDownloadClientConfig(context.Background(), &arr.DownloadClientConfigResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testConfigsGetIndexer(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/config/indexer", arr.IndexerConfigResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetIndexerConfig(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testConfigsUpdateIndexer(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/config/indexer/1", arr.IndexerConfigResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateIndexerConfig(context.Background(), &arr.IndexerConfigResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testConfigsGetNaming(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/config/naming", arr.NamingConfigResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetNamingConfig(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testConfigsUpdateNaming(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/config/naming/1", arr.NamingConfigResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateNamingConfig(context.Background(), &arr.NamingConfigResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testConfigsGetHost(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/config/host", arr.HostConfigResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetHostConfig(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testConfigsUpdateHost(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/config/host/1", arr.HostConfigResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateHostConfig(context.Background(), &arr.HostConfigResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testConfigsGetUI(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/config/ui", arr.UIConfigResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetUIConfig(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testConfigsUpdateUI(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/config/ui/1", arr.UIConfigResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateUIConfig(context.Background(), &arr.UIConfigResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testConfigsGetMediaManagement(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/config/mediamanagement", arr.MediaManagementConfigResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetMediaManagementConfig(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
+func testConfigsUpdateMediaManagement(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPut, "/api/v3/config/mediamanagement/1", arr.MediaManagementConfigResource{ID: 1})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.UpdateMediaManagementConfig(context.Background(), &arr.MediaManagementConfigResource{ID: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != 1 {
+		t.Errorf("ID = %d", got.ID)
+	}
+}
+
 func TestConfigs(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetDownloadClientConfig", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/config/downloadclient", arr.DownloadClientConfigResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetDownloadClientConfig(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateDownloadClientConfig", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/config/downloadclient/1", arr.DownloadClientConfigResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateDownloadClientConfig(context.Background(), &arr.DownloadClientConfigResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("GetIndexerConfig", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/config/indexer", arr.IndexerConfigResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetIndexerConfig(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateIndexerConfig", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/config/indexer/1", arr.IndexerConfigResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateIndexerConfig(context.Background(), &arr.IndexerConfigResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("GetNamingConfig", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/config/naming", arr.NamingConfigResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetNamingConfig(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateNamingConfig", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/config/naming/1", arr.NamingConfigResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateNamingConfig(context.Background(), &arr.NamingConfigResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("GetHostConfig", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/config/host", arr.HostConfigResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetHostConfig(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateHostConfig", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/config/host/1", arr.HostConfigResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateHostConfig(context.Background(), &arr.HostConfigResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("GetUIConfig", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/config/ui", arr.UIConfigResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetUIConfig(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateUIConfig", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/config/ui/1", arr.UIConfigResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateUIConfig(context.Background(), &arr.UIConfigResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("GetMediaManagementConfig", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/config/mediamanagement", arr.MediaManagementConfigResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetMediaManagementConfig(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
-
-	t.Run("UpdateMediaManagementConfig", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPut, "/api/v3/config/mediamanagement/1", arr.MediaManagementConfigResource{ID: 1})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.UpdateMediaManagementConfig(context.Background(), &arr.MediaManagementConfigResource{ID: 1})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.ID != 1 {
-			t.Errorf("ID = %d", got.ID)
-		}
-	})
+	t.Run("GetDownloadClientConfig", testConfigsGetDownloadClient)
+	t.Run("UpdateDownloadClientConfig", testConfigsUpdateDownloadClient)
+	t.Run("GetIndexerConfig", testConfigsGetIndexer)
+	t.Run("UpdateIndexerConfig", testConfigsUpdateIndexer)
+	t.Run("GetNamingConfig", testConfigsGetNaming)
+	t.Run("UpdateNamingConfig", testConfigsUpdateNaming)
+	t.Run("GetHostConfig", testConfigsGetHost)
+	t.Run("UpdateHostConfig", testConfigsUpdateHost)
+	t.Run("GetUIConfig", testConfigsGetUI)
+	t.Run("UpdateUIConfig", testConfigsUpdateUI)
+	t.Run("GetMediaManagementConfig", testConfigsGetMediaManagement)
+	t.Run("UpdateMediaManagementConfig", testConfigsUpdateMediaManagement)
 }
 
 // TestQueueExtras covers DeleteQueueItems, GrabQueueItem, GrabQueueItems, GetQueueDetails, GetQueueStatus.
+func testQueueExtrasDeleteBulk(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/queue/bulk?removeFromClient=true&blocklist=false", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteQueueItems(context.Background(), []int{1, 2}, true, false); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testQueueExtrasGrabOne(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/queue/grab/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.GrabQueueItem(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testQueueExtrasGrabBulk(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/queue/grab/bulk", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.GrabQueueItems(context.Background(), []int{1, 2}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testQueueExtrasDetails(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/queue/details", []arr.QueueRecord{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetQueueDetails(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testQueueExtrasStatus(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/queue/status", arr.QueueStatusResource{TotalCount: 5})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetQueueStatus(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.TotalCount != 5 {
+		t.Errorf("TotalCount = %d", got.TotalCount)
+	}
+}
+
 func TestQueueExtras(t *testing.T) {
 	t.Parallel()
 
-	t.Run("DeleteQueueItems", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/queue/bulk?removeFromClient=true&blocklist=false", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteQueueItems(context.Background(), []int{1, 2}, true, false); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GrabQueueItem", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/queue/grab/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.GrabQueueItem(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GrabQueueItems", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/queue/grab/bulk", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.GrabQueueItems(context.Background(), []int{1, 2}); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GetQueueDetails", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/queue/details", []arr.QueueRecord{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetQueueDetails(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetQueueStatus", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/queue/status", arr.QueueStatusResource{TotalCount: 5})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetQueueStatus(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.TotalCount != 5 {
-			t.Errorf("TotalCount = %d", got.TotalCount)
-		}
-	})
+	t.Run("DeleteQueueItems", testQueueExtrasDeleteBulk)
+	t.Run("GrabQueueItem", testQueueExtrasGrabOne)
+	t.Run("GrabQueueItems", testQueueExtrasGrabBulk)
+	t.Run("GetQueueDetails", testQueueExtrasDetails)
+	t.Run("GetQueueStatus", testQueueExtrasStatus)
 }
 
 // TestHistoryExtras covers GetHistoryMovie, GetHistorySince, MarkHistoryFailed.
@@ -1550,118 +1755,137 @@ func TestLanguages(t *testing.T) {
 }
 
 // TestSystemExtras covers GetBackups, DeleteBackup, RestoreBackup, GetSystemRoutes, Shutdown, Restart, GetTasks, GetTask, GetUpdates.
+func testSystemExtrasGetBackups(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/system/backup", []arr.Backup{{ID: 1}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetBackups(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testSystemExtrasDeleteBackup(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodDelete, "/api/v3/system/backup/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.DeleteBackup(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testSystemExtrasRestoreBackup(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/system/backup/restore/1", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.RestoreBackup(context.Background(), 1); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testSystemExtrasGetRoutes(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/system/routes", []arr.SystemRouteResource{{Path: "/api/v3/movie"}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetSystemRoutes(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testSystemExtrasShutdown(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/system/shutdown", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.Shutdown(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testSystemExtrasRestart(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodPost, "/api/v3/system/restart", nil)
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	if err := c.Restart(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testSystemExtrasGetTasks(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/system/task", []arr.TaskResource{{ID: 1, Name: "RefreshMovie"}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetTasks(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
+func testSystemExtrasGetTask(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/system/task/1", arr.TaskResource{ID: 1, Name: "RefreshMovie"})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetTask(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "RefreshMovie" {
+		t.Errorf("Name = %q", got.Name)
+	}
+}
+
+func testSystemExtrasGetUpdates(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	srv := newTestServer(t, http.MethodGet, "/api/v3/update", []arr.UpdateResource{{Version: "5.0.0"}})
+	defer srv.Close()
+	c, _ := radarr.New(srv.URL, "k")
+	got, err := c.GetUpdates(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Errorf("len = %d", len(got))
+	}
+}
+
 func TestSystemExtras(t *testing.T) {
 	t.Parallel()
 
-	t.Run("GetBackups", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/system/backup", []arr.Backup{{ID: 1}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetBackups(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("DeleteBackup", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodDelete, "/api/v3/system/backup/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.DeleteBackup(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("RestoreBackup", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/system/backup/restore/1", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.RestoreBackup(context.Background(), 1); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GetSystemRoutes", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/system/routes", []arr.SystemRouteResource{{Path: "/api/v3/movie"}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetSystemRoutes(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("Shutdown", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/system/shutdown", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.Shutdown(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("Restart", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodPost, "/api/v3/system/restart", nil)
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		if err := c.Restart(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("GetTasks", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/system/task", []arr.TaskResource{{ID: 1, Name: "RefreshMovie"}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetTasks(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
-
-	t.Run("GetTask", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/system/task/1", arr.TaskResource{ID: 1, Name: "RefreshMovie"})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetTask(context.Background(), 1)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.Name != "RefreshMovie" {
-			t.Errorf("Name = %q", got.Name)
-		}
-	})
-
-	t.Run("GetUpdates", func(t *testing.T) {
-		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v3/update", []arr.UpdateResource{{Version: "5.0.0"}})
-		defer srv.Close()
-		c, _ := radarr.New(srv.URL, "k")
-		got, err := c.GetUpdates(context.Background())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(got) != 1 {
-			t.Errorf("len = %d", len(got))
-		}
-	})
+	t.Run("GetBackups", testSystemExtrasGetBackups)
+	t.Run("DeleteBackup", testSystemExtrasDeleteBackup)
+	t.Run("RestoreBackup", testSystemExtrasRestoreBackup)
+	t.Run("GetSystemRoutes", testSystemExtrasGetRoutes)
+	t.Run("Shutdown", testSystemExtrasShutdown)
+	t.Run("Restart", testSystemExtrasRestart)
+	t.Run("GetTasks", testSystemExtrasGetTasks)
+	t.Run("GetTask", testSystemExtrasGetTask)
+	t.Run("GetUpdates", testSystemExtrasGetUpdates)
 }
 
 // TestFileSystemExtras covers GetFileSystemType, GetFileSystemMediaFiles.

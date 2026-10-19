@@ -48,6 +48,24 @@ func New(apiKey string, opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc, apiKey: apiKey}
 }
 
+// decodeResponse verifies HTTP status, checks for Last.fm API errors, and unmarshals.
+func decodeResponse(resp *http.Response, body []byte, v any) error {
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+	}
+
+	// Check for Last.fm API error in JSON body.
+	var lfmErr Error
+	if json.Unmarshal(body, &lfmErr) == nil && lfmErr.Code != 0 {
+		return &lfmErr
+	}
+
+	if err := json.Unmarshal(body, v); err != nil {
+		return fmt.Errorf("lastfm: decode response: %w", err)
+	}
+	return nil
+}
+
 func (c *Client) get(ctx context.Context, method string, extra url.Values, v any) error {
 	params := url.Values{}
 	params.Set("method", method)
@@ -77,20 +95,7 @@ func (c *Client) get(ctx context.Context, method string, extra url.Values, v any
 		return fmt.Errorf("lastfm: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
-	}
-
-	// Check for Last.fm API error in JSON body.
-	var lfmErr Error
-	if json.Unmarshal(body, &lfmErr) == nil && lfmErr.Code != 0 {
-		return &lfmErr
-	}
-
-	if err := json.Unmarshal(body, v); err != nil {
-		return fmt.Errorf("lastfm: decode response: %w", err)
-	}
-	return nil
+	return decodeResponse(resp, body, v)
 }
 
 // GetArtistInfo returns metadata for an artist.

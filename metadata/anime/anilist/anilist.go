@@ -126,6 +126,29 @@ type graphQLResponse struct {
 	Errors []GraphQLError  `json:"errors"`
 }
 
+// decodeGraphQLResponse unmarshals GraphQL response envelopes and extracts data or errors.
+func decodeGraphQLResponse(resp *http.Response, body []byte, dst any) error {
+	var gqlResp graphQLResponse
+	if err := json.Unmarshal(body, &gqlResp); err != nil {
+		if resp.StatusCode >= 400 {
+			return &HTTPError{StatusCode: resp.StatusCode, Status: resp.Status}
+		}
+		return fmt.Errorf("anilist: decode response: %w", err)
+	}
+
+	if len(gqlResp.Errors) > 0 {
+		return &APIError{Errors: gqlResp.Errors}
+	}
+
+	if dst != nil {
+		if err := json.Unmarshal(gqlResp.Data, dst); err != nil {
+			return fmt.Errorf("anilist: decode data: %w", err)
+		}
+	}
+
+	return nil
+}
+
 // Query sends a raw GraphQL query and unmarshals the data field into dst.
 func (c *Client) Query(ctx context.Context, query string, variables map[string]any, dst any) error {
 	payload, err := json.Marshal(graphQLRequest{Query: query, Variables: variables})
@@ -156,25 +179,7 @@ func (c *Client) Query(ctx context.Context, query string, variables map[string]a
 		return fmt.Errorf("anilist: read response: %w", err)
 	}
 
-	var gqlResp graphQLResponse
-	if err := json.Unmarshal(body, &gqlResp); err != nil {
-		if resp.StatusCode >= 400 {
-			return &HTTPError{StatusCode: resp.StatusCode, Status: resp.Status}
-		}
-		return fmt.Errorf("anilist: decode response: %w", err)
-	}
-
-	if len(gqlResp.Errors) > 0 {
-		return &APIError{Errors: gqlResp.Errors}
-	}
-
-	if dst != nil {
-		if err := json.Unmarshal(gqlResp.Data, dst); err != nil {
-			return fmt.Errorf("anilist: decode data: %w", err)
-		}
-	}
-
-	return nil
+	return decodeGraphQLResponse(resp, body, dst)
 }
 
 // GetMedia returns a media entry by its AniList ID.

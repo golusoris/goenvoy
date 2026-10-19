@@ -24,6 +24,9 @@ jobs:
     name: Semgrep analysis
     runs-on: ubuntu-26.04
     timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write   # SARIF upload: every PR gets a code-scanning check run
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -31,14 +34,32 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # The tree is streamed in over stdin, so the scan does not depend on
+          # The tree is streamed in over stdin and the SARIF copy comes back on
+          # stdout (text findings go to stderr), so the scan does not depend on
           # the daemon sharing a filesystem with the job. mirror.gcr.io is a
           # pull-through mirror of Docker Hub that serves the same digest;
           # hosted runners hit the anonymous Docker Hub pull limit.
           tar -cf - --exclude=.git . \
             | docker run --rm -i mirror.gcr.io/semgrep/semgrep:1.144.0@sha256:10301f060aacf84078f9704fb1ba3a321df4ac46b009fd29c1c66880d1db8e77 \
-                sh -ec 'mkdir -p /src && tar -xf - -C /src && \
+                sh -ec 'mkdir -p /src && tar -xf - -C /src && cd /src && rc=0 && \
                   semgrep scan \
                     --config p/golang \
                     --config p/security-audit \
-                    --error --metrics=off --quiet /src'
+                    --sarif-output=/tmp/semgrep.sarif \
+                    --error --metrics=off --quiet . 1>&2 || rc=$?; \
+                  cat /tmp/semgrep.sarif; exit "$rc"' > semgrep.sarif
+
+      - name: Drop in-source suppressed results
+        if: always() && hashFiles('semgrep.sarif') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Code scanning opens alerts for results Semgrep already marks suppressed (nosemgrep).
+          jq '.runs[].results |= map(select((.suppressions // []) | length == 0))' semgrep.sarif > semgrep.filtered.sarif
+          mv semgrep.filtered.sarif semgrep.sarif
+      - name: Upload SARIF
+        if: always() && hashFiles('semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep

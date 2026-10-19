@@ -216,6 +216,25 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("stash: HTTP %d", e.StatusCode)
 }
 
+// decodeGraphQLResponse unmarshals GraphQL response envelopes and extracts data or errors.
+func decodeGraphQLResponse(body []byte, dst any) error {
+	var gqlResp graphQLResponse
+	if err := json.Unmarshal(body, &gqlResp); err != nil {
+		return fmt.Errorf("stash: decode response: %w", err)
+	}
+
+	if len(gqlResp.Errors) > 0 {
+		return &gqlResp.Errors[0]
+	}
+
+	if dst != nil {
+		if err := json.Unmarshal(gqlResp.Data, dst); err != nil {
+			return fmt.Errorf("stash: decode data: %w", err)
+		}
+	}
+	return nil
+}
+
 // Query sends a raw GraphQL query and unmarshals the data field into dst.
 func (c *Client) Query(ctx context.Context, query string, variables map[string]any, dst any) error {
 	payload, err := json.Marshal(graphQLRequest{Query: query, Variables: variables})
@@ -249,34 +268,23 @@ func (c *Client) Query(ctx context.Context, query string, variables map[string]a
 		return &APIError{StatusCode: resp.StatusCode, RawBody: string(body)}
 	}
 
-	var gqlResp graphQLResponse
-	if err := json.Unmarshal(body, &gqlResp); err != nil {
-		return fmt.Errorf("stash: decode response: %w", err)
-	}
+	return decodeGraphQLResponse(body, dst)
+}
 
-	if len(gqlResp.Errors) > 0 {
-		return &gqlResp.Errors[0]
+// findByID runs a single-object query and returns the object under key, nil when absent.
+func findByID[T any](ctx context.Context, c *Client, query, key, id string) (*T, error) {
+	var out map[string]*T
+	if err := c.Query(ctx, query, map[string]any{"id": id}, &out); err != nil {
+		return nil, err
 	}
-
-	if dst != nil {
-		if err := json.Unmarshal(gqlResp.Data, dst); err != nil {
-			return fmt.Errorf("stash: decode data: %w", err)
-		}
-	}
-	return nil
+	return out[key], nil
 }
 
 // Scenes.
 
 // FindScene returns a single scene by ID.
 func (c *Client) FindScene(ctx context.Context, id string) (*Scene, error) {
-	var out struct {
-		FindScene *Scene `json:"findScene"`
-	}
-	if err := c.Query(ctx, queryFindScene, map[string]any{"id": id}, &out); err != nil {
-		return nil, err
-	}
-	return out.FindScene, nil
+	return findByID[Scene](ctx, c, queryFindScene, "findScene", id)
 }
 
 // FindScenes returns a paginated list of scenes.
@@ -298,13 +306,7 @@ func (c *Client) FindScenes(ctx context.Context, filter *FindFilter) ([]Scene, i
 
 // FindPerformer returns a single performer by ID.
 func (c *Client) FindPerformer(ctx context.Context, id string) (*Performer, error) {
-	var out struct {
-		FindPerformer *Performer `json:"findPerformer"`
-	}
-	if err := c.Query(ctx, queryFindPerformer, map[string]any{"id": id}, &out); err != nil {
-		return nil, err
-	}
-	return out.FindPerformer, nil
+	return findByID[Performer](ctx, c, queryFindPerformer, "findPerformer", id)
 }
 
 // FindPerformers returns a paginated list of performers.
@@ -326,13 +328,7 @@ func (c *Client) FindPerformers(ctx context.Context, filter *FindFilter) ([]Perf
 
 // FindStudio returns a single studio by ID.
 func (c *Client) FindStudio(ctx context.Context, id string) (*Studio, error) {
-	var out struct {
-		FindStudio *Studio `json:"findStudio"`
-	}
-	if err := c.Query(ctx, queryFindStudio, map[string]any{"id": id}, &out); err != nil {
-		return nil, err
-	}
-	return out.FindStudio, nil
+	return findByID[Studio](ctx, c, queryFindStudio, "findStudio", id)
 }
 
 // FindStudios returns a paginated list of studios.
@@ -354,13 +350,7 @@ func (c *Client) FindStudios(ctx context.Context, filter *FindFilter) ([]Studio,
 
 // FindTag returns a single tag by ID.
 func (c *Client) FindTag(ctx context.Context, id string) (*Tag, error) {
-	var out struct {
-		FindTag *Tag `json:"findTag"`
-	}
-	if err := c.Query(ctx, queryFindTag, map[string]any{"id": id}, &out); err != nil {
-		return nil, err
-	}
-	return out.FindTag, nil
+	return findByID[Tag](ctx, c, queryFindTag, "findTag", id)
 }
 
 // FindTags returns a paginated list of tags.
@@ -382,13 +372,7 @@ func (c *Client) FindTags(ctx context.Context, filter *FindFilter) ([]Tag, int, 
 
 // FindGallery returns a single gallery by ID.
 func (c *Client) FindGallery(ctx context.Context, id string) (*Gallery, error) {
-	var out struct {
-		FindGallery *Gallery `json:"findGallery"`
-	}
-	if err := c.Query(ctx, queryFindGallery, map[string]any{"id": id}, &out); err != nil {
-		return nil, err
-	}
-	return out.FindGallery, nil
+	return findByID[Gallery](ctx, c, queryFindGallery, "findGallery", id)
 }
 
 // FindGalleries returns a paginated list of galleries.
@@ -410,13 +394,7 @@ func (c *Client) FindGalleries(ctx context.Context, filter *FindFilter) ([]Galle
 
 // FindImage returns a single image by ID.
 func (c *Client) FindImage(ctx context.Context, id string) (*Image, error) {
-	var out struct {
-		FindImage *Image `json:"findImage"`
-	}
-	if err := c.Query(ctx, queryFindImage, map[string]any{"id": id}, &out); err != nil {
-		return nil, err
-	}
-	return out.FindImage, nil
+	return findByID[Image](ctx, c, queryFindImage, "findImage", id)
 }
 
 // FindImages returns a paginated list of images.
@@ -438,13 +416,7 @@ func (c *Client) FindImages(ctx context.Context, filter *FindFilter) ([]Image, i
 
 // FindGroup returns a single group (movie) by ID.
 func (c *Client) FindGroup(ctx context.Context, id string) (*Group, error) {
-	var out struct {
-		FindGroup *Group `json:"findGroup"`
-	}
-	if err := c.Query(ctx, queryFindGroup, map[string]any{"id": id}, &out); err != nil {
-		return nil, err
-	}
-	return out.FindGroup, nil
+	return findByID[Group](ctx, c, queryFindGroup, "findGroup", id)
 }
 
 // FindGroups returns a paginated list of groups.

@@ -5,6 +5,13 @@
 - **BREAKING:** `New` now returns `(*Client, error)` and validates the base URL. Callers must check the error.
 - Add WithUserAgent option.
 
+## [3.0.1](https://github.com/golusoris/goenvoy/compare/mediaserver/tdarr/v3.0.0...mediaserver/tdarr/v3.0.1) (2026-10-19)
+
+
+### Bug Fixes
+
+* **lint:** hold every Go file to the HISS-04 complexity limits ([#142](https://github.com/golusoris/goenvoy/issues/142)) ([2e5dea9](https://github.com/golusoris/goenvoy/commit/2e5dea9437444f670c5a628a35f8cc11e4883d46)), closes [#76](https://github.com/golusoris/goenvoy/issues/76)
+
 ## [3.0.0](https://github.com/golusoris/goenvoy/compare/mediaserver/tdarr/v2.1.0...mediaserver/tdarr/v3.0.0) (2026-06-19)
 
 

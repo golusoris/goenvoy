@@ -61,6 +61,45 @@ type tokenResponse struct {
 	TokenType   string `json:"token_type"`
 }
 
+// fetchToken requests a new OAuth2 client credentials token from the auth endpoint.
+func (c *Client) fetchToken(ctx context.Context) (*tokenResponse, error) {
+	form := url.Values{
+		"grant_type":    {"client_credentials"},
+		"client_id":     {c.clientID},
+		"client_secret": {c.oauth.ClientSecret()},
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		c.BaseURL()+"/auth/token", strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("letterboxd: create token request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", c.UserAgent())
+
+	resp, err := c.HTTPClient().Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("letterboxd: token request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("letterboxd: read token response: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("letterboxd: token request HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	var tok tokenResponse
+	if err := json.Unmarshal(body, &tok); err != nil {
+		return nil, fmt.Errorf("letterboxd: decode token response: %w", err)
+	}
+	return &tok, nil
+}
+
 // ensureToken acquires or refreshes the OAuth2 token if client credentials are configured.
 func (c *Client) ensureToken(ctx context.Context) error {
 	if c.clientID == "" {
@@ -79,39 +118,9 @@ func (c *Client) ensureToken(ctx context.Context) error {
 		return nil
 	}
 
-	form := url.Values{
-		"grant_type":    {"client_credentials"},
-		"client_id":     {c.clientID},
-		"client_secret": {c.oauth.ClientSecret()},
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		c.BaseURL()+"/auth/token", strings.NewReader(form.Encode()))
+	tok, err := c.fetchToken(ctx)
 	if err != nil {
-		return fmt.Errorf("letterboxd: create token request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", c.UserAgent())
-
-	resp, err := c.HTTPClient().Do(req)
-	if err != nil {
-		return fmt.Errorf("letterboxd: token request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("letterboxd: read token response: %w", err)
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("letterboxd: token request HTTP %d: %s", resp.StatusCode, string(body))
-	}
-
-	var tok tokenResponse
-	if err := json.Unmarshal(body, &tok); err != nil {
-		return fmt.Errorf("letterboxd: decode token response: %w", err)
+		return err
 	}
 
 	cb := c.oauth.StoreAccessToken(tok.AccessToken)
@@ -156,6 +165,24 @@ func (c *Client) get(ctx context.Context, path string, dst any) error {
 	return nil
 }
 
+// decodeResponse verifies HTTP status and unmarshals the response body or APIError.
+func decodeResponse(status int, body []byte, dst any) error {
+	if status < 200 || status >= 300 {
+		apiErr := &APIError{StatusCode: status}
+		if err := json.Unmarshal(body, apiErr); err != nil {
+			apiErr.RawBody = string(body)
+		}
+		return apiErr
+	}
+
+	if dst != nil && len(body) > 0 {
+		if err := json.Unmarshal(body, dst); err != nil {
+			return fmt.Errorf("letterboxd: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
 func (c *Client) doJSON(ctx context.Context, method, path string, payload, dst any) error {
 	if err := c.ensureToken(ctx); err != nil {
 		return err
@@ -182,20 +209,7 @@ func (c *Client) doJSON(ctx context.Context, method, path string, payload, dst a
 		return err
 	}
 
-	if status < 200 || status >= 300 {
-		apiErr := &APIError{StatusCode: status}
-		if err := json.Unmarshal(body, apiErr); err != nil {
-			apiErr.RawBody = string(body)
-		}
-		return apiErr
-	}
-
-	if dst != nil && len(body) > 0 {
-		if err := json.Unmarshal(body, dst); err != nil {
-			return fmt.Errorf("letterboxd: decode response: %w", err)
-		}
-	}
-	return nil
+	return decodeResponse(status, body, dst)
 }
 
 func (c *Client) post(ctx context.Context, path string, payload, dst any) error {

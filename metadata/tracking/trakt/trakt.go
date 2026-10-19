@@ -100,6 +100,24 @@ func parsePaginationHeaders(h http.Header) PaginationHeaders {
 	}
 }
 
+// decodeResponse verifies HTTP status and unmarshals the response body or APIError.
+func decodeResponse(statusCode int, body []byte, dst any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		apiErr := &APIError{StatusCode: statusCode}
+		if err := json.Unmarshal(body, apiErr); err != nil {
+			apiErr.RawBody = string(body)
+		}
+		return apiErr
+	}
+
+	if dst != nil && len(body) > 0 {
+		if err := json.Unmarshal(body, dst); err != nil {
+			return fmt.Errorf("trakt: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
 func (c *Client) get(ctx context.Context, path string, params url.Values, dst any) (*PaginationHeaders, error) {
 	u, err := url.Parse(c.BaseURL() + path)
 	if err != nil {
@@ -136,21 +154,11 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 		return nil, fmt.Errorf("trakt: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		apiErr := &APIError{StatusCode: resp.StatusCode}
-		if err := json.Unmarshal(body, apiErr); err != nil {
-			apiErr.RawBody = string(body)
-		}
-		return nil, apiErr
+	if err := decodeResponse(resp.StatusCode, body, dst); err != nil {
+		return nil, err
 	}
 
 	pg := parsePaginationHeaders(resp.Header)
-
-	if dst != nil && len(body) > 0 {
-		if err := json.Unmarshal(body, dst); err != nil {
-			return nil, fmt.Errorf("trakt: decode response: %w", err)
-		}
-	}
 	return &pg, nil
 }
 
@@ -1811,20 +1819,7 @@ func (c *Client) post(ctx context.Context, path string, body, dst any) error {
 		return fmt.Errorf("trakt: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		apiErr := &APIError{StatusCode: resp.StatusCode}
-		if jsonErr := json.Unmarshal(respBody, apiErr); jsonErr != nil {
-			apiErr.RawBody = string(respBody)
-		}
-		return apiErr
-	}
-
-	if dst != nil && len(respBody) > 0 {
-		if err := json.Unmarshal(respBody, dst); err != nil {
-			return fmt.Errorf("trakt: decode response: %w", err)
-		}
-	}
-	return nil
+	return decodeResponse(resp.StatusCode, respBody, dst)
 }
 
 func (c *Client) del(ctx context.Context, path string) error {
@@ -1918,6 +1913,55 @@ func (c *Client) GetDeviceCode(ctx context.Context) (*DeviceCode, error) {
 // PollDeviceToken polls for the device token after the user has authorized the app.
 // It blocks until the token is obtained, the code expires, or the context is canceled.
 // The interval between polls is taken from the DeviceCode response.
+// handlePollError translates OAuth2 device token poll error statuses.
+func handlePollError(err error, interval int) (bool, error) {
+	var apiErr *APIError
+	if !errorAs(err, &apiErr) {
+		return false, err
+	}
+	switch apiErr.StatusCode {
+	case http.StatusBadRequest, http.StatusConflict:
+		return true, nil
+	case http.StatusNotFound:
+		return false, errors.New("trakt: invalid device code")
+	case http.StatusGone:
+		return false, errors.New("trakt: device code expired")
+	case http.StatusTeapot:
+		return false, errors.New("trakt: user denied authorization")
+	case http.StatusTooManyRequests:
+		time.Sleep(time.Duration(interval) * time.Second)
+		return true, nil
+	default:
+		return false, err
+	}
+}
+
+// pollTokenOnce executes a single device token poll and inspects the response.
+func (c *Client) pollTokenOnce(ctx context.Context, body map[string]string, interval int) (*Token, bool, error) {
+	var token Token
+	err := c.post(ctx, "/oauth/device/token", body, &token)
+	if err == nil {
+		c.storeToken(&token)
+		return &token, false, nil
+	}
+	retry, fatalErr := handlePollError(err, interval)
+	if fatalErr != nil {
+		return nil, false, fatalErr
+	}
+	return nil, retry, nil
+}
+
+// checkPollTick checks expiration and performs one poll attempt.
+func (c *Client) checkPollTick(ctx context.Context, body map[string]string, interval int, deadline time.Time) (*Token, bool, error) {
+	if time.Now().After(deadline) {
+		return nil, false, errors.New("trakt: device code expired")
+	}
+	return c.pollTokenOnce(ctx, body, interval)
+}
+
+// PollDeviceToken polls for the device token after the user has authorized the app.
+// It blocks until the token is obtained, the code expires, or the context is canceled.
+// The interval between polls is taken from the DeviceCode response.
 func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (*Token, error) {
 	ticker := time.NewTicker(time.Duration(code.Interval) * time.Second)
 	defer ticker.Stop()
@@ -1934,34 +1978,13 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (*Token,
 		case <-ctx.Done():
 			return nil, fmt.Errorf("trakt: device poll: %w", ctx.Err())
 		case <-ticker.C:
-			if time.Now().After(deadline) {
-				return nil, errors.New("trakt: device code expired")
-			}
-			var token Token
-			err := c.post(ctx, "/oauth/device/token", body, &token)
+			token, retry, err := c.checkPollTick(ctx, body, code.Interval, deadline)
 			if err != nil {
-				var apiErr *APIError
-				if ok := errorAs(err, &apiErr); ok {
-					switch apiErr.StatusCode {
-					case http.StatusBadRequest: // 400 = pending
-						continue
-					case http.StatusNotFound: // 404 = invalid code
-						return nil, errors.New("trakt: invalid device code")
-					case http.StatusConflict: // 409 = already approved
-						continue
-					case http.StatusGone: // 410 = expired
-						return nil, errors.New("trakt: device code expired")
-					case http.StatusTeapot: // 418 = denied
-						return nil, errors.New("trakt: user denied authorization")
-					case http.StatusTooManyRequests: // 429 = slow down
-						time.Sleep(time.Duration(code.Interval) * time.Second)
-						continue
-					}
-				}
 				return nil, err
 			}
-			c.storeToken(&token)
-			return &token, nil
+			if !retry {
+				return token, nil
+			}
 		}
 	}
 }
