@@ -197,7 +197,6 @@ linters:
           - wrapcheck
           - gosec
       # praetor:generated-exceptions begin (praetorctl linters exceptions; never edit by hand)
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
       - path: ^arr/bazarr/bazarr_test\.go$
         linters:
           - cyclop
