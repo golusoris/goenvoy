@@ -10,7 +10,7 @@ Clients for *arr stack and adjacent automation tools — Sonarr, Radarr, Readarr
 
 Category root is module ([arr/types.go](types.go)) containing types shared across services — `SystemStatus`, `RootFolder`, `Tag`, `QualityProfile`, `LanguageProfile`. Every *arr service returns these in (near-)identical shape.
 
-Typed request helpers live beside `BaseClient` in [arr/resource.go](resource.go): `GetOne`, `GetList`, `PostOne`, `PostList`, `PutOne`, `PutList`, `GetValue` (bare JSON scalar), `BaseClient.GetText` (plain-text body, such as log files); [arr/manualimport.go](manualimport.go) holds `SendManualImport` (ManualImport command with mode check). Service constructors call `NewServiceClient` with wrap function instead of repeating `NewBaseClient` error block. Service method whose body is one request plus decode calls helper instead of repeating `var out` block.
+Typed request helpers live beside `BaseClient` in [arr/resource.go](resource.go): `GetOne`, `GetList`, `PostOne`, `PostList`, `PutOne`, `PutList`, `GetValue` (bare JSON scalar), `BaseClient.GetText` (plain-text body, such as log files); [arr/manualimport.go](manualimport.go) holds `SendManualImport` (ManualImport command with mode check); [arr/queue.go](queue.go) holds `GetQueuePage` (queue page with per-service include flags). Service constructors call `NewServiceClient` with wrap function instead of repeating `NewBaseClient` error block. Service method whose body is one request plus decode calls helper instead of repeating `var out` block.
 
 Service sub-modules **may** import `arr` for shared types. Only in-repo import edge allowed — no service imports another service.
 
