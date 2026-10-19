@@ -1,3 +1,4 @@
+-include .config/praetor/engine.mk
 .PHONY: help test-all coverage-check-all lint-all vet-all vuln-all gosec-all cover-all tidy-all build-all fmt-all golines-all ci-all list-modules clean-all tools-install doc upstream-specs lint-exceptions lint-exceptions-gen
 
 MODULES := $(shell find . -name 'go.mod' -not -path './.workingdir/*' -not -path './.workingdir2/*' -not -path './tools/go/*' -exec dirname {} \; | sort)
@@ -122,3 +123,30 @@ lint-exceptions-gen: ## Regenerate the dated complexity exceptions from a measur
 doc: ## Local godoc server at :6060
 	@echo "Starting godoc server at http://localhost:6060"
 	@godoc -http=:6060
+
+# Praetor declared verification; existing project recipes remain unchanged.
+# Praetor ships one binary under two names; resolve whichever is installed.
+PRAETORCTL ?= $(shell command -v praetorctl 2>/dev/null || command -v standardsctl 2>/dev/null || echo praetorctl)
+.PHONY: verify-all
+verify-all:
+	@$(PRAETORCTL) compile-context --verify
+	@$(PRAETORCTL) caveman check --configured-sources
+	@$(PRAETORCTL) audit
+	@printf '%s\n' 'Project verification unavailable; see the adoption report and AGENTS.md.' >&2
+	@exit 1
+
+compile-context:
+	@$(PRAETORCTL) compile-context
+
+audit:
+	@$(PRAETORCTL) audit
+
+# BEGIN praetor documentation gate
+.PHONY: docs-lint docs-figures
+verify-all: docs-lint docs-figures
+docs-lint:
+	@node tools/markdownlint/verify.mjs
+docs-figures:
+	@node tools/figures/build.mjs check
+	@node tools/figures/build.mjs sources
+# END praetor documentation gate

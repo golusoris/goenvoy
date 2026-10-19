@@ -4,21 +4,21 @@
 
 ## What this category is
 
-Clients for the *arr stack and adjacent automation tools — Sonarr, Radarr, Readarr, Lidarr, Bazarr, Prowlarr, Whisparr, Mylar, Jackett, NZBHydra2, Autobrr, Overseerr/Jellyseerr (`seerr`), Cleanuparr. FlareSolverr lives under `tools/flaresolverr`.
+Clients for *arr stack and adjacent automation tools — Sonarr, Radarr, Readarr, Lidarr, Bazarr, Prowlarr, Whisparr, Mylar, Jackett, NZBHydra2, Autobrr, Overseerr/Jellyseerr (`seerr`), Cleanuparr. FlareSolverr lives under `tools/flaresolverr`.
 
 ## Shared types (in `arr/`)
 
-The root of the category is itself a small module ([arr/types.go](types.go)) containing types shared across services — `SystemStatus`, `RootFolder`, `Tag`, `QualityProfile`, `LanguageProfile`. Every *arr service returns these in (near-)identical shape.
+Category root is module ([arr/types.go](types.go)) containing types shared across services — `SystemStatus`, `RootFolder`, `Tag`, `QualityProfile`, `LanguageProfile`. Every *arr service returns these in (near-)identical shape.
 
-Typed request helpers live beside `BaseClient` in [arr/resource.go](resource.go): `GetOne`, `GetList`, `PostOne`, `PostList`, `PutOne`, `PutList`, `GetValue` (bare JSON scalar), `BaseClient.GetText` (plain-text body, such as log files), and in [arr/manualimport.go](manualimport.go) `SendManualImport` (ManualImport command with mode check). Service constructors call `NewServiceClient` with a wrap function instead of repeating the `NewBaseClient` error block. A service method whose body is one request plus a decode calls the helper instead of repeating the `var out` block.
+Typed request helpers live beside `BaseClient` in [arr/resource.go](resource.go): `GetOne`, `GetList`, `PostOne`, `PostList`, `PutOne`, `PutList`, `GetValue` (bare JSON scalar), `BaseClient.GetText` (plain-text body, such as log files); [arr/manualimport.go](manualimport.go) holds `SendManualImport` (ManualImport command with mode check). Service constructors call `NewServiceClient` with wrap function instead of repeating `NewBaseClient` error block. Service method whose body is one request plus decode calls helper instead of repeating `var out` block.
 
-Service sub-modules **may** import `arr` for the shared types. This is the only in-repo import edge allowed — no service imports another service.
+Service sub-modules **may** import `arr` for shared types. Only in-repo import edge allowed — no service imports another service.
 
 ## Shared conventions in this category
 
-- **Auth model**: `X-Api-Key` request header on every call. Some services (Jackett, NZBHydra2) accept `?apikey=<key>` query instead — note per-service in the service `AGENTS.md`.
-- **Base-URL shape**: callers pass `http(s)://<host>[:<port>]`. The client appends `/api/v<major>` (usually `v3` for Sonarr/Radarr/Prowlarr, `v1` for Readarr/Lidarr, service-specific for the rest).
-- **Pagination**: none — endpoints return complete lists. A few "event"-style endpoints (`/history`, `/queue`) take `page` / `pageSize` query params.
+- **Auth model**: `X-Api-Key` request header on every call. Some services (Jackett, NZBHydra2) accept `?apikey=<key>` query instead — note per-service in service `AGENTS.md`.
+- **Base-URL shape**: callers pass `http(s)://<host>[:<port>]`. Client appends `/api/v<major>` (usually `v3` for Sonarr/Radarr/Prowlarr, `v1` for Readarr/Lidarr, service-specific for rest).
+- **Pagination**: none — endpoints return complete lists. Event-style endpoints (`/history`, `/queue`) take `page` / `pageSize` query params.
 - **Error body**: JSON `{"error": "...", "propertyName": "..."}` on 4xx; plain text / HTML on 5xx.
 - **Date format**: RFC 3339 (`2026-04-15T12:34:56Z`).
 

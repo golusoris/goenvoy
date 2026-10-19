@@ -8,15 +8,15 @@ Game-metadata providers — game catalogs, ratings, artwork, achievements, ROM h
 
 ## Shared types (in `metadata/game/`)
 
-This directory is **itself a Go module** (`github.com/golusoris/goenvoy/metadata/game`). It defines types shared across the game-provider service modules — see [types.go](types.go). Service sub-modules (e.g. `metadata/game/igdb`) **may** import `metadata/game` for these types but not each other.
+Directory is **itself Go module** (`github.com/golusoris/goenvoy/metadata/game`). Defines types shared across game-provider service modules — see [types.go](types.go). Service sub-modules (e.g. `metadata/game/igdb`) **may** import `metadata/game` for these types but not each other.
 
 ## Shared conventions in this sub-category
 
-- **Auth diversity**: largely API key (RAWG, MobyGames, SteamGridDB, ScreenScraper) or Twitch OAuth2 (IGDB). Each service documents its own.
+- **Auth diversity**: largely API key (RAWG, MobyGames, SteamGridDB, ScreenScraper) or Twitch OAuth2 (IGDB). Each service documents own.
 - **Base-URL shape**: full upstream base, service-specific.
 - **Pagination**: varies — page+pageSize (RAWG, MobyGames), offset+limit (IGDB), cursorless full-list (Hasheous).
 - **Error body**: provider-specific JSON envelope. Always surfaced as `*APIError`.
-- **Image URLs**: every provider returns CDN URLs in different shapes; `metadata/game.Image` provides a normalised representation. Conversion happens in each service's `types.go`.
+- **Image URLs**: every provider returns CDN URLs in different shapes; `metadata/game.Image` provides normalised representation. Conversion happens in each service `types.go`.
 
 ## Modules in this sub-category
 
@@ -38,7 +38,7 @@ Use `/add-service-client metadata/game <service> <docs-url>`.
 
 Must-haves at file creation:
 - `doc.go` — one-sentence package comment.
-- `types.go` — request/response types + `APIError`. Map upstream shapes to the shared types in `metadata/game/types.go` where meaningful.
+- `types.go` — request/response types + `APIError`. Map upstream shapes to shared types in `metadata/game/types.go` where meaningful.
 - `<service>.go` — `New` + `Option`s + `do` helper.
 - `<service>_test.go` — table-driven tests, `httptest` only.
 - `example_test.go` — runnable godoc example.

@@ -1,0 +1,26 @@
+---
+version: 1
+pinned_version: v0.0.0+catalog.4f92951255ff
+digest: sha256:f402add4bdc860a0be18fc899a80ef18066ae27d6ef4964ca01346427c474354
+profiles:
+  - id: library-client
+    version: v0.0.0+catalog.4f92951255ff
+    digest:
+      sha256:73ac0a9c4b1378f836f3644abc6401e43261bddc6ea119e8978652f3a7473cb1
+facets:
+  - id: security:high
+    version: v0.0.0+catalog.4f92951255ff
+    digest:
+      sha256:9bd59f0725d472b1516ba74556feada0e3868f4642bc08dd2d67a2cc26e87778
+  - id: api:public-contract
+    version: v0.0.0+catalog.4f92951255ff
+    digest:
+      sha256:c921d361fcd84da16ee8cf6423d49a1c686c98ed95b62517c903ff2651258276
+  - id: docs:seo-portal
+    version: v0.0.0+catalog.4f92951255ff
+    digest:
+      sha256:145722c161ed8e436369d573c2b736fe7f579b8a1e33a85119e3b10268563428
+  - id: agent:sandboxed
+    version: v0.0.0+catalog.4f92951255ff
+    digest:
+      sha256:bc87486dea71e54d20549d6054dcf290d3d700e37b304cbdb6d6c1a2def895f2

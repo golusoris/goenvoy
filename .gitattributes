@@ -1,0 +1,8 @@
+# BEGIN praetor managed attributes (praetorctl adopt)
+# praetorctl audit hashes these files; keep their checkout bytes the same on every platform.
+.devcontainer/Dockerfile.praetor text eol=lf
+tools/figures/** text eol=lf
+docs/figures/*.ts text eol=lf
+docs/assets/figures/* text eol=lf
+tools/figures/third_party/interfig/upstream/** -text
+# END praetor managed attributes

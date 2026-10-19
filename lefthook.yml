@@ -1,0 +1,70 @@
+# Lefthook Configuration (Go, Rust & HISS Governance)
+# Go jobs are always present so later tracked modules need no re-adoption;
+# Rust follows the detected languages.
+# Governance commands fail closed: a failing or missing praetorctl blocks the
+# commit or push. The pre-commit audit runs --offline; the pre-push audit
+# reads the forge's live Actions state when a token and a github.com origin
+# are present. The pre-push gate job signs a receipt only after a Go
+# (go.mod) or Cargo (Cargo.lock) toolchain stage ran. A root with neither
+# gets no receipt: the job names the languages it could not verify and
+# admits the push; a root with either fails when its stages did not run.
+---
+agent-checkpoint-tool:
+  commands:
+    checkpoint:
+      run: >-
+        sh .config/lefthook/python.sh -B .config/lefthook/scripts/checkpoint.py
+        --event tool --json --marker
+agent-checkpoint-stop:
+  commands:
+    checkpoint:
+      run: >-
+        sh .config/lefthook/python.sh -B .config/lefthook/scripts/checkpoint.py
+        --event stop --json --marker
+pre-commit:
+  parallel: true
+  commands:
+    gofmt:
+      glob: "*.go"
+      run: gofmt -w {staged_files}
+      stage_fixed: true
+    govet:
+      glob: "*.go"
+      run: sh .config/lefthook/engine.sh go vet
+    rustfmt:
+      glob: "*.rs"
+      run: >-
+        if [ -f Cargo.toml ]; then cargo fmt --all --check; else echo no
+        Cargo.toml at the repository root, skipping cargo fmt >&2; fi
+    clippy:
+      glob: "*.rs"
+      run: >-
+        if [ -f Cargo.toml ]; then cargo clippy --workspace --all-targets -- -D
+        warnings; else echo no Cargo.toml at the repository root, skipping cargo
+        clippy >&2; fi
+    context-check:
+      run: sh .config/lefthook/engine.sh compile-context --verify
+    hiss-audit:
+      run: sh .config/lefthook/engine.sh audit --offline
+
+post-commit:
+  commands:
+    state-sync:
+      run: sh .config/lefthook/engine.sh state sync .
+    dedupe-cadence:
+      run: >-
+        sh .config/lefthook/engine.sh dedupe cadence --threshold=20 --record .
+
+pre-push:
+  parallel: false
+  commands:
+    security:
+      run: >-
+        sh .config/lefthook/engine.sh security govuln -- go tool
+        -modfile=tools/go/go.mod govulncheck
+    flavor-audit:
+      run: sh .config/lefthook/engine.sh flavor audit .
+    audit:
+      run: sh .config/lefthook/engine.sh audit
+    gate:
+      run: sh .config/lefthook/engine.sh gate run --path=. --admit-unsupported

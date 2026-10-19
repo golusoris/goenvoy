@@ -16,4 +16,4 @@ API key passed as `X-Api-Key` header via `arr.BaseClient`.
 
 Queue management: `GetQueueWithOptions` and `DeleteQueueItemWithOptions` support advanced filtering, nested inclusion, and extended deletion flags.
 
-Manual import: `GetManualImportCandidates` lists candidates with their movie mapping and rejections; `ManualImportCandidate.ImportFile` maps one to a `ManualImportFile`; `SendManualImport` queues the `ManualImport` command, which imports. `ProcessManualImport` (POST /manualimport) only re-evaluates candidates and imports nothing.
+Manual import: `GetManualImportCandidates` lists candidates with movie mapping and rejections; `ManualImportCandidate.ImportFile` maps candidate to `ManualImportFile`; `SendManualImport` queues `ManualImport` command, which imports. `ProcessManualImport` (POST /manualimport) only re-evaluates candidates and imports nothing.

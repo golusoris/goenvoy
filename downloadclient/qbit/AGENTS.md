@@ -10,8 +10,8 @@
 
 ## Auth model
 
-`Login(username, password)` posts to `/api/v2/auth/login`; the server returns a `SID` cookie which the HTTP client's cookie jar carries on subsequent requests.
+`Login(username, password)` posts to `/api/v2/auth/login`; server returns `SID` cookie which HTTP client cookie jar carries on subsequent requests.
 
 ## Known quirks
 
-- Every request sets a `Referer` header matching the base URL — qBittorrent rejects requests without it.
+- Every request sets `Referer` header matching base URL — qBittorrent rejects requests without it.

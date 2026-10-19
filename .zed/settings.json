@@ -1,0 +1,31 @@
+{
+  "format_on_save": "on",
+  "buffer_font_size": 14,
+  "tab_size": 4,
+  "hard_tabs": false,
+  "preferred_line_length": 120,
+  "languages": {
+    "C": {
+      "tab_size": 4,
+      "preferred_line_length": 100
+    },
+    "C++": {
+      "tab_size": 4,
+      "preferred_line_length": 100
+    },
+    "Python": {
+      "tab_size": 4
+    },
+    "Go": {
+      "hard_tabs": true,
+      "tab_size": 4
+    }
+  },
+  "lsp": {
+    "clangd": {
+      "binary": {
+        "path_lookup": true
+      }
+    }
+  }
+}

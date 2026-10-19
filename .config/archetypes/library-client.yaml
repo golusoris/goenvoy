@@ -1,0 +1,39 @@
+---
+id: "library-client"
+name: "Library & SDK Client"
+description: "Reusable, polyglot client libraries and SDK packages designed for
+  minimal dependency footprint and append-only API stability"
+runtime: "library"
+
+complexity:
+  max_cyclomatic: 10
+  max_cognitive: 12
+  max_func_loc: 70
+  max_statements: 45
+
+branch_protection:
+  enforce_linear_history: true
+  require_signed_commits: true
+  required_approving_reviewers: 1
+  dismiss_stale_reviews: true
+
+supply_chain:
+  slsa_level: 3
+  enforce_cosign: true
+  require_sbom: true
+
+linters:
+  - "govet"
+  - "golangci-lint"
+  - "semgrep"
+  - "gitleaks"
+  - "clippy"
+
+devcontainer_features:
+  - "ghcr.io/devcontainers/features/common-utils:2"
+
+devcontainer_features_by_language:
+  go:
+    - "ghcr.io/devcontainers/features/go:1"
+  rust:
+    - "ghcr.io/devcontainers/features/rust:1"

@@ -4,11 +4,11 @@
 
 ## What this category is
 
-Clients for external metadata providers: movies, TV, anime, music, games, books, tracking services, and adult content. Consumed by media managers, enrichment pipelines, and custom automation. Grouped by media type so that a caller interested in "movie posters" doesn't have to page through "game cover art".
+Clients for external metadata providers: movies, TV, anime, music, games, books, tracking services, adult content. Consumed by media managers, enrichment pipelines, custom automation. Grouped by media type so caller interested in "movie posters" avoids paging through "game cover art".
 
 ## Shared types (in `metadata/`)
 
-The category root ([metadata/types.go](types.go)) defines types shared across sub-categories — `Rating`, `Image`, `Person`, `Episode`, `Season`. Service sub-modules (e.g. `metadata/video/tmdb`) **may** import `metadata` for these types but not each other.
+Category root ([metadata/types.go](types.go)) defines types shared across sub-categories — `Rating`, `Image`, `Person`, `Episode`, `Season`. Service sub-modules (e.g. `metadata/video/tmdb`) **may** import `metadata` for these types but not each other.
 
 Shared helpers beside `BaseClient`: [metadata/oauth.go](oauth.go) `OAuthState[CB]` (client secret, token pair, token callback under one lock; held as a named field, not embedded) and [metadata/request.go](request.go) `PostAs[T]` (one POST plus decode) and `PageParams` (page + limit query).
 
@@ -26,16 +26,16 @@ Shared helpers beside `BaseClient`: [metadata/oauth.go](oauth.go) `OAuthState[CB
 
 ## Shared conventions in this category
 
-- **Auth diversity**: no single auth pattern. Each service documents its own in its `AGENTS.md`.
+- **Auth diversity**: no single auth pattern. Each service documents own pattern in its `AGENTS.md`.
 - **Base-URL shape**: full upstream base, service-specific. Most use `https://api.<provider>.tld/v<n>`.
 - **Pagination**: varies wildly — page+pageSize, cursor, offset+limit, Link header. Document per service.
 - **Error body**: JSON envelope per provider — TMDB/TVDB have well-defined shapes; others vary.
-- **Rate limits**: non-negligible for most — see each service's `AGENTS.md`. Clients currently do **not** implement built-in retry/backoff; callers must add their own `http.Client` / middleware.
+- **Rate limits**: non-negligible for most — see each service `AGENTS.md`. Clients currently do **not** implement built-in retry/backoff; callers must add own `http.Client` / middleware.
 - **Date format**: RFC 3339 preferred; some providers use `YYYY-MM-DD` only. Parse defensively.
 
 ## Modules in this category
 
-34 service modules total. See each sub-category's directory (links above) for the full list.
+34 service modules total. See each sub-category directory (links above) for full list.
 
 ## When adding a new service here
 
@@ -49,4 +49,4 @@ Must-haves at file creation:
 - `example_test.go` — runnable godoc example.
 - `AGENTS.md` — per-service conventions (copy [_meta/service-agents-template.md](../_meta/service-agents-template.md)).
 
-If the new service belongs to a sub-category that already exists, drop it there. If it's genuinely new (e.g. "podcast metadata"), create a new sub-category directory and open a PR introducing it — mention the sub-category choice in the PR description for review.
+If new service belongs to sub-category already existing, drop it there. If genuinely new (e.g. "podcast metadata"), create new sub-category directory and open PR introducing it — mention sub-category choice in PR description for review.

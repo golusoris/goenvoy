@@ -18,4 +18,4 @@ Paginated endpoints echo `X-Pagination-Page`, `X-Pagination-Limit`, `X-Paginatio
 
 ## Rate limits
 
-Device-code poll loop honours `429 Too Many Requests` by sleeping for the advertised interval.
+Device-code poll loop honours `429 Too Many Requests` by sleeping for advertised interval.

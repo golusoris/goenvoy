@@ -1,0 +1,66 @@
+---
+version: 1
+repository:
+  owner: golusoris
+  name: goenvoy
+  visibility: public
+  description: "Go client libraries for media automation, metadata, and download APIs — 62 zero-dependency modules"
+  homepage: "https://pkg.go.dev/github.com/lusoris/goenvoy"
+  topics:
+    - api-client
+    - arr
+    - go
+    - golang
+    - jellyfin
+    - media-automation
+    - media-server
+    - metadata
+    - plex
+    - radarr
+    - sonarr
+    - tmdb
+    - torrent
+    - usenet
+profiles:
+  - library-client
+facets:
+  - security:high
+  - api:public-contract
+  - docs:seo-portal
+  - agent:sandboxed
+overrides:
+  branch_protection:
+    enforce_linear_history: false
+    require_signed_commits: false
+    required_approving_reviewers: 0
+    dismiss_stale_reviews: false
+    review_mode: single_maintainer
+register:
+  sources:
+    expected: 13
+    sha256:
+      sha256:ffc054cf234981c9a22b3f8a70bcf1249d9477fb29f751c062d8557c81427a3e
+    inputs:
+      - path: .paperclip/harness.json
+        surface: prompts
+        kind: message
+        format: json
+        selector: operating_contract.*
+      - path: .paperclip/harness.json
+        surface: prompts
+        kind: message
+        format: json
+        selector: invariants.*
+exceptions:
+  - rule: declared-linters
+    tool: gitleaks
+    reason: "category C: gitleaks runs in the pre-commit hook only (.pre-commit-config.yaml); no CI workflow runs it yet; add a CI job, then remove this entry"
+    expires: "2026-10-28"
+  - rule: declared-linters
+    tool: golangci-lint
+    reason: "category D: golangci-lint runs in the pinned reusable workflow golusoris/golusoris ci-go.yml (ci.yml job ci, golangci-version v2.13.2); audit does not read remote reusable workflows; manifest caps expiry at 90 days"
+    expires: "2027-01-16"
+  - rule: declared-linters
+    tool: trivy
+    reason: "category C: trivy runs in the pre-commit hook only (.pre-commit-config.yaml); no CI workflow runs it yet; add a CI job, then remove this entry"
+    expires: "2026-10-28"
