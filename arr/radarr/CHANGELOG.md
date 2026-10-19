@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.3](https://github.com/golusoris/goenvoy/compare/arr/radarr/v1.5.2...arr/radarr/v1.5.3) (2026-10-19)
+
+
+### Code Refactoring
+
+* **arr:** build the service clients through arr.NewServiceClient ([#137](https://github.com/golusoris/goenvoy/issues/137)) ([f3b7f95](https://github.com/golusoris/goenvoy/commit/f3b7f952b56fc34584869e2ef6ab12e25d843a9a))
+
 ## [1.5.2](https://github.com/golusoris/goenvoy/compare/arr/radarr/v1.5.1...arr/radarr/v1.5.2) (2026-10-19)
 
 ### Code Refactoring
