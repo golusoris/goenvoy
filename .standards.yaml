@@ -64,3 +64,19 @@ exceptions:
     tool: trivy
     reason: "category C: trivy runs in the pre-commit hook only (.pre-commit-config.yaml); no CI workflow runs it yet; add a CI job, then remove this entry"
     expires: "2026-10-28"
+  - rule: HISS-19
+    path: arr/jackett/jackett.go
+    reason: "category D (ledger golusoris-goenvoy-dc-exceptions-20261018): catParams query builder repeated in two separate Go modules; folding needs a new inter-module require; manifest caps expiry at 90 days"
+    expires: "2027-01-17"
+  - rule: HISS-19
+    path: arr/nzbhydra/nzbhydra.go
+    reason: "category D (ledger golusoris-goenvoy-dc-exceptions-20261018): catParams query builder repeated in two separate Go modules; folding needs a new inter-module require; manifest caps expiry at 90 days"
+    expires: "2027-01-17"
+  - rule: HISS-19
+    path: mediaserver/emby/emby.go
+    reason: "category D (ledger golusoris-goenvoy-dc-exceptions-20261018): GetItemsByParent repeated in the emby and jellyfin modules; folding needs a new inter-module require; manifest caps expiry at 90 days"
+    expires: "2027-01-17"
+  - rule: HISS-19
+    path: mediaserver/jellyfin/jellyfin.go
+    reason: "category D (ledger golusoris-goenvoy-dc-exceptions-20261018): GetItemsByParent repeated in the emby and jellyfin modules; folding needs a new inter-module require; manifest caps expiry at 90 days"
+    expires: "2027-01-17"
