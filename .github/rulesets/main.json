@@ -50,6 +50,9 @@
             "context": "Dated lint exceptions"
           },
           {
+            "context": "PR title (Conventional Commits)"
+          },
+          {
             "context": "Secret scan (gitleaks)"
           },
           {

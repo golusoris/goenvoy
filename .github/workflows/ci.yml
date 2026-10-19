@@ -24,13 +24,19 @@ concurrency:
 jobs:
   pr-title:
     name: PR title (Conventional Commits)
-    if: github.event_name == 'pull_request'
+    # Unconditional, so the check reports on every pull request and the
+    # ruleset can require it: a job a condition skips reports success. A
+    # manual run has no pull request title and passes in the step instead.
     runs-on: ubuntu-26.04
     steps:
       - name: Check PR title
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
+          if [ "$GITHUB_EVENT_NAME" != pull_request ]; then
+            echo "No pull request: nothing to check."
+            exit 0
+          fi
           if ! echo "$PR_TITLE" | grep -qE '^(feat|fix|docs|chore|refactor|test|perf|ci|build|revert|style)(\(.+\))?(!)?: .+'; then
             echo "::error::PR title does not follow Conventional Commits."
             echo "::error::Got: $PR_TITLE"
@@ -169,7 +175,10 @@ jobs:
             SELECTED=$(while IFS= read -r f; do
               [ -z "$f" ] && continue
               d=$(dirname "$f")
-              while :; do
+              # A path has fewer than 64 directory levels.
+              depth=0
+              while [ "$depth" -lt 64 ]; do
+                depth=$((depth + 1))
                 if printf '%s\n' "$ALL" | grep -qx "$d"; then echo "$d"; break; fi
                 [ "$d" = "." ] && break
                 d=$(dirname "$d")
@@ -258,7 +267,10 @@ jobs:
           set -euo pipefail
           MOD_PATH=${MODULE_DIR#./}
           TAG_PREFIX="${MOD_PATH}/v"
-          PREV_TAG=$(git tag --list --sort=-v:refname "${TAG_PREFIX}*" | head -1 || true)
+          # The newest tag is the first line; no pipe into head, whose early exit
+          # would fail the pipeline under pipefail.
+          PREV_TAG=$(git tag --list --sort=-v:refname "${TAG_PREFIX}*")
+          PREV_TAG=${PREV_TAG%%$'\n'*}
           if [ -z "$PREV_TAG" ]; then
             echo "No previous ${TAG_PREFIX}* tag — skipping (first release)."
             exit 0
@@ -334,7 +346,7 @@ jobs:
       - name: Check results
         run: |
           for j in workflows upstream_specs lint_exceptions secret_scan discover; do
-            got="$(eval echo \$${j}_result)"
+            var="${j}_result"; got="${!var}"
             if [ "$got" != success ]; then
               echo "job $j: $got"; exit 1
             fi
@@ -346,7 +358,7 @@ jobs:
             echo "No module changed: the ci and apidiff matrices are empty and skipped."
           fi
           for j in ci apidiff; do
-            got="$(eval echo \$${j}_result)"
+            var="${j}_result"; got="${!var}"
             if [ "$got" != "$want" ]; then
               echo "job $j: $got (expected $want)"; exit 1
             fi

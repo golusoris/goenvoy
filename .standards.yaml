@@ -51,6 +51,11 @@ register:
         kind: message
         format: json
         selector: invariants.*
+documentation:
+  # release-please writes each module CHANGELOG.md with two blank lines under every version
+  # heading (MD012); the files are generated release surfaces, as the root CHANGELOG.md is.
+  style_exclude:
+    - "**/CHANGELOG.md"
 exceptions:
   - rule: release-token
     path: .github/workflows/release-please.yml
