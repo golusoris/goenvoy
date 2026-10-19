@@ -7,26 +7,23 @@
 
 ## [3.0.1](https://github.com/golusoris/goenvoy/compare/mediaserver/emby/v3.0.0...mediaserver/emby/v3.0.1) (2026-10-19)
 
-
 ### Bug Fixes
 
-* **lint:** hold every Go file to the HISS-04 complexity limits ([#142](https://github.com/golusoris/goenvoy/issues/142)) ([2e5dea9](https://github.com/golusoris/goenvoy/commit/2e5dea9437444f670c5a628a35f8cc11e4883d46)), closes [#76](https://github.com/golusoris/goenvoy/issues/76)
+- **lint:** hold every Go file to the HISS-04 complexity limits ([#142](https://github.com/golusoris/goenvoy/issues/142)) ([2e5dea9](https://github.com/golusoris/goenvoy/commit/2e5dea9437444f670c5a628a35f8cc11e4883d46)), closes [#76](https://github.com/golusoris/goenvoy/issues/76)
 
 ## [3.0.0](https://github.com/golusoris/goenvoy/compare/mediaserver/emby/v2.1.0...mediaserver/emby/v3.0.0) (2026-06-19)
 
-
 ### ⚠ BREAKING CHANGES
 
-* client import paths gain a major-version suffix.
+- client import paths gain a major-version suffix.
 
 ### Features
 
-* bump module major versions for 22 clients with breaking constructors ([7309996](https://github.com/golusoris/goenvoy/commit/73099965d27223a3ebd5d65a0cf61b1ac21770c0))
-* **mediaserver:** add WithUserAgent option to 9 modules ([adf9382](https://github.com/golusoris/goenvoy/commit/adf938267b8e32cdc137d9db8571def6512010bf))
+- bump module major versions for 22 clients with breaking constructors ([7309996](https://github.com/golusoris/goenvoy/commit/73099965d27223a3ebd5d65a0cf61b1ac21770c0))
+- **mediaserver:** add WithUserAgent option to 9 modules ([adf9382](https://github.com/golusoris/goenvoy/commit/adf938267b8e32cdc137d9db8571def6512010bf))
 
 ## [2.1.0](https://github.com/golusoris/goenvoy/compare/mediaserver/emby/v2.0.0...mediaserver/emby/v2.1.0) (2026-04-15)
 
-
 ### Features
 
-* **mediaserver:** add Jellyfin and Emby clients ([af809d3](https://github.com/golusoris/goenvoy/commit/af809d33c5f3028f1829c7708a72aab94472930d))
+- **mediaserver:** add Jellyfin and Emby clients ([af809d3](https://github.com/golusoris/goenvoy/commit/af809d33c5f3028f1829c7708a72aab94472930d))

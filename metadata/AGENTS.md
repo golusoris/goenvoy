@@ -15,7 +15,7 @@ Shared helpers beside `BaseClient`: [metadata/oauth.go](oauth.go) `OAuthState[CB
 ## Sub-categories
 
 | Sub-category | Services | Typical auth |
-|---|---|---|
+| --- | --- | --- |
 | [video/](video/) | TMDB, TVDB, TVmaze, Fanart.tv, OMDb, OpenSubtitles | API key (header or query) |
 | [anime/](anime/) | AniList, MAL, AniDB, Kitsu | API key / OAuth / GraphQL-bearer |
 | [music/](music/) | MusicBrainz, Discogs, Spotify, Deezer, Last.fm, AudioDB | API key / OAuth / none |
@@ -42,6 +42,7 @@ Shared helpers beside `BaseClient`: [metadata/oauth.go](oauth.go) `OAuthState[CB
 Use `/add-service-client metadata/<sub-category> <service> <docs-url>`.
 
 Must-haves at file creation:
+
 - `doc.go` — one-sentence package comment.
 - `types.go` — request/response types + `APIError`.
 - `<service>.go` — `New` + `Option`s + `do` helper.

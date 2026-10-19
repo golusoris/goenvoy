@@ -21,7 +21,7 @@ Directory is **itself Go module** (`github.com/golusoris/goenvoy/metadata/game`)
 ## Modules in this sub-category
 
 | Module | Purpose | Upstream pin |
-|---|---|---|
+| --- | --- | --- |
 | [igdb/](igdb/) | IGDB (Twitch-OAuth) | [docs/upstream/metadata-game-igdb.md](../../docs/upstream/metadata-game-igdb.md) |
 | [rawg/](rawg/) | RAWG | [docs/upstream/metadata-game-rawg.md](../../docs/upstream/metadata-game-rawg.md) |
 | [steam/](steam/) | Steam Web API | [docs/upstream/metadata-game-steam.md](../../docs/upstream/metadata-game-steam.md) |
@@ -37,6 +37,7 @@ Directory is **itself Go module** (`github.com/golusoris/goenvoy/metadata/game`)
 Use `/add-service-client metadata/game <service> <docs-url>`.
 
 Must-haves at file creation:
+
 - `doc.go` — one-sentence package comment.
 - `types.go` — request/response types + `APIError`. Map upstream shapes to shared types in `metadata/game/types.go` where meaningful.
 - `<service>.go` — `New` + `Option`s + `do` helper.

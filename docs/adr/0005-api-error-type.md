@@ -23,20 +23,20 @@ Callers use `errors.As(err, &sonarr.APIError{})` to distinguish.
 
 Positive:
 
-- Callers can branch on HTTP semantics (429 → backoff, 401 → reauth)
+* Callers can branch on HTTP semantics (429 → backoff, 401 → reauth)
   without string-matching.
-- Per-module shape lets each service expose its own structured
+* Per-module shape lets each service expose its own structured
   fields where the upstream has them.
 
 Negative:
 
-- Each module carries an `APIError` definition — some duplication,
+* Each module carries an `APIError` definition — some duplication,
   acceptable for the separation.
 
 ## Alternatives considered
 
-- Single shared `APIError` in a `goenvoy/errors` package — rejected:
+* Single shared `APIError` in a `goenvoy/errors` package — rejected:
   introduces a coupling between modules that the per-module-semver
   decision (ADR-0002) deliberately avoids.
-- Sentinel errors only (`ErrNotFound`, `ErrUnauthorized`) — rejected:
+* Sentinel errors only (`ErrNotFound`, `ErrUnauthorized`) — rejected:
   loses status code + body context callers need for retries.

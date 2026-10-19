@@ -2,13 +2,11 @@
 
 ## [1.5.2](https://github.com/golusoris/goenvoy/compare/arr/radarr/v1.5.1...arr/radarr/v1.5.2) (2026-10-19)
 
-
 ### Code Refactoring
 
 * **arr:** fold log, filesystem-type and manual-import methods onto arr/v2 helpers ([#132](https://github.com/golusoris/goenvoy/issues/132)) ([76166fb](https://github.com/golusoris/goenvoy/commit/76166fb87491be769473e2eb8eaa71860eba554f))
 
 ## [1.5.1](https://github.com/golusoris/goenvoy/compare/arr/radarr/v1.5.0...arr/radarr/v1.5.1) (2026-10-18)
-
 
 ### Code Refactoring
 
@@ -17,13 +15,11 @@
 
 ## [1.5.0](https://github.com/golusoris/goenvoy/compare/arr/radarr/v1.4.0...arr/radarr/v1.5.0) (2026-10-18)
 
-
 ### Features
 
 * **arr:** add typed manual import candidates and the ManualImport command to sonarr and radarr ([#112](https://github.com/golusoris/goenvoy/issues/112)) ([e77d452](https://github.com/golusoris/goenvoy/commit/e77d45263f3b8406c6cc01f206d60a7331293327))
 
 ## [1.4.0](https://github.com/golusoris/goenvoy/compare/arr/radarr/v1.3.1...arr/radarr/v1.4.0) (2026-10-17)
-
 
 ### Features
 
@@ -31,11 +27,9 @@
 
 ## [1.3.1](https://github.com/golusoris/goenvoy/compare/arr/radarr/v1.3.0...arr/radarr/v1.3.1) (2026-06-19)
 
-
 ### Bug Fixes
 
 * **deps:** update module github.com/golusoris/goenvoy/arr/v2 to v2.1.0 ([#64](https://github.com/golusoris/goenvoy/issues/64)) ([273caf4](https://github.com/golusoris/goenvoy/commit/273caf4d61faa26b1d2b9f79e7ca4539025a5f35))
-
 
 ### Code Refactoring
 
@@ -43,12 +37,10 @@
 
 ## [1.3.0](https://github.com/golusoris/goenvoy/compare/arr/radarr/v1.2.0...arr/radarr/v1.3.0) (2026-04-15)
 
-
 ### Features
 
 * add HeadPing, UploadBackup, GetRaw to all arr packages ([893a185](https://github.com/golusoris/goenvoy/commit/893a185c977a366421599d7d738f15f103151c2c))
 * **arr/radarr:** add Radarr v3 API client ([bd28c04](https://github.com/golusoris/goenvoy/commit/bd28c04ddc00321384e9334e038fa780c111eed2))
-
 
 ### Bug Fixes
 

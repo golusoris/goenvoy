@@ -25,7 +25,7 @@ Service sub-modules **may** import `arr` for shared types. Only in-repo import e
 ## Modules in this category
 
 | Module | Purpose | Upstream pin |
-|---|---|---|
+| --- | --- | --- |
 | [arr/sonarr](sonarr/) | Sonarr v3 client | [docs/upstream/arr-sonarr.md](../docs/upstream/arr-sonarr.md) |
 | [arr/radarr](radarr/) | Radarr v3 client | [docs/upstream/arr-radarr.md](../docs/upstream/arr-radarr.md) |
 | [arr/readarr](readarr/) | Readarr v1 client | [docs/upstream/arr-readarr.md](../docs/upstream/arr-readarr.md) |
@@ -45,6 +45,7 @@ Service sub-modules **may** import `arr` for shared types. Only in-repo import e
 Use `/add-service-client arr <service> <docs-url>`.
 
 Must-haves at file creation:
+
 - `doc.go` — one-sentence package comment.
 - `types.go` — request/response types + `APIError`.
 - `<service>.go` — `New` + `Option`s + `do` helper.

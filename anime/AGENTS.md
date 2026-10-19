@@ -19,7 +19,7 @@ Too few modules today to crystallise category-wide conventions. Each service doc
 ## Modules in this category
 
 | Module | Purpose | Upstream pin |
-|---|---|---|
+| --- | --- | --- |
 | [anime/shoko](shoko/) | Shoko Server (anime file management) | [docs/upstream/anime-shoko.md](../docs/upstream/anime-shoko.md) |
 
 ## When adding a new service here
@@ -27,6 +27,7 @@ Too few modules today to crystallise category-wide conventions. Each service doc
 Use `/add-service-client anime <service> <docs-url>`.
 
 Must-haves at file creation:
+
 - `doc.go` — one-sentence package comment.
 - `types.go` — request/response types + `APIError`.
 - `<service>.go` — `New` + `Option`s + `do` helper.

@@ -28,7 +28,7 @@ Service sub-modules **may** import `downloadclient` for shared types but not eac
 ## Modules in this category
 
 | Module | Purpose | Upstream pin |
-|---|---|---|
+| --- | --- | --- |
 | [downloadclient/deluge](deluge/) | Deluge (JSON-RPC) | [docs/upstream/downloadclient-deluge.md](../docs/upstream/downloadclient-deluge.md) |
 | [downloadclient/transmission](transmission/) | Transmission (JSON-RPC) | [docs/upstream/downloadclient-transmission.md](../docs/upstream/downloadclient-transmission.md) |
 | [downloadclient/qbit](qbit/) | qBittorrent WebUI API | [docs/upstream/downloadclient-qbit.md](../docs/upstream/downloadclient-qbit.md) |
@@ -42,6 +42,7 @@ Service sub-modules **may** import `downloadclient` for shared types but not eac
 Use `/add-service-client downloadclient <service> <docs-url>`.
 
 Must-haves at file creation:
+
 - `doc.go` — one-sentence package comment.
 - `types.go` — request/response types + `APIError`. Map upstream shapes to shared types in `downloadclient/types.go` where meaningful.
 - `<service>.go` — `New` + `Option`s + `do` helper.

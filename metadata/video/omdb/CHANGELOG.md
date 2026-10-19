@@ -2,7 +2,6 @@
 
 ## [1.3.2](https://github.com/golusoris/goenvoy/compare/metadata/video/omdb/v1.3.1...metadata/video/omdb/v1.3.2) (2026-10-11)
 
-
 ### Bug Fixes
 
 * **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([d7c9c63](https://github.com/golusoris/goenvoy/commit/d7c9c635422bda81c3a2f8703e5573a1c62b217d))
@@ -10,13 +9,11 @@
 
 ## [1.3.1](https://github.com/golusoris/goenvoy/compare/metadata/video/omdb/v1.3.0...metadata/video/omdb/v1.3.1) (2026-06-19)
 
-
 ### Bug Fixes
 
 * **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.0 ([#65](https://github.com/golusoris/goenvoy/issues/65)) ([127fc2d](https://github.com/golusoris/goenvoy/commit/127fc2df0eef17326e41cd0ed1a46011ff3811fe))
 
 ## [1.3.0](https://github.com/golusoris/goenvoy/compare/metadata/video/omdb/v1.2.0...metadata/video/omdb/v1.3.0) (2026-04-15)
-
 
 ### Features
 

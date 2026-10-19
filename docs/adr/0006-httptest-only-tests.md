@@ -23,19 +23,19 @@ no network egress guarantee — convention is the gate.
 
 Positive:
 
-- Deterministic CI.
-- No API-key management in CI secrets.
-- No rate-limit entanglement.
+* Deterministic CI.
+* No API-key management in CI secrets.
+* No rate-limit entanglement.
 
 Negative:
 
-- Fixture bodies need refreshing when upstreams evolve — caught via
+* Fixture bodies need refreshing when upstreams evolve — caught via
   the `docs/upstream/<service>.md` pin + `/audit-service-docs` skill.
 
 ## Alternatives considered
 
-- Recorded VCR-style tests — rejected: fixture rot is identical, plus
+* Recorded VCR-style tests — rejected: fixture rot is identical, plus
   extra tooling for record/replay; `httptest` covers the same ground
   with stdlib only (ADR-0001).
-- Optional live-mode behind an env flag — rejected: tempts CI use,
+* Optional live-mode behind an env flag — rejected: tempts CI use,
   inevitably leaks tokens or rate-limits a third party.

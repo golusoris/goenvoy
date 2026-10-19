@@ -2,13 +2,11 @@
 
 ## [1.4.2](https://github.com/golusoris/goenvoy/compare/arr/readarr/v1.4.1...arr/readarr/v1.4.2) (2026-10-19)
 
-
 ### Code Refactoring
 
 * **arr:** fold log, filesystem-type and manual-import methods onto arr/v2 helpers ([#132](https://github.com/golusoris/goenvoy/issues/132)) ([76166fb](https://github.com/golusoris/goenvoy/commit/76166fb87491be769473e2eb8eaa71860eba554f))
 
 ## [1.4.1](https://github.com/golusoris/goenvoy/compare/arr/readarr/v1.4.0...arr/readarr/v1.4.1) (2026-10-18)
-
 
 ### Code Refactoring
 
@@ -17,18 +15,15 @@
 
 ## [1.4.0](https://github.com/golusoris/goenvoy/compare/arr/readarr/v1.3.1...arr/readarr/v1.4.0) (2026-10-17)
 
-
 ### Features
 
 * **arr:** add queue options to sonarr, radarr, lidarr and readarr ([#110](https://github.com/golusoris/goenvoy/issues/110)) ([42f31c1](https://github.com/golusoris/goenvoy/commit/42f31c115d9afc057f6433fb25dd991924360a72))
 
 ## [1.3.1](https://github.com/golusoris/goenvoy/compare/arr/readarr/v1.3.0...arr/readarr/v1.3.1) (2026-06-19)
 
-
 ### Bug Fixes
 
 * **deps:** update module github.com/golusoris/goenvoy/arr/v2 to v2.1.0 ([#64](https://github.com/golusoris/goenvoy/issues/64)) ([273caf4](https://github.com/golusoris/goenvoy/commit/273caf4d61faa26b1d2b9f79e7ca4539025a5f35))
-
 
 ### Code Refactoring
 
@@ -36,12 +31,10 @@
 
 ## [1.3.0](https://github.com/golusoris/goenvoy/compare/arr/readarr/v1.2.0...arr/readarr/v1.3.0) (2026-04-15)
 
-
 ### Features
 
 * add HeadPing, UploadBackup, GetRaw to all arr packages ([893a185](https://github.com/golusoris/goenvoy/commit/893a185c977a366421599d7d738f15f103151c2c))
 * **arr/readarr:** add Readarr v1 API client ([024652d](https://github.com/golusoris/goenvoy/commit/024652da3c29dca7628598827e6caea6adb9ca81))
-
 
 ### Bug Fixes
 

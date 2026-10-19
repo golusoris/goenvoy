@@ -15,7 +15,7 @@ If the `Module` field is missing or ambiguous, ask the reporter before proceedin
 Map the `Module` field to its category root, then to the responsible engineer:
 
 | Module prefix | Engineer |
-|---|---|
+| --- | --- |
 | `arr/*` | `clients-eng-arr` |
 | `downloadclient/*` | `clients-eng-arr` |
 | `mediaserver/*` | `clients-eng-arr` |
@@ -52,7 +52,7 @@ Preserve the pure-stdlib invariant (ADR-0001): `net/http`, `encoding/json`, `enc
 Run the per-module gate, then the release check. Use the versions CI pins (`.github/workflows/ci.yml`) so local == CI:
 
 | Tool | Pinned version |
-|---|---|
+| --- | --- |
 | Go | `stable` (matches `actions/setup-go` `go-version: stable`) |
 | golangci-lint | `v2.12.2` |
 | gosec | `v2.27.1` |
@@ -84,7 +84,7 @@ Comment the fix + released version on the downstream issue, then close it. Updat
 ## First-pass triage log
 
 | Date | Open downstream (`bug_report.yml`) issues | Disposition |
-|---|---|---|
+| --- | --- | --- |
 | 2026-07-04 | **None.** No open issues carry the `bug` label or originate from `bug_report.yml`; the only open board items are governance/release chores (GOE-1..5, `origin=manual`). | Rotation established; nothing to reproduce this pass. |
 
 When the next downstream bug lands, append a row here and route it per §1.

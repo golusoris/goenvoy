@@ -26,25 +26,25 @@ and `net/http/httptest`.
 
 Positive:
 
-- Zero transitive supply-chain surface outside the Go toolchain.
-- No version-pin conflicts with downstream apps.
-- goenvoy modules are trivially embeddable.
+* Zero transitive supply-chain surface outside the Go toolchain.
+* No version-pin conflicts with downstream apps.
+* goenvoy modules are trivially embeddable.
 
 Negative:
 
-- Test fixtures are more verbose than with testify.
-- Some algorithms (e.g. consistent hashing, rate limiters) must be
+* Test fixtures are more verbose than with testify.
+* Some algorithms (e.g. consistent hashing, rate limiters) must be
   hand-rolled or skipped.
 
 Neutral:
 
-- Future functionality that genuinely requires an external dep
+* Future functionality that genuinely requires an external dep
   (e.g. a binary protocol parser) requires a new ADR superseding or
   amending this one.
 
 ## Alternatives considered
 
-- Allow "tiny, stable, vendored" deps — rejected: a fuzzy gate with no
+* Allow "tiny, stable, vendored" deps — rejected: a fuzzy gate with no
   clean CI enforcement.
-- Use testify for ergonomic test asserts — rejected: the ergonomic
+* Use testify for ergonomic test asserts — rejected: the ergonomic
   win is small and `depguard` becomes inconsistent.

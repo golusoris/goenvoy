@@ -52,7 +52,7 @@ Designed as a **multi-module monorepo** — import only what you need, from a si
 ## Categories
 
 | Category | Module | Services |
-|---|---|---|
+| --- | --- | --- |
 | **Arr Stack** | `github.com/golusoris/goenvoy/arr` | Sonarr, Radarr, Lidarr, Readarr, Whisparr (v2+v3), Prowlarr, Bazarr, Seerr, Autobrr, Mylar3, Jackett, NZBHydra2 |
 | **Metadata** | `github.com/golusoris/goenvoy/metadata` | TMDb, TheTVDB, Fanart.tv, OMDb, TVmaze, AniList, Kitsu, AniDB, MAL, Trakt, Simkl, Letterboxd, ListenBrainz, MusicBrainz, StashBox, TPDB, OpenSubtitles, Last.fm, Discogs, TheAudioDB, Open Library, Google Books, Spotify, Deezer, IGDB, RAWG, Steam, MobyGames, SteamGridDB, RetroAchievements, ScreenScraper, Hasheous, LaunchBox |
 | **Download Clients** | `github.com/golusoris/goenvoy/downloadclient` | qBittorrent, Transmission, Deluge, rTorrent, SABnzbd, NZBGet |
@@ -117,7 +117,7 @@ Each service module follows the same pattern: `New(baseURL, apiKey) → typed me
 
 Each category has a base module with shared types, plus sub-modules for individual services:
 
-```
+```text
 goenvoy/
 ├── arr/              # shared *arr types + base client
 │   ├── sonarr/       # Sonarr v3 client

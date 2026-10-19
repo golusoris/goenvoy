@@ -27,18 +27,18 @@ in multi-package mode with one package per module.
 
 Positive:
 
-- Consumers pin one module per service, unaffected by churn in other
+* Consumers pin one module per service, unaffected by churn in other
   services.
-- Breaking changes in one module don't force a major bump in all.
-- SemVer remains meaningful per surface area.
+* Breaking changes in one module don't force a major bump in all.
+* SemVer remains meaningful per surface area.
 
 Negative:
 
-- Tag list is long (hundreds across the lifetime of the repo).
-- CI matrix fans out to every module for apidiff.
+* Tag list is long (hundreds across the lifetime of the repo).
+* CI matrix fans out to every module for apidiff.
 
 ## Alternatives considered
 
-- Monorepo-wide version — rejected as above.
-- Independent repositories per service — rejected: 60+ repos is hostile
+* Monorepo-wide version — rejected as above.
+* Independent repositories per service — rejected: 60+ repos is hostile
   to shared CI + shared conventions + shared AGENTS.md.

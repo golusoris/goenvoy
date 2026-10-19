@@ -31,7 +31,7 @@ Service sub-modules **may** import `mediaserver` for shared types but not each o
 ## Modules in this category
 
 | Module | Purpose | Upstream pin |
-|---|---|---|
+| --- | --- | --- |
 | [mediaserver/plex](plex/) | Plex Media Server | [docs/upstream/mediaserver-plex.md](../docs/upstream/mediaserver-plex.md) |
 | [mediaserver/jellyfin](jellyfin/) | Jellyfin | [docs/upstream/mediaserver-jellyfin.md](../docs/upstream/mediaserver-jellyfin.md) |
 | [mediaserver/emby](emby/) | Emby | [docs/upstream/mediaserver-emby.md](../docs/upstream/mediaserver-emby.md) |
@@ -48,6 +48,7 @@ Service sub-modules **may** import `mediaserver` for shared types but not each o
 Use `/add-service-client mediaserver <service> <docs-url>`.
 
 Must-haves at file creation:
+
 - `doc.go` — one-sentence package comment.
 - `types.go` — request/response types + `APIError`.
 - `<service>.go` — `New` + `Option`s + `do` helper.

@@ -2,14 +2,12 @@
 
 ## [2.0.1](https://github.com/golusoris/goenvoy/compare/metadata/game/screenscraper/v2.0.0...metadata/game/screenscraper/v2.0.1) (2026-10-11)
 
-
 ### Bug Fixes
 
 * **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([d7c9c63](https://github.com/golusoris/goenvoy/commit/d7c9c635422bda81c3a2f8703e5573a1c62b217d))
 * **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.1 ([#3](https://github.com/golusoris/goenvoy/issues/3)) ([b40adc4](https://github.com/golusoris/goenvoy/commit/b40adc47018b15d3224efa758b39326f7c6f7af1))
 
 ## [2.0.0](https://github.com/golusoris/goenvoy/compare/metadata/game/screenscraper/v1.0.0...metadata/game/screenscraper/v2.0.0) (2026-06-19)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -19,7 +17,6 @@
 ### Features
 
 * bump screenscraper and flaresolverr to /v2 (missed in the major sweep) ([8207981](https://github.com/golusoris/goenvoy/commit/8207981eb47230b6b2bf341198fe89d35fd7de3d))
-
 
 ### Bug Fixes
 
@@ -31,4 +28,4 @@
 
 ## Unreleased
 
-- Unify option type: `New` now takes `...screenscraper.Option` instead of `...any`. `metadata.With*` callers should switch to the re-exported `screenscraper.With*` equivalents.
+* Unify option type: `New` now takes `...screenscraper.Option` instead of `...any`. `metadata.With*` callers should switch to the re-exported `screenscraper.With*` equivalents.

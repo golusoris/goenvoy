@@ -178,7 +178,7 @@ goenvoy/
 ## Common tasks
 
 | Task | Claude Code skill / command |
-|---|---|
+| --- | --- |
 | Add new service client | `/add-service-client <category> <service>` |
 | Add method to existing client | `/add-service-method <module> <MethodName>` |
 | Bump module version | `/bump-module <module> <level>` |
@@ -221,7 +221,7 @@ Read [docs/principles.md](docs/principles.md) for full contract, then per-catego
 Located in `.claude/skills/`:
 
 | Skill | When to use |
-|---|---|
+| --- | --- |
 | `add-service-client` | Scaffold new API-client module from one-line prompt. |
 | `add-service-method` | Add new typed method + test case to existing client. |
 | `bump-module` | Bump module semver (major/minor/patch) and open PR. |
