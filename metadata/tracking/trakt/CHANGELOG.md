@@ -4,6 +4,18 @@
 
 - Fix data race on concurrent Set*/read of OAuth tokens and client secret.
 
+## [1.3.3](https://github.com/golusoris/goenvoy/compare/metadata/tracking/trakt/v1.3.2...metadata/tracking/trakt/v1.3.3) (2026-10-19)
+
+
+### Bug Fixes
+
+* **lint:** hold every Go file to the HISS-04 complexity limits ([#142](https://github.com/golusoris/goenvoy/issues/142)) ([2e5dea9](https://github.com/golusoris/goenvoy/commit/2e5dea9437444f670c5a628a35f8cc11e4883d46)), closes [#76](https://github.com/golusoris/goenvoy/issues/76)
+
+
+### Code Refactoring
+
+* **metadata:** fold OAuth state and POST helpers onto metadata v1.4.0 ([#134](https://github.com/golusoris/goenvoy/issues/134)) ([7ea5a20](https://github.com/golusoris/goenvoy/commit/7ea5a2067a139c008360ce3e4b52e0d5c0030b36))
+
 ## [1.3.2](https://github.com/golusoris/goenvoy/compare/metadata/tracking/trakt/v1.3.1...metadata/tracking/trakt/v1.3.2) (2026-10-11)
 
 

@@ -4,6 +4,18 @@
 
 - **BREAKING:** `New` now returns `(*Client, error)` and validates the endpoint URL. Callers must check the error.
 
+## [2.0.1](https://github.com/golusoris/goenvoy/compare/mediaserver/stash/v2.0.0...mediaserver/stash/v2.0.1) (2026-10-19)
+
+
+### Bug Fixes
+
+* **lint:** hold every Go file to the HISS-04 complexity limits ([#142](https://github.com/golusoris/goenvoy/issues/142)) ([2e5dea9](https://github.com/golusoris/goenvoy/commit/2e5dea9437444f670c5a628a35f8cc11e4883d46)), closes [#76](https://github.com/golusoris/goenvoy/issues/76)
+
+
+### Code Refactoring
+
+* **mediaserver/stash:** fold by-ID finders into one generic helper ([#140](https://github.com/golusoris/goenvoy/issues/140)) ([f13b03d](https://github.com/golusoris/goenvoy/commit/f13b03de8a22bd90b5b3950fef98e8984537e972))
+
 ## [2.0.0](https://github.com/golusoris/goenvoy/compare/mediaserver/stash/v1.2.1...mediaserver/stash/v2.0.0) (2026-06-19)
 
 

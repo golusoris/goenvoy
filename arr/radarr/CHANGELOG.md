@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/golusoris/goenvoy/compare/arr/radarr/v1.5.1...arr/radarr/v1.5.2) (2026-10-19)
+
+
+### Code Refactoring
+
+* **arr:** fold log, filesystem-type and manual-import methods onto arr/v2 helpers ([#132](https://github.com/golusoris/goenvoy/issues/132)) ([76166fb](https://github.com/golusoris/goenvoy/commit/76166fb87491be769473e2eb8eaa71860eba554f))
+
 ## [1.5.1](https://github.com/golusoris/goenvoy/compare/arr/radarr/v1.5.0...arr/radarr/v1.5.1) (2026-10-18)
 
 
