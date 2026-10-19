@@ -1,14 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path"
 	"regexp"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
+	"github.com/golusoris/golusoris/core/codec/yaml"
 )
 
 // pin is one upstream OpenAPI spec, fixed to the bytes of one file at one commit.
@@ -51,9 +50,7 @@ func readManifest(file string) ([]pin, error) {
 	var manifest struct {
 		Specs []pin `yaml:"specs"`
 	}
-	decoder := yaml.NewDecoder(bytes.NewReader(data))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(&manifest); err != nil {
+	if err := yaml.Unmarshal(data, &manifest); err != nil {
 		return nil, fmt.Errorf("%s: %w", file, err)
 	}
 	if len(manifest.Specs) == 0 {

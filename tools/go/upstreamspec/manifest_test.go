@@ -66,7 +66,7 @@ func TestReadManifest(t *testing.T) {
 		{"a branch in the place of the tag", with("tag", "branch: develop"), ""},
 		{"a branch with a slash", with("tag", "branch: release/v1"), ""},
 		{"no entry", "specs: []\n", `no "specs" entry`},
-		{"an empty file", "", "EOF"},
+		{"an empty file", "", `no "specs" entry`},
 		{"a misspelled key", with("sha256", "sha265: "+someSHA256), "field sha265 not found"},
 		{"a consumer field", with("prefix", "operations: [GET /api/v1/status]"), "field operations not found"},
 		{"a name with a path", with("name", "name: ../sample"), "name must be"},
