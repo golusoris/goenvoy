@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.6.0](https://github.com/golusoris/goenvoy/compare/arr/lidarr/v1.5.3...arr/lidarr/v1.6.0) (2026-10-19)
+
+
+### Features
+
+* **arr/lidarr:** add typed manual import candidates, command and rescore ([#156](https://github.com/golusoris/goenvoy/issues/156)) ([aa66298](https://github.com/golusoris/goenvoy/commit/aa662988d9b1d2fc31667e0b14fae38d2c3b52d6))
+* **arr/readarr:** add typed manual import candidates and command ([#156](https://github.com/golusoris/goenvoy/issues/156)) ([aa66298](https://github.com/golusoris/goenvoy/commit/aa662988d9b1d2fc31667e0b14fae38d2c3b52d6))
+* **arr/whisparr:** add queue options and delete options for v2 and v3 ([#156](https://github.com/golusoris/goenvoy/issues/156)) ([aa66298](https://github.com/golusoris/goenvoy/commit/aa662988d9b1d2fc31667e0b14fae38d2c3b52d6))
+
 ## [1.5.3](https://github.com/golusoris/goenvoy/compare/arr/lidarr/v1.5.2...arr/lidarr/v1.5.3) (2026-10-19)
 
 
