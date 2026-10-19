@@ -116,44 +116,33 @@ func (c *Client) authHeader() string {
 	return h
 }
 
-func (c *Client) doRequest(ctx context.Context, method, path string, body, dst any) error {
-	u, err := url.Parse(c.rawBaseURL + path)
-	if err != nil {
-		return fmt.Errorf("jellyfin: parse URL: %w", err)
-	}
-
+// buildRequest creates an HTTP request with JSON body and Jellyfin auth headers.
+func (c *Client) buildRequest(ctx context.Context, method, rawURL string, body any) (*http.Request, error) {
 	var reqBody io.Reader = http.NoBody
 	if body != nil {
 		data, err := json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("jellyfin: marshal request: %w", err)
+			return nil, fmt.Errorf("jellyfin: marshal request: %w", err)
 		}
 		reqBody = bytes.NewReader(data)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, u.String(), reqBody)
+	req, err := http.NewRequestWithContext(ctx, method, rawURL, reqBody)
 	if err != nil {
-		return fmt.Errorf("jellyfin: create request: %w", err)
+		return nil, fmt.Errorf("jellyfin: create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", c.authHeader())
 	req.Header.Set("User-Agent", c.userAgent)
+	return req, nil
+}
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("jellyfin: %s %s: %w", method, path, err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("jellyfin: read response: %w", err)
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		apiErr := &APIError{StatusCode: resp.StatusCode}
+// parseResponse checks for API errors and decodes the response body.
+func parseResponse(statusCode int, respBody []byte, dst any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		apiErr := &APIError{StatusCode: statusCode}
 		if jsonErr := json.Unmarshal(respBody, apiErr); jsonErr != nil {
 			apiErr.RawBody = string(respBody)
 		}
@@ -166,6 +155,31 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body, dst a
 		}
 	}
 	return nil
+}
+
+func (c *Client) doRequest(ctx context.Context, method, path string, body, dst any) error {
+	u, err := url.Parse(c.rawBaseURL + path)
+	if err != nil {
+		return fmt.Errorf("jellyfin: parse URL: %w", err)
+	}
+
+	req, err := c.buildRequest(ctx, method, u.String(), body)
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("jellyfin: %s %s: %w", method, path, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("jellyfin: read response: %w", err)
+	}
+
+	return parseResponse(resp.StatusCode, respBody, dst)
 }
 
 func (c *Client) get(ctx context.Context, path string, params url.Values) ([]byte, error) {

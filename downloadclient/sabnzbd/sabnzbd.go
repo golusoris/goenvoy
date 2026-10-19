@@ -77,6 +77,25 @@ func (e *APIError) Error() string {
 	return "sabnzbd: " + e.Message
 }
 
+// decodeResponse inspects the response for API errors and unmarshals into dst.
+func decodeResponse(body []byte, dst any) error {
+	// Check for SABnzbd error responses like {"status": false, "error": "..."}
+	var errCheck struct {
+		Status bool   `json:"status"`
+		Error  string `json:"error"`
+	}
+	if json.Unmarshal(body, &errCheck) == nil && errCheck.Error != "" {
+		return &APIError{Message: errCheck.Error}
+	}
+
+	if dst != nil {
+		if err := json.Unmarshal(body, dst); err != nil {
+			return fmt.Errorf("sabnzbd: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
 func (c *Client) get(ctx context.Context, mode string, params url.Values, dst any) error {
 	if params == nil {
 		params = url.Values{}
@@ -108,21 +127,7 @@ func (c *Client) get(ctx context.Context, mode string, params url.Values, dst an
 		return fmt.Errorf("sabnzbd: read response: %w", err)
 	}
 
-	// Check for SABnzbd error responses like {"status": false, "error": "..."}
-	var errCheck struct {
-		Status bool   `json:"status"`
-		Error  string `json:"error"`
-	}
-	if json.Unmarshal(body, &errCheck) == nil && errCheck.Error != "" {
-		return &APIError{Message: errCheck.Error}
-	}
-
-	if dst != nil {
-		if err := json.Unmarshal(body, dst); err != nil {
-			return fmt.Errorf("sabnzbd: decode response: %w", err)
-		}
-	}
-	return nil
+	return decodeResponse(body, dst)
 }
 
 // Queue methods.

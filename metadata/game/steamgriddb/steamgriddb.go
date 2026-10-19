@@ -112,11 +112,8 @@ type ImageOptions struct {
 	Page       int
 }
 
-func (o *ImageOptions) params() url.Values {
-	if o == nil {
-		return nil
-	}
-	params := url.Values{}
+// encodeImageFilters sets slice-based query parameters.
+func encodeImageFilters(params url.Values, o *ImageOptions) {
 	if len(o.Styles) > 0 {
 		params.Set("styles", strings.Join(o.Styles, ","))
 	}
@@ -129,6 +126,10 @@ func (o *ImageOptions) params() url.Values {
 	if len(o.Types) > 0 {
 		params.Set("types", strings.Join(o.Types, ","))
 	}
+}
+
+// encodeImageFlags sets boolean and pagination query parameters.
+func encodeImageFlags(params url.Values, o *ImageOptions) {
 	if o.NSFW != nil {
 		params.Set("nsfw", boolStr(*o.NSFW))
 	}
@@ -144,6 +145,15 @@ func (o *ImageOptions) params() url.Values {
 	if o.Page > 0 {
 		params.Set("page", strconv.Itoa(o.Page))
 	}
+}
+
+func (o *ImageOptions) params() url.Values {
+	if o == nil {
+		return nil
+	}
+	params := url.Values{}
+	encodeImageFilters(params, o)
+	encodeImageFlags(params, o)
 	return params
 }
 

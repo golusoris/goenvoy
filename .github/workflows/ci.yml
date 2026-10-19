@@ -84,6 +84,23 @@ jobs:
       - name: Check the pins
         run: make upstream-specs
 
+  # The complexity limits hold for every Go file; the dated per-file test
+  # exceptions in .golangci.yml expire, and this job fails once one has (#141).
+  lint-exceptions:
+    name: Dated lint exceptions
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: tools/go/go.mod
+          cache-dependency-path: tools/go/go.sum
+      - name: Check the exceptions
+        run: make lint-exceptions
+
   discover:
     name: Discover modules
     runs-on: ubuntu-26.04
@@ -288,12 +305,12 @@ jobs:
   status:
     name: CI success
     if: always()
-    needs: [workflows, upstream-specs, discover, ci, apidiff]
+    needs: [workflows, upstream-specs, lint-exceptions, discover, ci, apidiff]
     runs-on: ubuntu-26.04
     steps:
       - name: Check results
         run: |
-          for j in workflows upstream_specs discover; do
+          for j in workflows upstream_specs lint_exceptions discover; do
             got="$(eval echo \$${j}_result)"
             if [ "$got" != success ]; then
               echo "job $j: $got"; exit 1
@@ -316,6 +333,7 @@ jobs:
           modules: ${{ needs.discover.outputs.modules }}
           workflows_result: ${{ needs.workflows.result }}
           upstream_specs_result: ${{ needs.upstream-specs.result }}
+          lint_exceptions_result: ${{ needs.lint-exceptions.result }}
           discover_result: ${{ needs.discover.result }}
           ci_result: ${{ needs.ci.result }}
           apidiff_result: ${{ needs.apidiff.result }}

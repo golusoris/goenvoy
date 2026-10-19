@@ -45,6 +45,24 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("musicbrainz: HTTP %d", e.StatusCode)
 }
 
+// decodeResponse verifies HTTP status and unmarshals the response body or APIError.
+func decodeResponse(statusCode int, body []byte, dst any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		apiErr := &APIError{StatusCode: statusCode}
+		if err := json.Unmarshal(body, apiErr); err != nil {
+			apiErr.RawBody = string(body)
+		}
+		return apiErr
+	}
+
+	if dst != nil && len(body) > 0 {
+		if err := json.Unmarshal(body, dst); err != nil {
+			return fmt.Errorf("musicbrainz: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
 func (c *Client) get(ctx context.Context, path string, params url.Values, dst any) error {
 	u, err := url.Parse(c.BaseURL() + path)
 	if err != nil {
@@ -75,20 +93,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 		return fmt.Errorf("musicbrainz: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		apiErr := &APIError{StatusCode: resp.StatusCode}
-		if err := json.Unmarshal(body, apiErr); err != nil {
-			apiErr.RawBody = string(body)
-		}
-		return apiErr
-	}
-
-	if dst != nil && len(body) > 0 {
-		if err := json.Unmarshal(body, dst); err != nil {
-			return fmt.Errorf("musicbrainz: decode response: %w", err)
-		}
-	}
-	return nil
+	return decodeResponse(resp.StatusCode, body, dst)
 }
 
 func incParams(inc []string) url.Values {

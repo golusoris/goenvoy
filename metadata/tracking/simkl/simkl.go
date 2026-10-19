@@ -96,6 +96,24 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("simkl: HTTP %d", e.StatusCode)
 }
 
+// decodeResponse verifies HTTP status and unmarshals the response body or APIError.
+func decodeResponse(statusCode int, body []byte, dst any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		apiErr := &APIError{StatusCode: statusCode}
+		if err := json.Unmarshal(body, apiErr); err != nil {
+			apiErr.RawBody = string(body)
+		}
+		return apiErr
+	}
+
+	if dst != nil && len(body) > 0 {
+		if err := json.Unmarshal(body, dst); err != nil {
+			return fmt.Errorf("simkl: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
 func (c *Client) doGet(ctx context.Context, baseURL, path string, params url.Values, dst any) error {
 	u, err := url.Parse(baseURL + path)
 	if err != nil {
@@ -130,20 +148,7 @@ func (c *Client) doGet(ctx context.Context, baseURL, path string, params url.Val
 		return fmt.Errorf("simkl: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		apiErr := &APIError{StatusCode: resp.StatusCode}
-		if err := json.Unmarshal(body, apiErr); err != nil {
-			apiErr.RawBody = string(body)
-		}
-		return apiErr
-	}
-
-	if dst != nil && len(body) > 0 {
-		if err := json.Unmarshal(body, dst); err != nil {
-			return fmt.Errorf("simkl: decode response: %w", err)
-		}
-	}
-	return nil
+	return decodeResponse(resp.StatusCode, body, dst)
 }
 
 func (c *Client) get(ctx context.Context, path string, params url.Values, dst any) error {
@@ -484,20 +489,7 @@ func (c *Client) post(ctx context.Context, path string, body, dst any) error {
 		return fmt.Errorf("simkl: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		apiErr := &APIError{StatusCode: resp.StatusCode}
-		if jsonErr := json.Unmarshal(respBody, apiErr); jsonErr != nil {
-			apiErr.RawBody = string(respBody)
-		}
-		return apiErr
-	}
-
-	if dst != nil && len(respBody) > 0 {
-		if err := json.Unmarshal(respBody, dst); err != nil {
-			return fmt.Errorf("simkl: decode response: %w", err)
-		}
-	}
-	return nil
+	return decodeResponse(resp.StatusCode, respBody, dst)
 }
 
 // GetDeviceCode starts the Simkl PIN-based device code flow.
@@ -508,14 +500,48 @@ func (c *Client) GetDeviceCode(ctx context.Context) (*DeviceCode, error) {
 	})
 }
 
-// PollDeviceToken polls for the PIN/device token after the user has authorized the app.
-// It blocks until the token is obtained, the code expires, or the context is canceled.
-func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (string, error) {
-	interval := code.Interval
+// pollInterval calculates the polling ticker duration with a 5-second minimum.
+func pollInterval(interval int) time.Duration {
 	if interval < 5 {
 		interval = 5
 	}
-	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+	return time.Duration(interval) * time.Second
+}
+
+// pollDeviceTokenOnce attempts a single PIN poll request and returns (token, done, error).
+func (c *Client) pollDeviceTokenOnce(ctx context.Context, userCode string) (string, bool, error) {
+	var result struct {
+		Result      string `json:"result"`
+		AccessToken string `json:"access_token"`
+		Message     string `json:"message"`
+	}
+	err := c.post(ctx, "/oauth/pin/"+url.PathEscape(userCode), map[string]string{
+		"client_id": c.clientID,
+	}, &result)
+	if err != nil {
+		return "", false, err
+	}
+	if result.Result == "OK" {
+		if cb := c.oauth.StoreAccessToken(result.AccessToken); cb != nil {
+			cb(result.AccessToken)
+		}
+		return result.AccessToken, true, nil
+	}
+	return "", false, nil
+}
+
+// checkPollTick checks expiration and performs one poll attempt.
+func (c *Client) checkPollTick(ctx context.Context, userCode string, deadline time.Time) (string, bool, error) {
+	if time.Now().After(deadline) {
+		return "", false, errors.New("simkl: device code expired")
+	}
+	return c.pollDeviceTokenOnce(ctx, userCode)
+}
+
+// PollDeviceToken polls for the PIN/device token after the user has authorized the app.
+// It blocks until the token is obtained, the code expires, or the context is canceled.
+func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (string, error) {
+	ticker := time.NewTicker(pollInterval(code.Interval))
 	defer ticker.Stop()
 
 	deadline := time.Now().Add(time.Duration(code.ExpiresIn) * time.Second)
@@ -525,31 +551,12 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (string,
 		case <-ctx.Done():
 			return "", fmt.Errorf("simkl: device poll: %w", ctx.Err())
 		case <-ticker.C:
-			if time.Now().After(deadline) {
-				return "", errors.New("simkl: device code expired")
-			}
-			var result struct {
-				Result      string `json:"result"`
-				AccessToken string `json:"access_token"`
-				Message     string `json:"message"`
-			}
-			err := c.post(ctx, "/oauth/pin/"+url.PathEscape(code.UserCode), map[string]string{
-				"client_id": c.clientID,
-			}, &result)
+			token, done, err := c.checkPollTick(ctx, code.UserCode, deadline)
 			if err != nil {
 				return "", err
 			}
-			switch result.Result {
-			case "OK":
-				if cb := c.oauth.StoreAccessToken(result.AccessToken); cb != nil {
-					cb(result.AccessToken)
-				}
-				return result.AccessToken, nil
-			case "KO":
-				// Not yet authorized, keep polling.
-				continue
-			default:
-				continue
+			if done {
+				return token, nil
 			}
 		}
 	}
@@ -813,8 +820,8 @@ func (c *Client) DeletePlayback(ctx context.Context, id int64) error {
 	return c.del(ctx, "/sync/playback/"+strconv.FormatInt(id, 10))
 }
 
-// CheckIfWatched checks whether items have been watched by the user.
-func (c *Client) CheckIfWatched(ctx context.Context, items []WatchedCheckItem, extended string) ([]WatchedCheckResult, error) {
+// buildWatchedRequest prepares an authorized POST request for the watched check endpoint.
+func (c *Client) buildWatchedRequest(ctx context.Context, items []WatchedCheckItem, extended string) (*http.Request, error) {
 	p := url.Values{}
 	if extended != "" {
 		p.Set("extended", extended)
@@ -846,6 +853,15 @@ func (c *Client) CheckIfWatched(ctx context.Context, items []WatchedCheckItem, e
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
+	return req, nil
+}
+
+// CheckIfWatched checks whether items have been watched by the user.
+func (c *Client) CheckIfWatched(ctx context.Context, items []WatchedCheckItem, extended string) ([]WatchedCheckResult, error) {
+	req, err := c.buildWatchedRequest(ctx, items, extended)
+	if err != nil {
+		return nil, err
+	}
 
 	resp, err := c.HTTPClient().Do(req)
 	if err != nil {
@@ -858,19 +874,9 @@ func (c *Client) CheckIfWatched(ctx context.Context, items []WatchedCheckItem, e
 		return nil, fmt.Errorf("simkl: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		apiErr := &APIError{StatusCode: resp.StatusCode}
-		if jsonErr := json.Unmarshal(body, apiErr); jsonErr != nil {
-			apiErr.RawBody = string(body)
-		}
-		return nil, apiErr
-	}
-
 	var out []WatchedCheckResult
-	if len(body) > 0 {
-		if err := json.Unmarshal(body, &out); err != nil {
-			return nil, fmt.Errorf("simkl: decode response: %w", err)
-		}
+	if err := decodeResponse(resp.StatusCode, body, &out); err != nil {
+		return nil, err
 	}
 	return out, nil
 }

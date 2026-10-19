@@ -91,24 +91,20 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("shoko: HTTP %d", e.StatusCode)
 }
 
-func (c *Client) doRequest(ctx context.Context, method, path string, body, dst any) error {
-	u, err := url.Parse(c.rawBaseURL + path)
-	if err != nil {
-		return fmt.Errorf("shoko: parse URL: %w", err)
-	}
-
+// buildRequest creates an authorized HTTP request with an optional JSON body.
+func (c *Client) buildRequest(ctx context.Context, method, rawURL string, body any) (*http.Request, error) {
 	var reqBody io.Reader = http.NoBody
 	if body != nil {
 		data, err := json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("shoko: marshal request: %w", err)
+			return nil, fmt.Errorf("shoko: marshal request: %w", err)
 		}
 		reqBody = bytes.NewReader(data)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, u.String(), reqBody)
+	req, err := http.NewRequestWithContext(ctx, method, rawURL, reqBody)
 	if err != nil {
-		return fmt.Errorf("shoko: create request: %w", err)
+		return nil, fmt.Errorf("shoko: create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -116,6 +112,41 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body, dst a
 	req.Header.Set("User-Agent", c.userAgent)
 	if c.apiKey != "" {
 		req.Header.Set("Apikey", c.apiKey)
+	}
+	return req, nil
+}
+
+// newAPIError constructs an APIError from an HTTP error status and body.
+func newAPIError(statusCode int, respBody []byte) error {
+	apiErr := &APIError{StatusCode: statusCode}
+	if jsonErr := json.Unmarshal(respBody, apiErr); jsonErr != nil {
+		apiErr.RawBody = string(respBody)
+	}
+	return apiErr
+}
+
+// parseResponse decodes an HTTP response body or constructs an APIError.
+func parseResponse(statusCode int, respBody []byte, dst any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		return newAPIError(statusCode, respBody)
+	}
+	if dst != nil && len(respBody) > 0 {
+		if err := json.Unmarshal(respBody, dst); err != nil {
+			return fmt.Errorf("shoko: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
+func (c *Client) doRequest(ctx context.Context, method, path string, body, dst any) error {
+	u, err := url.Parse(c.rawBaseURL + path)
+	if err != nil {
+		return fmt.Errorf("shoko: parse URL: %w", err)
+	}
+
+	req, err := c.buildRequest(ctx, method, u.String(), body)
+	if err != nil {
+		return err
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -129,20 +160,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body, dst a
 		return fmt.Errorf("shoko: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		apiErr := &APIError{StatusCode: resp.StatusCode}
-		if jsonErr := json.Unmarshal(respBody, apiErr); jsonErr != nil {
-			apiErr.RawBody = string(respBody)
-		}
-		return apiErr
-	}
-
-	if dst != nil && len(respBody) > 0 {
-		if err := json.Unmarshal(respBody, dst); err != nil {
-			return fmt.Errorf("shoko: decode response: %w", err)
-		}
-	}
-	return nil
+	return parseResponse(resp.StatusCode, respBody, dst)
 }
 
 func (c *Client) get(ctx context.Context, path string, params url.Values, dst any) error {

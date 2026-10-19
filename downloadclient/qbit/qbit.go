@@ -82,6 +82,20 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("qbit: HTTP %d", e.StatusCode)
 }
 
+// parseResponse checks the status code and unmarshals the response body.
+func parseResponse(statusCode int, respBody []byte, dst any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		return &APIError{StatusCode: statusCode, RawBody: string(respBody)}
+	}
+
+	if dst != nil && len(respBody) > 0 {
+		if err := json.Unmarshal(respBody, dst); err != nil {
+			return fmt.Errorf("qbit: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
 func (c *Client) doRequest(ctx context.Context, method, path string, form url.Values, dst any) error {
 	var body io.Reader
 	if form != nil {
@@ -111,16 +125,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, form url.Va
 		return fmt.Errorf("qbit: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{StatusCode: resp.StatusCode, RawBody: string(respBody)}
-	}
-
-	if dst != nil && len(respBody) > 0 {
-		if err := json.Unmarshal(respBody, dst); err != nil {
-			return fmt.Errorf("qbit: decode response: %w", err)
-		}
-	}
-	return nil
+	return parseResponse(resp.StatusCode, respBody, dst)
 }
 
 func (c *Client) get(ctx context.Context, path string, params url.Values, dst any) error {
@@ -211,35 +216,40 @@ func (c *Client) DefaultSavePath(ctx context.Context) (string, error) {
 
 // Torrents.
 
+// setListOptions encodes non-empty list options into query parameters.
+func setListOptions(p url.Values, opts *ListOptions) {
+	if opts.Filter != "" {
+		p.Set("filter", opts.Filter)
+	}
+	if opts.Category != "" {
+		p.Set("category", opts.Category)
+	}
+	if opts.Tag != "" {
+		p.Set("tag", opts.Tag)
+	}
+	if opts.Sort != "" {
+		p.Set("sort", opts.Sort)
+	}
+	if opts.Reverse {
+		p.Set("reverse", "true")
+	}
+	if opts.Limit > 0 {
+		p.Set("limit", strconv.Itoa(opts.Limit))
+	}
+	if opts.Offset > 0 {
+		p.Set("offset", strconv.Itoa(opts.Offset))
+	}
+	if opts.Hashes != "" {
+		p.Set("hashes", opts.Hashes)
+	}
+}
+
 // ListTorrents returns a list of torrents matching the given options.
 // Pass nil for opts to list all torrents.
 func (c *Client) ListTorrents(ctx context.Context, opts *ListOptions) ([]Torrent, error) {
 	p := url.Values{}
 	if opts != nil {
-		if opts.Filter != "" {
-			p.Set("filter", opts.Filter)
-		}
-		if opts.Category != "" {
-			p.Set("category", opts.Category)
-		}
-		if opts.Tag != "" {
-			p.Set("tag", opts.Tag)
-		}
-		if opts.Sort != "" {
-			p.Set("sort", opts.Sort)
-		}
-		if opts.Reverse {
-			p.Set("reverse", "true")
-		}
-		if opts.Limit > 0 {
-			p.Set("limit", strconv.Itoa(opts.Limit))
-		}
-		if opts.Offset > 0 {
-			p.Set("offset", strconv.Itoa(opts.Offset))
-		}
-		if opts.Hashes != "" {
-			p.Set("hashes", opts.Hashes)
-		}
+		setListOptions(p, opts)
 	}
 	var out []Torrent
 	if err := c.get(ctx, "/api/v2/torrents/info", p, &out); err != nil {
@@ -302,16 +312,8 @@ func (c *Client) AddTorrentURLs(ctx context.Context, urls []string, opts *AddTor
 	return c.post(ctx, "/api/v2/torrents/add", form)
 }
 
-func setAddOptions(form url.Values, opts *AddTorrentOptions) {
-	if opts.SavePath != "" {
-		form.Set("savepath", opts.SavePath)
-	}
-	if opts.Category != "" {
-		form.Set("category", opts.Category)
-	}
-	if opts.Tags != "" {
-		form.Set("tags", opts.Tags)
-	}
+// setAddFlags encodes boolean options into form values.
+func setAddFlags(form url.Values, opts *AddTorrentOptions) {
 	if opts.SkipChecking {
 		form.Set("skip_checking", "true")
 	}
@@ -320,15 +322,6 @@ func setAddOptions(form url.Values, opts *AddTorrentOptions) {
 	}
 	if opts.RootFolder {
 		form.Set("root_folder", "true")
-	}
-	if opts.Rename != "" {
-		form.Set("rename", opts.Rename)
-	}
-	if opts.UpLimit > 0 {
-		form.Set("upLimit", strconv.FormatInt(opts.UpLimit, 10))
-	}
-	if opts.DlLimit > 0 {
-		form.Set("dlLimit", strconv.FormatInt(opts.DlLimit, 10))
 	}
 	if opts.AutoTMM {
 		form.Set("autoTMM", "true")
@@ -339,6 +332,33 @@ func setAddOptions(form url.Values, opts *AddTorrentOptions) {
 	if opts.FirstLastPiecePrio {
 		form.Set("firstLastPiecePrio", "true")
 	}
+}
+
+// setAddLimitsAndMetadata encodes string and limit options into form values.
+func setAddLimitsAndMetadata(form url.Values, opts *AddTorrentOptions) {
+	if opts.SavePath != "" {
+		form.Set("savepath", opts.SavePath)
+	}
+	if opts.Category != "" {
+		form.Set("category", opts.Category)
+	}
+	if opts.Tags != "" {
+		form.Set("tags", opts.Tags)
+	}
+	if opts.Rename != "" {
+		form.Set("rename", opts.Rename)
+	}
+	if opts.UpLimit > 0 {
+		form.Set("upLimit", strconv.FormatInt(opts.UpLimit, 10))
+	}
+	if opts.DlLimit > 0 {
+		form.Set("dlLimit", strconv.FormatInt(opts.DlLimit, 10))
+	}
+}
+
+func setAddOptions(form url.Values, opts *AddTorrentOptions) {
+	setAddLimitsAndMetadata(form, opts)
+	setAddFlags(form, opts)
 }
 
 // DeleteTorrents removes torrents by their hashes.

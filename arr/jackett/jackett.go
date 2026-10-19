@@ -149,47 +149,84 @@ func (c *Client) torznabSearch(ctx context.Context, indexer string, params url.V
 	return convertItems(rss.Channel.Items), nil
 }
 
+// applyNumericAttr parses and assigns numeric RSS attributes.
+func applyNumericAttr(r *SearchResult, name, val string) bool {
+	switch name {
+	case "seeders":
+		r.Seeders, _ = strconv.Atoi(val)
+		return true
+	case "peers":
+		r.Peers, _ = strconv.Atoi(val)
+		return true
+	default:
+		return false
+	}
+}
+
+// applyMetaAttr assigns metadata-related RSS attributes.
+func applyMetaAttr(r *SearchResult, name, val string) bool {
+	switch name {
+	case "category":
+		r.Category = val
+	case "description":
+		r.CategoryDesc = val
+	case "infohash":
+		r.InfoHash = val
+	case "magneturl":
+		r.MagnetURL = val
+	case "indexer":
+		r.Indexer = val
+	default:
+		return false
+	}
+	return true
+}
+
+// applyRatioAttr assigns ratio and traffic-related RSS attributes.
+func applyRatioAttr(r *SearchResult, name, val string) {
+	switch name {
+	case "minimumratio":
+		r.MinimumRatio = val
+	case "minimumseedtime":
+		r.MinimumSeedTime = val
+	case "downloadvolumefactor":
+		r.DownloadVolumeFactor = val
+	case "uploadvolumefactor":
+		r.UploadVolumeFactor = val
+	}
+}
+
+// applyAttr maps an RSS attribute onto a SearchResult.
+func applyAttr(r *SearchResult, a rssAttr) {
+	if a.XMLName.Local != "attr" {
+		return
+	}
+	if applyNumericAttr(r, a.Name, a.Value) || applyMetaAttr(r, a.Name, a.Value) {
+		return
+	}
+	applyRatioAttr(r, a.Name, a.Value)
+}
+
+// convertItem translates an individual RSS item into a SearchResult.
+func convertItem(item rssItem) SearchResult {
+	r := SearchResult{
+		Title:    item.Title,
+		GUID:     item.GUID,
+		Link:     item.Link,
+		Comments: item.Comments,
+		PubDate:  item.PubDate,
+		Size:     item.Size,
+	}
+	for _, a := range item.Attrs {
+		applyAttr(&r, a)
+	}
+	return r
+}
+
 func convertItems(items []rssItem) []SearchResult {
 	results := make([]SearchResult, 0, len(items))
 	for _, item := range items {
-		r := SearchResult{
-			Title:    item.Title,
-			GUID:     item.GUID,
-			Link:     item.Link,
-			Comments: item.Comments,
-			PubDate:  item.PubDate,
-			Size:     item.Size,
-		}
-		for _, a := range item.Attrs {
-			if a.XMLName.Local != "attr" {
-				continue
-			}
-			switch a.Name {
-			case "category":
-				r.Category = a.Value
-			case "description":
-				r.CategoryDesc = a.Value
-			case "seeders":
-				r.Seeders, _ = strconv.Atoi(a.Value)
-			case "peers":
-				r.Peers, _ = strconv.Atoi(a.Value)
-			case "infohash":
-				r.InfoHash = a.Value
-			case "magneturl":
-				r.MagnetURL = a.Value
-			case "minimumratio":
-				r.MinimumRatio = a.Value
-			case "minimumseedtime":
-				r.MinimumSeedTime = a.Value
-			case "downloadvolumefactor":
-				r.DownloadVolumeFactor = a.Value
-			case "uploadvolumefactor":
-				r.UploadVolumeFactor = a.Value
-			case "indexer":
-				r.Indexer = a.Value
-			}
-		}
-		results = append(results, r)
+		results = append(results, convertItem(item))
 	}
 	return results
 }

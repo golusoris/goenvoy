@@ -79,15 +79,16 @@ linters:
     - gomodguard_v2
 
   settings:
+    # HISS-04 engine limits (goenvoy#76): cyclomatic 10, cognitive 12, 60 lines, 50 statements.
     gocyclo:
-      min-complexity: 18
+      min-complexity: 10
     funlen:
-      lines: 120
-      statements: 60
+      lines: 60
+      statements: 50
     gocognit:
-      min-complexity: 30
+      min-complexity: 12
     cyclop:
-      max-complexity: 18
+      max-complexity: 10
     gosec:
       excludes:
         - G104  # errors handled via wrapcheck/errcheck instead
@@ -183,10 +184,6 @@ linters:
           - goconst
           - errcheck
           - gosec
-          - funlen
-          - gocyclo
-          - gocognit
-          - cyclop
           - forbidigo    # tests may print for debugging
           - wrapcheck
           - noctx
@@ -199,6 +196,340 @@ linters:
           - forbidigo
           - wrapcheck
           - gosec
+      # praetor:generated-exceptions begin (praetorctl linters exceptions; never edit by hand)
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/bazarr/bazarr_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/bazarr/bazarr_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/bazarr/bazarr_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/client_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/client_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/client_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/jackett/jackett_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/jackett/jackett_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/jackett/jackett_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/lidarr/queue_options_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/lidarr/queue_options_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/nzbhydra/nzbhydra_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/nzbhydra/nzbhydra_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/nzbhydra/nzbhydra_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/radarr/manualimport_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/radarr/manualimport_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/radarr/manualimport_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/radarr/queue_options_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/radarr/queue_options_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/radarr/radarr_coverage_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/radarr/radarr_coverage_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/radarr/radarr_coverage_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/radarr/radarr_coverage_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/readarr/queue_options_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/readarr/queue_options_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/resource_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/resource_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/resource_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/seerr/seerr_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/seerr/seerr_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/seerr/seerr_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/seerr/seerr_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/seerr/server_id_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/sonarr/manualimport_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/sonarr/manualimport_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/sonarr/manualimport_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/sonarr/queue_options_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/sonarr/queue_options_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^arr/whisparr/whisparr_extra_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^downloadclient/rtorrent/rtorrent_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^downloadclient/transmission/transmission_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/anime/anidb/anidb_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/anime/anidb/anidb_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/anime/anidb/anidb_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/anime/anidb/anidb_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/anime/kitsu/kitsu_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/anime/kitsu/kitsu_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/anime/kitsu/kitsu_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/anime/mal/mal_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/anime/mal/mal_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/anime/mal/mal_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/client_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/game/hasheous/hasheous_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/game/hasheous/hasheous_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/game/hasheous/hasheous_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/game/hasheous/hasheous_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/game/launchbox/launchbox_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/game/rawg/rawg_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/game/rawg/rawg_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/game/rawg/rawg_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/game/screenscraper/screenscraper_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/game/screenscraper/screenscraper_test\.go$
+        linters:
+          - funlen
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/game/screenscraper/screenscraper_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/game/screenscraper/screenscraper_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/music/spotify/spotify_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/music/spotify/spotify_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/music/spotify/spotify_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/tracking/letterboxd/letterboxd_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/tracking/letterboxd/letterboxd_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/tracking/letterboxd/letterboxd_test\.go$
+        linters:
+          - gocyclo
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/tracking/listenbrainz/listenbrainz_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^metadata/tracking/trakt/trakt_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^tools/flaresolverr/flaresolverr_test\.go$
+        linters:
+          - gocognit
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^tools/go/upstreamspec/manifest_test\.go$
+        linters:
+          - cyclop
+      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      - path: ^tools/go/upstreamspec/manifest_test\.go$
+        linters:
+          - gocyclo
+      # praetor:generated-exceptions end
 
 formatters:
   enable:

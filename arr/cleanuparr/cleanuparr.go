@@ -92,6 +92,27 @@ func (c *Client) GetStrikes(ctx context.Context, page, pageSize int) (*StrikePag
 	return &out, nil
 }
 
+// aggregateStrikeItem updates summary counts for a single download item.
+func aggregateStrikeItem(sum *StrikeSummary, item DownloadItemStrikes) {
+	if item.IsMarkedForRemoval {
+		sum.MarkedForRemoval++
+	}
+	if item.IsRemoved {
+		sum.RemovedDownloads++
+	}
+	if item.IsReturning {
+		sum.ReturningDownloads++
+	}
+}
+
+// aggregateStrikePage processes a page of download item strikes.
+func aggregateStrikePage(sum *StrikeSummary, page *StrikePage) {
+	sum.StruckDownloads = page.TotalCount
+	for _, item := range page.Items {
+		aggregateStrikeItem(sum, item)
+	}
+}
+
 // SummarizeStrikes walks up to 4 pages of strikes with pageSize 500
 // (HISS-02 scalar bound to avoid unbounded pagination) and aggregates
 // strike counts across all struck downloads.
@@ -102,18 +123,7 @@ func (c *Client) SummarizeStrikes(ctx context.Context) (*StrikeSummary, error) {
 		if err != nil {
 			return nil, fmt.Errorf("cleanuparr: summarize strikes: %w", err)
 		}
-		sum.StruckDownloads = out.TotalCount
-		for _, item := range out.Items {
-			if item.IsMarkedForRemoval {
-				sum.MarkedForRemoval++
-			}
-			if item.IsRemoved {
-				sum.RemovedDownloads++
-			}
-			if item.IsReturning {
-				sum.ReturningDownloads++
-			}
-		}
+		aggregateStrikePage(&sum, out)
 		if page >= out.TotalPages {
 			break
 		}

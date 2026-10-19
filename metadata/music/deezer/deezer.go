@@ -50,6 +50,30 @@ func NewWithToken(accessToken string, opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc, accessToken: accessToken}
 }
 
+// decodeResponse verifies HTTP status, checks for Deezer inline errors, and unmarshals.
+func decodeResponse(resp *http.Response, body []byte, v any) error {
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+	}
+
+	// Deezer returns 200 with error field for API-level errors.
+	var errResp errorResp
+	if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error != nil {
+		return &APIError{
+			StatusCode: resp.StatusCode,
+			Status:     resp.Status,
+			Type:       errResp.Error.Type,
+			Message:    errResp.Error.Message,
+			Code:       errResp.Error.Code,
+		}
+	}
+
+	if err := json.Unmarshal(body, v); err != nil {
+		return fmt.Errorf("deezer: decode response: %w", err)
+	}
+	return nil
+}
+
 func (c *Client) get(ctx context.Context, path string, v any) error {
 	u := c.BaseURL() + path
 
@@ -78,26 +102,7 @@ func (c *Client) get(ctx context.Context, path string, v any) error {
 		return fmt.Errorf("deezer: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
-	}
-
-	// Deezer returns 200 with error field for API-level errors.
-	var errResp errorResp
-	if err := json.Unmarshal(body, &errResp); err == nil && errResp.Error != nil {
-		return &APIError{
-			StatusCode: resp.StatusCode,
-			Status:     resp.Status,
-			Type:       errResp.Error.Type,
-			Message:    errResp.Error.Message,
-			Code:       errResp.Error.Code,
-		}
-	}
-
-	if err := json.Unmarshal(body, v); err != nil {
-		return fmt.Errorf("deezer: decode response: %w", err)
-	}
-	return nil
+	return decodeResponse(resp, body, v)
 }
 
 // Search searches for tracks.

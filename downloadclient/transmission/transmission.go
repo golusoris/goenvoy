@@ -124,6 +124,32 @@ func (e *HTTPError) Error() string {
 	return fmt.Sprintf("transmission: HTTP %d", e.StatusCode)
 }
 
+// parseRPCResponse decodes a JSON-RPC response and extracts the arguments.
+func parseRPCResponse(respBody []byte, dst any) error {
+	var rpcResp rpcResponse
+	if err := json.Unmarshal(respBody, &rpcResp); err != nil {
+		return fmt.Errorf("transmission: decode response: %w", err)
+	}
+
+	if rpcResp.Result != "success" {
+		return &APIError{Result: rpcResp.Result}
+	}
+
+	if dst != nil && len(rpcResp.Arguments) > 0 {
+		if err := json.Unmarshal(rpcResp.Arguments, dst); err != nil {
+			return fmt.Errorf("transmission: decode arguments: %w", err)
+		}
+	}
+	return nil
+}
+
+// updateSession stores the new session ID returned in response headers.
+func (c *Client) updateSession(h http.Header) {
+	c.mu.Lock()
+	c.sessionID = h.Get(sessionHeader)
+	c.mu.Unlock()
+}
+
 func (c *Client) call(ctx context.Context, method string, args, dst any) error {
 	reqBody := rpcRequest{Method: method, Arguments: args}
 	buf, err := json.Marshal(reqBody)
@@ -145,10 +171,7 @@ func (c *Client) call(ctx context.Context, method string, args, dst any) error {
 		}
 
 		if resp.StatusCode == http.StatusConflict {
-			// Update session ID and retry.
-			c.mu.Lock()
-			c.sessionID = resp.Header.Get(sessionHeader)
-			c.mu.Unlock()
+			c.updateSession(resp.Header)
 			continue
 		}
 
@@ -156,21 +179,7 @@ func (c *Client) call(ctx context.Context, method string, args, dst any) error {
 			return &HTTPError{StatusCode: resp.StatusCode, RawBody: string(respBody)}
 		}
 
-		var rpcResp rpcResponse
-		if err := json.Unmarshal(respBody, &rpcResp); err != nil {
-			return fmt.Errorf("transmission: decode response: %w", err)
-		}
-
-		if rpcResp.Result != "success" {
-			return &APIError{Result: rpcResp.Result}
-		}
-
-		if dst != nil && len(rpcResp.Arguments) > 0 {
-			if err := json.Unmarshal(rpcResp.Arguments, dst); err != nil {
-				return fmt.Errorf("transmission: decode arguments: %w", err)
-			}
-		}
-		return nil
+		return parseRPCResponse(respBody, dst)
 	}
 	return &HTTPError{StatusCode: http.StatusConflict, RawBody: "session ID negotiation failed"}
 }
@@ -218,25 +227,30 @@ func (c *Client) GetTorrents(ctx context.Context, ids []int) ([]Torrent, error) 
 	return result.Torrents, nil
 }
 
+// populateAddTorrentArgs sets optional fields for adding a torrent.
+func populateAddTorrentArgs(args map[string]any, opts *AddTorrentOptions) {
+	if opts.DownloadDir != "" {
+		args["download-dir"] = opts.DownloadDir
+	}
+	if opts.Paused {
+		args["paused"] = true
+	}
+	if opts.PeerLimit > 0 {
+		args["peer-limit"] = opts.PeerLimit
+	}
+	if opts.BandwidthPriority != 0 {
+		args["bandwidthPriority"] = opts.BandwidthPriority
+	}
+	if len(opts.Labels) > 0 {
+		args["labels"] = opts.Labels
+	}
+}
+
 // AddTorrentURL adds a torrent by URL or magnet link.
 func (c *Client) AddTorrentURL(ctx context.Context, url string, opts *AddTorrentOptions) (*AddTorrentResult, error) {
 	args := map[string]any{"filename": url}
 	if opts != nil {
-		if opts.DownloadDir != "" {
-			args["download-dir"] = opts.DownloadDir
-		}
-		if opts.Paused {
-			args["paused"] = true
-		}
-		if opts.PeerLimit > 0 {
-			args["peer-limit"] = opts.PeerLimit
-		}
-		if opts.BandwidthPriority != 0 {
-			args["bandwidthPriority"] = opts.BandwidthPriority
-		}
-		if len(opts.Labels) > 0 {
-			args["labels"] = opts.Labels
-		}
+		populateAddTorrentArgs(args, opts)
 	}
 	var result struct {
 		Added     *AddTorrentResult `json:"torrent-added"`
