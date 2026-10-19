@@ -10,31 +10,31 @@ Before concluding any turn:
 make verify-all
 ```
 
-`make verify-all` fails until project build + test commands exist; reasons in footer.
+`make verify-all` = repository-owned gate; adoption kept it unread + unexecuted. Steps live in `Makefile`: read there, never restate. Footer commands = project markers only.
 Pass = exit 0. Signed Ed25519 Exit-0 receipt only from `praetorctl gate run`; report no receipt it did not mint. Fail -> SARIF diagnostic distillation (<= 1500 tokens).
 
 ## Core Directives & Invariants
 
-Adopted check = coverage state + mechanism; else audit scanner; else `unknown`. Gates = (generated `make verify-all` + praetor `lefthook.yml`); edits not reflected.
+Adopted check = coverage state + mechanism; else audit scanner; else `unknown`. Gates = (praetor `lefthook.yml`); edits not reflected.
 
 | Invariant | Rule | Adopted check | On fail |
 | :--- | :--- | :--- | :--- |
-| **HISS-01** control flow | recursion prohibited; call graph = DAG; Go, C/C++: zero `goto` | `praetorctl audit` HISS scan in verify-all + lefthook pre-commit/pre-push: Go `goto`, recursion + plain-function call cycles; Rust, Python direct recursion; C `goto` | new finding fails verify-all, blocks commit, blocks push |
-| **HISS-02** loops, I/O | scalar upper bound on every loop; explicit deadline on every I/O call; Go: I/O takes `context.Context` deadline | `praetorctl audit` HISS scan in verify-all + lefthook pre-commit/pre-push: unbounded loop shapes in Go, C, Rust, Python; I/O deadlines unchecked | new finding fails verify-all, blocks commit, blocks push |
+| **HISS-01** control flow | recursion prohibited; call graph = DAG; Go, C/C++: zero `goto` | `praetorctl audit` HISS scan in lefthook pre-commit/pre-push: Go `goto`, recursion + plain-function call cycles; Rust, Python direct recursion; C `goto` | new finding blocks commit, blocks push |
+| **HISS-02** loops, I/O | scalar upper bound on every loop; explicit deadline on every I/O call; Go: I/O takes `context.Context` deadline | `praetorctl audit` HISS scan in lefthook pre-commit/pre-push: unbounded loop shapes in Go, C, Rust, Python; I/O deadlines unchecked | new finding blocks commit, blocks push |
 | **HISS-03** memory | Go, Rust, C/C++: zero heap allocation in hot simulation/tick loops | unknown | advisory |
-| **HISS-04** complexity | McCabe cyclomatic <= 10, cognitive <= 12, statements <= 45; func LOC <= 60 (audit ceiling) | `praetorctl audit` HISS scan in verify-all + lefthook pre-commit/pre-push: function length only; other caps need repository linter | new finding fails verify-all, blocks commit, blocks push |
+| **HISS-04** complexity | McCabe cyclomatic <= 10, cognitive <= 12, statements <= 45; func LOC <= 60 (audit ceiling) | `praetorctl audit` HISS scan in lefthook pre-commit/pre-push: function length only; other caps need repository linter | new finding blocks commit, blocks push |
 | **HISS-05** scoping | declare every identifier in smallest lexical scope serving it | unknown | advisory |
 | **HISS-06** concurrency | explicit scalar upper bound on every worker pool + concurrent fan-out | unknown | advisory |
-| **HISS-07** errors | every error handled or wrapped with context; Go: zero unchecked `error` return; Rust: zero `.unwrap()` / `.expect()` outside tests | `praetorctl audit` HISS scan in verify-all + lefthook pre-commit/pre-push: partial in Go, Rust, Python | new finding fails verify-all, blocks commit, blocks push |
-| **HISS-08** determinism | zero dynamic code execution (`eval` / `exec`); C/C++: zero banned libc (`gets` / `strcpy` / `sprintf`); a process signal's target is bounded above 1 (`killpg`, `kill(-pid)`, Go `syscall.Kill`) | `praetorctl audit` HISS scan in verify-all + lefthook pre-commit/pre-push: C banned calls, Python `eval` / `exec`, Go `syscall.Kill` / `unix.Kill` | new finding fails verify-all, blocks commit, blocks push |
-| **HISS-09** reference safety | Go, Rust: `// SAFETY:` proof before every `unsafe` block | `praetorctl audit` HISS scan in verify-all + lefthook pre-commit/pre-push: Go, Rust `unsafe` without proof; C, Python unchecked | new finding fails verify-all, blocks commit, blocks push |
+| **HISS-07** errors | every error handled or wrapped with context; Go: zero unchecked `error` return; Rust: zero `.unwrap()` / `.expect()` outside tests | `praetorctl audit` HISS scan in lefthook pre-commit/pre-push: partial in Go, Rust, Python | new finding blocks commit, blocks push |
+| **HISS-08** determinism | zero dynamic code execution (`eval` / `exec`); C/C++: zero banned libc (`gets` / `strcpy` / `sprintf`); a process signal's target is bounded above 1 (`killpg`, `kill(-pid)`, Go `syscall.Kill`) | `praetorctl audit` HISS scan in lefthook pre-commit/pre-push: C banned calls, Python `eval` / `exec`, Go `syscall.Kill` / `unix.Kill` | new finding blocks commit, blocks push |
+| **HISS-09** reference safety | Go, Rust: `// SAFETY:` proof before every `unsafe` block | `praetorctl audit` HISS scan in lefthook pre-commit/pre-push: Go, Rust `unsafe` without proof; C, Python unchecked | new finding blocks commit, blocks push |
 | **HISS-10** warnings | zero warnings: compiler, linter, format sweeps | `go vet` + `gofmt` in lefthook pre-commit: Go only | vet finding blocks commit |
 | **HISS-11** supply chain | pinned lockfiles; zero floating tags; signed provenance | unknown | advisory |
 | **HISS-12** secrets | zero credentials in Git history | unknown | advisory |
-| **HISS-13** debt ratchet | recorded infractions never grow vs committed baseline | `praetorctl audit` ratchet vs `.standards-baseline.json` in verify-all + lefthook pre-commit/pre-push | growth fails verify-all, blocks commit, blocks push |
+| **HISS-13** debt ratchet | recorded infractions never grow vs committed baseline | `praetorctl audit` ratchet vs `.standards-baseline.json` in lefthook pre-commit/pre-push | growth blocks commit, blocks push |
 | **HISS-14** append-only ABI | public API append-only; breaking change = `!` subject + `Migration:` footer | unknown | advisory |
 | **HISS-15** 3D testing | positive + negative + boundary tests, every public interface | unknown | advisory |
-| **HISS-16** context integrity | single canonical `AGENTS.md`; vendor files compiled via `praetorctl compile-context` | `praetorctl compile-context --verify` in verify-all + lefthook pre-commit | drift fails verify-all, blocks commit |
+| **HISS-16** context integrity | single canonical `AGENTS.md`; vendor files compiled via `praetorctl compile-context` | `praetorctl compile-context --verify` in lefthook pre-commit | drift blocks commit |
 | **HISS-17** state ledger | turn start `praetorctl state status`; turn end `praetorctl state sync .` | `praetorctl state sync .` in lefthook post-commit | none; records only |
 | **HISS-18** CI efficiency | diff-aware gating via `praetorctl ci filter` | unknown | advisory |
 | **HISS-19** reuse before writing | one behavior = one implementation; extend or call existing code | unknown | advisory |
@@ -81,8 +81,8 @@ Register follows the audience, then the task label of your brief (`register:` in
 
 ```bash
 # Fast local test suite
-# Project verification unavailable: No supported build-system marker or explicit test runner was found; define and exercise a project verify-all target. A required build or test command is absent; define and exercise the project's verify-all contract.
-exit 1
+# Declared commands only; run them before claiming application verification.
+'make' 'verify-all'
 
 # Recompile and verify cross-agent context outputs
 praetorctl compile-context --verify
@@ -121,7 +121,7 @@ make verify-all
 8. **Every merged commit: 0 lint · 0 gosec · 0 govulncheck · race-green** — **per module**. `//nolint` requires same-line justification comment.
 9. **Breaking public API requires `Migration:` footer** in commit body with before/after Go snippets. CI `apidiff` runs against last tag.
 
-See [docs/principles.md](docs/principles.md) (adapted §2 contract) for full coding / security / testing rules.
+See [docs/principles.md](../docs/principles.md) (adapted §2 contract) for full coding / security / testing rules.
 
 ## Repository layout
 
@@ -205,13 +205,13 @@ And repo-wide:
 
 ## When in doubt
 
-Read [docs/principles.md](docs/principles.md) for full contract, then per-category `AGENTS.md` for area touched.
+Read [docs/principles.md](../docs/principles.md) for full contract, then per-category `AGENTS.md` for area touched.
 
 <!-- Folded by praetorctl adopt from CLAUDE.md: text that file held and AGENTS.md lacked. -->
 
 # Claude Code guide — goenvoy
 
-> Claude Code-specific guide. For cross-tool conventions read [AGENTS.md](AGENTS.md) first; file extends it.
+> Claude Code-specific guide. For cross-tool conventions read [AGENTS.md](../AGENTS.md) first; file extends it.
 
 ## Skills available
 
@@ -244,7 +244,7 @@ Located in `.claude/hooks/`:
 
 ## Project principles
 
-Read [docs/principles.md](docs/principles.md) first. Quick hitlist:
+Read [docs/principles.md](../docs/principles.md) first. Quick hitlist:
 
 - Pure stdlib. No imports outside `net/http`, `encoding/json`, `encoding/xml`, `crypto/*`, `context`, `net/url`, `net/http/httptest`.
 - `New(baseURL, apiKey string, opts ...Option) (*Client, error)` constructor shape, unless module `AGENTS.md` documents public-key-only or OAuth exception.

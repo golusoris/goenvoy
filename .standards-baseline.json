@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "generated_at": "2026-10-19T00:43:15Z",
+  "generated_at": "2026-10-19T10:42:05Z",
   "repository": "golusoris/goenvoy",
-  "commit_sha": "f13b03de8a22bd90b5b3950fef98e8984537e972",
-  "total_infractions": 50,
+  "commit_sha": "f05f703b49845109a2b52989e612c5be0ee786b5",
+  "total_infractions": 49,
   "infractions": [
     {
       "rule_id": "HISS-07",
@@ -16,7 +16,7 @@
     {
       "rule_id": "HISS-02",
       "file_path": ".github/workflows/ci.yml",
-      "line_number": 132,
+      "line_number": 172,
       "message": "Unbounded loop in shell without an explicit scalar bound",
       "anchor": "text:a5a4c80790a6",
       "fingerprint": ".github/workflows/ci.yml:HISS-02:text:a5a4c80790a6#1"
@@ -24,7 +24,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": ".github/workflows/ci.yml",
-      "line_number": 221,
+      "line_number": 261,
       "message": "'|| true' discards the command's failure; handle the exit status or test the condition instead",
       "anchor": "text:4062dd3405ff",
       "fingerprint": ".github/workflows/ci.yml:HISS-07:text:4062dd3405ff#1"
@@ -32,7 +32,7 @@
     {
       "rule_id": "HISS-08",
       "file_path": ".github/workflows/ci.yml",
-      "line_number": 297,
+      "line_number": 337,
       "message": "Banned dynamic eval execution in shell",
       "anchor": "text:27c826c28ff9",
       "fingerprint": ".github/workflows/ci.yml:HISS-08:text:27c826c28ff9#1"
@@ -40,7 +40,7 @@
     {
       "rule_id": "HISS-08",
       "file_path": ".github/workflows/ci.yml",
-      "line_number": 309,
+      "line_number": 349,
       "message": "Banned dynamic eval execution in shell",
       "anchor": "text:27c826c28ff9",
       "fingerprint": ".github/workflows/ci.yml:HISS-08:text:27c826c28ff9#2"
@@ -48,7 +48,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": "anime/shoko/shoko.go",
-      "line_number": 125,
+      "line_number": 156,
       "message": "Legacy unchecked error assignment",
       "anchor": "fn:Client.doRequest",
       "fingerprint": "anime/shoko/shoko.go:HISS-07:fn:Client.doRequest#1"
@@ -96,7 +96,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": "downloadclient/deluge/deluge.go",
-      "line_number": 113,
+      "line_number": 132,
       "message": "Legacy unchecked error assignment",
       "anchor": "fn:Client.call",
       "fingerprint": "downloadclient/deluge/deluge.go:HISS-07:fn:Client.call#1"
@@ -104,7 +104,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": "downloadclient/nzbget/nzbget.go",
-      "line_number": 111,
+      "line_number": 130,
       "message": "Legacy unchecked error assignment",
       "anchor": "fn:Client.call",
       "fingerprint": "downloadclient/nzbget/nzbget.go:HISS-07:fn:Client.call#1"
@@ -120,7 +120,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": "downloadclient/sabnzbd/sabnzbd.go",
-      "line_number": 99,
+      "line_number": 118,
       "message": "Legacy unchecked error assignment",
       "anchor": "fn:Client.get",
       "fingerprint": "downloadclient/sabnzbd/sabnzbd.go:HISS-07:fn:Client.get#1"
@@ -128,7 +128,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": "downloadclient/transmission/transmission.go",
-      "line_number": 142,
+      "line_number": 168,
       "message": "Legacy unchecked error assignment",
       "anchor": "fn:Client.call",
       "fingerprint": "downloadclient/transmission/transmission.go:HISS-07:fn:Client.call#1"
@@ -144,7 +144,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": "mediaserver/emby/emby.go",
-      "line_number": 145,
+      "line_number": 172,
       "message": "Legacy unchecked error assignment",
       "anchor": "fn:Client.doRequest",
       "fingerprint": "mediaserver/emby/emby.go:HISS-07:fn:Client.doRequest#1"
@@ -152,7 +152,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": "mediaserver/emby/emby.go",
-      "line_number": 196,
+      "line_number": 210,
       "message": "Legacy unchecked error assignment",
       "anchor": "fn:Client.get",
       "fingerprint": "mediaserver/emby/emby.go:HISS-07:fn:Client.get#1"
@@ -160,7 +160,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": "mediaserver/jellyfin/jellyfin.go",
-      "line_number": 148,
+      "line_number": 175,
       "message": "Legacy unchecked error assignment",
       "anchor": "fn:Client.doRequest",
       "fingerprint": "mediaserver/jellyfin/jellyfin.go:HISS-07:fn:Client.doRequest#1"
@@ -168,7 +168,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": "mediaserver/jellyfin/jellyfin.go",
-      "line_number": 193,
+      "line_number": 207,
       "message": "Legacy unchecked error assignment",
       "anchor": "fn:Client.get",
       "fingerprint": "mediaserver/jellyfin/jellyfin.go:HISS-07:fn:Client.get#1"
@@ -176,10 +176,10 @@
     {
       "rule_id": "HISS-07",
       "file_path": "mediaserver/kavita/kavita.go",
-      "line_number": 130,
+      "line_number": 135,
       "message": "Legacy unchecked error assignment",
-      "anchor": "fn:Client.do",
-      "fingerprint": "mediaserver/kavita/kavita.go:HISS-07:fn:Client.do#1"
+      "anchor": "fn:Client.sendWithRetry",
+      "fingerprint": "mediaserver/kavita/kavita.go:HISS-07:fn:Client.sendWithRetry#1"
     },
     {
       "rule_id": "HISS-07",
@@ -208,7 +208,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": "mediaserver/tdarr/tdarr.go",
-      "line_number": 112,
+      "line_number": 135,
       "message": "Legacy unchecked error assignment",
       "anchor": "fn:Client.do",
       "fingerprint": "mediaserver/tdarr/tdarr.go:HISS-07:fn:Client.do#1"
@@ -216,7 +216,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": "mediaserver/tdarr/tdarr.go",
-      "line_number": 145,
+      "line_number": 159,
       "message": "Legacy unchecked error assignment",
       "anchor": "fn:Client.doText",
       "fingerprint": "mediaserver/tdarr/tdarr.go:HISS-07:fn:Client.doText#1"
@@ -320,7 +320,7 @@
     {
       "rule_id": "HISS-07",
       "file_path": "metadata/music/deezer/deezer.go",
-      "line_number": 74,
+      "line_number": 98,
       "message": "Legacy unchecked error assignment",
       "anchor": "fn:Client.get",
       "fingerprint": "metadata/music/deezer/deezer.go:HISS-07:fn:Client.get#1"
@@ -334,15 +334,6 @@
       "fingerprint": "metadata/music/spotify/spotify.go:HISS-07:fn:Client.get#1"
     },
     {
-      "rule_id": "HISS-04",
-      "file_path": "metadata/tracking/letterboxd/letterboxd.go",
-      "line_number": 65,
-      "symbol": "ensureToken",
-      "message": "Function 'ensureToken' (63 LOC) exceeds HISS-04 / NASA Rule 4 limit of 60 LOC",
-      "anchor": "fn:Client.ensureToken",
-      "fingerprint": "metadata/tracking/letterboxd/letterboxd.go:HISS-04:fn:Client.ensureToken#1"
-    },
-    {
       "rule_id": "HISS-07",
       "file_path": "metadata/tracking/listenbrainz/listenbrainz.go",
       "line_number": 90,
@@ -353,7 +344,7 @@
     {
       "rule_id": "HISS-02",
       "file_path": "metadata/tracking/simkl/simkl.go",
-      "line_number": 523,
+      "line_number": 549,
       "symbol": "Client.PollDeviceToken",
       "message": "Unbounded for loop without an exit condition (for {} / for ;; )",
       "anchor": "fn:Client.PollDeviceToken",
@@ -362,7 +353,7 @@
     {
       "rule_id": "HISS-02",
       "file_path": "metadata/tracking/trakt/trakt.go",
-      "line_number": 1932,
+      "line_number": 1976,
       "symbol": "Client.PollDeviceToken",
       "message": "Unbounded for loop without an exit condition (for {} / for ;; )",
       "anchor": "fn:Client.PollDeviceToken",

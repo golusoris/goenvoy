@@ -52,31 +52,33 @@ register:
         format: json
         selector: invariants.*
 exceptions:
-  - rule: declared-linters
-    tool: gitleaks
-    reason: "category C: gitleaks runs in the pre-commit hook only (.pre-commit-config.yaml); no CI workflow runs it yet; add a CI job, then remove this entry"
-    expires: "2026-10-28"
+  - rule: release-token
+    path: .github/workflows/release-please.yml
+    category: C
+    entered: "2026-10-19"
+    expires: "2026-10-29"
+    reason: 'category C: release-please runs on the workflow token because the golusoris organisation has no release GitHub App yet; creating one is an operator act; replace the token with an actions/create-github-app-token step, then remove this entry'
   - rule: declared-linters
     tool: golangci-lint
-    reason: "category D: golangci-lint runs in the pinned reusable workflow golusoris/golusoris ci-go.yml (ci.yml job ci, golangci-version v2.13.2); audit does not read remote reusable workflows; manifest caps expiry at 90 days"
+    reason: 'category D: golangci-lint runs in the pinned reusable workflow golusoris/golusoris ci-go.yml (ci.yml job ci, golangci-version v2.13.2); audit does not read remote reusable workflows; manifest caps expiry at 90 days'
     expires: "2027-01-16"
   - rule: declared-linters
     tool: trivy
-    reason: "category C: trivy runs in the pre-commit hook only (.pre-commit-config.yaml); no CI workflow runs it yet; add a CI job, then remove this entry"
+    reason: 'category C: trivy runs in the pre-commit hook only (.pre-commit-config.yaml); no CI workflow runs it yet; add a CI job, then remove this entry'
     expires: "2026-10-28"
   - rule: HISS-19
     path: arr/jackett/jackett.go
-    reason: "category D (ledger golusoris-goenvoy-dc-exceptions-20261018): catParams query builder repeated in two separate Go modules; folding needs a new inter-module require; manifest caps expiry at 90 days"
+    reason: 'category D (ledger golusoris-goenvoy-dc-exceptions-20261018): catParams query builder repeated in two separate Go modules; folding needs a new inter-module require; manifest caps expiry at 90 days'
     expires: "2027-01-17"
   - rule: HISS-19
     path: arr/nzbhydra/nzbhydra.go
-    reason: "category D (ledger golusoris-goenvoy-dc-exceptions-20261018): catParams query builder repeated in two separate Go modules; folding needs a new inter-module require; manifest caps expiry at 90 days"
+    reason: 'category D (ledger golusoris-goenvoy-dc-exceptions-20261018): catParams query builder repeated in two separate Go modules; folding needs a new inter-module require; manifest caps expiry at 90 days'
     expires: "2027-01-17"
   - rule: HISS-19
     path: mediaserver/emby/emby.go
-    reason: "category D (ledger golusoris-goenvoy-dc-exceptions-20261018): GetItemsByParent repeated in the emby and jellyfin modules; folding needs a new inter-module require; manifest caps expiry at 90 days"
+    reason: 'category D (ledger golusoris-goenvoy-dc-exceptions-20261018): GetItemsByParent repeated in the emby and jellyfin modules; folding needs a new inter-module require; manifest caps expiry at 90 days'
     expires: "2027-01-17"
   - rule: HISS-19
     path: mediaserver/jellyfin/jellyfin.go
-    reason: "category D (ledger golusoris-goenvoy-dc-exceptions-20261018): GetItemsByParent repeated in the emby and jellyfin modules; folding needs a new inter-module require; manifest caps expiry at 90 days"
+    reason: 'category D (ledger golusoris-goenvoy-dc-exceptions-20261018): GetItemsByParent repeated in the emby and jellyfin modules; folding needs a new inter-module require; manifest caps expiry at 90 days'
     expires: "2027-01-17"

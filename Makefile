@@ -132,8 +132,7 @@ verify-all:
 	@$(PRAETORCTL) compile-context --verify
 	@$(PRAETORCTL) caveman check --configured-sources
 	@$(PRAETORCTL) audit
-	@printf '%s\n' 'Project verification unavailable; see the adoption report and AGENTS.md.' >&2
-	@exit 1
+	@$(MAKE) --no-print-directory ci-all
 
 compile-context:
 	@$(PRAETORCTL) compile-context
