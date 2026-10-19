@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.0](https://github.com/golusoris/goenvoy/compare/arr/v2.5.0...arr/v2.6.0) (2026-10-19)
+
+
+### Features
+
+* **arr:** add GetQueuePage helper ([#154](https://github.com/golusoris/goenvoy/issues/154)) ([7e08689](https://github.com/golusoris/goenvoy/commit/7e086892543896a7edcea681755623728e91b4cc))
+
 ## [2.5.0](https://github.com/golusoris/goenvoy/compare/arr/v2.4.0...arr/v2.5.0) (2026-10-19)
 
 ### Features
