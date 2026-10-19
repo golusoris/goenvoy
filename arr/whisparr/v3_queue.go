@@ -21,19 +21,11 @@ func (c *ClientV3) GetQueueDetailsByMovieID(ctx context.Context, movieIDs []int)
 
 // GetQueueWithOptions returns the download queue using advanced filtering and inclusion options for Whisparr v3.
 func (c *ClientV3) GetQueueWithOptions(ctx context.Context, opts QueueOptions) (*arr.PagingResource[QueueRecord], error) {
-	q := make(url.Values)
-	q.Set("page", strconv.Itoa(opts.Page))
-	q.Set("pageSize", strconv.Itoa(opts.PageSize))
-	if opts.IncludeUnknown {
-		q.Set("includeUnknownMovieItems", "true")
-	}
 	// opts.IncludeParent is ignored because Whisparr v3 (Radarr-based) has no parent entity in queue.
-	if opts.IncludeItem {
-		q.Set("includeMovie", "true")
-	}
-
-	path := "/api/v3/queue?" + q.Encode()
-	return arr.GetOne[arr.PagingResource[QueueRecord]](ctx, c.base, path)
+	return arr.GetQueuePage[QueueRecord](ctx, c.base, "/api/v3/queue", opts.Page, opts.PageSize, map[string]bool{
+		"includeUnknownMovieItems": opts.IncludeUnknown,
+		"includeMovie":             opts.IncludeItem,
+	})
 }
 
 // DeleteQueueItemWithOptions removes an item from the download queue with extended options for Whisparr v3.

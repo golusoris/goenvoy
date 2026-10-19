@@ -3,8 +3,6 @@ package whisparr
 import (
 	"context"
 	"fmt"
-	"net/url"
-	"strconv"
 
 	"github.com/golusoris/goenvoy/arr/v2"
 )
@@ -51,21 +49,11 @@ type QueueDeleteOptions struct {
 
 // GetQueueWithOptions returns the download queue using advanced filtering and inclusion options for Whisparr v2.
 func (c *Client) GetQueueWithOptions(ctx context.Context, opts QueueOptions) (*arr.PagingResource[QueueRecord], error) {
-	q := make(url.Values)
-	q.Set("page", strconv.Itoa(opts.Page))
-	q.Set("pageSize", strconv.Itoa(opts.PageSize))
-	if opts.IncludeUnknown {
-		q.Set("includeUnknownSeriesItems", "true")
-	}
-	if opts.IncludeParent {
-		q.Set("includeSeries", "true")
-	}
-	if opts.IncludeItem {
-		q.Set("includeEpisode", "true")
-	}
-
-	path := "/api/v3/queue?" + q.Encode()
-	return arr.GetOne[arr.PagingResource[QueueRecord]](ctx, c.base, path)
+	return arr.GetQueuePage[QueueRecord](ctx, c.base, "/api/v3/queue", opts.Page, opts.PageSize, map[string]bool{
+		"includeUnknownSeriesItems": opts.IncludeUnknown,
+		"includeSeries":             opts.IncludeParent,
+		"includeEpisode":            opts.IncludeItem,
+	})
 }
 
 // DeleteQueueItemWithOptions removes an item from the download queue with extended options for Whisparr v2.
