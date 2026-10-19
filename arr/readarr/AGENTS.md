@@ -19,3 +19,5 @@ Paged endpoints (queue, history, wanted, blocklist, log) take `page` and `pageSi
 ## API notes
 
 Queue management: `GetQueueWithOptions` and `DeleteQueueItemWithOptions` support advanced filtering, nested inclusion, and extended deletion flags.
+
+Manual import: `GetManualImportCandidates` lists candidates with author and book mapping and rejections; `ManualImportCandidate.ImportFile` maps candidate to `ManualImportFile`; `SendManualImport` queues `ManualImport` command, which imports.
