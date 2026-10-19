@@ -22,6 +22,9 @@ const (
 // ErrNoImportFiles is returned by SendManualImport when no file is given.
 var ErrNoImportFiles = errors.New("lidarr: manual import needs at least one file")
 
+// ErrNoImportUpdates is returned by RescoreManualImport when no item is given.
+var ErrNoImportUpdates = errors.New("lidarr: rescore manual import needs at least one item")
+
 // ErrInvalidImportMode is returned by SendManualImport for a mode outside auto, move and copy.
 var ErrInvalidImportMode = errors.New("lidarr: invalid manual import mode")
 
@@ -84,6 +87,25 @@ type ManualImportFile struct {
 	DisableReleaseSwitching bool         `json:"disableReleaseSwitching"`
 }
 
+// ManualImportUpdate is one item sent to POST /api/v1/manualimport to re-evaluate
+// candidates against a candidate artist, album, or release mapping without importing.
+type ManualImportUpdate struct {
+	ID                      int          `json:"id,omitempty"`
+	Path                    string       `json:"path,omitempty"`
+	Name                    string       `json:"name,omitempty"`
+	ArtistID                int          `json:"artistId,omitempty"`
+	AlbumID                 int          `json:"albumId,omitempty"`
+	AlbumReleaseID          int          `json:"albumReleaseId,omitempty"`
+	TrackIDs                []int        `json:"trackIds,omitempty"`
+	Quality                 QualityModel `json:"quality"`
+	ReleaseGroup            string       `json:"releaseGroup,omitempty"`
+	IndexerFlags            int          `json:"indexerFlags"`
+	DownloadID              string       `json:"downloadId,omitempty"`
+	AdditionalFile          bool         `json:"additionalFile"`
+	ReplaceExistingFiles    bool         `json:"replaceExistingFiles"`
+	DisableReleaseSwitching bool         `json:"disableReleaseSwitching"`
+}
+
 // ImportFile converts the candidate into a command file. It reports false when
 // the candidate is not mapped to an artist and album or has no valid tracks; rejections
 // are left for the caller to judge.
@@ -129,6 +151,17 @@ func (c *Client) GetManualImportCandidates(ctx context.Context, opts ManualImpor
 	q.Set("replaceExistingFiles", strconv.FormatBool(opts.ReplaceExistingFiles))
 
 	return arr.GetList[ManualImportCandidate](ctx, c.base, "/api/v1/manualimport?"+q.Encode())
+}
+
+// RescoreManualImport re-evaluates manual import candidates (POST /api/v1/manualimport)
+// against given artist, album, or release mappings and returns updated candidates
+// with re-evaluated rejections and track mapping.
+// It imports nothing; importing is SendManualImport.
+func (c *Client) RescoreManualImport(ctx context.Context, items []ManualImportUpdate) ([]ManualImportCandidate, error) {
+	if len(items) == 0 {
+		return nil, ErrNoImportUpdates
+	}
+	return arr.PostList[ManualImportCandidate](ctx, c.base, "/api/v1/manualimport", items)
 }
 
 // SendManualImport queues the ManualImport command, which imports the given files.

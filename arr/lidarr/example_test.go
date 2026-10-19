@@ -121,3 +121,27 @@ func ExampleClient_SendManualImport() {
 	}
 	fmt.Printf("command %d queued\n", cmd.ID)
 }
+
+func ExampleClient_RescoreManualImport() {
+	client, err := lidarr.New("http://localhost:8686", "your-api-key")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx := context.Background()
+	candidates, err := client.RescoreManualImport(ctx, []lidarr.ManualImportUpdate{
+		{
+			Path:                    "/downloads/complete/Album/01.mp3",
+			AlbumID:                 34,
+			AlbumReleaseID:          56,
+			DisableReleaseSwitching: true,
+		},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for i := range candidates {
+		fmt.Printf("%s: %d rejections\n", candidates[i].Path, len(candidates[i].Rejections))
+	}
+}

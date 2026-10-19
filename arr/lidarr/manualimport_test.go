@@ -366,3 +366,163 @@ func TestSendManualImport_Refused(t *testing.T) {
 		})
 	}
 }
+
+func verifyRescoreRequestBody(t *testing.T, r *http.Request) {
+	t.Helper()
+	if r.Method != http.MethodPost || r.URL.Path != "/api/v1/manualimport" {
+		t.Errorf("request = %s %s, want POST /api/v1/manualimport", r.Method, r.URL.Path)
+	}
+	var raw []map[string]any
+	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
+		t.Fatalf("decode request body: %v", err)
+	}
+	if len(raw) != 1 {
+		t.Fatalf("request body items = %d, want 1", len(raw))
+	}
+	item := raw[0]
+	if v, ok := item["albumReleaseId"].(float64); !ok || int(v) != 56 {
+		t.Errorf("request body albumReleaseId = %v, want 56", item["albumReleaseId"])
+	}
+	if v, ok := item["disableReleaseSwitching"].(bool); !ok || !v {
+		t.Errorf("request body disableReleaseSwitching = %v, want true", item["disableReleaseSwitching"])
+	}
+}
+
+func checkRescoreCandidate(t *testing.T, c lidarr.ManualImportCandidate) {
+	t.Helper()
+	if c.AlbumReleaseID != 56 {
+		t.Errorf("albumReleaseId = %d, want 56", c.AlbumReleaseID)
+	}
+	if !c.DisableReleaseSwitching {
+		t.Errorf("disableReleaseSwitching = %v, want true", c.DisableReleaseSwitching)
+	}
+	if len(c.Rejections) != 1 || c.Rejections[0].Reason != "Wrong release" {
+		t.Errorf("rejections = %#v, want one rejection", c.Rejections)
+	}
+	if len(c.Tracks) != 1 || c.Tracks[0].ID != 78 {
+		t.Errorf("tracks = %#v, want track 78", c.Tracks)
+	}
+}
+
+func TestRescoreManualImport_Positive(t *testing.T) {
+	t.Parallel()
+
+	c := newManualImportServer(t, func(w http.ResponseWriter, r *http.Request) {
+		verifyRescoreRequestBody(t, r)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = io.WriteString(w, `[{
+			"id": 7,
+			"path": "/downloads/complete/Album/01.mp3",
+			"name": "01.mp3",
+			"album": {"id": 34, "title": "Album One"},
+			"albumReleaseId": 56,
+			"tracks": [{"id": 78, "title": "Track One", "trackNumber": "1"}],
+			"rejections": [{"reason": "Wrong release", "type": "permanent"}],
+			"disableReleaseSwitching": true
+		}]`)
+	})
+
+	items := []lidarr.ManualImportUpdate{
+		{
+			ID:                      7,
+			Path:                    "/downloads/complete/Album/01.mp3",
+			Name:                    "01.mp3",
+			ArtistID:                12,
+			AlbumID:                 34,
+			AlbumReleaseID:          56,
+			TrackIDs:                []int{78},
+			Quality:                 lidarr.QualityModel{Quality: lidarr.Quality{ID: 7, Name: "MP3-320"}},
+			ReleaseGroup:            "GRP",
+			IndexerFlags:            8,
+			DownloadID:              "ABCDEF0123456789",
+			AdditionalFile:          false,
+			ReplaceExistingFiles:    true,
+			DisableReleaseSwitching: true,
+		},
+	}
+	got, err := c.RescoreManualImport(context.Background(), items)
+	if err != nil {
+		t.Fatalf("RescoreManualImport: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("got len = %d, want 1", len(got))
+	}
+	checkRescoreCandidate(t, got[0])
+}
+
+func TestRescoreManualImport_Negative(t *testing.T) {
+	t.Parallel()
+
+	t.Run("bad request problem body", func(t *testing.T) {
+		t.Parallel()
+		c := newManualImportServer(t, func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = io.WriteString(w, `{"error": "invalid album release"}`)
+		})
+		_, err := c.RescoreManualImport(context.Background(), []lidarr.ManualImportUpdate{{Path: "/dl/01.mp3"}})
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		var apiErr *arr.APIError
+		if !errors.As(err, &apiErr) || apiErr.StatusCode != http.StatusBadRequest {
+			t.Fatalf("err = %v, want APIError 400", err)
+		}
+	})
+
+	t.Run("empty input zero requests", func(t *testing.T) {
+		t.Parallel()
+		var called atomic.Bool
+		c := newManualImportServer(t, func(w http.ResponseWriter, _ *http.Request) {
+			called.Store(true)
+			w.WriteHeader(http.StatusOK)
+		})
+		for _, empty := range [][]lidarr.ManualImportUpdate{nil, {}} {
+			_, err := c.RescoreManualImport(context.Background(), empty)
+			if !errors.Is(err, lidarr.ErrNoImportUpdates) {
+				t.Fatalf("err = %v, want ErrNoImportUpdates", err)
+			}
+		}
+		if called.Load() {
+			t.Error("request sent on empty input, want zero requests")
+		}
+	})
+}
+
+func TestRescoreManualImport_Boundary(t *testing.T) {
+	t.Parallel()
+
+	c := newManualImportServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, `[{
+			"id": 9,
+			"path": "/dl/01.mp3",
+			"name": "01.mp3",
+			"albumReleaseId": 56,
+			"album": {"id": 34},
+			"tracks": null,
+			"rejections": []
+		}]`)
+	})
+
+	items := []lidarr.ManualImportUpdate{
+		{Path: "/dl/01.mp3", AlbumID: 34, AlbumReleaseID: 56},
+	}
+	got, err := c.RescoreManualImport(context.Background(), items)
+	if err != nil {
+		t.Fatalf("RescoreManualImport: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("got len = %d, want 1", len(got))
+	}
+	if got[0].ID != 9 || got[0].AlbumReleaseID != 56 {
+		t.Errorf("candidate = %#v, want id 9 release 56", got[0])
+	}
+	if len(got[0].Rejections) != 0 {
+		t.Errorf("rejections = %#v, want empty", got[0].Rejections)
+	}
+	if got[0].Tracks != nil {
+		t.Errorf("tracks = %#v, want nil", got[0].Tracks)
+	}
+}

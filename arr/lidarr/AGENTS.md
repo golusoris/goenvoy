@@ -20,4 +20,4 @@ Paged endpoints (queue, history, wanted, blocklist, log) take `page` and `pageSi
 
 Queue management: `GetQueueWithOptions` and `DeleteQueueItemWithOptions` support advanced filtering, nested inclusion, and extended deletion flags.
 
-Manual import: `GetManualImportCandidates` lists candidates with artist and album mapping and rejections; `ManualImportCandidate.ImportFile` maps candidate to `ManualImportFile`; `SendManualImport` queues `ManualImport` command, which imports. `ProcessManualImport` (POST /manualimport) only re-evaluates candidates and imports nothing.
+Manual import: `GetManualImportCandidates` lists candidates with artist and album mapping and rejections; `RescoreManualImport` re-evaluates candidates against a chosen album or release mapping and imports nothing; `ManualImportCandidate.ImportFile` maps candidate to `ManualImportFile`; `SendManualImport` queues `ManualImport` command, which imports. `ProcessManualImport` (POST /manualimport) only re-evaluates candidates and imports nothing.
