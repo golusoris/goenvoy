@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.3](https://github.com/golusoris/goenvoy/compare/metadata/book/googlebooks/v2.1.2...metadata/book/googlebooks/v2.1.3) (2026-10-19)
+
+
+### Bug Fixes
+
+* **lint:** hold every Go file to the HISS-04 complexity limits ([#142](https://github.com/golusoris/goenvoy/issues/142)) ([2e5dea9](https://github.com/golusoris/goenvoy/commit/2e5dea9437444f670c5a628a35f8cc11e4883d46)), closes [#76](https://github.com/golusoris/goenvoy/issues/76)
+
 ## [2.1.2](https://github.com/golusoris/goenvoy/compare/metadata/book/googlebooks/v2.1.1...metadata/book/googlebooks/v2.1.2) (2026-10-11)
 
 
