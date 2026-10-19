@@ -84,6 +84,29 @@ jobs:
       - name: Check the pins
         run: make upstream-specs
 
+  # gitleaks scans every commit, not only the tip; GitHub push protection is the
+  # other barrier (#77). Pinned by version and sha256 in tools/tool-versions.env.
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install gitleaks
+        run: |
+          set -euo pipefail
+          # shellcheck source=/dev/null
+          . tools/tool-versions.env
+          curl -fsSL --max-time 120 -o "$RUNNER_TEMP/gitleaks.tar.gz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_LINUX_X64_SHA256}  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$RUNNER_TEMP" gitleaks
+      - name: Scan the full history for secrets
+        run: '"$RUNNER_TEMP/gitleaks" git --config .gitleaks.toml --redact --no-banner --exit-code 1 .'
+
   discover:
     name: Discover modules
     runs-on: ubuntu-26.04
@@ -288,12 +311,12 @@ jobs:
   status:
     name: CI success
     if: always()
-    needs: [workflows, upstream-specs, discover, ci, apidiff]
+    needs: [workflows, upstream-specs, secret-scan, discover, ci, apidiff]
     runs-on: ubuntu-26.04
     steps:
       - name: Check results
         run: |
-          for j in workflows upstream_specs discover; do
+          for j in workflows upstream_specs secret_scan discover; do
             got="$(eval echo \$${j}_result)"
             if [ "$got" != success ]; then
               echo "job $j: $got"; exit 1
@@ -316,6 +339,7 @@ jobs:
           modules: ${{ needs.discover.outputs.modules }}
           workflows_result: ${{ needs.workflows.result }}
           upstream_specs_result: ${{ needs.upstream-specs.result }}
+          secret_scan_result: ${{ needs.secret-scan.result }}
           discover_result: ${{ needs.discover.result }}
           ci_result: ${{ needs.ci.result }}
           apidiff_result: ${{ needs.apidiff.result }}

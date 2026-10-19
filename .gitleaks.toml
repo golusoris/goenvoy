@@ -1,0 +1,7 @@
+# Secret scan configuration for the CI full-history gitleaks job (#77).
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Go module pseudo-versions in tool pins (vX.Y.Z-yyyymmddhhmmss-commit) are not keys"
+regexes = ['''v\d+\.\d+\.\d+-\d{14}-[0-9a-f]{12}''']
