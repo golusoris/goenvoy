@@ -46,14 +46,14 @@ func TestQueueRecord_EmbeddingDecode(t *testing.T) {
 	}
 }
 
-func TestGetQueueWithOptions_QueryString(t *testing.T) {
-	t.Parallel()
+type queueQueryTestCase struct {
+	name     string
+	opts     radarr.QueueOptions
+	wantPath string
+}
 
-	tests := []struct {
-		name     string
-		opts     radarr.QueueOptions
-		wantPath string
-	}{
+func queueQueryTestCases() []queueQueryTestCase {
+	return []queueQueryTestCase{
 		{
 			name:     "all-false",
 			opts:     radarr.QueueOptions{Page: 1, PageSize: 10},
@@ -96,41 +96,49 @@ func TestGetQueueWithOptions_QueryString(t *testing.T) {
 			wantPath: "/api/v3/queue?page=1000&pageSize=500",
 		},
 	}
+}
 
-	for _, tc := range tests {
+func runGetQueueWithOptionsQueryTest(t *testing.T, tc queueQueryTestCase) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("method = %s, want GET", r.Method)
+		}
+		if r.URL.RequestURI() != tc.wantPath {
+			t.Errorf("RequestURI = %q, want %q", r.URL.RequestURI(), tc.wantPath)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(arr.PagingResource[radarr.QueueRecord]{
+			Page:         tc.opts.Page,
+			PageSize:     tc.opts.PageSize,
+			TotalRecords: 0,
+			Records:      []radarr.QueueRecord{},
+		})
+	}))
+	defer srv.Close()
+
+	c, err := radarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("radarr.New: %v", err)
+	}
+
+	res, err := c.GetQueueWithOptions(context.Background(), tc.opts)
+	if err != nil {
+		t.Fatalf("GetQueueWithOptions: %v", err)
+	}
+	if res == nil {
+		t.Fatal("expected non-nil PagingResource")
+	}
+}
+
+func TestGetQueueWithOptions_QueryString(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range queueQueryTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method != http.MethodGet {
-					t.Errorf("method = %s, want GET", r.Method)
-				}
-				if r.URL.RequestURI() != tc.wantPath {
-					t.Errorf("RequestURI = %q, want %q", r.URL.RequestURI(), tc.wantPath)
-				}
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				_ = json.NewEncoder(w).Encode(arr.PagingResource[radarr.QueueRecord]{
-					Page:         tc.opts.Page,
-					PageSize:     tc.opts.PageSize,
-					TotalRecords: 0,
-					Records:      []radarr.QueueRecord{},
-				})
-			}))
-			defer srv.Close()
-
-			c, err := radarr.New(srv.URL, "test-key")
-			if err != nil {
-				t.Fatalf("radarr.New: %v", err)
-			}
-
-			res, err := c.GetQueueWithOptions(context.Background(), tc.opts)
-			if err != nil {
-				t.Fatalf("GetQueueWithOptions: %v", err)
-			}
-			if res == nil {
-				t.Fatal("expected non-nil PagingResource")
-			}
+			runGetQueueWithOptionsQueryTest(t, tc)
 		})
 	}
 }
@@ -222,14 +230,39 @@ func TestGetQueueWithOptions_APIError(t *testing.T) {
 	}
 }
 
+type deleteQueueTestCase struct {
+	name     string
+	opts     radarr.QueueDeleteOptions
+	wantPath string
+}
+
+func runDeleteQueueItemWithOptionsTest(t *testing.T, tc deleteQueueTestCase) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("method = %s, want DELETE", r.Method)
+		}
+		if r.URL.RequestURI() != tc.wantPath {
+			t.Errorf("RequestURI = %q, want %q", r.URL.RequestURI(), tc.wantPath)
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c, err := radarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("radarr.New: %v", err)
+	}
+
+	if err := c.DeleteQueueItemWithOptions(context.Background(), 42, tc.opts); err != nil {
+		t.Fatalf("DeleteQueueItemWithOptions: %v", err)
+	}
+}
+
 func TestDeleteQueueItemWithOptions(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name     string
-		opts     radarr.QueueDeleteOptions
-		wantPath string
-	}{
+	tests := []deleteQueueTestCase{
 		{
 			name:     "all-false",
 			opts:     radarr.QueueDeleteOptions{},
@@ -257,26 +290,7 @@ func TestDeleteQueueItemWithOptions(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method != http.MethodDelete {
-					t.Errorf("method = %s, want DELETE", r.Method)
-				}
-				if r.URL.RequestURI() != tc.wantPath {
-					t.Errorf("RequestURI = %q, want %q", r.URL.RequestURI(), tc.wantPath)
-				}
-				w.WriteHeader(http.StatusOK)
-			}))
-			defer srv.Close()
-
-			c, err := radarr.New(srv.URL, "test-key")
-			if err != nil {
-				t.Fatalf("radarr.New: %v", err)
-			}
-
-			if err := c.DeleteQueueItemWithOptions(context.Background(), 42, tc.opts); err != nil {
-				t.Fatalf("DeleteQueueItemWithOptions: %v", err)
-			}
+			runDeleteQueueItemWithOptionsTest(t, tc)
 		})
 	}
 }

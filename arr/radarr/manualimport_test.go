@@ -49,6 +49,27 @@ func newManualImportServer(t *testing.T, handler http.HandlerFunc) *radarr.Clien
 	return c
 }
 
+func runManualImportCandidateQueryTest(t *testing.T, opts radarr.ManualImportOptions, wantPath string) {
+	t.Helper()
+	c := newManualImportServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("method = %s, want GET", r.Method)
+		}
+		if r.URL.RequestURI() != wantPath {
+			t.Errorf("RequestURI = %q, want %q", r.URL.RequestURI(), wantPath)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, "[]")
+	})
+	got, err := c.GetManualImportCandidates(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("GetManualImportCandidates: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("len = %d, want 0", len(got))
+	}
+}
+
 func TestGetManualImportCandidates_QueryString(t *testing.T) {
 	t.Parallel()
 
@@ -82,23 +103,7 @@ func TestGetManualImportCandidates_QueryString(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			c := newManualImportServer(t, func(w http.ResponseWriter, r *http.Request) {
-				if r.Method != http.MethodGet {
-					t.Errorf("method = %s, want GET", r.Method)
-				}
-				if r.URL.RequestURI() != tc.wantPath {
-					t.Errorf("RequestURI = %q, want %q", r.URL.RequestURI(), tc.wantPath)
-				}
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = io.WriteString(w, "[]")
-			})
-			got, err := c.GetManualImportCandidates(context.Background(), tc.opts)
-			if err != nil {
-				t.Fatalf("GetManualImportCandidates: %v", err)
-			}
-			if len(got) != 0 {
-				t.Errorf("len = %d, want 0", len(got))
-			}
+			runManualImportCandidateQueryTest(t, tc.opts, tc.wantPath)
 		})
 	}
 }
@@ -165,6 +170,33 @@ func mappedCandidate() radarr.ManualImportCandidate {
 	}
 }
 
+func assertImportFileMatchesCandidate(t *testing.T, f radarr.ManualImportFile, m radarr.ManualImportCandidate) {
+	t.Helper()
+	if f.MovieID != 12 {
+		t.Errorf("MovieID = %d, want 12", f.MovieID)
+	}
+	if f.Path != m.Path || f.FolderName != m.FolderName ||
+		f.ReleaseGroup != "GRP" || f.Quality.Quality.Modifier != "remux" || f.Languages[0].ID != 4 ||
+		f.IndexerFlags != 8 || f.DownloadID != "ABC" {
+		t.Errorf("file = %#v, want every candidate field carried over", f)
+	}
+}
+
+func checkImportFileResult(t *testing.T, m radarr.ManualImportCandidate, wantOK bool) {
+	t.Helper()
+	f, ok := m.ImportFile()
+	if ok != wantOK {
+		t.Fatalf("ok = %v, want %v", ok, wantOK)
+	}
+	if !ok {
+		if !reflect.DeepEqual(f, radarr.ManualImportFile{}) {
+			t.Errorf("file = %#v, want zero value", f)
+		}
+		return
+	}
+	assertImportFileMatchesCandidate(t, f, m)
+}
+
 func TestManualImportCandidate_ImportFile(t *testing.T) {
 	t.Parallel()
 
@@ -185,25 +217,25 @@ func TestManualImportCandidate_ImportFile(t *testing.T) {
 			t.Parallel()
 			m := mappedCandidate()
 			tc.mutate(&m)
-			f, ok := m.ImportFile()
-			if ok != tc.wantOK {
-				t.Fatalf("ok = %v, want %v", ok, tc.wantOK)
-			}
-			if !ok {
-				if !reflect.DeepEqual(f, radarr.ManualImportFile{}) {
-					t.Errorf("file = %#v, want zero value", f)
-				}
-				return
-			}
-			if f.MovieID != 12 {
-				t.Errorf("MovieID = %d, want 12", f.MovieID)
-			}
-			if f.Path != m.Path || f.FolderName != m.FolderName ||
-				f.ReleaseGroup != "GRP" || f.Quality.Quality.Modifier != "remux" || f.Languages[0].ID != 4 ||
-				f.IndexerFlags != 8 || f.DownloadID != "ABC" {
-				t.Errorf("file = %#v, want every candidate field carried over", f)
-			}
+			checkImportFileResult(t, m, tc.wantOK)
 		})
+	}
+}
+
+func verifyManualImportRequestBody(t *testing.T, r *http.Request, want string) {
+	t.Helper()
+	if r.Method != http.MethodPost || r.URL.Path != "/api/v3/command" {
+		t.Errorf("request = %s %s, want POST /api/v3/command", r.Method, r.URL.Path)
+	}
+	var gotBody, wantBody any
+	if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
+		t.Errorf("decode body: %v", err)
+	}
+	if err := json.Unmarshal([]byte(want), &wantBody); err != nil {
+		t.Errorf("decode want: %v", err)
+	}
+	if !reflect.DeepEqual(gotBody, wantBody) {
+		t.Errorf("body = %v\nwant %v", gotBody, wantBody)
 	}
 }
 
@@ -225,19 +257,7 @@ func TestSendManualImport_Body(t *testing.T) {
 		}]
 	}`
 	c := newManualImportServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost || r.URL.Path != "/api/v3/command" {
-			t.Errorf("request = %s %s, want POST /api/v3/command", r.Method, r.URL.Path)
-		}
-		var gotBody, wantBody any
-		if err := json.NewDecoder(r.Body).Decode(&gotBody); err != nil {
-			t.Errorf("decode body: %v", err)
-		}
-		if err := json.Unmarshal([]byte(want), &wantBody); err != nil {
-			t.Errorf("decode want: %v", err)
-		}
-		if !reflect.DeepEqual(gotBody, wantBody) {
-			t.Errorf("body = %v\nwant %v", gotBody, wantBody)
-		}
+		verifyManualImportRequestBody(t, r, want)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		_, _ = io.WriteString(w, `{"id": 99, "name": "ManualImport", "status": "queued"}`)
@@ -256,18 +276,43 @@ func TestSendManualImport_Body(t *testing.T) {
 	}
 }
 
+type sendManualImportRefusedCase struct {
+	name    string
+	mode    radarr.ImportMode
+	files   []radarr.ManualImportFile
+	status  int
+	wantErr error
+	wantAPI bool
+}
+
+func runSendManualImportRefusedTest(t *testing.T, tc sendManualImportRefusedCase) {
+	t.Helper()
+	var called atomic.Bool
+	c := newManualImportServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		called.Store(true)
+		w.WriteHeader(tc.status)
+	})
+	_, err := c.SendManualImport(context.Background(), tc.mode, tc.files)
+	if tc.wantAPI {
+		var apiErr *arr.APIError
+		if !errors.As(err, &apiErr) || apiErr.StatusCode != tc.status {
+			t.Fatalf("err = %v, want APIError %d", err, tc.status)
+		}
+		return
+	}
+	if !errors.Is(err, tc.wantErr) {
+		t.Fatalf("err = %v, want %v", err, tc.wantErr)
+	}
+	if called.Load() {
+		t.Error("request sent, want refusal before any request")
+	}
+}
+
 func TestSendManualImport_Refused(t *testing.T) {
 	t.Parallel()
 
 	file := []radarr.ManualImportFile{{Path: "/dl/x.mkv", MovieID: 1}}
-	tests := []struct {
-		name    string
-		mode    radarr.ImportMode
-		files   []radarr.ManualImportFile
-		status  int
-		wantErr error
-		wantAPI bool
-	}{
+	tests := []sendManualImportRefusedCase{
 		{name: "no files", mode: radarr.ImportModeAuto, wantErr: radarr.ErrNoImportFiles},
 		{name: "empty mode", mode: "", files: file, wantErr: radarr.ErrInvalidImportMode},
 		{name: "unknown mode", mode: "hardlink", files: file, wantErr: radarr.ErrInvalidImportMode},
@@ -276,25 +321,7 @@ func TestSendManualImport_Refused(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			var called atomic.Bool
-			c := newManualImportServer(t, func(w http.ResponseWriter, _ *http.Request) {
-				called.Store(true)
-				w.WriteHeader(tc.status)
-			})
-			_, err := c.SendManualImport(context.Background(), tc.mode, tc.files)
-			if tc.wantAPI {
-				var apiErr *arr.APIError
-				if !errors.As(err, &apiErr) || apiErr.StatusCode != tc.status {
-					t.Fatalf("err = %v, want APIError %d", err, tc.status)
-				}
-				return
-			}
-			if !errors.Is(err, tc.wantErr) {
-				t.Fatalf("err = %v, want %v", err, tc.wantErr)
-			}
-			if called.Load() {
-				t.Error("request sent, want refusal before any request")
-			}
+			runSendManualImportRefusedTest(t, tc)
 		})
 	}
 }
