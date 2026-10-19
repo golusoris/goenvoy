@@ -54,14 +54,25 @@ func TestQueueRecord_EmbeddingDecode(t *testing.T) {
 	}
 }
 
-func TestGetQueueWithOptions_QueryString(t *testing.T) {
-	t.Parallel()
+func newQueueServer(t *testing.T, handler http.HandlerFunc) *sonarr.Client {
+	t.Helper()
+	srv := httptest.NewServer(handler)
+	t.Cleanup(srv.Close)
+	c, err := sonarr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("sonarr.New: %v", err)
+	}
+	return c
+}
 
-	tests := []struct {
-		name     string
-		opts     sonarr.QueueOptions
-		wantPath string
-	}{
+type queueQueryTestCase struct {
+	name     string
+	opts     sonarr.QueueOptions
+	wantPath string
+}
+
+func queueQueryTests() []queueQueryTestCase {
+	return []queueQueryTestCase{
 		{
 			name:     "all-false",
 			opts:     sonarr.QueueOptions{Page: 1, PageSize: 10},
@@ -104,49 +115,49 @@ func TestGetQueueWithOptions_QueryString(t *testing.T) {
 			wantPath: "/api/v3/queue?page=1000&pageSize=500",
 		},
 	}
+}
 
-	for _, tc := range tests {
+func checkGetQueueQueryString(t *testing.T, opts sonarr.QueueOptions, wantPath string) {
+	t.Helper()
+	c := newQueueServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("method = %s, want GET", r.Method)
+		}
+		if r.URL.RequestURI() != wantPath {
+			t.Errorf("RequestURI = %q, want %q", r.URL.RequestURI(), wantPath)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(arr.PagingResource[sonarr.QueueRecord]{
+			Page:         opts.Page,
+			PageSize:     opts.PageSize,
+			TotalRecords: 0,
+			Records:      []sonarr.QueueRecord{},
+		})
+	})
+
+	res, err := c.GetQueueWithOptions(context.Background(), opts)
+	if err != nil {
+		t.Fatalf("GetQueueWithOptions: %v", err)
+	}
+	if res == nil {
+		t.Fatal("expected non-nil PagingResource")
+	}
+}
+
+func TestGetQueueWithOptions_QueryString(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range queueQueryTests() {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method != http.MethodGet {
-					t.Errorf("method = %s, want GET", r.Method)
-				}
-				if r.URL.RequestURI() != tc.wantPath {
-					t.Errorf("RequestURI = %q, want %q", r.URL.RequestURI(), tc.wantPath)
-				}
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				_ = json.NewEncoder(w).Encode(arr.PagingResource[sonarr.QueueRecord]{
-					Page:         tc.opts.Page,
-					PageSize:     tc.opts.PageSize,
-					TotalRecords: 0,
-					Records:      []sonarr.QueueRecord{},
-				})
-			}))
-			defer srv.Close()
-
-			c, err := sonarr.New(srv.URL, "test-key")
-			if err != nil {
-				t.Fatalf("sonarr.New: %v", err)
-			}
-
-			res, err := c.GetQueueWithOptions(context.Background(), tc.opts)
-			if err != nil {
-				t.Fatalf("GetQueueWithOptions: %v", err)
-			}
-			if res == nil {
-				t.Fatal("expected non-nil PagingResource")
-			}
+			checkGetQueueQueryString(t, tc.opts, tc.wantPath)
 		})
 	}
 }
 
-func TestGetQueueWithOptions_NestedMonitored(t *testing.T) {
-	t.Parallel()
-
-	respData := arr.PagingResource[sonarr.QueueRecord]{
+func nestedMonitoredQueueResponse() arr.PagingResource[sonarr.QueueRecord] {
+	return arr.PagingResource[sonarr.QueueRecord]{
 		Page:         1,
 		PageSize:     10,
 		TotalRecords: 1,
@@ -175,29 +186,10 @@ func TestGetQueueWithOptions_NestedMonitored(t *testing.T) {
 			},
 		},
 	}
+}
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(respData)
-	}))
-	defer srv.Close()
-
-	c, err := sonarr.New(srv.URL, "test-key")
-	if err != nil {
-		t.Fatalf("sonarr.New: %v", err)
-	}
-
-	got, err := c.GetQueueWithOptions(context.Background(), sonarr.QueueOptions{
-		Page:          1,
-		PageSize:      10,
-		IncludeParent: true,
-		IncludeItem:   true,
-	})
-	if err != nil {
-		t.Fatalf("GetQueueWithOptions: %v", err)
-	}
-
+func assertNestedMonitoredRecord(t *testing.T, got *arr.PagingResource[sonarr.QueueRecord]) {
+	t.Helper()
 	if len(got.Records) != 1 {
 		t.Fatalf("got %d records, want 1", len(got.Records))
 	}
@@ -214,6 +206,29 @@ func TestGetQueueWithOptions_NestedMonitored(t *testing.T) {
 	if !rec.Episode.Monitored {
 		t.Errorf("Episode.Monitored = false, want true")
 	}
+}
+
+func TestGetQueueWithOptions_NestedMonitored(t *testing.T) {
+	t.Parallel()
+
+	respData := nestedMonitoredQueueResponse()
+	c := newQueueServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(respData)
+	})
+
+	got, err := c.GetQueueWithOptions(context.Background(), sonarr.QueueOptions{
+		Page:          1,
+		PageSize:      10,
+		IncludeParent: true,
+		IncludeItem:   true,
+	})
+	if err != nil {
+		t.Fatalf("GetQueueWithOptions: %v", err)
+	}
+
+	assertNestedMonitoredRecord(t, got)
 }
 
 func TestGetQueueWithOptions_APIError(t *testing.T) {
@@ -241,6 +256,23 @@ func TestGetQueueWithOptions_APIError(t *testing.T) {
 	}
 	if apiErr.StatusCode != http.StatusInternalServerError {
 		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusInternalServerError)
+	}
+}
+
+func checkDeleteQueueItemWithOptions(t *testing.T, opts sonarr.QueueDeleteOptions, wantPath string) {
+	t.Helper()
+	c := newQueueServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("method = %s, want DELETE", r.Method)
+		}
+		if r.URL.RequestURI() != wantPath {
+			t.Errorf("RequestURI = %q, want %q", r.URL.RequestURI(), wantPath)
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+
+	if err := c.DeleteQueueItemWithOptions(context.Background(), 42, opts); err != nil {
+		t.Fatalf("DeleteQueueItemWithOptions: %v", err)
 	}
 }
 
@@ -279,26 +311,7 @@ func TestDeleteQueueItemWithOptions(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Method != http.MethodDelete {
-					t.Errorf("method = %s, want DELETE", r.Method)
-				}
-				if r.URL.RequestURI() != tc.wantPath {
-					t.Errorf("RequestURI = %q, want %q", r.URL.RequestURI(), tc.wantPath)
-				}
-				w.WriteHeader(http.StatusOK)
-			}))
-			defer srv.Close()
-
-			c, err := sonarr.New(srv.URL, "test-key")
-			if err != nil {
-				t.Fatalf("sonarr.New: %v", err)
-			}
-
-			if err := c.DeleteQueueItemWithOptions(context.Background(), 42, tc.opts); err != nil {
-				t.Fatalf("DeleteQueueItemWithOptions: %v", err)
-			}
+			checkDeleteQueueItemWithOptions(t, tc.opts, tc.wantPath)
 		})
 	}
 }

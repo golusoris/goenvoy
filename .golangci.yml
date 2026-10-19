@@ -310,26 +310,6 @@ linters:
         linters:
           - gocognit
       # category C, entered 2026-10-19, expires 2026-10-29, #141
-      - path: ^arr/sonarr/manualimport_test\.go$
-        linters:
-          - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
-      - path: ^arr/sonarr/manualimport_test\.go$
-        linters:
-          - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
-      - path: ^arr/sonarr/manualimport_test\.go$
-        linters:
-          - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
-      - path: ^arr/sonarr/queue_options_test\.go$
-        linters:
-          - funlen
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
-      - path: ^arr/sonarr/queue_options_test\.go$
-        linters:
-          - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
       - path: ^arr/whisparr/whisparr_extra_test\.go$
         linters:
           - funlen
