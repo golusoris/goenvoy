@@ -1,0 +1,83 @@
+{
+  "bypass_actors": [
+    {
+      "actor_id": 5,
+      "actor_type": "RepositoryRole",
+      "bypass_mode": "pull_request"
+    }
+  ],
+  "conditions": {
+    "ref_name": {
+      "exclude": [],
+      "include": [
+        "refs/heads/main",
+        "refs/heads/lts-*"
+      ]
+    }
+  },
+  "enforcement": "active",
+  "name": "praetor-main-protection",
+  "rules": [
+    {
+      "type": "deletion"
+    },
+    {
+      "type": "non_fast_forward"
+    },
+    {
+      "type": "required_linear_history"
+    },
+    {
+      "type": "required_signatures"
+    },
+    {
+      "parameters": {
+        "dismiss_stale_reviews_on_push": true,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_approving_review_count": 0,
+        "required_review_thread_resolution": true
+      },
+      "type": "pull_request"
+    },
+    {
+      "parameters": {
+        "required_status_checks": [
+          {
+            "context": "Discover modules"
+          },
+          {
+            "context": "Dated lint exceptions"
+          },
+          {
+            "context": "Secret scan (gitleaks)"
+          },
+          {
+            "context": "CI success"
+          },
+          {
+            "context": "Upstream spec pins"
+          },
+          {
+            "context": "Workflows (actionlint, pinned actions)"
+          },
+          {
+            "context": "Go API Compatibility"
+          },
+          {
+            "context": "Documentation Governance"
+          },
+          {
+            "context": "Scorecard Analysis"
+          },
+          {
+            "context": "Semgrep analysis"
+          }
+        ],
+        "strict_required_status_checks_policy": true
+      },
+      "type": "required_status_checks"
+    }
+  ],
+  "target": "branch"
+}

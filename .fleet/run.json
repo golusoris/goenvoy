@@ -1,0 +1,12 @@
+{
+  "configurations": [
+    {
+      "args": [
+        "verify-all"
+      ],
+      "name": "Standards: Verify All",
+      "program": "make",
+      "type": "command"
+    }
+  ]
+}

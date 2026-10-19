@@ -2,20 +2,17 @@
 
 ## [1.3.4](https://github.com/golusoris/goenvoy/compare/metadata/adult/tpdb/v1.3.3...metadata/adult/tpdb/v1.3.4) (2026-10-19)
 
-
 ### Bug Fixes
 
 * **lint:** hold every Go file to the HISS-04 complexity limits ([#142](https://github.com/golusoris/goenvoy/issues/142)) ([2e5dea9](https://github.com/golusoris/goenvoy/commit/2e5dea9437444f670c5a628a35f8cc11e4883d46)), closes [#76](https://github.com/golusoris/goenvoy/issues/76)
 
 ## [1.3.3](https://github.com/golusoris/goenvoy/compare/metadata/adult/tpdb/v1.3.2...metadata/adult/tpdb/v1.3.3) (2026-10-18)
 
-
 ### Code Refactoring
 
 * **metadata/adult/tpdb:** delegate LookupByHash to FindSceneByHash ([#120](https://github.com/golusoris/goenvoy/issues/120)) ([d4c9758](https://github.com/golusoris/goenvoy/commit/d4c97586df4675a0606e4c2fa9c65a6dcd335607))
 
 ## [1.3.2](https://github.com/golusoris/goenvoy/compare/metadata/adult/tpdb/v1.3.1...metadata/adult/tpdb/v1.3.2) (2026-10-11)
-
 
 ### Bug Fixes
 
@@ -24,14 +21,12 @@
 
 ## [1.3.1](https://github.com/golusoris/goenvoy/compare/metadata/adult/tpdb/v1.3.0...metadata/adult/tpdb/v1.3.1) (2026-06-19)
 
-
 ### Bug Fixes
 
 * **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.0 ([#65](https://github.com/golusoris/goenvoy/issues/65)) ([127fc2d](https://github.com/golusoris/goenvoy/commit/127fc2df0eef17326e41cd0ed1a46011ff3811fe))
 * guard nil search params and encode OpenSubtitles parent filters ([5fe5b7b](https://github.com/golusoris/goenvoy/commit/5fe5b7b87c3c5518376bc1718ec7d80bba2737ee))
 
 ## [1.3.0](https://github.com/golusoris/goenvoy/compare/metadata/adult/tpdb/v1.2.0...metadata/adult/tpdb/v1.3.0) (2026-04-15)
-
 
 ### Features
 

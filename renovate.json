@@ -6,14 +6,18 @@
     ":dependencyDashboard",
     ":semanticCommits"
   ],
-  "labels": ["dependencies"],
+  "labels": [
+    "dependencies"
+  ],
   "prConcurrentLimit": 5,
   "minimumReleaseAge": "3 days",
   "customManagers": [
     {
       "customType": "regex",
       "description": "Update actionlint and its image digest as one pair.",
-      "managerFilePatterns": ["/^tools/tool-versions\\.env$/"],
+      "managerFilePatterns": [
+        "/^tools/tool-versions\\.env$/"
+      ],
       "matchStrings": [
         "ACTIONLINT_VERSION=(?<currentValue>[^\\s]+)\\nACTIONLINT_IMAGE_DIGEST=(?<currentDigest>sha256:[a-f0-9]{64})"
       ],
@@ -25,7 +29,9 @@
     {
       "customType": "regex",
       "description": "Update zizmor and its image digest as one pair.",
-      "managerFilePatterns": ["/^tools/tool-versions\\.env$/"],
+      "managerFilePatterns": [
+        "/^tools/tool-versions\\.env$/"
+      ],
       "matchStrings": [
         "ZIZMOR_VERSION=(?<currentValue>[^\\s]+)\\nZIZMOR_IMAGE_DIGEST=(?<currentDigest>sha256:[a-f0-9]{64})"
       ],
@@ -47,7 +53,9 @@
     {
       "customType": "regex",
       "description": "Upstream OpenAPI spec pins on a release: repository, release tag and commit of each entry, in this order (upstream/README.md).",
-      "managerFilePatterns": ["/^upstream/specs\\.yaml$/"],
+      "managerFilePatterns": [
+        "/^upstream/specs\\.yaml$/"
+      ],
       "matchStrings": [
         "- name: (?<depName>\\S+)\\n +repository: (?<packageName>\\S+)\\n +tag: (?<currentValue>\\S+)\\n +commit: (?<currentDigest>[0-9a-f]{40})\\n"
       ],
@@ -57,7 +65,9 @@
     {
       "customType": "regex",
       "description": "Upstream OpenAPI spec pins on a branch, for a project that tags no release: repository, branch and commit of each entry, in this order. github-digest dates the newest commit, so minimumReleaseAge applies (upstream/README.md).",
-      "managerFilePatterns": ["/^upstream/specs\\.yaml$/"],
+      "managerFilePatterns": [
+        "/^upstream/specs\\.yaml$/"
+      ],
       "matchStrings": [
         "- name: (?<depName>\\S+)\\n +repository: (?<packageName>\\S+)\\n +branch: (?<currentValue>\\S+)\\n +commit: (?<currentDigest>[0-9a-f]{40})\\n"
       ],
@@ -70,26 +80,77 @@
   "packageRules": [
     {
       "description": "Auto-merge low-risk updates once required checks pass.",
-      "matchUpdateTypes": ["pin", "pinDigest", "digest", "patch", "minor"],
+      "matchUpdateTypes": [
+        "pin",
+        "pinDigest",
+        "digest",
+        "patch",
+        "minor"
+      ],
       "automerge": true,
       "automergeStrategy": "squash",
       "platformAutomerge": false
     },
     {
       "description": "Group all GitHub Actions bumps into a single PR.",
-      "matchManagers": ["github-actions"],
+      "matchManagers": [
+        "github-actions"
+      ],
       "groupName": "github actions"
     },
     {
       "description": "Major bumps require review.",
-      "matchUpdateTypes": ["major"],
-      "labels": ["dependencies", "breaking-change"],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "labels": [
+        "dependencies",
+        "breaking-change"
+      ],
       "automerge": false
     },
     {
       "description": "A spec pin bump is merged by a person: the check proves only that the file is unchanged, not that the clients of each consumer still fit (upstream/README.md).",
-      "matchFileNames": ["upstream/specs.yaml"],
+      "matchFileNames": [
+        "upstream/specs.yaml"
+      ],
       "automerge": false
+    },
+    {
+      "description": "praetor-managed files: praetorctl adopt ships their updates and praetorctl audit locks them byte for byte",
+      "matchFileNames": [
+        ".github/workflows/praetor-docs.yml",
+        "tools/markdownlint/package.json",
+        "tools/markdownlint/package-lock.json",
+        "tools/markdownlint/markdownlint-cli2.yaml",
+        "tools/markdownlint/verify.mjs",
+        "tools/markdownlint/no-private-scratch-links.mjs",
+        "tools/figures/core.mjs",
+        "tools/figures/checks.mjs",
+        "tools/figures/build.mjs",
+        "tools/figures/types.ts",
+        "tools/figures/third_party/interfig/vendor.json",
+        "tools/figures/third_party/interfig/VENDOR.md",
+        "tools/figures/third_party/interfig/upstream/LICENSE",
+        "tools/figures/third_party/interfig/upstream/src/svg.ts",
+        "tools/figures/third_party/interfig/upstream/src/geometry.ts",
+        "tools/figures/third_party/interfig/upstream/src/model.ts",
+        "tools/figures/player/loader.js",
+        "tools/figures/player/player.js",
+        "tools/figures/player/THIRD-PARTY-LICENSES.txt",
+        "tools/figures/figures.css",
+        "tools/figures/mkdocs_hook.py",
+        "tools/figures/astro.mjs",
+        "tools/figures/serve.mjs",
+        "tools/figures/eslint.figures.mjs",
+        "tools/figures/README.md",
+        ".github/workflows/praetor-api.yml",
+        "tools/apicompat/gate/main.go",
+        "tools/apicompat/gate/placeholder.go",
+        ".devcontainer/devcontainer.json",
+        ".devcontainer/Dockerfile.praetor"
+      ],
+      "enabled": false
     }
   ]
 }

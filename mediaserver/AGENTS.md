@@ -8,9 +8,9 @@ Clients for self-hosted media-server applications: Plex, Jellyfin, Emby, Kavita,
 
 ## Shared types (in `mediaserver/`)
 
-The category root ([mediaserver/types.go](types.go)) defines shared cross-service types — `Library`, `Item`, `User`. These are intentionally **loose** because the upstream mediaserver APIs diverge heavily.
+Category root ([mediaserver/types.go](types.go)) defines shared cross-service types — `Library`, `Item`, `User`. These are intentionally **loose** because upstream mediaserver APIs diverge heavily.
 
-Service sub-modules **may** import `mediaserver` for the shared types but not each other.
+Service sub-modules **may** import `mediaserver` for shared types but not each other.
 
 ## Shared conventions in this category
 
@@ -23,15 +23,15 @@ Service sub-modules **may** import `mediaserver` for the shared types but not ea
   - Tautulli — `?apikey=` query.
   - Stash — GraphQL over HTTP POST with `ApiKey` header.
   - Tdarr — Bearer token.
-- **Base-URL shape**: callers pass the mediaserver's root (`http(s)://<host>[:<port>]`); clients append the API prefix (`/web/api/...`, `/api/...`, etc.) internally.
+- **Base-URL shape**: callers pass mediaserver root (`http(s)://<host>[:<port>]`); clients append API prefix (`/web/api/...`, `/api/...`, etc.) internally.
 - **Pagination**: service-specific. Plex/Emby/Jellyfin use query params (`startIndex`, `limit`); Stash uses GraphQL pagination; others vary. Document per service.
-- **Error body**: JSON per service. Stash returns GraphQL `errors[]`; the rest return `{error: string}` or a `Message` field on 4xx.
+- **Error body**: JSON per service. Stash returns GraphQL `errors[]`; rest return `{error: string}` or `Message` field on 4xx.
 - **Content negotiation**: some services (Plex especially) distinguish JSON vs XML via `Accept:` header — default to JSON everywhere.
 
 ## Modules in this category
 
 | Module | Purpose | Upstream pin |
-|---|---|---|
+| --- | --- | --- |
 | [mediaserver/plex](plex/) | Plex Media Server | [docs/upstream/mediaserver-plex.md](../docs/upstream/mediaserver-plex.md) |
 | [mediaserver/jellyfin](jellyfin/) | Jellyfin | [docs/upstream/mediaserver-jellyfin.md](../docs/upstream/mediaserver-jellyfin.md) |
 | [mediaserver/emby](emby/) | Emby | [docs/upstream/mediaserver-emby.md](../docs/upstream/mediaserver-emby.md) |
@@ -48,6 +48,7 @@ Service sub-modules **may** import `mediaserver` for the shared types but not ea
 Use `/add-service-client mediaserver <service> <docs-url>`.
 
 Must-haves at file creation:
+
 - `doc.go` — one-sentence package comment.
 - `types.go` — request/response types + `APIError`.
 - `<service>.go` — `New` + `Option`s + `do` helper.
@@ -55,4 +56,4 @@ Must-haves at file creation:
 - `example_test.go` — runnable godoc example.
 - `AGENTS.md` — per-service conventions (copy [_meta/service-agents-template.md](../_meta/service-agents-template.md)).
 
-Mediaserver auth is the most frequent source of surprise — document the exact token-placement and any refresh behaviour in the service's `AGENTS.md` before wiring methods.
+Mediaserver auth is frequent source of surprise — document exact token-placement and any refresh behaviour in service `AGENTS.md` before wiring methods.

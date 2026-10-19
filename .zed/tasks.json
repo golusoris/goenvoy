@@ -1,0 +1,10 @@
+[
+  {
+    "args": [
+      "verify-all"
+    ],
+    "command": "make",
+    "label": "Standards: Verify All",
+    "use_new_terminal": false
+  }
+]

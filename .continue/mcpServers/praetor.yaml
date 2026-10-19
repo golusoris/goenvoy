@@ -1,0 +1,13 @@
+---
+# SPDX-FileCopyrightText: 2026 Lusoris <lusoris@proton.me>
+#
+# SPDX-License-Identifier: EUPL-1.2
+name: Praetor MCP
+version: 1.0.0
+schema: v1
+mcpServers:
+  - name: asdecided
+    command: praetorctl
+    args:
+      - decisions
+      - serve

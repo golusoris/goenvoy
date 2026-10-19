@@ -25,7 +25,7 @@ We as contributors and maintainers pledge to make participation in this project 
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behaviour may be reported to the project maintainer at **security@lusoris.dev** (same address as vulnerability reports — treated with the same confidentiality).
+Instances of abusive, harassing, or otherwise unacceptable behaviour may be reported to the project maintainer at **<security@lusoris.dev>** (same address as vulnerability reports — treated with the same confidentiality).
 
 All complaints will be reviewed and investigated promptly and fairly. Maintainers are obligated to respect the privacy and security of the reporter.
 

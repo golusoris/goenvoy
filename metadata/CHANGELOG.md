@@ -2,13 +2,11 @@
 
 ## [1.4.1](https://github.com/golusoris/goenvoy/compare/metadata/v1.4.0...metadata/v1.4.1) (2026-10-19)
 
-
 ### Bug Fixes
 
 * **lint:** hold every Go file to the HISS-04 complexity limits ([#142](https://github.com/golusoris/goenvoy/issues/142)) ([2e5dea9](https://github.com/golusoris/goenvoy/commit/2e5dea9437444f670c5a628a35f8cc11e4883d46)), closes [#76](https://github.com/golusoris/goenvoy/issues/76)
 
 ## [1.4.0](https://github.com/golusoris/goenvoy/compare/metadata/v1.3.1...metadata/v1.4.0) (2026-10-18)
-
 
 ### Features
 
@@ -16,13 +14,11 @@
 
 ## [1.3.1](https://github.com/golusoris/goenvoy/compare/metadata/v1.3.0...metadata/v1.3.1) (2026-06-19)
 
-
 ### Bug Fixes
 
 * **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.0 ([#65](https://github.com/golusoris/goenvoy/issues/65)) ([127fc2d](https://github.com/golusoris/goenvoy/commit/127fc2df0eef17326e41cd0ed1a46011ff3811fe))
 
 ## [1.3.0](https://github.com/golusoris/goenvoy/compare/metadata/v1.2.0...metadata/v1.3.0) (2026-04-15)
-
 
 ### Features
 
@@ -40,7 +36,6 @@
 * **metadata/tvmaze:** add TVmaze API client ([32b038c](https://github.com/golusoris/goenvoy/commit/32b038c26a957e5b7583926c3ce2dfe44e8bb18e))
 * **metadata:** add shared BaseClient, migrate all 27 providers, restructure movie→video ([0026baa](https://github.com/golusoris/goenvoy/commit/0026baa54634fa25c00f67d9387e8013e5d70a6e))
 
-
 ### Bug Fixes
 
 * BaseClient.Delete body support, URL injection, default timeouts ([59203c0](https://github.com/golusoris/goenvoy/commit/59203c0eda4c747e89c6567b91811e0cdee46e5b))
@@ -48,7 +43,6 @@
 * pass large structs by pointer to satisfy gocritic hugeParam ([b141cca](https://github.com/golusoris/goenvoy/commit/b141cca7f636ad055441e7b2b7b23b800999605a))
 * resolve golangci-lint CI errors across 6 packages ([1ef79c1](https://github.com/golusoris/goenvoy/commit/1ef79c17f6c98a701f5001405a7686fb35ddc3b9))
 * TMDb query/path injection, Kavita token race condition ([8be265a](https://github.com/golusoris/goenvoy/commit/8be265a4753653a2960c4e1bb4534efa44cd82c4))
-
 
 ### Code Refactoring
 

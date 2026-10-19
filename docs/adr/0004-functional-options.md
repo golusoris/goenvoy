@@ -28,17 +28,17 @@ additive — never breaking.
 
 Positive:
 
-- API-stable: adding a new `With*` never breaks the API surface.
-- Options self-document.
+* API-stable: adding a new `With*` never breaks the API surface.
+* Options self-document.
 
 Negative:
 
-- Slight allocation cost on each call — negligible for a client
+* Slight allocation cost on each call — negligible for a client
   constructor called once.
 
 ## Alternatives considered
 
-- Public config struct — rejected: any new field is a breaking change
+* Public config struct — rejected: any new field is a breaking change
   if callers use struct-literal initialisation.
-- Builder pattern — rejected: heavier API surface; functional options
+* Builder pattern — rejected: heavier API surface; functional options
   cover the same ergonomics with less code.

@@ -11,7 +11,7 @@ a new ADR supersedes it (with a `Supersedes: ADR-NNNN` header in both directions
 ## Index
 
 | ID | Title | Status |
-|---|---|---|
+| --- | --- | --- |
 | [0001](0001-pure-stdlib.md) | Pure stdlib — no external dependencies | Accepted |
 | [0002](0002-per-module-semver.md) | Per-module independent semver via `<path>/vX.Y.Z` tags | Accepted |
 | [0003](0003-new-constructor-shape.md) | `New(baseURL, apiKey) → *Client` constructor shape | Accepted |

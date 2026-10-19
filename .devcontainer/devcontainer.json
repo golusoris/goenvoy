@@ -1,0 +1,44 @@
+{
+  "name": "golusoris/goenvoy",
+  "build": {
+    "dockerfile": "Dockerfile.praetor",
+    "context": "."
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": false,
+      "upgradePackages": true
+    }
+  },
+  "customizations": {
+    "praetor": {
+      "bootstrap": {
+        "version": 1,
+        "state": "source-bundle",
+        "builderImage": "docker.io/library/golang@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d",
+        "baseImage": "mcr.microsoft.com/devcontainers/base@sha256:91eff046d5c12318fc98e59258982b87ba896c467427ed8b5dab5a02107a5db7",
+        "sourceSHA256": "sha256:8aee6272dd3f89e5c082f4fef612ab330468bc41a9e707ad25931e4a038b908b",
+        "archiveSHA256": "sha256:3baf79294b0536e94aea820dbb81dcb70f4dc1e9070407f88353d84d81ad0cf2",
+        "archiveParts": 7,
+        "dockerfileSHA256": "sha256:aab86ee2e2d3623092d3050db2fd8b3bf87e3bdc248da19f3aa13da182b95198"
+      }
+    },
+    "vscode": {
+      "extensions": [
+        "GitHub.vscode-pull-request-github",
+        "aquasecurity.trivy-vulnerability-scanner",
+        "davidanson.vscode-markdownlint",
+        "eamodio.gitlens",
+        "github.copilot",
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "security.workspace.trust.enabled": true
+      }
+    }
+  },
+  "remoteUser": "vscode",
+  "postCreateCommand": "export PATH=\"/usr/local/bin:$PATH\"; /usr/local/bin/praetorctl compile-context && /usr/bin/make verify-all"
+}

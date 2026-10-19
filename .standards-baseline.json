@@ -1,0 +1,403 @@
+{
+  "version": 1,
+  "generated_at": "2026-10-19T10:42:05Z",
+  "repository": "golusoris/goenvoy",
+  "commit_sha": "f05f703b49845109a2b52989e612c5be0ee786b5",
+  "total_infractions": 49,
+  "infractions": [
+    {
+      "rule_id": "HISS-07",
+      "file_path": ".github/workflows/auto-assign.yml",
+      "line_number": 20,
+      "message": "'|| true' discards the command's failure; handle the exit status or test the condition instead",
+      "anchor": "text:d3e43475779f",
+      "fingerprint": ".github/workflows/auto-assign.yml:HISS-07:text:d3e43475779f#1"
+    },
+    {
+      "rule_id": "HISS-02",
+      "file_path": ".github/workflows/ci.yml",
+      "line_number": 172,
+      "message": "Unbounded loop in shell without an explicit scalar bound",
+      "anchor": "text:a5a4c80790a6",
+      "fingerprint": ".github/workflows/ci.yml:HISS-02:text:a5a4c80790a6#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": ".github/workflows/ci.yml",
+      "line_number": 261,
+      "message": "'|| true' discards the command's failure; handle the exit status or test the condition instead",
+      "anchor": "text:4062dd3405ff",
+      "fingerprint": ".github/workflows/ci.yml:HISS-07:text:4062dd3405ff#1"
+    },
+    {
+      "rule_id": "HISS-08",
+      "file_path": ".github/workflows/ci.yml",
+      "line_number": 337,
+      "message": "Banned dynamic eval execution in shell",
+      "anchor": "text:27c826c28ff9",
+      "fingerprint": ".github/workflows/ci.yml:HISS-08:text:27c826c28ff9#1"
+    },
+    {
+      "rule_id": "HISS-08",
+      "file_path": ".github/workflows/ci.yml",
+      "line_number": 349,
+      "message": "Banned dynamic eval execution in shell",
+      "anchor": "text:27c826c28ff9",
+      "fingerprint": ".github/workflows/ci.yml:HISS-08:text:27c826c28ff9#2"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "anime/shoko/shoko.go",
+      "line_number": 156,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.doRequest",
+      "fingerprint": "anime/shoko/shoko.go:HISS-07:fn:Client.doRequest#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "arr/autobrr/autobrr.go",
+      "line_number": 106,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.do",
+      "fingerprint": "arr/autobrr/autobrr.go:HISS-07:fn:Client.do#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "arr/jackett/jackett.go",
+      "line_number": 89,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.doRequest",
+      "fingerprint": "arr/jackett/jackett.go:HISS-07:fn:Client.doRequest#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "arr/mylar/mylar.go",
+      "line_number": 92,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "arr/mylar/mylar.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "arr/nzbhydra/nzbhydra.go",
+      "line_number": 90,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.doGet",
+      "fingerprint": "arr/nzbhydra/nzbhydra.go:HISS-07:fn:Client.doGet#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "arr/nzbhydra/nzbhydra.go",
+      "line_number": 168,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.postJSON",
+      "fingerprint": "arr/nzbhydra/nzbhydra.go:HISS-07:fn:Client.postJSON#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "downloadclient/deluge/deluge.go",
+      "line_number": 132,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.call",
+      "fingerprint": "downloadclient/deluge/deluge.go:HISS-07:fn:Client.call#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "downloadclient/nzbget/nzbget.go",
+      "line_number": 130,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.call",
+      "fingerprint": "downloadclient/nzbget/nzbget.go:HISS-07:fn:Client.call#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "downloadclient/rtorrent/rtorrent.go",
+      "line_number": 196,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.do",
+      "fingerprint": "downloadclient/rtorrent/rtorrent.go:HISS-07:fn:Client.do#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "downloadclient/sabnzbd/sabnzbd.go",
+      "line_number": 118,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "downloadclient/sabnzbd/sabnzbd.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "downloadclient/transmission/transmission.go",
+      "line_number": 168,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.call",
+      "fingerprint": "downloadclient/transmission/transmission.go:HISS-07:fn:Client.call#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "mediaserver/audiobookshelf/audiobookshelf.go",
+      "line_number": 105,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "mediaserver/audiobookshelf/audiobookshelf.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "mediaserver/emby/emby.go",
+      "line_number": 172,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.doRequest",
+      "fingerprint": "mediaserver/emby/emby.go:HISS-07:fn:Client.doRequest#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "mediaserver/emby/emby.go",
+      "line_number": 210,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "mediaserver/emby/emby.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "mediaserver/jellyfin/jellyfin.go",
+      "line_number": 175,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.doRequest",
+      "fingerprint": "mediaserver/jellyfin/jellyfin.go:HISS-07:fn:Client.doRequest#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "mediaserver/jellyfin/jellyfin.go",
+      "line_number": 207,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "mediaserver/jellyfin/jellyfin.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "mediaserver/kavita/kavita.go",
+      "line_number": 135,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.sendWithRetry",
+      "fingerprint": "mediaserver/kavita/kavita.go:HISS-07:fn:Client.sendWithRetry#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "mediaserver/plex/plex.go",
+      "line_number": 133,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "mediaserver/plex/plex.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "mediaserver/plex/plex.go",
+      "line_number": 175,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.getRaw",
+      "fingerprint": "mediaserver/plex/plex.go:HISS-07:fn:Client.getRaw#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "mediaserver/tautulli/tautulli.go",
+      "line_number": 117,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "mediaserver/tautulli/tautulli.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "mediaserver/tdarr/tdarr.go",
+      "line_number": 135,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.do",
+      "fingerprint": "mediaserver/tdarr/tdarr.go:HISS-07:fn:Client.do#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "mediaserver/tdarr/tdarr.go",
+      "line_number": 159,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.doText",
+      "fingerprint": "mediaserver/tdarr/tdarr.go:HISS-07:fn:Client.doText#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/game/hasheous/hasheous.go",
+      "line_number": 55,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "metadata/game/hasheous/hasheous.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/game/hasheous/hasheous.go",
+      "line_number": 93,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.post",
+      "fingerprint": "metadata/game/hasheous/hasheous.go:HISS-07:fn:Client.post#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/game/igdb/igdb.go",
+      "line_number": 63,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.query",
+      "fingerprint": "metadata/game/igdb/igdb.go:HISS-07:fn:Client.query#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/game/launchbox/launchbox.go",
+      "line_number": 64,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.Download",
+      "fingerprint": "metadata/game/launchbox/launchbox.go:HISS-07:fn:Client.Download#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/game/launchbox/launchbox.go",
+      "line_number": 115,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.parseMetadata",
+      "fingerprint": "metadata/game/launchbox/launchbox.go:HISS-07:fn:Client.parseMetadata#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/game/launchbox/launchbox.go",
+      "line_number": 133,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.parsePlatforms",
+      "fingerprint": "metadata/game/launchbox/launchbox.go:HISS-07:fn:Client.parsePlatforms#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/game/mobygames/mobygames.go",
+      "line_number": 57,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "metadata/game/mobygames/mobygames.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/game/rawg/rawg.go",
+      "line_number": 57,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "metadata/game/rawg/rawg.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/game/retroachievements/retroachievements.go",
+      "line_number": 57,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "metadata/game/retroachievements/retroachievements.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/game/screenscraper/screenscraper.go",
+      "line_number": 121,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "metadata/game/screenscraper/screenscraper.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/game/steam/steam.go",
+      "line_number": 90,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "metadata/game/steam/steam.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/game/steamgriddb/steamgriddb.go",
+      "line_number": 57,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "metadata/game/steamgriddb/steamgriddb.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/music/deezer/deezer.go",
+      "line_number": 98,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "metadata/music/deezer/deezer.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/music/spotify/spotify.go",
+      "line_number": 59,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.get",
+      "fingerprint": "metadata/music/spotify/spotify.go:HISS-07:fn:Client.get#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "metadata/tracking/listenbrainz/listenbrainz.go",
+      "line_number": 90,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.do",
+      "fingerprint": "metadata/tracking/listenbrainz/listenbrainz.go:HISS-07:fn:Client.do#1"
+    },
+    {
+      "rule_id": "HISS-02",
+      "file_path": "metadata/tracking/simkl/simkl.go",
+      "line_number": 549,
+      "symbol": "Client.PollDeviceToken",
+      "message": "Unbounded for loop without an exit condition (for {} / for ;; )",
+      "anchor": "fn:Client.PollDeviceToken",
+      "fingerprint": "metadata/tracking/simkl/simkl.go:HISS-02:fn:Client.PollDeviceToken#1"
+    },
+    {
+      "rule_id": "HISS-02",
+      "file_path": "metadata/tracking/trakt/trakt.go",
+      "line_number": 1976,
+      "symbol": "Client.PollDeviceToken",
+      "message": "Unbounded for loop without an exit condition (for {} / for ;; )",
+      "anchor": "fn:Client.PollDeviceToken",
+      "fingerprint": "metadata/tracking/trakt/trakt.go:HISS-02:fn:Client.PollDeviceToken#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "tools/flaresolverr/flaresolverr.go",
+      "line_number": 90,
+      "message": "Legacy unchecked error assignment",
+      "anchor": "fn:Client.do",
+      "fingerprint": "tools/flaresolverr/flaresolverr.go:HISS-07:fn:Client.do#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "tools/gen-release-please.sh",
+      "line_number": 64,
+      "message": "'|| true' discards the command's failure; handle the exit status or test the condition instead",
+      "anchor": "text:cd500bb93b22",
+      "fingerprint": "tools/gen-release-please.sh:HISS-07:text:cd500bb93b22#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "tools/release-check.sh",
+      "line_number": 30,
+      "message": "'|| true' discards the command's failure; handle the exit status or test the condition instead",
+      "anchor": "fn:cleanup",
+      "fingerprint": "tools/release-check.sh:HISS-07:fn:cleanup#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "tools/release-check.sh",
+      "line_number": 66,
+      "message": "'|| true' discards the command's failure; handle the exit status or test the condition instead",
+      "anchor": "text:845e35d2eaee",
+      "fingerprint": "tools/release-check.sh:HISS-07:text:845e35d2eaee#1"
+    },
+    {
+      "rule_id": "HISS-07",
+      "file_path": "tools/release-check.sh",
+      "line_number": 93,
+      "message": "'|| true' discards the command's failure; handle the exit status or test the condition instead",
+      "anchor": "text:b4a18ae0b684",
+      "fingerprint": "tools/release-check.sh:HISS-07:text:b4a18ae0b684#1"
+    }
+  ]
+}

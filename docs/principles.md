@@ -9,7 +9,7 @@ Structure mirrors golusoris §2 so reviewers can move between the two repos with
 ## 2.1 Coding rules — Power of 10, Go-adapted
 
 | # | Original rule | goenvoy adaptation |
-|---|---|---|
+| --- | --- | --- |
 | 1 | Simple control flow; no `goto`, recursion | No `goto`. Hand-written recursion only where it mirrors a naturally-recursive API payload (e.g. folder trees in Plex/Jellyfin) — document the depth bound. `panic/recover` allowed only inside `http.RoundTripper` shims or user-supplied JSON decoders. |
 | 2 | Bounded loops | Every retry/backoff loop has a max-attempt counter visible in the loop head. Long-running streaming readers (rare — SSE/WebSocket) select on `ctx.Done()`. |
 | 3 | No dynamic alloc post-init | **Guidance.** Preallocate slices when the result size is known (`make([]T, 0, n)`). Not a hard gate. |
@@ -57,7 +57,7 @@ C4 diagrams are omitted — each module is a single-file HTTP client with no sub
 **ADRs** live in [`docs/adr/`](adr/), Nygard format, one decision per file. Retroactively backfilled records capture every convention that's currently implicit:
 
 | ADR | Title | Status |
-|---|---|---|
+| --- | --- | --- |
 | [0001](adr/0001-pure-stdlib.md) | Pure stdlib — no external dependencies | Accepted |
 | [0002](adr/0002-per-module-semver.md) | Per-module independent semver via `<path>/vX.Y.Z` tags | Accepted |
 | [0003](adr/0003-new-constructor-shape.md) | `New(baseURL, apiKey) → *Client` constructor shape | Accepted |
@@ -76,7 +76,7 @@ C4 diagrams are omitted — each module is a single-file HTTP client with no sub
 Adopted in tiers. goenvoy is a **library**, so compliance claims belong to downstream apps. What the library *does* commit to:
 
 | Standard | Commitment |
-|---|---|
+| --- | --- |
 | **SLSA Level 3** | Every module tag produces cosign-signed checksums, an SPDX SBOM (syft), and actions/attest-build-provenance attestation. Workflow runs on hash-pinned GH Actions. |
 | **OSSF Scorecard** | Weekly + on push-to-main. Aim ≥ 7/10; publish the badge on `README.md`. |
 | **NIST SSDF (SP 800-218)** | Covered via Scorecard + CodeQL + Dependabot. |
@@ -96,7 +96,7 @@ Source-tree hygiene commitments:
 Most of golusoris's §2.6 is server-side. goenvoy's subset:
 
 | Standard | Where it applies |
-|---|---|
+| --- | --- |
 | **RFC 7230/7231 HTTP/1.1** + **RFC 9110 HTTP Semantics** | Every module respects status-code semantics (4xx caller-error, 5xx retry-candidate). 429 triggers backoff. 401/403 do not retry. |
 | **OAuth 2.0** (RFC 6749/6750) + **PKCE** (RFC 7636) + **Device Auth Grant** (RFC 8628) | Applied per-service: Trakt, Spotify, Letterboxd, TMDb v4, MAL, AniList, Discogs, Deezer, ListenBrainz. |
 | **JWT** (RFC 7519) | Applied where service requires (TheTVDB). |
@@ -108,7 +108,7 @@ Most of golusoris's §2.6 is server-side. goenvoy's subset:
 ## 2.7 Tooling + formatting
 
 | Standard | Enforcement |
-|---|---|
+| --- | --- |
 | **EditorConfig** | `.editorconfig` at repo root. |
 | **gofumpt** | Via golangci-lint `formatters:` + Claude PostToolUse hook. |
 | **gci** | Grouped imports: `standard`, `default`, `prefix(github.com/golusoris/goenvoy)`. |
@@ -123,7 +123,7 @@ Most of golusoris's §2.6 is server-side. goenvoy's subset:
 ## 2.8 Testing standards
 
 | Practice | When it applies |
-|---|---|
+| --- | --- |
 | **Table-driven tests** | Every function with ≥2 distinct input/output pairs. |
 | **`go test -race -count=1`** | Every CI run, per module. |
 | **`httptest.NewServer`** | Any HTTP interaction. **No live API calls in tests, ever.** |

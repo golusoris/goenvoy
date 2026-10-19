@@ -16,12 +16,12 @@ was the placeholder. The shared `arr/` base has since been tagged
 independently (`arr/v1.0.0`, `v1.1.0`, `v1.2.0`, `v1.2.1`), so the
 `v0.0.0` placeholder is now stale. The published state is:
 
-- `arr/sonarr/v1.2.0` declares `require arr v0.0.0` and `replace arr => ../`.
-- Downstream consumers (revenge, subdo, arca) explicitly require the real
+* `arr/sonarr/v1.2.0` declares `require arr v0.0.0` and `replace arr => ../`.
+* Downstream consumers (revenge, subdo, arca) explicitly require the real
   `arr v1.2.x` themselves. Go's Minimum Version Selection (MVS) picks
   `v1.2.x` over the unpublished `v0.0.0`, and the build succeeds — only
   because some other dep brings in the real version.
-- The `replace ../` directive in the published module is **ignored** by
+* The `replace ../` directive in the published module is **ignored** by
   consumers — Go only honours `replace` from the main module.
 
 Failure mode: a downstream that imports only `arr/sonarr` (no other
@@ -61,16 +61,16 @@ each module.
 
 Positive:
 
-- Downstream consumers can `go get` any `arr/*` child standalone and
+* Downstream consumers can `go get` any `arr/*` child standalone and
   the build resolves correctly without an explicit `arr` require.
-- The lint baseline stays strict — no exception knob to explain.
-- One less goenvoy-specific quirk for future contributors to learn.
-- `go.work`'s role as the single source of truth for local linking is
+* The lint baseline stays strict — no exception knob to explain.
+* One less goenvoy-specific quirk for future contributors to learn.
+* `go.work`'s role as the single source of truth for local linking is
   reinforced (matches what `CONTRIBUTING.md` already documents).
 
 Negative:
 
-- Anyone who clones the repo and runs `go test ./...` inside a single
+* Anyone who clones the repo and runs `go test ./...` inside a single
   `arr/*` child without first running `go work init` (or the documented
   `go work use ...` recipe in `CONTRIBUTING.md`) will fetch `arr v1.2.1`
   from the proxy instead of using the local copy. Acceptable: the docs
@@ -79,20 +79,20 @@ Negative:
 
 Neutral:
 
-- The next release of each affected child carries this fix as a patch
+* The next release of each affected child carries this fix as a patch
   semver bump in its CHANGELOG entry. No coordinated bump required —
   each child ships on its own cadence.
 
 ## Alternatives considered
 
-- **Ratify the status quo with `gomoddirectives.replace-local: true`.**
+* **Ratify the status quo with `gomoddirectives.replace-local: true`.**
   Rejected: silences a linter rule to mask a published-state defect
   that already has a fix path. Adds a goenvoy-specific exception that
   future contributors must understand.
-- **Pin the placeholder require to a pseudo-version of the latest
+* **Pin the placeholder require to a pseudo-version of the latest
   commit instead of `v1.2.1`.** Rejected: pseudo-versions in committed
   go.mod files are a code smell of their own — they bind the module to
   an unstable identifier instead of a release tag.
-- **Collapse `arr/*` children into the single `arr` module.** Rejected:
+* **Collapse `arr/*` children into the single `arr` module.** Rejected:
   violates ADR-0002 (per-module independent semver) — consumers would
   inherit churn from twelve siblings.

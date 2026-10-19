@@ -10,9 +10,9 @@
 
 ## Auth model
 
-No authentication — the client downloads the public `Metadata.zip` archive and parses it locally.
+No authentication — client downloads public `Metadata.zip` archive and parses locally.
 
 ## Known quirks
 
-- Data source is a bulk ZIP download, not a REST API; updates are infrequent and the full dataset is loaded in-process.
+- Data source is bulk ZIP download, not REST API; updates infrequent and full dataset loaded in-process.
 - Bulk archive: <https://gamesdb.launchbox-app.com/Metadata.zip>.

@@ -16,34 +16,35 @@ violates ADR-0001.
 Implement the minimal OAuth2 flows each service needs by hand, per
 module, using `net/http` + `net/url` + `encoding/json` only. The
 flows are: Device Authorization Grant (RFC 8628), Authorization Code
-+ PKCE (RFC 7636), Refresh Token (RFC 6749 §6), and Client
+
+* PKCE (RFC 7636), Refresh Token (RFC 6749 §6), and Client
 Credentials where applicable.
 
 Each OAuth-using module exposes:
 
-- `NewWithToken(baseURL, accessToken string, opts ...Option)` — the
+* `NewWithToken(baseURL, accessToken string, opts ...Option)` — the
   common construction path for already-authenticated callers.
-- Helper functions for flow init: `StartDeviceAuth(ctx, clientID, ...)`,
+* Helper functions for flow init: `StartDeviceAuth(ctx, clientID, ...)`,
   `ExchangeCode(ctx, ...)`, `Refresh(ctx, refreshToken)`.
 
 ## Consequences
 
 Positive:
 
-- Preserves ADR-0001.
-- Per-service helpers can match the service's idiosyncrasies
+* Preserves ADR-0001.
+* Per-service helpers can match the service's idiosyncrasies
   (Spotify's `show_dialog`, Trakt's 6-digit user code).
 
 Negative:
 
-- Modest code duplication across OAuth2-using modules (~120 lines
+* Modest code duplication across OAuth2-using modules (~120 lines
   each). Accepted trade.
 
 ## Alternatives considered
 
-- Adopt `golang.org/x/oauth2` — rejected: violates ADR-0001 and pulls
+* Adopt `golang.org/x/oauth2` — rejected: violates ADR-0001 and pulls
   in transitive deps that defeat the pure-stdlib promise.
-- Single shared `goenvoy/oauth2` helper module — rejected: every
+* Single shared `goenvoy/oauth2` helper module — rejected: every
   consumer would pull a second module just to use one client; the
   per-module-semver decision (ADR-0002) makes the shared module a
   cross-cutting versioning headache.

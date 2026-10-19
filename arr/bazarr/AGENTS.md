@@ -14,5 +14,5 @@ API key passed as `X-Api-Key` header via `arr.BaseClient`.
 
 ## Known quirks
 
-- The old API-specific wiki page returns 404; client behavior is based on
-  Bazarr's live `/api` endpoints and the public wiki.
+- Old API-specific wiki page returns 404; client behavior matches
+  Bazarr live `/api` endpoints and public wiki.

@@ -2,13 +2,11 @@
 
 ## [1.5.1](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.5.0...arr/seerr/v1.5.1) (2026-10-18)
 
-
 ### Code Refactoring
 
 * **arr:** fold the request tail of the remaining arr methods onto the arr/v2 helpers ([#126](https://github.com/golusoris/goenvoy/issues/126)) ([21144ce](https://github.com/golusoris/goenvoy/commit/21144ce9e343c81b8ce667cdc6378fcace46ba91))
 
 ## [1.5.0](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.4.0...arr/seerr/v1.5.0) (2026-10-17)
-
 
 ### Features
 
@@ -16,13 +14,11 @@
 
 ## [1.4.0](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.3.1...arr/seerr/v1.4.0) (2026-10-17)
 
-
 ### Features
 
 * **arr/seerr:** decode request processing fields and service settings ([#98](https://github.com/golusoris/goenvoy/issues/98)) ([6bf8f0f](https://github.com/golusoris/goenvoy/commit/6bf8f0fb28e04db5ae56f00407d4a39b1beb9b80))
 
 ## [1.3.1](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.3.0...arr/seerr/v1.3.1) (2026-06-19)
-
 
 ### Bug Fixes
 
@@ -30,11 +26,9 @@
 
 ## [1.3.0](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.2.0...arr/seerr/v1.3.0) (2026-04-15)
 
-
 ### Features
 
 * **arr/seerr:** add Seerr API client ([a3ec03f](https://github.com/golusoris/goenvoy/commit/a3ec03fca77e51a8e316d5f748709f9a70d4da53))
-
 
 ### Bug Fixes
 

@@ -2,13 +2,11 @@
 
 ## [2.1.3](https://github.com/golusoris/goenvoy/compare/arr/prowlarr/v2.1.2...arr/prowlarr/v2.1.3) (2026-10-19)
 
-
 ### Code Refactoring
 
 * **arr:** fold log, filesystem-type and manual-import methods onto arr/v2 helpers ([#132](https://github.com/golusoris/goenvoy/issues/132)) ([76166fb](https://github.com/golusoris/goenvoy/commit/76166fb87491be769473e2eb8eaa71860eba554f))
 
 ## [2.1.2](https://github.com/golusoris/goenvoy/compare/arr/prowlarr/v2.1.1...arr/prowlarr/v2.1.2) (2026-10-18)
-
 
 ### Code Refactoring
 
@@ -17,19 +15,16 @@
 
 ## [2.1.1](https://github.com/golusoris/goenvoy/compare/arr/prowlarr/v2.1.0...arr/prowlarr/v2.1.1) (2026-06-19)
 
-
 ### Bug Fixes
 
 * **deps:** update module github.com/golusoris/goenvoy/arr/v2 to v2.1.0 ([#64](https://github.com/golusoris/goenvoy/issues/64)) ([273caf4](https://github.com/golusoris/goenvoy/commit/273caf4d61faa26b1d2b9f79e7ca4539025a5f35))
 
 ## [2.1.0](https://github.com/golusoris/goenvoy/compare/arr/prowlarr/v2.0.0...arr/prowlarr/v2.1.0) (2026-04-15)
 
-
 ### Features
 
 * add HeadPing, UploadBackup, GetRaw to all arr packages ([893a185](https://github.com/golusoris/goenvoy/commit/893a185c977a366421599d7d738f15f103151c2c))
 * **arr/prowlarr:** add Prowlarr v1 API client ([e4eb2a6](https://github.com/golusoris/goenvoy/commit/e4eb2a66b1f4740743097f1cc641d8187dae87ec))
-
 
 ### Bug Fixes
 

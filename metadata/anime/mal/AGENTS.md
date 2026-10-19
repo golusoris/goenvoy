@@ -14,4 +14,4 @@ Guest reads use `X-Mal-Client-Id`; user endpoints use `Authorization: Bearer <to
 
 ## Known quirks
 
-- When a Bearer token is set it takes priority over `X-Mal-Client-Id`; the header is not sent alongside the token.
+- When Bearer token set, priority over `X-Mal-Client-Id`; header not sent alongside token.

@@ -2,13 +2,11 @@
 
 ## [2.1.3](https://github.com/golusoris/goenvoy/compare/metadata/book/googlebooks/v2.1.2...metadata/book/googlebooks/v2.1.3) (2026-10-19)
 
-
 ### Bug Fixes
 
 * **lint:** hold every Go file to the HISS-04 complexity limits ([#142](https://github.com/golusoris/goenvoy/issues/142)) ([2e5dea9](https://github.com/golusoris/goenvoy/commit/2e5dea9437444f670c5a628a35f8cc11e4883d46)), closes [#76](https://github.com/golusoris/goenvoy/issues/76)
 
 ## [2.1.2](https://github.com/golusoris/goenvoy/compare/metadata/book/googlebooks/v2.1.1...metadata/book/googlebooks/v2.1.2) (2026-10-11)
-
 
 ### Bug Fixes
 
@@ -17,7 +15,6 @@
 
 ## [2.1.1](https://github.com/golusoris/goenvoy/compare/metadata/book/googlebooks/v2.1.0...metadata/book/googlebooks/v2.1.1) (2026-06-19)
 
-
 ### Bug Fixes
 
 * **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.0 ([#65](https://github.com/golusoris/goenvoy/issues/65)) ([127fc2d](https://github.com/golusoris/goenvoy/commit/127fc2df0eef17326e41cd0ed1a46011ff3811fe))
@@ -25,13 +22,11 @@
 
 ## [2.1.0](https://github.com/golusoris/goenvoy/compare/metadata/book/googlebooks/v2.0.0...metadata/book/googlebooks/v2.1.0) (2026-04-15)
 
-
 ### Features
 
 * add 8 new service modules ([5e07309](https://github.com/golusoris/goenvoy/commit/5e0730980c41255ae89a2c6fd00690bcf7430e62))
 * **googlebooks:** add bookshelves, annotations, series, and library methods ([99ed5e6](https://github.com/golusoris/goenvoy/commit/99ed5e6563f291a21d886af0572d2ab48fa13408))
 * **metadata:** add shared BaseClient, migrate all 27 providers, restructure movie→video ([0026baa](https://github.com/golusoris/goenvoy/commit/0026baa54634fa25c00f67d9387e8013e5d70a6e))
-
 
 ### Bug Fixes
 

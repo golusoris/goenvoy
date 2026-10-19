@@ -14,5 +14,5 @@ Personal API token passed as `Authorization: Bearer <token>`.
 
 ## Known quirks
 
-- The old API docs URL returns 404; client behavior is based on the current
-  service API surface until upstream publishes stable docs again.
+- Old API docs URL returns 404; client behavior matches current
+  service API surface until upstream publishes stable docs.

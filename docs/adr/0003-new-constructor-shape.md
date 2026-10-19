@@ -27,15 +27,15 @@ needed.
 
 Positive:
 
-- One recognisable shape across the whole library.
-- Compile-time fail if `baseURL` / `apiKey` omitted.
+* One recognisable shape across the whole library.
+* Compile-time fail if `baseURL` / `apiKey` omitted.
 
 Negative:
 
-- Services with fundamentally different auth (e.g. OAuth-only) need
+* Services with fundamentally different auth (e.g. OAuth-only) need
   explicit alternates.
 
 ## Alternatives considered
 
-- Struct literal — rejected: silently-valid zero values are dangerous.
-- Variadic-only — rejected: defers "did you set baseURL" to runtime.
+* Struct literal — rejected: silently-valid zero values are dangerous.
+* Variadic-only — rejected: defers "did you set baseURL" to runtime.
