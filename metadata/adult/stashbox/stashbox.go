@@ -135,6 +135,25 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("stashbox: HTTP %d", e.StatusCode)
 }
 
+// decodeGraphQLResponse unmarshals GraphQL response envelopes and extracts data or errors.
+func decodeGraphQLResponse(body []byte, dst any) error {
+	var gqlResp graphQLResponse
+	if err := json.Unmarshal(body, &gqlResp); err != nil {
+		return fmt.Errorf("stashbox: decode response: %w", err)
+	}
+
+	if len(gqlResp.Errors) > 0 {
+		return &gqlResp.Errors[0]
+	}
+
+	if dst != nil {
+		if err := json.Unmarshal(gqlResp.Data, dst); err != nil {
+			return fmt.Errorf("stashbox: decode data: %w", err)
+		}
+	}
+	return nil
+}
+
 // Query sends a raw GraphQL query and unmarshals the data field into dst.
 func (c *Client) Query(ctx context.Context, query string, variables map[string]any, dst any) error {
 	payload, err := json.Marshal(graphQLRequest{Query: query, Variables: variables})
@@ -166,21 +185,7 @@ func (c *Client) Query(ctx context.Context, query string, variables map[string]a
 		return &APIError{StatusCode: resp.StatusCode, RawBody: string(body)}
 	}
 
-	var gqlResp graphQLResponse
-	if err := json.Unmarshal(body, &gqlResp); err != nil {
-		return fmt.Errorf("stashbox: decode response: %w", err)
-	}
-
-	if len(gqlResp.Errors) > 0 {
-		return &gqlResp.Errors[0]
-	}
-
-	if dst != nil {
-		if err := json.Unmarshal(gqlResp.Data, dst); err != nil {
-			return fmt.Errorf("stashbox: decode data: %w", err)
-		}
-	}
-	return nil
+	return decodeGraphQLResponse(body, dst)
 }
 
 // FindPerformer returns a performer by UUID.

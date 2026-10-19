@@ -59,6 +59,24 @@ type itemResponse[T any] struct {
 	Data T `json:"data"`
 }
 
+// decodeResponse inspects HTTP status and unmarshals the response body or APIError.
+func decodeResponse(statusCode int, body []byte, dst any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		apiErr := &APIError{StatusCode: statusCode}
+		if err := json.Unmarshal(body, apiErr); err != nil {
+			apiErr.RawBody = string(body)
+		}
+		return apiErr
+	}
+
+	if dst != nil && len(body) > 0 {
+		if err := json.Unmarshal(body, dst); err != nil {
+			return fmt.Errorf("tpdb: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
 func (c *Client) doRequest(ctx context.Context, method, path string, params url.Values, dst any) error {
 	u, err := url.Parse(c.BaseURL() + path)
 	if err != nil {
@@ -88,20 +106,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, params url.
 		return fmt.Errorf("tpdb: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		apiErr := &APIError{StatusCode: resp.StatusCode}
-		if err := json.Unmarshal(body, apiErr); err != nil {
-			apiErr.RawBody = string(body)
-		}
-		return apiErr
-	}
-
-	if dst != nil && len(body) > 0 {
-		if err := json.Unmarshal(body, dst); err != nil {
-			return fmt.Errorf("tpdb: decode response: %w", err)
-		}
-	}
-	return nil
+	return decodeResponse(resp.StatusCode, body, dst)
 }
 
 func (c *Client) get(ctx context.Context, path string, params url.Values, dst any) error {
@@ -139,11 +144,8 @@ type SceneSearchParams struct {
 	OrderBy   string
 }
 
-func (p *SceneSearchParams) values() url.Values {
-	if p == nil {
-		return nil
-	}
-	v := pageParams(p.Page, p.PerPage)
+// addSceneFilters encodes search query and relationship filters.
+func addSceneFilters(v url.Values, p *SceneSearchParams) {
 	if p.Query != "" {
 		v.Set("q", p.Query)
 	}
@@ -159,6 +161,13 @@ func (p *SceneSearchParams) values() url.Values {
 	if p.Director != "" {
 		v.Set("director", p.Director)
 	}
+	if p.Category != "" {
+		v.Set("category", p.Category)
+	}
+}
+
+// addSceneAttributes encodes temporal and media property filters.
+func addSceneAttributes(v url.Values, p *SceneSearchParams) {
 	if p.DateFrom != "" {
 		v.Set("date_from", p.DateFrom)
 	}
@@ -174,12 +183,18 @@ func (p *SceneSearchParams) values() url.Values {
 	if p.Hash != "" {
 		v.Set("hash", p.Hash)
 	}
-	if p.Category != "" {
-		v.Set("category", p.Category)
-	}
 	if p.OrderBy != "" {
 		v.Set("order_by", p.OrderBy)
 	}
+}
+
+func (p *SceneSearchParams) values() url.Values {
+	if p == nil {
+		return nil
+	}
+	v := pageParams(p.Page, p.PerPage)
+	addSceneFilters(v, p)
+	addSceneAttributes(v, p)
 	return v
 }
 
@@ -241,11 +256,8 @@ type PerformerSearchParams struct {
 	OrderBy   string
 }
 
-func (p *PerformerSearchParams) values() url.Values {
-	if p == nil {
-		return nil
-	}
-	v := pageParams(p.Page, p.PerPage)
+// addPerformerDemographics encodes identity and demographic filters.
+func addPerformerDemographics(v url.Values, p *PerformerSearchParams) {
 	if p.Query != "" {
 		v.Set("q", p.Query)
 	}
@@ -258,6 +270,13 @@ func (p *PerformerSearchParams) values() url.Values {
 	if p.Age != "" {
 		v.Set("age", p.Age)
 	}
+	if p.OrderBy != "" {
+		v.Set("order_by", p.OrderBy)
+	}
+}
+
+// addPerformerPhysical encodes physical appearance and feature filters.
+func addPerformerPhysical(v url.Values, p *PerformerSearchParams) {
 	if p.Height != "" {
 		v.Set("height", p.Height)
 	}
@@ -279,9 +298,15 @@ func (p *PerformerSearchParams) values() url.Values {
 	if p.Piercings != "" {
 		v.Set("piercings", p.Piercings)
 	}
-	if p.OrderBy != "" {
-		v.Set("order_by", p.OrderBy)
+}
+
+func (p *PerformerSearchParams) values() url.Values {
+	if p == nil {
+		return nil
 	}
+	v := pageParams(p.Page, p.PerPage)
+	addPerformerDemographics(v, p)
+	addPerformerPhysical(v, p)
 	return v
 }
 

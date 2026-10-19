@@ -106,6 +106,27 @@ func (c *Client) authParams() (url.Values, error) {
 	return params, nil
 }
 
+// decodeSubsonicResponse verifies HTTP status and unpacks a Subsonic response envelope.
+func decodeSubsonicResponse(resp *http.Response, body []byte) (*responseBody, error) {
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return nil, &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
+	}
+
+	var sr subsonicResponse
+	if err := json.Unmarshal(body, &sr); err != nil {
+		return nil, fmt.Errorf("navidrome: decode response: %w", err)
+	}
+
+	if sr.Response.Status != "ok" {
+		if sr.Response.Error != nil {
+			return nil, sr.Response.Error
+		}
+		return nil, fmt.Errorf("navidrome: unexpected status %q", sr.Response.Status)
+	}
+
+	return &sr.Response, nil
+}
+
 func (c *Client) get(ctx context.Context, endpoint string, extra url.Values) (*responseBody, error) {
 	params, err := c.authParams()
 	if err != nil {
@@ -136,23 +157,7 @@ func (c *Client) get(ctx context.Context, endpoint string, extra url.Values) (*r
 		return nil, fmt.Errorf("navidrome: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return nil, &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
-	}
-
-	var sr subsonicResponse
-	if err := json.Unmarshal(body, &sr); err != nil {
-		return nil, fmt.Errorf("navidrome: decode response: %w", err)
-	}
-
-	if sr.Response.Status != "ok" {
-		if sr.Response.Error != nil {
-			return nil, sr.Response.Error
-		}
-		return nil, fmt.Errorf("navidrome: unexpected status %q", sr.Response.Status)
-	}
-
-	return &sr.Response, nil
+	return decodeSubsonicResponse(resp, body)
 }
 
 // Ping tests connectivity with the server.

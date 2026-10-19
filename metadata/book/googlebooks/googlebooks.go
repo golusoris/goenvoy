@@ -112,35 +112,42 @@ func (c *Client) Search(ctx context.Context, query string) (*VolumesResponse, er
 	return &resp, nil
 }
 
+// encodeSearchParams sets query parameters from non-empty SearchParams fields.
+func encodeSearchParams(p *SearchParams) url.Values {
+	params := url.Values{}
+	if p == nil {
+		return params
+	}
+	if p.Query != "" {
+		params.Set("q", p.Query)
+	}
+	if p.StartIndex > 0 {
+		params.Set("startIndex", strconv.Itoa(p.StartIndex))
+	}
+	if p.MaxResults > 0 {
+		params.Set("maxResults", strconv.Itoa(p.MaxResults))
+	}
+	if p.PrintType != "" {
+		params.Set("printType", p.PrintType)
+	}
+	if p.OrderBy != "" {
+		params.Set("orderBy", p.OrderBy)
+	}
+	if p.Filter != "" {
+		params.Set("filter", p.Filter)
+	}
+	if p.LangRestrict != "" {
+		params.Set("langRestrict", p.LangRestrict)
+	}
+	if p.Projection != "" {
+		params.Set("projection", p.Projection)
+	}
+	return params
+}
+
 // SearchWithParams searches for volumes with detailed parameters.
 func (c *Client) SearchWithParams(ctx context.Context, p *SearchParams) (*VolumesResponse, error) {
-	params := url.Values{}
-	if p != nil {
-		if p.Query != "" {
-			params.Set("q", p.Query)
-		}
-		if p.StartIndex > 0 {
-			params.Set("startIndex", strconv.Itoa(p.StartIndex))
-		}
-		if p.MaxResults > 0 {
-			params.Set("maxResults", strconv.Itoa(p.MaxResults))
-		}
-		if p.PrintType != "" {
-			params.Set("printType", p.PrintType)
-		}
-		if p.OrderBy != "" {
-			params.Set("orderBy", p.OrderBy)
-		}
-		if p.Filter != "" {
-			params.Set("filter", p.Filter)
-		}
-		if p.LangRestrict != "" {
-			params.Set("langRestrict", p.LangRestrict)
-		}
-		if p.Projection != "" {
-			params.Set("projection", p.Projection)
-		}
-	}
+	params := encodeSearchParams(p)
 	var resp VolumesResponse
 	if err := c.get(ctx, "/volumes", params, &resp); err != nil {
 		return nil, err

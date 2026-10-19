@@ -228,26 +228,20 @@ func (c *BaseClient) Upload(ctx context.Context, path, fieldName, fileName strin
 	return nil
 }
 
-// do is the internal method that executes every HTTP request.
-func (c *BaseClient) do(ctx context.Context, method, path string, body, dst any) error {
-	ref, err := url.Parse(path)
-	if err != nil {
-		return fmt.Errorf("arr: parse path: %w", err)
-	}
-	u := c.baseURL.ResolveReference(ref)
-
+// newRequest prepares an HTTP request with headers and an optional JSON body.
+func (c *BaseClient) newRequest(ctx context.Context, method, targetURL string, body any) (*http.Request, error) {
 	var reqBody io.Reader
 	if body != nil {
 		buf, err := json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("arr: marshal request body: %w", err)
+			return nil, fmt.Errorf("arr: marshal request body: %w", err)
 		}
 		reqBody = bytes.NewReader(buf)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, u.String(), reqBody)
+	req, err := http.NewRequestWithContext(ctx, method, targetURL, reqBody)
 	if err != nil {
-		return fmt.Errorf("arr: create request: %w", err)
+		return nil, fmt.Errorf("arr: create request: %w", err)
 	}
 
 	req.Header.Set("X-Api-Key", c.apiKey)
@@ -256,6 +250,40 @@ func (c *BaseClient) do(ctx context.Context, method, path string, body, dst any)
 
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
+	}
+	return req, nil
+}
+
+// decodeResponse verifies HTTP status and unmarshals JSON response data.
+func decodeResponse(statusCode int, method, path string, respBody []byte, dst any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		return &APIError{
+			StatusCode: statusCode,
+			Method:     method,
+			Path:       path,
+			Body:       respBody,
+		}
+	}
+
+	if dst != nil && len(respBody) > 0 {
+		if err := json.Unmarshal(respBody, dst); err != nil {
+			return fmt.Errorf("arr: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
+// do is the internal method that executes every HTTP request.
+func (c *BaseClient) do(ctx context.Context, method, path string, body, dst any) error {
+	ref, err := url.Parse(path)
+	if err != nil {
+		return fmt.Errorf("arr: parse path: %w", err)
+	}
+	u := c.baseURL.ResolveReference(ref)
+
+	req, err := c.newRequest(ctx, method, u.String(), body)
+	if err != nil {
+		return err
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -269,20 +297,5 @@ func (c *BaseClient) do(ctx context.Context, method, path string, body, dst any)
 		return fmt.Errorf("arr: read response body: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{
-			StatusCode: resp.StatusCode,
-			Method:     method,
-			Path:       path,
-			Body:       respBody,
-		}
-	}
-
-	if dst != nil && len(respBody) > 0 {
-		if err := json.Unmarshal(respBody, dst); err != nil {
-			return fmt.Errorf("arr: decode response: %w", err)
-		}
-	}
-
-	return nil
+	return decodeResponse(resp.StatusCode, method, path, respBody, dst)
 }

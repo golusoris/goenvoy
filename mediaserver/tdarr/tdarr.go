@@ -81,19 +81,20 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 	return c, nil
 }
 
-func (c *Client) do(ctx context.Context, method, path string, body, v any) error {
+// buildRequest creates an HTTP request with optional JSON body and Tdarr headers.
+func (c *Client) buildRequest(ctx context.Context, method, targetURL string, body any) (*http.Request, error) {
 	var reqBody io.Reader = http.NoBody
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("tdarr: marshal request: %w", err)
+			return nil, fmt.Errorf("tdarr: marshal request: %w", err)
 		}
 		reqBody = bytes.NewReader(b)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reqBody)
+	req, err := http.NewRequestWithContext(ctx, method, targetURL, reqBody)
 	if err != nil {
-		return fmt.Errorf("tdarr: create request: %w", err)
+		return nil, fmt.Errorf("tdarr: create request: %w", err)
 	}
 
 	if body != nil {
@@ -104,6 +105,28 @@ func (c *Client) do(ctx context.Context, method, path string, body, v any) error
 		req.Header.Set("X-Api-Key", c.apiKey)
 	}
 	req.Header.Set("User-Agent", c.userAgent)
+	return req, nil
+}
+
+// parseResponse verifies the status code and unmarshals the response body.
+func parseResponse(statusCode int, status string, raw []byte, v any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		return &APIError{StatusCode: statusCode, Status: status, Body: string(raw)}
+	}
+
+	if v != nil {
+		if err := json.Unmarshal(raw, v); err != nil {
+			return fmt.Errorf("tdarr: decode response: %w", err)
+		}
+	}
+	return nil
+}
+
+func (c *Client) do(ctx context.Context, method, path string, body, v any) error {
+	req, err := c.buildRequest(ctx, method, c.baseURL+path, body)
+	if err != nil {
+		return err
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -116,16 +139,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, v any) error
 		return fmt.Errorf("tdarr: read response: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(raw)}
-	}
-
-	if v != nil {
-		if err := json.Unmarshal(raw, v); err != nil {
-			return fmt.Errorf("tdarr: decode response: %w", err)
-		}
-	}
-	return nil
+	return parseResponse(resp.StatusCode, resp.Status, raw, v)
 }
 
 func (c *Client) doText(ctx context.Context, method, path string) (string, error) {

@@ -711,17 +711,8 @@ type FilterParams struct {
 	Status        int
 }
 
-func (p *FilterParams) encode() string {
-	if p == nil {
-		return ""
-	}
-	q := url.Values{}
-	if p.Country != "" {
-		q.Set("country", p.Country)
-	}
-	if p.Language != "" {
-		q.Set("lang", p.Language)
-	}
+// encodeIDsAndRatings sets integer IDs and classification filters.
+func (p *FilterParams) encodeIDsAndRatings(q url.Values) {
 	if p.Company > 0 {
 		q.Set("company", strconv.Itoa(p.Company))
 	}
@@ -734,14 +725,33 @@ func (p *FilterParams) encode() string {
 	if p.Year > 0 {
 		q.Set("year", strconv.Itoa(p.Year))
 	}
+	if p.Status > 0 {
+		q.Set("status", strconv.Itoa(p.Status))
+	}
+}
+
+// encodeMetaAndSorting sets locale strings and sort order parameters.
+func (p *FilterParams) encodeMetaAndSorting(q url.Values) {
+	if p.Country != "" {
+		q.Set("country", p.Country)
+	}
+	if p.Language != "" {
+		q.Set("lang", p.Language)
+	}
 	if p.Sort != "" {
 		q.Set("sort", p.Sort)
 	}
 	if p.SortType != "" {
 		q.Set("sortType", p.SortType)
 	}
-	if p.Status > 0 {
-		q.Set("status", strconv.Itoa(p.Status))
+}
+
+func (p *FilterParams) encode() string {
+	if p == nil {
+		return ""
 	}
+	q := url.Values{}
+	p.encodeMetaAndSorting(q)
+	p.encodeIDsAndRatings(q)
 	return q.Encode()
 }

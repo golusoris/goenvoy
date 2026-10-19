@@ -150,23 +150,20 @@ func (c *BaseClient) Get(ctx context.Context, path string, dst any) error {
 	return c.DoJSON(ctx, http.MethodGet, path, nil, dst)
 }
 
-// DoJSON performs an HTTP request with an optional JSON payload. On success
-// (2xx), it decodes the response into dst. On failure, it returns an [*APIError].
-func (c *BaseClient) DoJSON(ctx context.Context, method, path string, payload, dst any) error {
-	u := c.baseURL + path
-
+// newRequest prepares an authorized HTTP request with an optional JSON payload.
+func (c *BaseClient) newRequest(ctx context.Context, method, targetURL string, payload any) (*http.Request, error) {
 	var bodyReader io.Reader = http.NoBody
 	if payload != nil {
 		b, err := json.Marshal(payload)
 		if err != nil {
-			return fmt.Errorf("%s: marshal body: %w", c.pkgName, err)
+			return nil, fmt.Errorf("%s: marshal body: %w", c.pkgName, err)
 		}
 		bodyReader = bytes.NewReader(b)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, u, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, method, targetURL, bodyReader)
 	if err != nil {
-		return fmt.Errorf("%s: create request: %w", c.pkgName, err)
+		return nil, fmt.Errorf("%s: create request: %w", c.pkgName, err)
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -176,6 +173,34 @@ func (c *BaseClient) DoJSON(ctx context.Context, method, path string, payload, d
 	}
 	if payload != nil {
 		req.Header.Set("Content-Type", "application/json;charset=utf-8")
+	}
+	return req, nil
+}
+
+// decodeResponse verifies HTTP status and unmarshals JSON response data.
+func (c *BaseClient) decodeResponse(statusCode int, body []byte, dst any) error {
+	if statusCode < 200 || statusCode >= 300 {
+		return &APIError{
+			StatusCode: statusCode,
+			RawBody:    string(body),
+			pkgName:    c.pkgName,
+		}
+	}
+
+	if dst != nil && len(body) > 0 {
+		if err := json.Unmarshal(body, dst); err != nil {
+			return fmt.Errorf("%s: decode response: %w", c.pkgName, err)
+		}
+	}
+	return nil
+}
+
+// DoJSON performs an HTTP request with an optional JSON payload. On success
+// (2xx), it decodes the response into dst. On failure, it returns an [*APIError].
+func (c *BaseClient) DoJSON(ctx context.Context, method, path string, payload, dst any) error {
+	req, err := c.newRequest(ctx, method, c.baseURL+path, payload)
+	if err != nil {
+		return err
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -189,20 +214,7 @@ func (c *BaseClient) DoJSON(ctx context.Context, method, path string, payload, d
 		return fmt.Errorf("%s: read response: %w", c.pkgName, err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{
-			StatusCode: resp.StatusCode,
-			RawBody:    string(body),
-			pkgName:    c.pkgName,
-		}
-	}
-
-	if dst != nil && len(body) > 0 {
-		if err := json.Unmarshal(body, dst); err != nil {
-			return fmt.Errorf("%s: decode response: %w", c.pkgName, err)
-		}
-	}
-	return nil
+	return c.decodeResponse(resp.StatusCode, body, dst)
 }
 
 // APIError is returned when a metadata provider API responds with a non-2xx
