@@ -27,12 +27,20 @@ jobs:
     outputs:
       tags: ${{ steps.plan.outputs.tags }}
     steps:
+      # A release pull request opened with the workflow token starts no checks; the App token does.
+      - name: Mint the release token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
       - id: rp
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
+          token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
       - id: plan
@@ -45,8 +53,8 @@ jobs:
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
           echo "Tags created by this run: $tags"
 
-  # Tags and releases made with the repository token start no workflow, so
-  # release.yml is called here instead of waiting for its tag trigger.
+  # release.yml is called here once per tag; it has no tag trigger, which the
+  # App-token tags would otherwise start a second time.
   release:
     name: Release ${{ matrix.tag }}
     needs: release-please
