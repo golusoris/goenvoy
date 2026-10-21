@@ -57,12 +57,6 @@ documentation:
   style_exclude:
     - "**/CHANGELOG.md"
 exceptions:
-  - rule: release-token
-    path: .github/workflows/release-please.yml
-    category: C
-    entered: "2026-10-19"
-    expires: "2026-10-29"
-    reason: 'category C: release-please runs on the workflow token because the golusoris organisation has no release GitHub App yet; creating one is an operator act; replace the token with an actions/create-github-app-token step, then remove this entry'
   - rule: declared-linters
     tool: golangci-lint
     reason: 'category D: golangci-lint runs in the pinned reusable workflow golusoris/golusoris ci-go.yml (ci.yml job ci, golangci-version v2.13.2); audit does not read remote reusable workflows; manifest caps expiry at 90 days'
