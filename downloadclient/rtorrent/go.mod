@@ -1,3 +1,3 @@
 module github.com/golusoris/goenvoy/downloadclient/rtorrent/v2
 
-go 1.26.9
+go 1.26.10
