@@ -1848,6 +1848,18 @@ func collectAliasesAtHead(ctx context.Context, root, head string, modules []modu
 	return aliases, nil
 }
 
+// matchTypeSpecInGenDecl searches gen for a non-alias TypeSpec matching typeName.
+func matchTypeSpecInGenDecl(gen *ast.GenDecl, typeName string, imports []*ast.ImportSpec) (string, bool) {
+	for sIdx := 0; sIdx < len(gen.Specs) && sIdx < maxSpecs; sIdx++ {
+		ts, ok := gen.Specs[sIdx].(*ast.TypeSpec)
+		if !ok || ts.Assign.IsValid() || ts.Name.Name != typeName {
+			continue
+		}
+		return formatTypeDecl(ts, imports), true
+	}
+	return "", false
+}
+
 func matchTypeDeclInFile(fset *token.FileSet, filePath string, data []byte, typeName string) (string, bool) {
 	f, err := parser.ParseFile(fset, filePath, data, parser.SkipObjectResolution)
 	if err != nil {
@@ -1858,38 +1870,44 @@ func matchTypeDeclInFile(fset *token.FileSet, filePath string, data []byte, type
 		if !ok || gen.Tok != token.TYPE {
 			continue
 		}
-		for sIdx := 0; sIdx < len(gen.Specs) && sIdx < maxSpecs; sIdx++ {
-			ts, ok := gen.Specs[sIdx].(*ast.TypeSpec)
-			if !ok || ts.Assign.IsValid() || ts.Name.Name != typeName {
-				continue
-			}
-			return formatTypeDecl(ts, f.Imports), true
+		if decl, found := matchTypeSpecInGenDecl(gen, typeName, f.Imports); found {
+			return decl, true
 		}
 	}
 	return "", false
 }
 
+// findTypeDeclInModule searches a single module for typeName in pkgPath.
+func findTypeDeclInModule(ctx context.Context, fset *token.FileSet, root, rev string, target module, modules []module, pkgPath, typeName string) (string, error) {
+	files, err := listModuleGoFiles(ctx, root, rev, target, modules)
+	if err != nil {
+		return "", fmt.Errorf("list Go files in module %s: %w", target.dir, err)
+	}
+	for index := 0; index < len(files) && index < maxGoFiles; index++ {
+		filePath := files[index]
+		if filePackagePath(target.path, target.dir, filePath) != pkgPath {
+			continue
+		}
+		data, err := gitCapture(ctx, root, maxDeclBytes, "cat-file", "blob", rev+":"+filePath)
+		if err != nil {
+			return "", fmt.Errorf("read type source %s: %w", filePath, err)
+		}
+		if decl, found := matchTypeDeclInFile(fset, filePath, data, typeName); found {
+			return decl, nil
+		}
+	}
+	return "", nil
+}
+
 func findTypeDecl(ctx context.Context, root, rev string, modules []module, pkgPath, typeName string) (string, error) {
 	fset := token.NewFileSet()
 	for modIndex := 0; modIndex < len(modules) && modIndex < maxModules; modIndex++ {
-		target := modules[modIndex]
-		files, err := listModuleGoFiles(ctx, root, rev, target, modules)
+		decl, err := findTypeDeclInModule(ctx, fset, root, rev, modules[modIndex], modules, pkgPath, typeName)
 		if err != nil {
-			return "", fmt.Errorf("list Go files in module %s: %w", target.dir, err)
+			return "", err
 		}
-		for index := 0; index < len(files) && index < maxGoFiles; index++ {
-			filePath := files[index]
-			if filePackagePath(target.path, target.dir, filePath) != pkgPath {
-				continue
-			}
-			data, err := gitCapture(ctx, root, maxDeclBytes, "cat-file", "blob", rev+":"+filePath)
-			if err != nil {
-				return "", fmt.Errorf("read type source %s: %w", filePath, err)
-			}
-			decl, found := matchTypeDeclInFile(fset, filePath, data, typeName)
-			if found {
-				return decl, nil
-			}
+		if decl != "" {
+			return decl, nil
 		}
 	}
 	return "", nil
