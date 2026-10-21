@@ -3,7 +3,7 @@
 // them. Kept out of the library modules so consumers never see these dependencies.
 module github.com/golusoris/goenvoy/tools/go
 
-go 1.26.9
+go 1.26.10
 
 tool (
 	github.com/daixiang0/gci
