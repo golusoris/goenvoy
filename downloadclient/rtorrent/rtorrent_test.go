@@ -51,15 +51,9 @@ func xmlTorrentRow(flags [4]string, hashing ...string) string {
 		str = "<value><string>x</string></value>"
 		num = "<value><i8>7</i8></value>"
 	)
-	hashElem := "<i8>0</i8>"
+	hashVal := "<value><i8>0</i8></value>"
 	if len(hashing) > 0 {
-		hashElem = hashing[0]
-	}
-	var hashVal string
-	if strings.HasPrefix(hashElem, "<value>") {
-		hashVal = hashElem
-	} else {
-		hashVal = "<value>" + hashElem + "</value>"
+		hashVal = "<value>" + hashing[0] + "</value>"
 	}
 	row := str + str + num + num + num + num + num + num +
 		"<value>" + strings.Join(flags[:], "</value><value>") + "</value>" +
