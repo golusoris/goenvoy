@@ -2,4 +2,4 @@ module github.com/golusoris/goenvoy/arr/prowlarr/v2
 
 go 1.26.10
 
-require github.com/golusoris/goenvoy/arr/v2 v2.5.0
+require github.com/golusoris/goenvoy/arr/v2 v2.6.0
