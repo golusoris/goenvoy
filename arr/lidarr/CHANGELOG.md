@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/golusoris/goenvoy/compare/arr/lidarr/v1.6.0...arr/lidarr/v1.6.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **deps:** move to Go 1.26.10 for the crypto/x509 advisory GO-2026-6809 ([#159](https://github.com/golusoris/goenvoy/issues/159)) ([baceba1](https://github.com/golusoris/goenvoy/commit/baceba1d84672942b8ce2e9ba0cf9b879337fac1))
+
 ## [1.6.0](https://github.com/golusoris/goenvoy/compare/arr/lidarr/v1.5.3...arr/lidarr/v1.6.0) (2026-10-19)
 
 
