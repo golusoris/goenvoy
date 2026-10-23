@@ -521,3 +521,442 @@ func TestNew_invalidURL(t *testing.T) {
 		})
 	}
 }
+
+func assertPlayedPercentage(t *testing.T, got, want *float64) {
+	t.Helper()
+	if want == nil {
+		if got != nil {
+			t.Errorf("PlayedPercentage = %v, want nil", *got)
+		}
+		return
+	}
+	if got == nil {
+		t.Fatalf("PlayedPercentage = nil, want %v", *want)
+	}
+	if *got != *want {
+		t.Errorf("PlayedPercentage = %v, want %v", *got, *want)
+	}
+}
+
+func TestUserItemDataDto_PlayedFields(t *testing.T) {
+	t.Parallel()
+
+	pct85 := 85.5
+	pct0 := 0.0
+	pct100 := 100.0
+
+	cases := []struct {
+		name       string
+		json       string
+		wantPlayed bool
+		wantPct    *float64
+	}{
+		{"played with pct", `{"PlayCount": 3, "Played": true, "PlayedPercentage": 85.5}`, true, &pct85},
+		{"unplayed null pct", `{"PlayCount": 0, "Played": false, "PlayedPercentage": null}`, false, nil},
+		{"boundary 0 pct", `{"PlayCount": 1, "Played": false, "PlayedPercentage": 0.0}`, false, &pct0},
+		{"boundary 100 pct", `{"PlayCount": 2, "Played": true, "PlayedPercentage": 100.0}`, true, &pct100},
+		{"omitted pct", `{"PlayCount": 1, "Played": true}`, true, nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var data jellyfin.UserItemDataDto
+			if err := json.Unmarshal([]byte(tc.json), &data); err != nil {
+				t.Fatalf("json.Unmarshal: %v", err)
+			}
+			if data.Played != tc.wantPlayed {
+				t.Errorf("Played = %v, want %v", data.Played, tc.wantPlayed)
+			}
+			assertPlayedPercentage(t, data.PlayedPercentage, tc.wantPct)
+		})
+	}
+}
+
+func checkCreateCollectionRequest(t *testing.T, r *http.Request, wantName, wantIDs, wantParentID string) {
+	t.Helper()
+	if r.Method != http.MethodPost || r.URL.Path != "/Collections" {
+		t.Errorf("unexpected method/path: %s %s", r.Method, r.URL.Path)
+	}
+	q := r.URL.Query()
+	if q.Get("name") != wantName || q.Get("ids") != wantIDs || q.Get("parentId") != wantParentID {
+		t.Errorf("unexpected query: %v", q)
+	}
+}
+
+func TestCreateCollection_Success(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		checkCreateCollectionRequest(t, r, "Favorites", "item-1,item-2,item-3", "parent-uuid")
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(jellyfin.CollectionCreationResult{ID: "created-col-uuid"})
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	res, err := c.CreateCollection(context.Background(), "Favorites", []string{"item-1", "item-2", "item-3"}, "parent-uuid")
+	if err != nil {
+		t.Fatalf("CreateCollection: %v", err)
+	}
+	if res.ID != "created-col-uuid" {
+		t.Errorf("ID = %q, want created-col-uuid", res.ID)
+	}
+}
+
+func TestCreateCollection_Boundary(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("ids"); got != "single-id" {
+			t.Errorf("ids = %q, want single-id", got)
+		}
+		if r.URL.Query().Has("parentId") {
+			t.Errorf("parentId unexpectedly present: %q", r.URL.Query().Get("parentId"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(jellyfin.CollectionCreationResult{ID: "col-1"})
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	res, err := c.CreateCollection(context.Background(), "Action", []string{"single-id"}, "")
+	if err != nil {
+		t.Fatalf("CreateCollection: %v", err)
+	}
+	if res.ID != "col-1" {
+		t.Errorf("ID = %q, want col-1", res.ID)
+	}
+}
+
+func TestCreateCollection_EmptyName(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		t.Fatal("request sent unexpectedly")
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.CreateCollection(context.Background(), "   ", []string{"item-1"}, "")
+	if err == nil {
+		t.Fatal("expected error for empty name")
+	}
+	if !errors.Is(err, jellyfin.ErrEmptyName) {
+		t.Errorf("err = %v, want ErrEmptyName", err)
+	}
+}
+
+func TestCreateCollection_BlankItemID(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		t.Fatal("request sent unexpectedly")
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.CreateCollection(context.Background(), "Col", []string{"a", " "}, "")
+	if err == nil {
+		t.Fatal("expected error for a blank item ID")
+	}
+	if !errors.Is(err, jellyfin.ErrEmptyItemIDs) {
+		t.Errorf("err = %v, want ErrEmptyItemIDs", err)
+	}
+}
+
+func TestCreateCollection_NoItems(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/Collections" {
+			t.Errorf("request = %s %s, want POST /Collections", r.Method, r.URL.Path)
+		}
+		if _, ok := r.URL.Query()["ids"]; ok {
+			t.Errorf("ids = %q, want the parameter omitted", r.URL.Query().Get("ids"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"Id": "col-empty"})
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	got, err := c.CreateCollection(context.Background(), "Col", nil, "")
+	if err != nil {
+		t.Fatalf("CreateCollection: %v", err)
+	}
+	if got.ID != "col-empty" {
+		t.Errorf("ID = %q, want col-empty", got.ID)
+	}
+}
+
+func TestCreateCollection_ServerError(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "server error"})
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.CreateCollection(context.Background(), "Col", []string{"item-1"}, "")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	var apiErr *jellyfin.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *jellyfin.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusInternalServerError {
+		t.Errorf("StatusCode = %d, want 500", apiErr.StatusCode)
+	}
+}
+
+func TestAddToCollection_Success(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		if r.URL.EscapedPath() != "/Collections/col%2F1/Items" {
+			t.Errorf("EscapedPath = %q, want /Collections/col%%2F1/Items", r.URL.EscapedPath())
+		}
+		if got := r.URL.Query().Get("ids"); got != "id-1,id-2" {
+			t.Errorf("ids = %q, want id-1,id-2", got)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if err := c.AddToCollection(context.Background(), "col/1", []string{"id-1", "id-2"}); err != nil {
+		t.Fatalf("AddToCollection: %v", err)
+	}
+}
+
+func TestAddToCollection_BoundarySingleID(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("ids"); got != "id-single" {
+			t.Errorf("ids = %q, want id-single", got)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if err := c.AddToCollection(context.Background(), "col-123", []string{"id-single"}); err != nil {
+		t.Fatalf("AddToCollection: %v", err)
+	}
+}
+
+func TestAddToCollection_EmptyCollectionID(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		t.Fatal("request sent unexpectedly")
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	err = c.AddToCollection(context.Background(), "", []string{"id-1"})
+	if err == nil {
+		t.Fatal("expected error for empty collectionID")
+	}
+	if !errors.Is(err, jellyfin.ErrEmptyCollectionID) {
+		t.Errorf("err = %v, want ErrEmptyCollectionID", err)
+	}
+}
+
+func TestAddToCollection_EmptyItemIDs(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		t.Fatal("request sent unexpectedly")
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	err = c.AddToCollection(context.Background(), "col-1", []string{" "})
+	if err == nil {
+		t.Fatal("expected error for blank itemIDs")
+	}
+	if !errors.Is(err, jellyfin.ErrEmptyItemIDs) {
+		t.Errorf("err = %v, want ErrEmptyItemIDs", err)
+	}
+}
+
+func TestAddToCollection_NotFound(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "collection not found"})
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	err = c.AddToCollection(context.Background(), "col-missing", []string{"id-1"})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	var apiErr *jellyfin.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *jellyfin.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d, want 404", apiErr.StatusCode)
+	}
+}
+
+func TestRemoveFromCollection_Success(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("method = %q, want DELETE", r.Method)
+		}
+		if r.URL.EscapedPath() != "/Collections/col%2F1/Items" {
+			t.Errorf("EscapedPath = %q, want /Collections/col%%2F1/Items", r.URL.EscapedPath())
+		}
+		if got := r.URL.Query().Get("ids"); got != "id-1,id-2,id-3" {
+			t.Errorf("ids = %q, want id-1,id-2,id-3", got)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if err := c.RemoveFromCollection(context.Background(), "col/1", []string{"id-1", "id-2", "id-3"}); err != nil {
+		t.Fatalf("RemoveFromCollection: %v", err)
+	}
+}
+
+func TestRemoveFromCollection_BoundarySingleID(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("ids"); got != "single-id" {
+			t.Errorf("ids = %q, want single-id", got)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if err := c.RemoveFromCollection(context.Background(), "col-1", []string{"single-id"}); err != nil {
+		t.Fatalf("RemoveFromCollection: %v", err)
+	}
+}
+
+func TestRemoveFromCollection_EmptyCollectionID(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		t.Fatal("request sent unexpectedly")
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	err = c.RemoveFromCollection(context.Background(), "   ", []string{"id-1"})
+	if err == nil {
+		t.Fatal("expected error for empty collectionID")
+	}
+	if !errors.Is(err, jellyfin.ErrEmptyCollectionID) {
+		t.Errorf("err = %v, want ErrEmptyCollectionID", err)
+	}
+}
+
+func TestRemoveFromCollection_EmptyItemIDs(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		t.Fatal("request sent unexpectedly")
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	err = c.RemoveFromCollection(context.Background(), "col-1", []string{})
+	if err == nil {
+		t.Fatal("expected error for empty itemIDs")
+	}
+	if !errors.Is(err, jellyfin.ErrEmptyItemIDs) {
+		t.Errorf("err = %v, want ErrEmptyItemIDs", err)
+	}
+}
+
+func TestRemoveFromCollection_Forbidden(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]string{"message": "forbidden"})
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	err = c.RemoveFromCollection(context.Background(), "col-1", []string{"id-1"})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	var apiErr *jellyfin.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *jellyfin.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d, want 403", apiErr.StatusCode)
+	}
+}

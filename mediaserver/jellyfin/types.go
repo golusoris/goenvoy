@@ -88,10 +88,17 @@ type BaseItemDto struct {
 
 // UserItemDataDto holds user-specific item data.
 type UserItemDataDto struct {
-	PlayCount             int    `json:"PlayCount"`
-	IsFavorite            bool   `json:"IsFavorite"`
-	PlaybackPositionTicks int64  `json:"PlaybackPositionTicks"`
-	LastPlayedDate        string `json:"LastPlayedDate,omitempty"`
+	PlayCount             int      `json:"PlayCount"`
+	Played                bool     `json:"Played"`
+	PlayedPercentage      *float64 `json:"PlayedPercentage,omitempty"`
+	IsFavorite            bool     `json:"IsFavorite"`
+	PlaybackPositionTicks int64    `json:"PlaybackPositionTicks"`
+	LastPlayedDate        string   `json:"LastPlayedDate,omitempty"`
+}
+
+// CollectionCreationResult is returned after creating a collection.
+type CollectionCreationResult struct {
+	ID string `json:"Id"`
 }
 
 // ItemsResult is a paginated list of items.
