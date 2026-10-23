@@ -1,2 +1,4 @@
 github.com/golusoris/goenvoy/metadata v1.3.1 h1:mkEn588COjf3QV8DD5Swhq4P8+MKrEsOiU2SF+MYEpY=
 github.com/golusoris/goenvoy/metadata v1.3.1/go.mod h1:VDXGvMyayQDRBpacFqT9pZAHactFkqkHPFQLxgvu2Ao=
+github.com/golusoris/goenvoy/metadata v1.4.1 h1:Qo2YxrT/KX3aGONTKl2I0uOK3TTN51AcTp+u+/Sf4oY=
+github.com/golusoris/goenvoy/metadata v1.4.1/go.mod h1:VEJ5vqTGsrZF8LQEhiTNpQUW8Ju897k+yKVcXD/GGTY=
