@@ -44,15 +44,26 @@ func xmlMember(name, value string) string {
 }
 
 // xmlTorrentRow is one d.multicall2 row with the given values for d.is_open, d.is_active,
-// d.complete and d.is_hash_checking. An empty flag is a value without a typed element.
-func xmlTorrentRow(flags [4]string) string {
+// d.complete and d.is_hash_checking, plus an optional d.hashing value (defaulting to 0).
+// An empty flag or hashing string is a value without a typed element.
+func xmlTorrentRow(flags [4]string, hashing ...string) string {
 	const (
 		str = "<value><string>x</string></value>"
 		num = "<value><i8>7</i8></value>"
 	)
+	hashElem := "<i8>0</i8>"
+	if len(hashing) > 0 {
+		hashElem = hashing[0]
+	}
+	var hashVal string
+	if strings.HasPrefix(hashElem, "<value>") {
+		hashVal = hashElem
+	} else {
+		hashVal = "<value>" + hashElem + "</value>"
+	}
 	row := str + str + num + num + num + num + num + num +
 		"<value>" + strings.Join(flags[:], "</value><value>") + "</value>" +
-		str + str + str + num + str
+		str + str + str + num + str + hashVal
 	return `<?xml version="1.0"?>
 <methodResponse><params><param><value><array><data><value><array><data>` + row +
 		`</data></array></value></data></array></value></param></params></methodResponse>`
@@ -79,6 +90,7 @@ func xmlMulticallResponse() string {
   <value><string>linux</string></value>
   <value><i8>1700000000</i8></value>
   <value><string></string></value>
+  <value><i8>0</i8></value>
 </data></array></value>
 <value><array><data>
   <value><string>DEF456</string></value>
@@ -98,6 +110,7 @@ func xmlMulticallResponse() string {
   <value><string>linux</string></value>
   <value><i8>1700000001</i8></value>
   <value><string></string></value>
+  <value><i8>0</i8></value>
 </data></array></value>
 </data></array></value></param></params></methodResponse>`
 }
@@ -227,6 +240,64 @@ func TestGetTorrents_flagColumns(t *testing.T) {
 			want[i] = true
 			if got := getFlags(t, flags); got != want {
 				t.Errorf("flags = %v, want %v", got, want)
+			}
+		})
+	}
+}
+
+func TestGetTorrents_hashing(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name        string
+		flags       [4]string
+		hashing     string
+		wantHashing int64
+	}{
+		{
+			name:        "closed inactive incomplete queued for hash check",
+			flags:       [4]string{"<i8>0</i8>", "<i8>0</i8>", "<i8>0</i8>", "<i8>0</i8>"},
+			hashing:     "<i8>1</i8>",
+			wantHashing: 1,
+		},
+		{
+			name:        "hashing zero boundary",
+			flags:       [4]string{"<i8>0</i8>", "<i8>0</i8>", "<i8>0</i8>", "<i8>0</i8>"},
+			hashing:     "<i8>0</i8>",
+			wantHashing: 0,
+		},
+		{
+			name:        "missing or empty typed value",
+			flags:       [4]string{"<i8>0</i8>", "<i8>0</i8>", "<i8>0</i8>", "<i8>0</i8>"},
+			hashing:     "",
+			wantHashing: 0,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ts := newXMLRPCServer(t, "d.multicall2", xmlTorrentRow(tc.flags, tc.hashing))
+			defer ts.Close()
+
+			c, err := rtorrent.New(ts.URL)
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+			torrents, err := c.GetTorrents(context.Background(), "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(torrents) != 1 {
+				t.Fatalf("len = %d, want 1", len(torrents))
+			}
+			got := torrents[0]
+			if got.IsOpen || got.IsActive || got.IsComplete || got.IsHashChecking {
+				t.Errorf("flags = {%v, %v, %v, %v}, want all false",
+					got.IsOpen, got.IsActive, got.IsComplete, got.IsHashChecking)
+			}
+			if got.Hashing != tc.wantHashing {
+				t.Errorf("Hashing = %d, want %d", got.Hashing, tc.wantHashing)
 			}
 		})
 	}

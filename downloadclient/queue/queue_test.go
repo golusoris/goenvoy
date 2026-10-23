@@ -316,7 +316,7 @@ func (d rtTorrentFixture) row() string {
 		rtNumber(4_000_000_000), rtNumber(1_000_000_000), rtNumber(d.downRate), rtNumber(d.upRate),
 		rtNumber(0), rtNumber(0), rtFlag(d.open), rtFlag(d.active), rtFlag(d.complete), rtFlag(false),
 		rtString("/downloads/a download"), rtString("/downloads"), rtString(""), rtNumber(1_760_000_000),
-		rtString(""),
+		rtString(""), rtNumber(0),
 	}
 	return "<value><array><data>" + strings.Join(fields, "") + "</data></array></value>"
 }

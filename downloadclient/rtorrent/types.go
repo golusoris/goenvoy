@@ -14,11 +14,18 @@ type Torrent struct {
 	IsActive       bool
 	IsComplete     bool
 	IsHashChecking bool
-	BasePath       string
-	Directory      string
-	Label          string
-	AddedTime      int64
-	Message        string
+	// Hashing is the hash queue state (d.hashing).
+	// Upstream rTorrent values (Download::variable_hashing_* in src/core/download.h):
+	//   0 = not hashing / not in hash queue (variable_hashing_stopped)
+	//   1 = initial hash / normal hashing (variable_hashing_initial)
+	//   2 = download finished, hashing (variable_hashing_last)
+	//   3 = rehash (check_hash) / rehashing (variable_hashing_rehash)
+	Hashing   int64
+	BasePath  string
+	Directory string
+	Label     string
+	AddedTime int64
+	Message   string
 }
 
 // File represents a file within a torrent.

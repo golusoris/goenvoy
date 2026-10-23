@@ -193,7 +193,7 @@ func (c *Client) do(ctx context.Context, call xmlMethodCall) (*xmlMethodResponse
 	if err != nil {
 		return nil, fmt.Errorf("rtorrent: POST: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
@@ -304,6 +304,7 @@ var torrentFields = []string{
 	"d.custom1=",
 	"d.timestamp.started=",
 	"d.message=",
+	"d.hashing=",
 }
 
 // GetTorrents returns all torrents in the given view (default: "main").
@@ -345,6 +346,7 @@ func (c *Client) GetTorrents(ctx context.Context, view string) ([]Torrent, error
 			IsActive:       getBool(vals[9]),
 			IsComplete:     getBool(vals[10]),
 			IsHashChecking: getBool(vals[11]),
+			Hashing:        getInt64(vals[17]),
 			BasePath:       getStr(vals[12]),
 			Directory:      getStr(vals[13]),
 			Label:          getStr(vals[14]),
