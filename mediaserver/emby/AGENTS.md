@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://dev.emby.media/doc/restapi/>
-- Last verified: 2026-04-15
+- Last verified: 2026-10-23
 - Details: [docs/upstream/mediaserver-emby.md](../../docs/upstream/mediaserver-emby.md)
 
 ## Auth model

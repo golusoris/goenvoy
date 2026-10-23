@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://api-docs.overseerr.dev/>
-- Last verified: 2026-10-16 (sct/overseerr@98ea135f2d370faba0362d259fccf51d8fd44a16 <https://raw.githubusercontent.com/sct/overseerr/develop/overseerr-api.yml>, seerr-team/seerr@978f437dc06af77459c8887781a32d2879f1b69d <https://raw.githubusercontent.com/seerr-team/seerr/develop/seerr-api.yml>)
+- Last verified: 2026-10-23 (sct/overseerr@98ea135f2d370faba0362d259fccf51d8fd44a16 <https://raw.githubusercontent.com/sct/overseerr/develop/overseerr-api.yml>, seerr-team/seerr@978f437dc06af77459c8887781a32d2879f1b69d <https://raw.githubusercontent.com/seerr-team/seerr/develop/seerr-api.yml>)
 - Details: [docs/upstream/arr-seerr.md](../../docs/upstream/arr-seerr.md)
 
 ## Auth model

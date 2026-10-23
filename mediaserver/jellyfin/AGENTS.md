@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://api.jellyfin.org/>
-- Last verified: 2026-04-15
+- Last verified: 2026-10-23
 - Details: [docs/upstream/mediaserver-jellyfin.md](../../docs/upstream/mediaserver-jellyfin.md)
 
 ## Auth model

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -90,6 +91,15 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 	return c, nil
 }
 
+var (
+	// ErrEmptyName is returned when a collection name is empty.
+	ErrEmptyName = errors.New("name cannot be empty")
+	// ErrEmptyCollectionID is returned when a collection ID is empty.
+	ErrEmptyCollectionID = errors.New("collection ID cannot be empty")
+	// ErrEmptyItemIDs is returned when an item ID is blank, or no item ID is given where one is required.
+	ErrEmptyItemIDs = errors.New("item IDs cannot be empty")
+)
+
 // APIError is returned when the API responds with a non-2xx status.
 type APIError struct {
 	StatusCode int    `json:"-"`
@@ -172,7 +182,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body, dst a
 	if err != nil {
 		return fmt.Errorf("jellyfin: %s %s: %w", method, path, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -204,7 +214,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values) ([]byt
 	if err != nil {
 		return nil, fmt.Errorf("jellyfin: GET %s: %w", path, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -370,4 +380,73 @@ func (c *Client) GetUserViews(ctx context.Context, userID string) (*ItemsResult,
 		return nil, fmt.Errorf("jellyfin: decode views: %w", err)
 	}
 	return &result, nil
+}
+
+func hasBlankItemID(ids []string) bool {
+	for _, id := range ids {
+		if strings.TrimSpace(id) == "" {
+			return true
+		}
+	}
+	return false
+}
+
+func hasEmptyItemIDs(ids []string) bool {
+	return len(ids) == 0 || hasBlankItemID(ids)
+}
+
+// Collections.
+
+// CreateCollection creates a new collection holding itemIDs; no itemIDs creates it empty.
+func (c *Client) CreateCollection(ctx context.Context, name string, itemIDs []string, parentID string) (CollectionCreationResult, error) {
+	if strings.TrimSpace(name) == "" {
+		return CollectionCreationResult{}, fmt.Errorf("jellyfin: create collection: %w", ErrEmptyName)
+	}
+	if hasBlankItemID(itemIDs) {
+		return CollectionCreationResult{}, fmt.Errorf("jellyfin: create collection: %w", ErrEmptyItemIDs)
+	}
+
+	q := url.Values{"name": {name}}
+	if len(itemIDs) > 0 {
+		q.Set("ids", strings.Join(itemIDs, ","))
+	}
+	if parentID != "" {
+		q.Set("parentId", parentID)
+	}
+
+	var result CollectionCreationResult
+	if err := c.doRequest(ctx, http.MethodPost, "/Collections?"+q.Encode(), nil, &result); err != nil {
+		return CollectionCreationResult{}, err
+	}
+	return result, nil
+}
+
+// AddToCollection adds items to an existing collection.
+func (c *Client) AddToCollection(ctx context.Context, collectionID string, itemIDs []string) error {
+	if strings.TrimSpace(collectionID) == "" {
+		return fmt.Errorf("jellyfin: add to collection: %w", ErrEmptyCollectionID)
+	}
+	if hasEmptyItemIDs(itemIDs) {
+		return fmt.Errorf("jellyfin: add to collection: %w", ErrEmptyItemIDs)
+	}
+
+	path := "/Collections/" + url.PathEscape(collectionID) + "/Items?" + url.Values{
+		"ids": {strings.Join(itemIDs, ",")},
+	}.Encode()
+	return c.doRequest(ctx, http.MethodPost, path, nil, nil)
+}
+
+// RemoveFromCollection removes items from a collection.
+func (c *Client) RemoveFromCollection(ctx context.Context, collectionID string, itemIDs []string) error {
+	if strings.TrimSpace(collectionID) == "" {
+		return fmt.Errorf("jellyfin: remove from collection: %w", ErrEmptyCollectionID)
+	}
+	if hasEmptyItemIDs(itemIDs) {
+		return fmt.Errorf("jellyfin: remove from collection: %w", ErrEmptyItemIDs)
+	}
+
+	path := "/Collections/" + url.PathEscape(collectionID) + "/Items?" + url.Values{
+		"ids": {strings.Join(itemIDs, ",")},
+	}.Encode()
+	return c.doRequest(ctx, http.MethodDelete, path, nil, nil)
 }

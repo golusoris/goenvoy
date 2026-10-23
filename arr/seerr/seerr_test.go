@@ -1305,3 +1305,49 @@ func TestMediaRequest_DecodeProcessingFields(t *testing.T) {
 		t.Errorf("len(*tvEmptyReq.Seasons) = %d, want 0", len(*tvEmptyReq.Seasons))
 	}
 }
+
+func TestUser_JellyfinFields(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		json         string
+		wantID       string
+		wantUsername string
+	}{
+		{
+			name:         "populated jellyfin fields",
+			json:         `{"id": 42, "email": "jf@example.com", "jellyfinUserId": "jf-uuid-123", "jellyfinUsername": "jfuser"}`,
+			wantID:       "jf-uuid-123",
+			wantUsername: "jfuser",
+		},
+		{
+			name:         "null jellyfin fields",
+			json:         `{"id": 44, "email": "local@example.com", "jellyfinUserId": null, "jellyfinUsername": null}`,
+			wantID:       "",
+			wantUsername: "",
+		},
+		{
+			name:         "omitted jellyfin fields",
+			json:         `{"id": 43, "email": "plex@example.com"}`,
+			wantID:       "",
+			wantUsername: "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var u seerr.User
+			if err := json.Unmarshal([]byte(tc.json), &u); err != nil {
+				t.Fatalf("json.Unmarshal: %v", err)
+			}
+			if u.JellyfinUserID != tc.wantID {
+				t.Errorf("JellyfinUserID = %q, want %q", u.JellyfinUserID, tc.wantID)
+			}
+			if u.JellyfinUsername != tc.wantUsername {
+				t.Errorf("JellyfinUsername = %q, want %q", u.JellyfinUsername, tc.wantUsername)
+			}
+		})
+	}
+}

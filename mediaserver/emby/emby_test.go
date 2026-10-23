@@ -516,3 +516,53 @@ func TestNew_invalidURL(t *testing.T) {
 		})
 	}
 }
+
+func assertPlayedPercentage(t *testing.T, got, want *float64) {
+	t.Helper()
+	if want == nil {
+		if got != nil {
+			t.Errorf("PlayedPercentage = %v, want nil", *got)
+		}
+		return
+	}
+	if got == nil {
+		t.Fatalf("PlayedPercentage = nil, want %v", *want)
+	}
+	if *got != *want {
+		t.Errorf("PlayedPercentage = %v, want %v", *got, *want)
+	}
+}
+
+func TestUserItemDataDto_PlayedFields(t *testing.T) {
+	t.Parallel()
+
+	pct85 := 85.5
+	pct0 := 0.0
+	pct100 := 100.0
+
+	cases := []struct {
+		name       string
+		json       string
+		wantPlayed bool
+		wantPct    *float64
+	}{
+		{"played with pct", `{"PlayCount": 3, "Played": true, "PlayedPercentage": 85.5}`, true, &pct85},
+		{"unplayed null pct", `{"PlayCount": 0, "Played": false, "PlayedPercentage": null}`, false, nil},
+		{"boundary 0 pct", `{"PlayCount": 1, "Played": false, "PlayedPercentage": 0.0}`, false, &pct0},
+		{"boundary 100 pct", `{"PlayCount": 2, "Played": true, "PlayedPercentage": 100.0}`, true, &pct100},
+		{"omitted pct", `{"PlayCount": 1, "Played": true}`, true, nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var data emby.UserItemDataDto
+			if err := json.Unmarshal([]byte(tc.json), &data); err != nil {
+				t.Fatalf("json.Unmarshal: %v", err)
+			}
+			if data.Played != tc.wantPlayed {
+				t.Errorf("Played = %v, want %v", data.Played, tc.wantPlayed)
+			}
+			assertPlayedPercentage(t, data.PlayedPercentage, tc.wantPct)
+		})
+	}
+}

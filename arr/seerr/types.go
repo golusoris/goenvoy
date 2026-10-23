@@ -15,12 +15,15 @@ type User struct {
 	DisplayName  string `json:"displayName,omitempty"`
 	PlexToken    string `json:"plexToken,omitempty"`
 	PlexUsername string `json:"plexUsername,omitempty"`
-	UserType     int    `json:"userType,omitempty"`
-	Permissions  int    `json:"permissions,omitempty"`
-	Avatar       string `json:"avatar,omitempty"`
-	CreatedAt    string `json:"createdAt,omitempty"`
-	UpdatedAt    string `json:"updatedAt,omitempty"`
-	RequestCount int    `json:"requestCount,omitempty"`
+	// JellyfinUserID and JellyfinUsername are present in server/entity/User.ts at e2f24cb46079 (omitted from OpenAPI spec but serialized).
+	JellyfinUserID   string `json:"jellyfinUserId,omitempty"`
+	JellyfinUsername string `json:"jellyfinUsername,omitempty"`
+	UserType         int    `json:"userType,omitempty"`
+	Permissions      int    `json:"permissions,omitempty"`
+	Avatar           string `json:"avatar,omitempty"`
+	CreatedAt        string `json:"createdAt,omitempty"`
+	UpdatedAt        string `json:"updatedAt,omitempty"`
+	RequestCount     int    `json:"requestCount,omitempty"`
 }
 
 // Name returns the first non-blank of DisplayName, Username, and Email.
