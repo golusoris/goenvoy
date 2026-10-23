@@ -4,6 +4,13 @@
 
 - **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
 
+## [3.0.1](https://github.com/golusoris/goenvoy/compare/arr/mylar/v3.0.0...arr/mylar/v3.0.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **deps:** move to Go 1.26.10 for the crypto/x509 advisory GO-2026-6809 ([#159](https://github.com/golusoris/goenvoy/issues/159)) ([baceba1](https://github.com/golusoris/goenvoy/commit/baceba1d84672942b8ce2e9ba0cf9b879337fac1))
+
 ## [3.0.0](https://github.com/golusoris/goenvoy/compare/arr/mylar/v2.1.0...arr/mylar/v3.0.0) (2026-06-19)
 
 ### ⚠ BREAKING CHANGES

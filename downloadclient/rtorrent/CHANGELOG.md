@@ -4,6 +4,18 @@
 
 - **BREAKING:** `New` now returns `(*Client, error)` and validates the endpoint URL. Callers must check the error.
 
+## [2.1.0](https://github.com/golusoris/goenvoy/compare/downloadclient/rtorrent/v2.0.1...downloadclient/rtorrent/v2.1.0) (2026-10-23)
+
+
+### Features
+
+* **downloadclient/rtorrent:** expose the hash queue state as Torrent.Hashing ([#167](https://github.com/golusoris/goenvoy/issues/167)) ([7764872](https://github.com/golusoris/goenvoy/commit/7764872073a4c10bc4b618362d8e28e832bc4d6c))
+
+
+### Bug Fixes
+
+* **deps:** move to Go 1.26.10 for the crypto/x509 advisory GO-2026-6809 ([#159](https://github.com/golusoris/goenvoy/issues/159)) ([baceba1](https://github.com/golusoris/goenvoy/commit/baceba1d84672942b8ce2e9ba0cf9b879337fac1))
+
 ## [2.0.1](https://github.com/golusoris/goenvoy/compare/downloadclient/rtorrent/v2.0.0...downloadclient/rtorrent/v2.0.1) (2026-10-11)
 
 ### Bug Fixes

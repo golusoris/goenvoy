@@ -5,6 +5,13 @@
 - Moved from `metadata/video/letterboxd` to `metadata/tracking/letterboxd`. Update imports accordingly.
 - Fix data race on concurrent Set*/read of OAuth tokens and client secret.
 
+## [1.0.4](https://github.com/golusoris/goenvoy/compare/metadata/tracking/letterboxd/v1.0.3...metadata/tracking/letterboxd/v1.0.4) (2026-10-23)
+
+
+### Bug Fixes
+
+* **deps:** move to Go 1.26.10 for the crypto/x509 advisory GO-2026-6809 ([#159](https://github.com/golusoris/goenvoy/issues/159)) ([baceba1](https://github.com/golusoris/goenvoy/commit/baceba1d84672942b8ce2e9ba0cf9b879337fac1))
+
 ## [1.0.3](https://github.com/golusoris/goenvoy/compare/metadata/tracking/letterboxd/v1.0.2...metadata/tracking/letterboxd/v1.0.3) (2026-10-19)
 
 ### Bug Fixes
