@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -76,6 +77,9 @@ func New(endpoint string, opts ...Option) (*Client, error) {
 	}
 	return c, nil
 }
+
+// ErrShortRow is returned when an rTorrent d.multicall2 row has fewer fields than requested.
+var ErrShortRow = errors.New("rtorrent: d.multicall2 row has fewer fields than requested")
 
 // APIError is returned when rTorrent returns an XML-RPC fault.
 type APIError struct {
@@ -328,34 +332,44 @@ func (c *Client) GetTorrents(ctx context.Context, view string) ([]Torrent, error
 		return torrents, nil
 	}
 
-	for _, row := range outerArray.Data.Values {
-		if row.Array == nil || len(row.Array.Data.Values) < len(torrentFields) {
-			continue
-		}
-		vals := row.Array.Data.Values
-		t := Torrent{
-			Hash:           getStr(vals[0]),
-			Name:           getStr(vals[1]),
-			SizeBytes:      getInt64(vals[2]),
-			CompletedBytes: getInt64(vals[3]),
-			DownRate:       getInt64(vals[4]),
-			UpRate:         getInt64(vals[5]),
-			UpTotal:        getInt64(vals[6]),
-			Ratio:          getInt64(vals[7]),
-			IsOpen:         getBool(vals[8]),
-			IsActive:       getBool(vals[9]),
-			IsComplete:     getBool(vals[10]),
-			IsHashChecking: getBool(vals[11]),
-			Hashing:        getInt64(vals[17]),
-			BasePath:       getStr(vals[12]),
-			Directory:      getStr(vals[13]),
-			Label:          getStr(vals[14]),
-			AddedTime:      getInt64(vals[15]),
-			Message:        getStr(vals[16]),
+	for i, row := range outerArray.Data.Values {
+		t, err := torrentFromRow(i, row)
+		if err != nil {
+			return nil, err
 		}
 		torrents = append(torrents, t)
 	}
 	return torrents, nil
+}
+
+func torrentFromRow(i int, row xmlValue) (Torrent, error) {
+	if row.Array == nil {
+		return Torrent{}, fmt.Errorf("rtorrent: get torrents: row %d is not an array: %w", i, ErrShortRow)
+	}
+	vals := row.Array.Data.Values
+	if got := len(vals); got < len(torrentFields) {
+		return Torrent{}, fmt.Errorf("rtorrent: get torrents: row %d: got %d fields, want %d: %w", i, got, len(torrentFields), ErrShortRow)
+	}
+	return Torrent{
+		Hash:           getStr(vals[0]),
+		Name:           getStr(vals[1]),
+		SizeBytes:      getInt64(vals[2]),
+		CompletedBytes: getInt64(vals[3]),
+		DownRate:       getInt64(vals[4]),
+		UpRate:         getInt64(vals[5]),
+		UpTotal:        getInt64(vals[6]),
+		Ratio:          getInt64(vals[7]),
+		IsOpen:         getBool(vals[8]),
+		IsActive:       getBool(vals[9]),
+		IsComplete:     getBool(vals[10]),
+		IsHashChecking: getBool(vals[11]),
+		Hashing:        getInt64(vals[17]),
+		BasePath:       getStr(vals[12]),
+		Directory:      getStr(vals[13]),
+		Label:          getStr(vals[14]),
+		AddedTime:      getInt64(vals[15]),
+		Message:        getStr(vals[16]),
+	}, nil
 }
 
 func getStr(v xmlValue) string {
