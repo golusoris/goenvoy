@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.5.3...arr/seerr/v1.6.0) (2026-10-23)
+
+
+### Features
+
+* add watch state, Jellyfin collection writes and Seerr Jellyfin users ([#173](https://github.com/golusoris/goenvoy/issues/173)) ([f653416](https://github.com/golusoris/goenvoy/commit/f65341610b27a2780933aed3bf2dee73937a3c7e))
+
 ## [1.5.3](https://github.com/golusoris/goenvoy/compare/arr/seerr/v1.5.2...arr/seerr/v1.5.3) (2026-10-23)
 
 

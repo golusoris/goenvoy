@@ -5,6 +5,13 @@
 - **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
 - Add WithUserAgent option.
 
+## [3.1.0](https://github.com/golusoris/goenvoy/compare/mediaserver/jellyfin/v3.0.2...mediaserver/jellyfin/v3.1.0) (2026-10-23)
+
+
+### Features
+
+* add watch state, Jellyfin collection writes and Seerr Jellyfin users ([#173](https://github.com/golusoris/goenvoy/issues/173)) ([f653416](https://github.com/golusoris/goenvoy/commit/f65341610b27a2780933aed3bf2dee73937a3c7e))
+
 ## [3.0.2](https://github.com/golusoris/goenvoy/compare/mediaserver/jellyfin/v3.0.1...mediaserver/jellyfin/v3.0.2) (2026-10-23)
 
 
