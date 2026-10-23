@@ -4,6 +4,13 @@
 
 - **BREAKING:** `New` now returns `(*Client, error)` and validates the endpoint URL. Callers must check the error.
 
+## [2.1.1](https://github.com/golusoris/goenvoy/compare/downloadclient/rtorrent/v2.1.0...downloadclient/rtorrent/v2.1.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **downloadclient/rtorrent:** report short d.multicall2 rows instead of dropping them ([#171](https://github.com/golusoris/goenvoy/issues/171)) ([4ad2ba7](https://github.com/golusoris/goenvoy/commit/4ad2ba752a3c68bc8ff17ad49f3c92ba7b874b72))
+
 ## [2.1.0](https://github.com/golusoris/goenvoy/compare/downloadclient/rtorrent/v2.0.1...downloadclient/rtorrent/v2.1.0) (2026-10-23)
 
 
