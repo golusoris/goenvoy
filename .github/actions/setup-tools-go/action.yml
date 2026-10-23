@@ -1,0 +1,10 @@
+# Why: Pinned Go environment for tools/go module shared across CI jobs.
+name: Setup tools Go
+description: Set up Go toolchain pinned to tools/go/go.mod with dependency caching.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+      with:
+        go-version-file: tools/go/go.mod
+        cache-dependency-path: tools/go/go.sum
