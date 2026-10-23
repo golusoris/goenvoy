@@ -63,6 +63,12 @@ func xmlTorrentRow(flags [4]string, hashing ...string) string {
 		`</data></array></value></data></array></value></param></params></methodResponse>`
 }
 
+func xmlArrayRowResponse(innerXML string) string {
+	return `<?xml version="1.0"?>
+<methodResponse><params><param><value><array><data>` + innerXML +
+		`</data></array></value></param></params></methodResponse>`
+}
+
 func xmlMulticallResponse() string {
 	return `<?xml version="1.0"?>
 <methodResponse><params><param><value><array><data>
@@ -129,6 +135,38 @@ func newXMLRPCServer(t *testing.T, wantMethod, response string) *httptest.Server
 		w.Header().Set("Content-Type", "text/xml")
 		_, _ = w.Write([]byte(response))
 	}))
+}
+
+func testGetTorrents(t *testing.T, xmlResp string) ([]rtorrent.Torrent, error) {
+	t.Helper()
+	ts := newXMLRPCServer(t, "d.multicall2", xmlResp)
+	defer ts.Close()
+
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return c.GetTorrents(context.Background(), "")
+}
+
+func assertShortRowError(t *testing.T, xmlResp string, wantContains ...string) {
+	t.Helper()
+	torrents, err := testGetTorrents(t, xmlResp)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, rtorrent.ErrShortRow) {
+		t.Errorf("expected ErrShortRow, got: %v", err)
+	}
+	msg := err.Error()
+	for _, want := range wantContains {
+		if !strings.Contains(msg, want) {
+			t.Errorf("error %q does not contain %q", msg, want)
+		}
+	}
+	if torrents != nil {
+		t.Errorf("torrents = %v, want nil", torrents)
+	}
 }
 
 func TestGetTorrents(t *testing.T) {
@@ -294,6 +332,48 @@ func TestGetTorrents_hashing(t *testing.T) {
 				t.Errorf("Hashing = %d, want %d", got.Hashing, tc.wantHashing)
 			}
 		})
+	}
+}
+
+func TestGetTorrents_shortRow(t *testing.T) {
+	t.Parallel()
+
+	t.Run("short row with 17 fields", func(t *testing.T) {
+		t.Parallel()
+
+		row := "<value><array><data>" + strings.Repeat("<value><string>x</string></value>", 17) + "</data></array></value>"
+		assertShortRowError(t, xmlArrayRowResponse(row), "got 17", "want 18")
+	})
+
+	t.Run("non-array row", func(t *testing.T) {
+		t.Parallel()
+
+		assertShortRowError(t, xmlArrayRowResponse("<value><string>not-an-array</string></value>"))
+	})
+
+	t.Run("boundary 18 fields", func(t *testing.T) {
+		t.Parallel()
+
+		torrents, err := testGetTorrents(t, xmlTorrentRow([4]string{"<i8>1</i8>", "<i8>1</i8>", "<i8>1</i8>", "<i8>0</i8>"}))
+		if err != nil {
+			t.Fatalf("GetTorrents: %v", err)
+		}
+		if len(torrents) != 1 {
+			t.Fatalf("len = %d, want 1", len(torrents))
+		}
+	})
+}
+
+func TestGetTorrents_extraFields(t *testing.T) {
+	t.Parallel()
+
+	row := "<value><array><data>" + strings.Repeat("<value><string>x</string></value>", 19) + "</data></array></value>"
+	torrents, err := testGetTorrents(t, xmlArrayRowResponse(row))
+	if err != nil {
+		t.Fatalf("GetTorrents with 19 fields: %v", err)
+	}
+	if len(torrents) != 1 {
+		t.Fatalf("len = %d, want 1", len(torrents))
 	}
 }
 
