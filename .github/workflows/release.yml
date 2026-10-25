@@ -29,6 +29,7 @@ jobs:
   release:
     name: Release tagged module
     runs-on: ubuntu-26.04
+    timeout-minutes: 20
     permissions:
       contents: write       # create GH Release + upload artefacts
       id-token: write       # cosign keyless + SLSA

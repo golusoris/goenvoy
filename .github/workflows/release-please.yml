@@ -21,6 +21,7 @@ concurrency:
 jobs:
   release-please:
     runs-on: ubuntu-26.04
+    timeout-minutes: 10
     permissions:
       contents: write
       pull-requests: write
