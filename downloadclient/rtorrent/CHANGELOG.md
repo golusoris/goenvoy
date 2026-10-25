@@ -1,10 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
-- **BREAKING:** `New` now returns `(*Client, error)` and validates the endpoint URL. Callers must check the error.
-
 ## [2.1.1](https://github.com/golusoris/goenvoy/compare/downloadclient/rtorrent/v2.1.0...downloadclient/rtorrent/v2.1.1) (2026-10-23)
 
 
@@ -47,3 +42,9 @@
 ### Features
 
 - add download client modules (qBittorrent, Transmission, Deluge, SABnzbd, NZBGet, rTorrent) ([51326c8](https://github.com/golusoris/goenvoy/commit/51326c876638f6fb30f6b27b4a4c78726e6c4f98))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates the endpoint URL. Callers must check the error.

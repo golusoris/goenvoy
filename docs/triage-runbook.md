@@ -41,7 +41,7 @@ Every fix lands in the module named by the `Module` field and must ship the full
 - **Error wrap**: `fmt.Errorf("<module>: <op>: %w", err)` (`wrapcheck` enforces at boundaries). Never log secrets (rule 7).
 - **≥1 table-driven test case** reproducing the bug, driven by `httptest`.
 - **A runnable godoc `Example`** for the touched method.
-- **`CHANGELOG.md`** — add a line under the module's `Unreleased` section.
+- **`CHANGELOG.md`** — no hand edit of any `CHANGELOG.md`; release-please writes notes from the Conventional Commit subject, so the subject must describe the change.
 - **`docs/upstream/<category>-<service>.md`** — update only if the upstream API surface moved.
 - Update the module's `AGENTS.md` if a convention changed.
 

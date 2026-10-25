@@ -31,7 +31,7 @@ The user says "add a client for <service>" and you need to create an entire new 
    - `AGENTS.md` — auth model, pagination style, error shape, pinned upstream URL, last-verified date.
 3. Append the new module to `go.work` (`use ./<category>/<service>`).
 4. Add `docs/upstream/<category>-<service>.md` with URL + version + today's date + a one-paragraph "what this API does".
-5. Add a `## Unreleased` stub under the module in the root `CHANGELOG.md`.
+5. Do not edit CHANGELOG.md; release-please creates the module CHANGELOG on the first release. Add the package to both `release-please-config.json` and `.release-please-manifest.json`.
 6. From the new module directory run: `go build ./... && go vet ./... && go test -race ./... && golangci-lint run --config ../../.golangci.yml ./...`.
 7. Report to the user: module path, files created, next steps (typically: wire the upstream API's methods).
 

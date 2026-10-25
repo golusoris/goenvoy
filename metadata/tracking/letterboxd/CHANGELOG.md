@@ -1,10 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Moved from `metadata/video/letterboxd` to `metadata/tracking/letterboxd`. Update imports accordingly.
-- Fix data race on concurrent Set*/read of OAuth tokens and client secret.
-
 ## [1.0.5](https://github.com/golusoris/goenvoy/compare/metadata/tracking/letterboxd/v1.0.4...metadata/tracking/letterboxd/v1.0.5) (2026-10-25)
 
 
@@ -47,3 +42,10 @@
 ### Features
 
 - **metadata:** add shared BaseClient, migrate all 27 providers, restructure movie→video ([0026baa](https://github.com/golusoris/goenvoy/commit/0026baa54634fa25c00f67d9387e8013e5d70a6e))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- Moved from `metadata/video/letterboxd` to `metadata/tracking/letterboxd`. Update imports accordingly.
+- Fix data race on concurrent Set*/read of OAuth tokens and client secret.

@@ -33,8 +33,7 @@ The user says "add a <verb>X method to <service>" and the client already exists.
    - The test MUST use `httptest.NewServer`. No live-API URLs. (The `guard-go-edit.sh` hook will block live hosts.)
 5. If the new method exposes a new public surface that needs illustration, add a `func Example<Method>()` in `example_test.go`.
 6. Update `<module>/AGENTS.md` if the endpoint changes a documented convention (pagination, auth, pagination cursor).
-7. Add a bullet to the module's `## Unreleased` section in the root `CHANGELOG.md`:
-   - `- **feat:** add <Method> (<endpoint>)`.
+7. No CHANGELOG edit; the commit subject in step 9 becomes the release note.
 8. Run the gate: `go build ./... && go vet ./... && go test -race -count=1 ./... && golangci-lint run --config ../../.golangci.yml ./...`.
 9. Commit with a Conventional-Commits message: `feat(<module>): add <Method>`.
 

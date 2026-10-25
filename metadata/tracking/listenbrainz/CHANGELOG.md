@@ -1,9 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Moved from `metadata/music/listenbrainz` to `metadata/tracking/listenbrainz`. Update imports accordingly.
-
 ## [1.0.3](https://github.com/golusoris/goenvoy/compare/metadata/tracking/listenbrainz/v1.0.2...metadata/tracking/listenbrainz/v1.0.3) (2026-10-25)
 
 
@@ -35,3 +31,9 @@
 ### Bug Fixes
 
 - BaseClient.Delete body support, URL injection, default timeouts ([59203c0](https://github.com/golusoris/goenvoy/commit/59203c0eda4c747e89c6567b91811e0cdee46e5b))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- Moved from `metadata/music/listenbrainz` to `metadata/tracking/listenbrainz`. Update imports accordingly.

@@ -1,10 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
-- **BREAKING:** `New` now returns `(*Client, error)` and validates the base URL. Callers must check the error.
-
 ## [2.0.2](https://github.com/golusoris/goenvoy/compare/downloadclient/deluge/v2.0.1...downloadclient/deluge/v2.0.2) (2026-10-23)
 
 
@@ -39,3 +34,9 @@
 ### Bug Fixes
 
 - remove dead Version struct in deluge, add json tag to anilist APIError ([d992a4b](https://github.com/golusoris/goenvoy/commit/d992a4bd3c4e79e817b6fbf21a8b84ba8f916168))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates the base URL. Callers must check the error.

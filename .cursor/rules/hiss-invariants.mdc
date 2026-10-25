@@ -281,5 +281,5 @@ Read [docs/principles.md](../../docs/principles.md) first. Quick hitlist:
 When touching module:
 
 - Update `<module>/AGENTS.md` if conventions changed.
-- Update `CHANGELOG.md` under module unreleased section.
+- No hand edit of any `CHANGELOG.md`; release-please writes notes from the Conventional Commit subject, so the subject must describe the change.
 - Update `docs/upstream/<service>.md` if upstream API surface moved.

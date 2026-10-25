@@ -1,11 +1,13 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+Repository-wide changes recorded by hand before release-please took over the release notes.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Each module is versioned independently following [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+release-please writes each module's release notes into `<category>/<service>/CHANGELOG.md`.
+
+## Repository changes before release-please
 
 ### Changed
 - **Toolchain security**: Raised every module's minimum Go patch release to 1.26.9 so builds include the standard-library fixes required by `govulncheck`: GO-2026-6617, GO-2026-6613, GO-2026-6612, GO-2026-6611, GO-2026-6610, GO-2026-6608, GO-2026-6607, GO-2026-6605, and GO-2026-6603, on top of the earlier GO-2026-6218, GO-2026-6090, GO-2026-5972, GO-2026-5856, and GO-2026-5026.

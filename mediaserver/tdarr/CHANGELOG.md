@@ -1,11 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
-- **BREAKING:** `New` now returns `(*Client, error)` and validates the base URL. Callers must check the error.
-- Add WithUserAgent option.
-
 ## [3.0.2](https://github.com/golusoris/goenvoy/compare/mediaserver/tdarr/v3.0.1...mediaserver/tdarr/v3.0.2) (2026-10-23)
 
 
@@ -35,3 +29,10 @@
 ### Features
 
 - add 8 new service modules ([5e07309](https://github.com/golusoris/goenvoy/commit/5e0730980c41255ae89a2c6fd00690bcf7430e62))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates the base URL. Callers must check the error.
+- Add WithUserAgent option.

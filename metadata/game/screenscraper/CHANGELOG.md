@@ -37,9 +37,3 @@
 * **deps:** update module github.com/golusoris/goenvoy/metadata to v1.3.0 ([#65](https://github.com/golusoris/goenvoy/issues/65)) ([127fc2d](https://github.com/golusoris/goenvoy/commit/127fc2df0eef17326e41cd0ed1a46011ff3811fe))
 * guard nil search params and encode OpenSubtitles parent filters ([5fe5b7b](https://github.com/golusoris/goenvoy/commit/5fe5b7b87c3c5518376bc1718ec7d80bba2737ee))
 * **screenscraper:** unify option type from ...any to typed Option ([7f161dd](https://github.com/golusoris/goenvoy/commit/7f161dda6747950b87ffe9c174d62e8adf1d3c5e))
-
-## Changelog
-
-## Unreleased
-
-* Unify option type: `New` now takes `...screenscraper.Option` instead of `...any`. `metadata.With*` callers should switch to the re-exported `screenscraper.With*` equivalents.
