@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	// MaxExceptionDays bounds an unextended exception (category A or uncategorized).
+	// MaxExceptionDays bounds an uncategorized exception.
 	MaxExceptionDays = 90
 	// DateLayout is the YYYY-MM-DD date format used for entered and expires fields.
 	DateLayout = "2006-01-02"
@@ -84,7 +84,8 @@ func (r Result) Failed() bool {
 	return len(r.Blocking) > 0 || len(r.Stale) > 0 || len(r.Expired) > 0
 }
 
-// CategoryDays returns the allowable duration in days for an exception category.
+// CategoryDays returns the default duration in days for an exception category.
+// Category A states its own expiry in the entry, at most MaxExceptionDays after its base date.
 func CategoryDays(category string) (int, bool) {
 	switch category {
 	case "A":
@@ -108,47 +109,52 @@ func Day(t time.Time) time.Time {
 
 // ExpiryProblem reports why expires is invalid on today, or returns "".
 func ExpiryProblem(expires string, today time.Time) string {
+	return expiryProblem(expires, Day(today), "today")
+}
+
+func expiryProblem(expires string, base time.Time, reference string) string {
 	date, err := time.Parse(DateLayout, expires)
 	if err != nil {
 		return fmt.Sprintf("expires %q must be a YYYY-MM-DD date", expires)
 	}
-	latest := Day(today).AddDate(0, 0, MaxExceptionDays)
+	latest := base.AddDate(0, 0, MaxExceptionDays)
 	if date.After(latest) {
-		return fmt.Sprintf("expires %s is more than %d days after today; the latest date allowed is %s",
-			expires, MaxExceptionDays, latest.Format(DateLayout))
+		return fmt.Sprintf("expires %s is more than %d days after %s; the latest date allowed is %s",
+			expires, MaxExceptionDays, reference, latest.Format(DateLayout))
 	}
 	return ""
 }
 
 // CategoryExpiryProblem reports why a category/entered/expires combination is invalid, or returns "".
 func CategoryExpiryProblem(category, entered, expires string, today time.Time) string {
-	if category == "" {
-		if entered != "" {
-			return "entered requires a category"
+	base, reference := Day(today), "today"
+	if entered != "" {
+		var err error
+		base, err = time.Parse(DateLayout, entered)
+		if err != nil {
+			return fmt.Sprintf("entered %q must be a YYYY-MM-DD date", entered)
 		}
-		return ExpiryProblem(expires, today)
+		reference = "entered " + entered
 	}
-	return categorizedExpiryProblem(category, entered, expires, today)
+	if category == "" {
+		return expiryProblem(expires, base, reference)
+	}
+	return categorizedExpiryProblem(category, expires, base, reference)
 }
 
-func categorizedExpiryProblem(category, entered, expires string, today time.Time) string {
+func categorizedExpiryProblem(category, expires string, base time.Time, reference string) string {
 	days, valid := CategoryDays(category)
 	if !valid {
 		return fmt.Sprintf("category %q must be A, B, C or D", category)
 	}
-	enteredDate, err := time.Parse(DateLayout, entered)
+	date, err := time.Parse(DateLayout, expires)
 	if err != nil {
-		return fmt.Sprintf("entered %q must be a YYYY-MM-DD date when category is set", entered)
-	}
-	want := enteredDate.AddDate(0, 0, days).Format(DateLayout)
-	if category != "A" && expires != want {
-		return fmt.Sprintf("category %s requires expires %s (entered %s + %d days)", category, want, entered, days)
-	}
-	if category == "A" {
-		return ExpiryProblem(expires, today)
-	}
-	if _, err := time.Parse(DateLayout, expires); err != nil {
 		return fmt.Sprintf("expires %q must be a YYYY-MM-DD date", expires)
+	}
+	latest := base.AddDate(0, 0, days)
+	if date.After(latest) {
+		return fmt.Sprintf("category %s requires expires on or before %s (%d days after %s); got %s",
+			category, latest.Format(DateLayout), days, reference, expires)
 	}
 	return ""
 }

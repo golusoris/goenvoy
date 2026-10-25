@@ -27,8 +27,8 @@
 //   a digest of the figure JSON (`figuresDigest`): a rebuilt figure changes the configuration, so a
 //   warm `astro build` renders every page again. The development server restarts when a figure JSON
 //   changes, is added or is removed (`watchFigures`), which runs the setup, and so the digest, again.
-// * A head script on every page imports the loader, tools/figures/player/loader.js, which mounts the
-//   player from the props each SVG embeds; the loader imports player.js beside it.
+// * When local player files exist, a head script imports tools/figures/player/loader.js, which
+//   mounts the player from the props each SVG embeds; the loader imports player.js beside it.
 // * The development server answers the figure files and the player files from the repository, and
 //   `astro build` copies them into the built site, both through serve.mjs at FIGURES_URI and
 //   PLAYER_URI, the site paths the MkDocs hook publishes them at. A file the built site already
@@ -243,7 +243,11 @@ export default function figures(options = {}) {
         const figuresDir = mounts[0].dir;
         const plugin = { figuresDir, base: figureBase(base), digest: figuresDigest(figuresDir) };
         addFigurePlugin(config, updateConfig, plugin);
-        injectScript('head-inline', loaderScript(base));
+        // Adoption carries no bundled player (ADR-0021). With no local player the SVG is final.
+        const playerFiles = mountFiles(PLAYER_DIR);
+        if (['loader.js', 'player.js'].every((name) => playerFiles.includes(name))) {
+          injectScript('head-inline', loaderScript(base));
+        }
       },
       // Astro's development server cuts the site's base path from a request before an
       // integration's middleware sees it (baseMiddleware in astro/dist/vite-plugin-astro-server/base.js),
