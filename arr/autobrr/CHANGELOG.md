@@ -1,10 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
-- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
-
 ## [2.0.1](https://github.com/golusoris/goenvoy/compare/arr/autobrr/v2.0.0...arr/autobrr/v2.0.1) (2026-10-23)
 
 
@@ -30,3 +25,9 @@
 
 - add 8 new service modules ([1dcd7bc](https://github.com/golusoris/goenvoy/commit/1dcd7bce5cc9cb04f5a14a7add647d1f0603f4e0))
 - add HeadPing, UploadBackup, GetRaw to all arr packages ([893a185](https://github.com/golusoris/goenvoy/commit/893a185c977a366421599d7d738f15f103151c2c))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.

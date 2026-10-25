@@ -22,7 +22,7 @@ Use this skill only when the user asks for a hand-cut tag of a version the relea
 
 1. Verify current branch is `main` and working tree is clean. If not, abort.
 2. `git pull --ff-only origin main`.
-3. Verify `CHANGELOG.md` has a released (non-`Unreleased`) stanza for `<module>/<version>`. If not, abort — run `/bump-module` first.
+3. Verify `<module>/CHANGELOG.md` has the release-please stanza for `<version>`; else abort (the release pull request did not ship it).
 4. Run the pre-release audit: `tools/release-check.sh <module> <version>`. Must pass.
 5. Verify the tag doesn't already exist: `git tag --list "<module>/<version>"` must be empty. Also check remote: `git ls-remote --tags origin "<module>/<version>"`.
 6. Create and push the tag:
@@ -38,5 +38,5 @@ Use this skill only when the user asks for a hand-cut tag of a version the relea
 
 - Don't tag `v0.0.0` — semver starts at `v0.1.0` or `v1.0.0`.
 - Don't tag from a dirty tree. A stray uncommitted file can end up in the source tarball.
-- Don't release without the `CHANGELOG.md` stanza — the GH Release notes link to it.
+- Don't release without the `<module>/CHANGELOG.md` stanza — the GH Release notes link to it.
 - Don't retry by force-pushing a tag. If the release workflow failed, investigate, fix forward, and cut a new patch version. Moving tags is forbidden.

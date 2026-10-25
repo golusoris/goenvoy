@@ -1,11 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
-- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
-- Add WithUserAgent option.
-
 ## [2.0.1](https://github.com/golusoris/goenvoy/compare/mediaserver/plex/v2.0.0...mediaserver/plex/v2.0.1) (2026-10-23)
 
 
@@ -29,3 +23,10 @@
 ### Features
 
 - add mediaserver package with Plex client ([307ea9c](https://github.com/golusoris/goenvoy/commit/307ea9c2c18039b9017d48ec3925ff99db117537))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
+- Add WithUserAgent option.

@@ -1,9 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Fix data race on concurrent Set*/read of OAuth tokens and client secret.
-
 ## [1.3.5](https://github.com/golusoris/goenvoy/compare/metadata/tracking/simkl/v1.3.4...metadata/tracking/simkl/v1.3.5) (2026-10-25)
 
 
@@ -52,3 +48,9 @@
 ### Bug Fixes
 
 - resolve golangci-lint CI errors across 6 packages ([1ef79c1](https://github.com/golusoris/goenvoy/commit/1ef79c17f6c98a701f5001405a7686fb35ddc3b9))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- Fix data race on concurrent Set*/read of OAuth tokens and client secret.

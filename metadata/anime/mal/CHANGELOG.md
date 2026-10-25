@@ -1,9 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Fix data race on concurrent Set*/read of OAuth tokens and client secret.
-
 ## [1.3.5](https://github.com/golusoris/goenvoy/compare/metadata/anime/mal/v1.3.4...metadata/anime/mal/v1.3.5) (2026-10-25)
 
 
@@ -51,3 +47,9 @@
 ### Code Refactoring
 
 - restructure metadata into categories + fix error handling ([902861c](https://github.com/golusoris/goenvoy/commit/902861c594e4aad2ae8e249064082fa496be3f5a))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- Fix data race on concurrent Set*/read of OAuth tokens and client secret.

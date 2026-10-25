@@ -1,11 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
-- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
-- Add WithUserAgent option.
-
 ## [2.0.1](https://github.com/golusoris/goenvoy/compare/mediaserver/audiobookshelf/v2.0.0...mediaserver/audiobookshelf/v2.0.1) (2026-10-23)
 
 
@@ -29,3 +23,10 @@
 ### Features
 
 - add 8 new service modules ([1dcd7bc](https://github.com/golusoris/goenvoy/commit/1dcd7bce5cc9cb04f5a14a7add647d1f0603f4e0))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
+- Add WithUserAgent option.

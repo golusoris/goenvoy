@@ -1,12 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
-- Return an error when closing a response body fails instead of discarding it.
-- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
-- Add WithUserAgent option.
-
 ## [2.0.2](https://github.com/golusoris/goenvoy/compare/mediaserver/kavita/v2.0.1...mediaserver/kavita/v2.0.2) (2026-10-23)
 
 
@@ -41,3 +34,10 @@
 
 - BaseClient.Delete body support, URL injection, default timeouts ([59203c0](https://github.com/golusoris/goenvoy/commit/59203c0eda4c747e89c6567b91811e0cdee46e5b))
 - TMDb query/path injection, Kavita token race condition ([8be265a](https://github.com/golusoris/goenvoy/commit/8be265a4753653a2960c4e1bb4534efa44cd82c4))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
+- Add WithUserAgent option.

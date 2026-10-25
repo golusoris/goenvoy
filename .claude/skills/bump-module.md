@@ -9,7 +9,7 @@ Bump a single module's version and open the PR that will ship it.
 
 ## When to use
 
-The user says "bump <module> <level>" — e.g. "bump arr/sonarr minor". The module already has a `## Unreleased` section in the root `CHANGELOG.md` that you're about to promote.
+The user says "bump <module> <level>" — e.g. "bump arr/sonarr minor". release-please computes versions from Conventional Commits; this skill only forces a version, through the per-package `release-as` key in `release-please-config.json`.
 
 ## Expected arguments
 
@@ -23,17 +23,15 @@ The user says "bump <module> <level>" — e.g. "bump arr/sonarr minor". The modu
    - `major` — `vN.0.0` (next major; reset minor+patch; only if an ADR justifies it and there's a `BREAKING CHANGE:` footer in the pending commits).
    - `minor` — `vN.M+1.0` (new feature, backwards compatible).
    - `patch` — `vN.M.P+1` (fix or dependency-free chore).
-3. Verify the contents of the module's `## Unreleased` stanza in [CHANGELOG.md](../../CHANGELOG.md) are non-empty. If empty, abort: nothing to release.
-4. In `CHANGELOG.md`, promote `## Unreleased` → `## <module>/<new-version> — YYYY-MM-DD` (today's date). Add a fresh empty `## Unreleased` stub above it.
-5. Run the pre-release audit: `tools/release-check.sh <module> <new-version>`. If it fails (breaking API change without a major bump, tests failing, lint failing) stop and report.
-6. Create a branch `release/<module>-<new-version-without-leading-v>`, commit the CHANGELOG change with message `release(<module>): <new-version>`, push.
-7. Open a PR with `gh pr create`:
-   - Title: `release(<module>): <new-version>`.
-   - Body: the CHANGELOG stanza you just promoted, plus a checkbox list: `- [ ] CHANGELOG entry reviewed`, `- [ ] apidiff clean (see CI)`, `- [ ] Ready to tag after merge`.
-8. Report the PR URL to the user. After the PR is merged, run `/release-module <module> <new-version>` to cut the tag.
+3. Run the pre-release audit: `tools/release-check.sh <module> <new-version>`. If it fails (breaking API change without a major bump, tests failing, lint failing) stop and report.
+4. Create a branch `release/<module>-<new-version-without-leading-v>`. In `release-please-config.json`, add `"release-as": "<new-version-without-leading-v>"` to the module's entry under `packages`. Commit with message `chore(<module>): release <new-version>`, push.
+5. Open a PR with `gh pr create`:
+   - Title: `chore(<module>): release <new-version>`.
+   - Body: the forced version and why, plus a checkbox list: `- [ ] apidiff clean (see CI)`, `- [ ] Remove release-as after the release ships`.
+6. Report the PR URL to the user. After it merges, the release pull request carries the version; merging that one creates the tag. Then remove the `release-as` key again, or the next release repeats the version.
 
 ## Don't
 
 - Don't bump major without a `BREAKING CHANGE:` footer in at least one commit since the prior tag. The CI apidiff gate will fail anyway.
-- Don't edit an already-released version stanza in `CHANGELOG.md`.
-- Don't tag from this skill — tagging happens in `/release-module`, post-merge.
+- Don't edit any `CHANGELOG.md`; release-please writes it.
+- Don't tag from this skill — merging the release pull request tags.

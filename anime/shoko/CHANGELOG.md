@@ -1,10 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
-- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
-
 ## [2.0.2](https://github.com/golusoris/goenvoy/compare/anime/shoko/v2.0.1...anime/shoko/v2.0.2) (2026-10-23)
 
 
@@ -35,3 +30,9 @@
 ### Features
 
 - add anime/shoko module for Shoko Server API v3 ([04cd952](https://github.com/golusoris/goenvoy/commit/04cd952e9c696dbce99900edaf9f941c2118544c))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.

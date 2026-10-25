@@ -1,12 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
-- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
-- Add WithUserAgent option.
-- Add `ProviderIDs` (JSON key `ProviderIds`) to `BaseItemDto`.
-
 ## [3.2.0](https://github.com/golusoris/goenvoy/compare/mediaserver/jellyfin/v3.1.0...mediaserver/jellyfin/v3.2.0) (2026-10-25)
 
 
@@ -50,3 +43,10 @@
 ### Features
 
 - **mediaserver:** add Jellyfin and Emby clients ([af809d3](https://github.com/golusoris/goenvoy/commit/af809d33c5f3028f1829c7708a72aab94472930d))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
+- Add WithUserAgent option.

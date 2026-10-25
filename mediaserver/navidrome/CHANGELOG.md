@@ -1,11 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
-- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
-- Add WithUserAgent option.
-
 ## [2.0.2](https://github.com/golusoris/goenvoy/compare/mediaserver/navidrome/v2.0.1...mediaserver/navidrome/v2.0.2) (2026-10-23)
 
 
@@ -39,3 +33,10 @@
 ### Bug Fixes
 
 - BaseClient.Delete body support, URL injection, default timeouts ([59203c0](https://github.com/golusoris/goenvoy/commit/59203c0eda4c747e89c6567b91811e0cdee46e5b))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
+- Add WithUserAgent option.

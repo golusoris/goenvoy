@@ -1,9 +1,5 @@
 # Changelog
 
-## Unreleased
-
-- Fix data race on concurrent Set*/read of OAuth tokens and client secret.
-
 ## [1.3.4](https://github.com/golusoris/goenvoy/compare/metadata/game/steam/v1.3.3...metadata/game/steam/v1.3.4) (2026-10-25)
 
 
@@ -42,3 +38,9 @@
 ### Bug Fixes
 
 - BaseClient.Delete body support, URL injection, default timeouts ([59203c0](https://github.com/golusoris/goenvoy/commit/59203c0eda4c747e89c6567b91811e0cdee46e5b))
+
+## Earlier changes
+
+Recorded by hand before release-please wrote these notes.
+
+- Fix data race on concurrent Set*/read of OAuth tokens and client secret.
