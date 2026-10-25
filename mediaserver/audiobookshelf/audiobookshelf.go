@@ -59,7 +59,7 @@ func New(baseURL, token string, opts ...Option) (*Client, error) {
 	c := &Client{
 		rawBaseURL: baseURL,
 		token:      token,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {
@@ -102,7 +102,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values) ([]byt
 	if err != nil {
 		return nil, fmt.Errorf("audiobookshelf: GET %s: %w", path, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

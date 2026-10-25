@@ -77,7 +77,7 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 
 	c := &Client{
 		rawBaseURL: baseURL,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 		clientName: defaultClient,
 		version:    defaultVersion,
 		deviceID:   defaultDeviceID,
@@ -169,7 +169,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body, dst a
 	if err != nil {
 		return fmt.Errorf("emby: %s %s: %w", method, path, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -207,7 +207,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values) ([]byt
 	if err != nil {
 		return nil, fmt.Errorf("emby: GET %s: %w", path, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

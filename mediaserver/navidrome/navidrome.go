@@ -80,7 +80,7 @@ func New(baseURL, username, password string, opts ...Option) (*Client, error) {
 		username:  username,
 		password:  password,
 		userAgent: defaultUserAgent,
-		http:      &http.Client{Timeout: defaultTimeout},
+		http:      &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 	}
 	for _, o := range opts {
 		o(c)

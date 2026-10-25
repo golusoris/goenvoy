@@ -30,7 +30,8 @@ const (
 // Take takes a point-in-time snapshot of the queue from the specified Target.
 func Take(ctx context.Context, t Target, opts ...Option) (Snapshot, error) {
 	o := options{
-		timeout: defaultTimeout,
+		timeout:    defaultTimeout,
+		httpClient: &http.Client{Transport: sharedTransport},
 	}
 	for _, opt := range opts {
 		opt(&o)

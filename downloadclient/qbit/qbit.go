@@ -60,7 +60,7 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 	jar, _ := cookiejar.New(nil)
 	c := &Client{
 		baseURL:    baseURL,
-		httpClient: &http.Client{Timeout: defaultTimeout, Jar: jar},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport, Jar: jar},
 		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {

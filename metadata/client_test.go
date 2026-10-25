@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,6 +17,27 @@ import (
 )
 
 const testPkg = "testpkg"
+
+// droppingURL returns an http URL whose port stays bound for the test and drops every connection.
+// Why: a closed server's port can be taken by a parallel test's server, which then answers.
+func droppingURL(t *testing.T) string {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	t.Cleanup(func() { _ = ln.Close() })
+	go func() {
+		for range 256 {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			_ = conn.Close()
+		}
+	}()
+	return "http://" + ln.Addr().String()
+}
 
 func newTestServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	t.Helper()
@@ -216,10 +238,7 @@ func TestDoRaw_NonOK(t *testing.T) {
 func TestDoRaw_NetworkError(t *testing.T) {
 	t.Parallel()
 
-	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
-	srv.Close()
-
-	c := metadata.NewBaseClient(srv.URL, testPkg)
+	c := metadata.NewBaseClient(droppingURL(t), testPkg)
 	_, _, err := c.DoRaw(context.Background(), http.MethodGet, "/fail", nil)
 
 	if err == nil {

@@ -55,5 +55,5 @@ func run(ctx context.Context, args []string, out io.Writer, base string) error {
 	if err != nil {
 		return err
 	}
-	return checker{client: &http.Client{Timeout: deadline}, base: base, out: out}.all(ctx, pins)
+	return checker{client: &http.Client{Timeout: deadline, Transport: sharedTransport}, base: base, out: out}.all(ctx, pins)
 }

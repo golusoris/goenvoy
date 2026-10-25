@@ -51,7 +51,7 @@ func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	c := &Client{
 		rawBaseURL: baseURL,
 		apiKey:     apiKey,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 	}
 	for _, o := range opts {
 		o(c)
@@ -103,7 +103,7 @@ func (c *Client) do(ctx context.Context, method, path string, reqBody any) ([]by
 	if err != nil {
 		return nil, fmt.Errorf("autobrr: %s %s: %w", method, path, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {

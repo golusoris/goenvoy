@@ -59,7 +59,7 @@ func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	c := &Client{
 		rawBaseURL: baseURL,
 		apiKey:     apiKey,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {
@@ -114,7 +114,7 @@ func (c *Client) get(ctx context.Context, cmd string, params url.Values) (json.R
 	if err != nil {
 		return nil, fmt.Errorf("tautulli: %s: %w", cmd, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

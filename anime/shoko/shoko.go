@@ -65,7 +65,7 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 
 	c := &Client{
 		rawBaseURL: baseURL,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {
@@ -153,7 +153,7 @@ func (c *Client) doRequest(ctx context.Context, method, path string, body, dst a
 	if err != nil {
 		return fmt.Errorf("shoko: %s %s: %w", method, path, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
