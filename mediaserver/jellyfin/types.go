@@ -76,6 +76,7 @@ type BaseItemDto struct {
 	ParentID          string            `json:"ParentId,omitempty"`
 	IsFolder          bool              `json:"IsFolder"`
 	ImageTags         map[string]string `json:"ImageTags,omitempty"`
+	ProviderIDs       map[string]string `json:"ProviderIds,omitempty"`
 	BackdropImageTags []string          `json:"BackdropImageTags,omitempty"`
 	UserData          *UserItemDataDto  `json:"UserData,omitempty"`
 	SeriesName        string            `json:"SeriesName,omitempty"`
