@@ -59,7 +59,10 @@ func (e *APIError) Error() string {
 // New creates a new Navidrome client.
 //
 // The baseURL should include the protocol and host (e.g. "http://localhost:4533").
-// Authentication uses Subsonic token-based auth (md5(password + salt)).
+// Authentication uses Subsonic token-based auth (md5(password + salt)), which the
+// Subsonic protocol mandates. MD5 is broken: anyone who reads a request URL can
+// replay its token and attack the password offline, so use an https baseURL and a
+// password not shared with other services.
 // It returns an error if baseURL is not a valid HTTP/HTTPS URL.
 func New(baseURL, username, password string, opts ...Option) (*Client, error) {
 	baseURL = strings.TrimRight(baseURL, "/")
