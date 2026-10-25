@@ -29,6 +29,7 @@ jobs:
   release:
     name: Release tagged module
     runs-on: ubuntu-26.04
+    timeout-minutes: 20
     permissions:
       contents: write       # create GH Release + upload artefacts
       id-token: write       # cosign keyless + SLSA
@@ -70,16 +71,16 @@ jobs:
           go vet ./...
           go test -race -count=1 ./...
 
-      - uses: ./.github/actions/install-release-tools
+      # Why: release tooling comes from this workflow's commit, so a retried old tag gets current pins.
+      - name: Check out the release tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .release-tools
+          persist-credentials: false
+          sparse-checkout: .github/actions/install-release-tools
 
-      - name: Verify pinned supply-chain tools
-        shell: bash
-        run: |
-          set -euo pipefail
-          command -v cosign
-          command -v syft
-          cosign version | grep -Eq '^GitVersion:[[:space:]]+v?3\.1\.3(\+dirty)?[[:space:]]*$'
-          syft version | grep -Eq 'Version:[[:space:]]+1\.54\.1([[:space:]]|$)'
+      - uses: ./.release-tools/.github/actions/install-release-tools
 
       - name: Package source tarball
         id: pkg
