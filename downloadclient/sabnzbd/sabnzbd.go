@@ -59,7 +59,7 @@ func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	c := &Client{
 		baseURL:    baseURL,
 		apiKey:     apiKey,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {
@@ -115,7 +115,7 @@ func (c *Client) get(ctx context.Context, mode string, params url.Values, dst an
 	if err != nil {
 		return fmt.Errorf("sabnzbd: GET %s: %w", mode, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)

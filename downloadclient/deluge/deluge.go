@@ -63,8 +63,9 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 	c := &Client{
 		baseURL: baseURL,
 		httpClient: &http.Client{
-			Timeout: defaultTimeout,
-			Jar:     jar,
+			Timeout:   defaultTimeout,
+			Transport: sharedTransport,
+			Jar:       jar,
 		},
 		userAgent: defaultUserAgent,
 	}
@@ -129,7 +130,7 @@ func (c *Client) call(ctx context.Context, method string, params []any, dst any)
 	if err != nil {
 		return fmt.Errorf("deluge: POST /json: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -23,6 +24,27 @@ func writeJSON(t *testing.T, w http.ResponseWriter, v any) {
 	if err := json.NewEncoder(w).Encode(v); err != nil {
 		t.Errorf("writeJSON encode: %v", err)
 	}
+}
+
+// droppingURL returns an http URL whose port stays bound for the test and drops every connection.
+// Why: a closed server's port can be taken by a parallel test's server, which then answers.
+func droppingURL(t *testing.T) string {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	t.Cleanup(func() { _ = ln.Close() })
+	go func() {
+		for range 256 {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			_ = conn.Close()
+		}
+	}()
+	return "http://" + ln.Addr().String()
 }
 
 func rpcMethod(t *testing.T, r *http.Request) string {
@@ -526,9 +548,7 @@ func TestTake_NZBGet(t *testing.T) {
 func TestTake_Unreachable(t *testing.T) {
 	t.Parallel()
 
-	srv := httptest.NewServer(http.NotFoundHandler())
-	closedURL := srv.URL
-	srv.Close()
+	closedURL := droppingURL(t)
 
 	kinds := []queue.Kind{
 		queue.KindQBittorrent,

@@ -48,7 +48,7 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 
 	c := &Client{
 		rawBaseURL: baseURL,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 	}
 	for _, o := range opts {
 		o(c)
@@ -87,7 +87,7 @@ func (c *Client) do(ctx context.Context, reqBody, v any) error {
 	if err != nil {
 		return fmt.Errorf("flaresolverr: POST /v1: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {

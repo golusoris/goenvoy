@@ -64,7 +64,7 @@ func New(baseURL, username, password string, opts ...Option) (*Client, error) {
 		baseURL:    baseURL,
 		username:   username,
 		password:   password,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {
@@ -127,7 +127,7 @@ func (c *Client) call(ctx context.Context, method string, params []any, dst any)
 	if err != nil {
 		return fmt.Errorf("nzbget: POST /jsonrpc: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)

@@ -78,7 +78,7 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 
 	c := &Client{
 		rawBaseURL: baseURL,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 		clientName: defaultClient,
 		version:    defaultVersion,
 		deviceID:   defaultDeviceID,
