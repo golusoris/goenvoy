@@ -62,7 +62,7 @@ type BaseClient struct {
 // configure HTTP client, timeout, user agent, or base URL.
 func NewBaseClient(defaultBaseURL, pkgName string, opts ...Option) *BaseClient {
 	c := &BaseClient{
-		httpClient: &http.Client{Timeout: DefaultTimeout},
+		httpClient: &http.Client{Timeout: DefaultTimeout, Transport: sharedTransport},
 		baseURL:    defaultBaseURL,
 		userAgent:  DefaultUserAgent,
 		pkgName:    pkgName,

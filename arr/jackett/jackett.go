@@ -54,7 +54,7 @@ func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	c := &Client{
 		rawBaseURL: baseURL,
 		apiKey:     apiKey,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 	}
 	for _, o := range opts {
 		o(c)
@@ -86,7 +86,7 @@ func (c *Client) doRequest(ctx context.Context, u string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("jackett: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {

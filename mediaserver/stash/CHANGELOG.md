@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
 - **BREAKING:** `New` now returns `(*Client, error)` and validates the endpoint URL. Callers must check the error.
 
 ## [2.0.2](https://github.com/golusoris/goenvoy/compare/mediaserver/stash/v2.0.1...mediaserver/stash/v2.0.2) (2026-10-23)

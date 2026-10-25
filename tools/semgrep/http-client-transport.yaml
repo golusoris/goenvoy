@@ -1,0 +1,14 @@
+rules:
+  - id: http-client-without-transport
+    message: >-
+      http.Client without its own Transport shares http.DefaultTransport; any
+      CloseIdleConnections on it (httptest.Server.Close does one) breaks this
+      client's in-flight requests. Set Transport to the module's private pool.
+    severity: ERROR
+    languages: [go]
+    paths:
+      exclude:
+        - "*_test.go"
+    patterns:
+      - pattern: "http.Client{...}"
+      - pattern-not: "http.Client{..., Transport: $T, ...}"

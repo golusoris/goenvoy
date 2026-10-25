@@ -175,7 +175,7 @@ func New(endpoint, apiKey string, opts ...Option) (*Client, error) {
 	c := &Client{
 		endpoint:   endpoint,
 		apiKey:     apiKey,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {

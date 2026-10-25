@@ -55,7 +55,7 @@ func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	c := &Client{
 		rawBaseURL: baseURL,
 		apiKey:     apiKey,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 	}
 	for _, o := range opts {
 		o(c)
@@ -87,7 +87,7 @@ func (c *Client) doGet(ctx context.Context, u string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("nzbhydra: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -165,7 +165,7 @@ func (c *Client) postJSON(ctx context.Context, path string, body, v any) error {
 	if err != nil {
 		return fmt.Errorf("nzbhydra: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {

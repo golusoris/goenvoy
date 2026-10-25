@@ -960,3 +960,90 @@ func TestRemoveFromCollection_Forbidden(t *testing.T) {
 		t.Errorf("StatusCode = %d, want 403", apiErr.StatusCode)
 	}
 }
+
+func assertProviderIDs(t *testing.T, got map[string]string, wantNil bool, wantLen int, wantEntries map[string]string) {
+	t.Helper()
+	if wantNil {
+		if got != nil {
+			t.Errorf("ProviderIDs = %v, want nil", got)
+		}
+		return
+	}
+	if got == nil {
+		t.Fatal("ProviderIDs = nil, want non-nil")
+	}
+	if len(got) != wantLen {
+		t.Errorf("len(ProviderIDs) = %d, want %d", len(got), wantLen)
+	}
+	for k, wantVal := range wantEntries {
+		gotVal, ok := got[k]
+		if !ok {
+			t.Errorf("ProviderIDs[%q] missing, want key present", k)
+			continue
+		}
+		if gotVal != wantVal {
+			t.Errorf("ProviderIDs[%q] = %q, want %q", k, gotVal, wantVal)
+		}
+	}
+}
+
+func TestBaseItemDto_ProviderIDs(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name        string
+		json        string
+		wantNil     bool
+		wantLen     int
+		wantEntries map[string]string
+	}{
+		{
+			name:    "negative field absent",
+			json:    `{}`,
+			wantNil: true,
+		},
+		{
+			name:    "positive",
+			json:    `{"ProviderIds":{"Tvdb":"81189","Tmdb":"1396","Imdb":"tt0903747"}}`,
+			wantLen: 3,
+			wantEntries: map[string]string{
+				"Tvdb": "81189",
+				"Tmdb": "1396",
+				"Imdb": "tt0903747",
+			},
+		},
+		{
+			name:        "boundary empty object",
+			json:        `{"ProviderIds":{}}`,
+			wantLen:     0,
+			wantEntries: map[string]string{},
+		},
+		{
+			name:    "boundary mixed-case key",
+			json:    `{"ProviderIds":{"TvDb":"1","tmdb":"2"}}`,
+			wantLen: 2,
+			wantEntries: map[string]string{
+				"TvDb": "1",
+				"tmdb": "2",
+			},
+		},
+		{
+			name:    "boundary null value",
+			json:    `{"ProviderIds":{"Imdb":null}}`,
+			wantLen: 1,
+			wantEntries: map[string]string{
+				"Imdb": "",
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var item jellyfin.BaseItemDto
+			if err := json.Unmarshal([]byte(tc.json), &item); err != nil {
+				t.Fatalf("json.Unmarshal: %v", err)
+			}
+			assertProviderIDs(t, item.ProviderIDs, tc.wantNil, tc.wantLen, tc.wantEntries)
+		})
+	}
+}
