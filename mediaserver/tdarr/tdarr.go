@@ -72,7 +72,7 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 
 	c := &Client{
 		baseURL:    baseURL,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {
@@ -132,7 +132,7 @@ func (c *Client) do(ctx context.Context, method, path string, body, v any) error
 	if err != nil {
 		return fmt.Errorf("tdarr: %s: %w", path, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -156,7 +156,7 @@ func (c *Client) doText(ctx context.Context, method, path string) (string, error
 	if err != nil {
 		return "", fmt.Errorf("tdarr: %s: %w", path, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {

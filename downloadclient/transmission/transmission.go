@@ -93,7 +93,7 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 	c := &Client{
 		baseURL:    baseURL,
 		rpcPath:    defaultRPCPath,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 		userAgent:  defaultUserAgent,
 	}
 	for _, o := range opts {
@@ -164,10 +164,9 @@ func (c *Client) call(ctx context.Context, method string, args, dst any) error {
 			return err
 		}
 
-		respBody, readErr := io.ReadAll(resp.Body)
-		_ = resp.Body.Close()
-		if readErr != nil {
-			return fmt.Errorf("transmission: read response: %w", readErr)
+		respBody, err := readAndClose(resp)
+		if err != nil {
+			return err
 		}
 
 		if resp.StatusCode == http.StatusConflict {
@@ -182,6 +181,18 @@ func (c *Client) call(ctx context.Context, method string, args, dst any) error {
 		return parseRPCResponse(respBody, dst)
 	}
 	return &HTTPError{StatusCode: http.StatusConflict, RawBody: "session ID negotiation failed"}
+}
+
+func readAndClose(resp *http.Response) ([]byte, error) {
+	body, readErr := io.ReadAll(resp.Body)
+	closeErr := resp.Body.Close()
+	if readErr != nil {
+		return nil, fmt.Errorf("transmission: read response: %w", readErr)
+	}
+	if closeErr != nil {
+		return nil, fmt.Errorf("transmission: close response: %w", closeErr)
+	}
+	return body, nil
 }
 
 func (c *Client) doHTTP(ctx context.Context, body []byte) (*http.Response, error) {

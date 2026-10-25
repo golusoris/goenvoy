@@ -62,7 +62,7 @@ func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 		baseURL:   baseURL,
 		apiKey:    apiKey,
 		userAgent: defaultUserAgent,
-		http:      &http.Client{Timeout: defaultTimeout},
+		http:      &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 	}
 	for _, o := range opts {
 		o(c)
@@ -132,7 +132,9 @@ func (c *Client) sendWithRetry(ctx context.Context, method, path string, body an
 	}
 
 	if resp.StatusCode == http.StatusUnauthorized {
-		_ = resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			return nil, fmt.Errorf("kavita: close response: %w", err)
+		}
 		if err := c.Authenticate(ctx); err != nil {
 			return nil, err
 		}

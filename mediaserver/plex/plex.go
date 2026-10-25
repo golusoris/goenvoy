@@ -75,7 +75,7 @@ func New(baseURL, token string, opts ...Option) (*Client, error) {
 	c := &Client{
 		rawBaseURL: baseURL,
 		token:      token,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport},
 		product:    defaultProduct,
 		version:    defaultVersion,
 		clientID:   defaultClientID,
@@ -130,7 +130,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values) (*Medi
 	if err != nil {
 		return nil, fmt.Errorf("plex: GET %s: %w", path, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -172,7 +172,7 @@ func (c *Client) getRaw(ctx context.Context, path string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("plex: GET %s: %w", path, err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

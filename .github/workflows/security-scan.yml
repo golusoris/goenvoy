@@ -41,10 +41,13 @@ jobs:
           # hosted runners hit the anonymous Docker Hub pull limit.
           tar -cf - --exclude=.git . \
             | docker run --rm -i mirror.gcr.io/semgrep/semgrep:1.144.0@sha256:10301f060aacf84078f9704fb1ba3a321df4ac46b009fd29c1c66880d1db8e77 \
-                sh -ec 'mkdir -p /src && tar -xf - -C /src && cd /src && rc=0 && \
+                sh -ec 'mkdir -p /src && tar -xf - -C /src && cd /src && \
+                  { semgrep --test --metrics=off tools/semgrep/ 1>&2 || exit 3; } && rc=0 && \
                   semgrep scan \
                     --config p/golang \
                     --config p/security-audit \
+                    --config tools/semgrep/ \
+                    --exclude tools/semgrep \
                     --sarif-output=/tmp/semgrep.sarif \
                     --error --metrics=off --quiet . 1>&2 || rc=$?; \
                   cat /tmp/semgrep.sarif; [ "$rc" -le 1 ] || exit "$rc"' > semgrep.sarif

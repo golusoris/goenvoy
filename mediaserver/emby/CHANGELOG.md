@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
 - **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
 - Add WithUserAgent option.
 

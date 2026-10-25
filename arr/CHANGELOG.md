@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Use a private HTTP transport pool for the default client, so `CloseIdleConnections` on `http.DefaultTransport` (for example from `httptest.Server.Close`) no longer breaks in-flight requests.
+
 ## [2.6.1](https://github.com/golusoris/goenvoy/compare/arr/v2.6.0...arr/v2.6.1) (2026-10-23)
 
 
