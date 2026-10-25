@@ -4,6 +4,7 @@
 
 - **BREAKING:** `New` now returns `(*Client, error)` and validates baseURL. Callers must check the error.
 - Add WithUserAgent option.
+- Add `ProviderIDs` (JSON key `ProviderIds`) to `BaseItemDto`.
 
 ## [3.1.0](https://github.com/golusoris/goenvoy/compare/mediaserver/emby/v3.0.2...mediaserver/emby/v3.1.0) (2026-10-23)
 
