@@ -43,8 +43,12 @@
     {
       "customType": "regex",
       "description": "Update the gitleaks version of the CI secret scan; its archive sha256 follows by hand and fails the job closed until it does.",
-      "managerFilePatterns": ["/^tools/tool-versions\\.env$/"],
-      "matchStrings": ["GITLEAKS_VERSION=(?<currentValue>[^\\s]+)"],
+      "managerFilePatterns": [
+        "/^tools/tool-versions\\.env$/"
+      ],
+      "matchStrings": [
+        "GITLEAKS_VERSION=(?<currentValue>[^\\s]+)"
+      ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "gitleaks/gitleaks",
       "extractVersionTemplate": "^v(?<version>.*)$",
@@ -135,9 +139,6 @@
         "tools/figures/third_party/interfig/upstream/src/svg.ts",
         "tools/figures/third_party/interfig/upstream/src/geometry.ts",
         "tools/figures/third_party/interfig/upstream/src/model.ts",
-        "tools/figures/player/loader.js",
-        "tools/figures/player/player.js",
-        "tools/figures/player/THIRD-PARTY-LICENSES.txt",
         "tools/figures/figures.css",
         "tools/figures/mkdocs_hook.py",
         "tools/figures/astro.mjs",

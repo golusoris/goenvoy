@@ -900,9 +900,30 @@ function specErrors(page, output, built, figures) {
   return errors;
 }
 
+/**
+ * Whether the site renders its figures as SVG by design (ADR-0021): its repository carries no
+ * player of its own (tools/figures/player/, the engine) and its tools/figures/player.lock.json
+ * names no engine release, so the figures hook publishes no player. A lock that names a release
+ * still requires the loader: the hook fetches the player then.
+ */
+function svgOnlySite(config) {
+  const root = dirname(config);
+  if (isDirectory(join(root, 'tools/figures/player'))) return false;
+  const lock = join(root, 'tools/figures/player.lock.json');
+  if (!isFile(lock)) return false;
+  let data;
+  try {
+    data = JSON.parse(readText(lock));
+  } catch {
+    return false;
+  }
+  return isObject(data) && String(data.release ?? '').trim() === '';
+}
+
 /** Why the page cannot mount its figures: no loader script that resolves, or no player.js beside it. */
 function loaderErrors(page, output, built, scripts) {
   const loader = scripts.find((src) => src.endsWith(LOADER) && resolves(output, built, src));
+  if (!loader && built.svgOnly) return [];
   if (!loader) return [`${page}: holds figures but loads no ${LOADER} (${built.flavor.publisher} publishes it from tools/figures/player/)`];
   if (isFile(join(dirname(urlTarget(output, built, loader)), PLAYER))) return [];
   return [`${page}: loads ${loader}, but no ${PLAYER} sits beside it for the loader to import`];
@@ -956,7 +977,8 @@ export function checkSite(config, docs, site, base = undefined) {
   if (!isDirectory(docsDir)) throw new CheckError(`${docsDir} is not a directory`);
   if (!isFile(join(siteDir, 'index.html'))) throw new CheckError(`${siteDir} holds no built site (no index.html); run ${flavor.build} first`);
   const text = readText(clean(config));
-  const built = { flavor, docs: docsDir, dir: siteDir, base: flavor.base ? basePath(base) : null, kinds: flavor.kinds(text), seen: new Map() };
+  const built = { flavor, docs: docsDir, dir: siteDir, base: flavor.base ? basePath(base) : null, kinds: flavor.kinds(text), seen: new Map(),
+    svgOnly: svgOnlySite(clean(config)) };
   const errors = [];
   let diagrams = 0;
   for (const page of flavor.pages(docsDir, text)) {

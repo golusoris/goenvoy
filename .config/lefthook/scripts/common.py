@@ -1,11 +1,17 @@
 """Bounded process execution and isolated Git snapshots for local checks."""
 
 import contextlib
+import hashlib
+import json
 import math
 import os
+import re
 import selectors
+import shutil
 import signal
+import stat
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -576,10 +582,52 @@ def clean_env():
     return env
 
 
+# A snapshot whose hook was killed (a timeout, a cancelled push) keeps its directory: a commit
+# snapshot holds a full clone, 0.6-0.7 GB. Before a new snapshot, the directories of this prefix
+# that this user owns and nobody touched for SNAPSHOT_STALE_S are removed; no hook runs that long.
+SNAPSHOT_PREFIX = "praetor-hook-"
+SNAPSHOT_STALE_S = 3 * 60 * 60
+MAX_STALE_SNAPSHOTS = 256
+
+
+def _writable_retry(function, path, _exc):
+    """rmtree onexc: make the parent and the entry writable, then retry the removal once."""
+    for target in (os.path.dirname(path), path):
+        with contextlib.suppress(OSError):
+            os.chmod(target, os.stat(target).st_mode | stat.S_IWUSR | stat.S_IXUSR)
+    function(path)
+
+
+def sweep_stale_snapshots(root=None, now=None):
+    """Remove leaked snapshot directories in root (the temporary directory); the count removed."""
+    root = Path(root or tempfile.gettempdir())
+    now = time.time() if now is None else now
+    removed = 0
+    for entry in sorted(root.glob(SNAPSHOT_PREFIX + "*"))[:MAX_STALE_SNAPSHOTS]:
+        with contextlib.suppress(OSError):
+            info = entry.lstat()
+            if (
+                not stat.S_ISDIR(info.st_mode)
+                or now - info.st_mtime < SNAPSHOT_STALE_S
+                or (hasattr(os, "getuid") and info.st_uid != os.getuid())
+            ):
+                continue
+            if sys.version_info >= (3, 12):
+                shutil.rmtree(entry, onexc=_writable_retry)
+            else:  # Python 3.10 and 3.11 (the hooks' floor) name the callback onerror
+                shutil.rmtree(
+                    entry, onerror=_writable_retry
+                )  # pylint: disable=deprecated-argument
+            removed += 1
+    return removed
+
+
 @contextlib.contextmanager
 def snapshot(ref=None):
-    """Export the exact index or commit; never stash, stage, or edit the source."""
-    with tempfile.TemporaryDirectory(prefix="praetor-hook-") as directory:
+    """Export the exact index or commit; never stash, stage, or edit the source. Leaked snapshots of
+    killed hooks are swept first (sweep_stale_snapshots)."""
+    sweep_stale_snapshots()
+    with tempfile.TemporaryDirectory(prefix=SNAPSHOT_PREFIX) as directory:
         dest = Path(directory)
         env = clean_env()
         if ref is None:
@@ -649,3 +697,219 @@ def present_files(directory, names):
         if path.is_file():
             files.append(name)
     return files
+
+
+# Shared native checkpoint session records: Python adapters and the Go hook caller.
+SESSION_ENV = "PRAETOR_CHECKPOINT_SESSION"
+SESSION_INPUT_LIMIT = 1024 * 1024
+MAX_WORKTREES = 512
+MAX_RECORD_BYTES = 512 * 1024
+
+
+def extract_session_id(payload):
+    """Read session ID from agent payload without guessing."""
+    if not isinstance(payload, dict):
+        return None
+    session_id = payload.get("session_id")
+    if isinstance(session_id, str) and session_id.strip():
+        return session_id.strip()
+    conv_id = payload.get("conversationId")
+    if isinstance(conv_id, str) and conv_id.strip():
+        return conv_id.strip()
+    return None
+
+
+def session_hash_for(session_id):
+    """Return first 16 hex chars of SHA256 of session ID. Never store raw ID."""
+    return hashlib.sha256(session_id.encode("utf-8")).hexdigest()[:16]
+
+
+def _git_common_dir(root, budget):
+    """Resolve repository common Git directory."""
+    raw = run_bounded(
+        ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+        cwd=root,
+        timeout=budget.timeout(SESSION_GIT_TIMEOUT),
+        max_output=SESSION_GIT_OUTPUT,
+        grace=SESSION_GIT_GRACE,
+    )
+    return Path(raw.decode().strip()).resolve()
+
+
+def _listed_worktrees(root, budget):
+    """Read bounded NUL-delimited worktree listing."""
+    raw = run_bounded(
+        ["git", "worktree", "list", "--porcelain", "-z"],
+        cwd=root,
+        timeout=budget.timeout(SESSION_GIT_TIMEOUT),
+        max_output=SESSION_INPUT_LIMIT,
+        grace=SESSION_GIT_GRACE,
+    )
+    entries, entry = [], {}
+    for part in raw.split(b"\0"):
+        field = os.fsdecode(part)
+        if not field:
+            if entry and "path" in entry:
+                entries.append(entry)
+                entry = {}
+            if len(entries) >= MAX_WORKTREES:
+                break
+            continue
+        key, sep, val = field.partition(" ")
+        if key == "worktree" and sep:
+            entry["path"] = val
+    if entry and "path" in entry and len(entries) < MAX_WORKTREES:
+        entries.append(entry)
+    return entries
+
+
+MAX_EXTRACT_NODES = 256
+
+
+def _extract_strings(data):
+    """Extract string values iteratively from tool input under a scalar bound."""
+    result = []
+    stack = [data]
+    for _ in range(MAX_EXTRACT_NODES):
+        if not stack:
+            break
+        item = stack.pop()
+        if isinstance(item, str):
+            result.append(item)
+        elif isinstance(item, dict):
+            stack.extend(item.values())
+        elif isinstance(item, (list, tuple)):
+            stack.extend(item)
+    return result
+
+
+def _extract_tool_info(payload):
+    """Extract tool name and tool input from payload."""
+    tool_name = payload.get("tool_name")
+    tool_input = payload.get("tool_input")
+    if not tool_name and isinstance(payload.get("toolCall"), dict):
+        call = payload["toolCall"]
+        tool_name = call.get("name")
+        tool_input = call.get("args")
+    return str(tool_name or ""), tool_input
+
+
+def _path_matches(resolved_path_str, text):
+    """Compare literal paths in tool text after resolving both filesystem spellings."""
+    # Keep quoted paths with spaces intact; also find absolute operands embedded
+    # in shell commands or scripts. Never execute or expand the command text.
+    pattern = r"""(?<![\w./\\-])(?:"[^"]+"|'[^']+'|(?:[A-Za-z]:[/\\]|/|\\\\)[^\s'";&|<>()]+)"""
+    candidates = [
+        text,
+        *(match.group().strip("\"'") for match in re.finditer(pattern, text)),
+    ]
+    for candidate in candidates:
+        if not Path(candidate).is_absolute():
+            continue
+        try:
+            resolved_relative_to(candidate, resolved_path_str)
+            return True
+        except (OSError, RuntimeError, ValueError):
+            continue
+    return False
+
+
+def _is_worktree_touched(resolved, tool_name, tool_input, strings):
+    """Whether worktree was touched by tool invocation."""
+    if tool_name == "EnterWorktree" and isinstance(tool_input, dict):
+        target = tool_input.get("name") or tool_input.get("path")
+        if isinstance(target, str) and target.strip() in (resolved.name, str(resolved)):
+            return True
+    path_str = str(resolved)
+    return any(_path_matches(path_str, s) for s in strings)
+
+
+def _read_session_record(record_file):
+    """Read existing worktree paths from session record file."""
+    try:
+        with record_file.open("rb") as stream:
+            raw = stream.read(MAX_RECORD_BYTES + 1)
+        if len(raw) > MAX_RECORD_BYTES:
+            return set()
+        data = json.loads(raw)
+        if isinstance(data, list):
+            return {str(Path(p).resolve()) for p in data if isinstance(p, str)}
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        pass
+    return set()
+
+
+def _write_session_record(sessions_dir, record_file, paths):
+    """Atomically write sorted bounded worktree paths to session record."""
+    sessions_dir.mkdir(parents=True, exist_ok=True)
+    sorted_paths = sorted(paths)[:MAX_WORKTREES]
+    payload = json.dumps(sorted_paths).encode("utf-8")
+    if len(payload) > MAX_RECORD_BYTES:
+        raise ValueError("checkpoint session record exceeds byte bound")
+    tmp = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=sessions_dir, delete=False) as handle:
+            tmp = Path(handle.name)
+            handle.write(payload)
+        os.replace(tmp, record_file)
+        tmp = None
+    finally:
+        if tmp is not None:
+            try:
+                tmp.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
+def ensure_session_record(root, session_hash, budget):
+    """Ensure session record file exists before running stop checkpoint."""
+    common_dir = _git_common_dir(root, budget)
+    sessions_dir = common_dir / "praetor-checkpoint" / "sessions"
+    record_file = sessions_dir / f"{session_hash}.json"
+    if not record_file.is_file():
+        _write_session_record(sessions_dir, record_file, set())
+
+
+def record_tool_worktrees(payload, root, budget):
+    """Record any worktree paths touched by tool event."""
+    session_id = extract_session_id(payload)
+    if not session_id:
+        return
+    session_hash = session_hash_for(session_id)
+    tool_name, tool_input = _extract_tool_info(payload)
+    if not tool_input:
+        return
+    strings = _extract_strings(tool_input)
+    common_dir = _git_common_dir(root, budget)
+    sessions_dir = common_dir / "praetor-checkpoint" / "sessions"
+    record_file = sessions_dir / f"{session_hash}.json"
+
+    worktrees = _listed_worktrees(root, budget)
+    touched = set()
+    for entry in worktrees:
+        try:
+            resolved = Path(entry["path"]).resolve(strict=True)
+        except (OSError, RuntimeError):
+            continue
+        if resolved == root:
+            continue
+        if _is_worktree_touched(resolved, tool_name, tool_input, strings):
+            touched.add(str(resolved))
+    if not touched and record_file.is_file():
+        return
+    existing = _read_session_record(record_file) if record_file.is_file() else set()
+    if touched - existing or not record_file.is_file():
+        _write_session_record(sessions_dir, record_file, existing | touched)
+
+
+def prepare_checkpoint_session(payload, root, budget, stopping):
+    """Prepare one shared ownership record and return its hashed identity."""
+    session_id = extract_session_id(payload)
+    if not session_id:
+        return ""
+    session_hash = session_hash_for(session_id)
+    if stopping:
+        ensure_session_record(root, session_hash, budget)
+    else:
+        record_tool_worktrees(payload, root, budget)
+    return session_hash

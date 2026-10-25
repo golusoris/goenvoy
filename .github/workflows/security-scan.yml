@@ -47,16 +47,16 @@ jobs:
                     --config p/security-audit \
                     --sarif-output=/tmp/semgrep.sarif \
                     --error --metrics=off --quiet . 1>&2 || rc=$?; \
-                  cat /tmp/semgrep.sarif; exit "$rc"' > semgrep.sarif
+                  cat /tmp/semgrep.sarif; [ "$rc" -le 1 ] || exit "$rc"' > semgrep.sarif
 
-      - name: Drop in-source suppressed results
+      - name: Drop suppressed and excepted results
         if: always() && hashFiles('semgrep.sarif') != ''
         shell: bash
         run: |
           set -euo pipefail
-          # Code scanning opens alerts for results Semgrep already marks suppressed (nosemgrep).
-          jq '.runs[].results |= map(select((.suppressions // []) | length == 0))' semgrep.sarif > semgrep.filtered.sarif
-          mv semgrep.filtered.sarif semgrep.sarif
+          # Semgrep rc 1 (findings) is judged here: nosemgrep and dated per-file exceptions drop out, the rest fails.
+          bash tools/semgrep-filter_test.sh
+          bash tools/semgrep-filter.sh semgrep.sarif
       - name: Upload SARIF
         if: always() && hashFiles('semgrep.sarif') != ''
         uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0

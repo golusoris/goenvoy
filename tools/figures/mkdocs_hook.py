@@ -14,32 +14,55 @@ inside a longer fence is left alone here exactly as the `site` check expects. A 
 figure without docs/assets/figures/<slug>.json is logged as a warning, which fails
 `mkdocs build --strict`.
 
-figures.css and the committed player files under player/ (loader.js, player.js and their
-THIRD-PARTY-LICENSES.txt, written by tools/figures/bundle.mjs) sit beside this file, outside
-docs_dir, so the hook publishes them: `on_files` adds each to the site as a generated file, the CSS
-at CSS_URI and the player files under PLAYER_URI, and `on_config` links the stylesheet and the
-loader, as a module script, from every page. A site needs no `extra_css` or `extra_javascript`
-entry for them and no bundling step: the loader reads each figure's props from its SVG
+figures.css sits beside this file, outside docs_dir. In the engine repository the committed player
+files under player/ (loader.js, player.js and their THIRD-PARTY-LICENSES.txt, written by
+tools/figures/bundle.mjs) sit beside it too; in an adopted repository player.lock.json names the
+engine release asset (figures-player.tar.gz) and its SHA-256
+(docs/adr/0021-figure-player-as-release-asset.md). `on_files` adds the CSS at CSS_URI and the
+player files under PLAYER_URI, and `on_config` links the stylesheet from every page and the loader
+as a module script only when player files are available. A site needs no `extra_css` or
+`extra_javascript` entry for them and no
+bundling step: the loader reads each figure's props from its SVG
 (docs/adr/0016-figures-for-adopters.md, section 3).
 """
 
 from __future__ import annotations
 
+import atexit
+import hashlib
+import io
 import json
 import logging
 import re
+import shutil
+import tarfile
+import tempfile
 from pathlib import Path
 from typing import NamedTuple
+from urllib.error import URLError
+from urllib.request import urlopen
 
 log = logging.getLogger("mkdocs.plugins.praetor_figures")
 
 CSS_FILE = Path(__file__).with_name("figures.css")
 CSS_URI = "assets/stylesheets/figures.css"
 PLAYER_DIR = Path(__file__).with_name("player")
+LOCK_FILE = Path(__file__).with_name("player.lock.json")
 PLAYER_URI = "assets/javascripts/figures"
 LOADER_URI = f"{PLAYER_URI}/loader.js"
+CANONICAL_REPOSITORY = "cordanaLLM/praetor"
+CANONICAL_REPOSITORY_URL = f"https://github.com/{CANONICAL_REPOSITORY}"
+PLAYER_ARCHIVE = "figures-player.tar.gz"
+EXPECTED_PLAYER_FILES = ("loader.js", "player.js", "THIRD-PARTY-LICENSES.txt")
+DOWNLOAD_TIMEOUT_SECONDS = 30
+SVG_FALLBACK_WARNING = (
+    "figures: engine pin %s has no release; "
+    "figures render as SVG (no interactive player)"
+)
 # player/ holds three files (DIST_FILES in bundle.mjs); the bound only keeps the listing finite.
 MAX_PLAYER_FILES = 16
+# on_config resolves once per build; on_files publishes those exact verified paths.
+_build_assets: tuple[object, list[tuple[str, Path]]] | None = None
 REBUILD = "node tools/figures/build.mjs build"
 
 # Bounded so a pathological page cannot make the hook unbounded (HISS-02).
@@ -55,8 +78,8 @@ BASE_SLOT = "{{base}}"
 LINK_SLOT = "{{link}}"
 
 
-class CheckError(Exception):
-    """A figure the hook cannot render; logged as a warning, which fails a strict build."""
+class CheckError(ValueError):
+    """A figure or player asset the hook cannot render or verify."""
 
 
 class Fence(NamedTuple):
@@ -187,9 +210,17 @@ def expand(markdown: str, base: str, figures_dir: Path) -> tuple[str, list[str]]
 
 
 def on_config(config):
-    """Link the figure stylesheet and the loader, as a module script, from every page, once each."""
+    """Resolve this build's files and link the loader only when it will be published."""
+    global _build_assets
+    published = published_files()
+    _build_assets = (config, published)
     if CSS_URI not in config["extra_css"]:
         config["extra_css"].append(CSS_URI)
+    if LOADER_URI not in {uri for uri, _ in published}:
+        config["extra_javascript"] = [
+            script for script in config["extra_javascript"] if str(script) != LOADER_URI
+        ]
+        return config
     if all(str(script) != LOADER_URI for script in config["extra_javascript"]):
         # Imported here so the hook loads without MkDocs in tests.
         from mkdocs.config.config_options import ExtraScriptValue
@@ -200,21 +231,145 @@ def on_config(config):
     return config
 
 
-def published_files() -> list[tuple[str, Path]]:
-    """Each file the hook publishes: figures.css, then player/'s files, as (site URI, path).
+def read_player_lock(lock_file: Path) -> dict:
+    """Read and parse player.lock.json beside the hook."""
+    try:
+        if lock_file.stat().st_size > MAX_FILE_BYTES:
+            raise CheckError(f"{lock_file} exceeds {MAX_FILE_BYTES} bytes")
+        data = json.loads(lock_file.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise CheckError(f"cannot read {lock_file}: {error}") from error
+    if not isinstance(data, dict):
+        raise CheckError(f"{lock_file} does not hold a JSON object")
+    return data
 
-    A missing player/ is not an error here: the site then shows every figure as its SVG, and the
-    `site` check (`node tools/figures/build.mjs site`) reports the loader it cannot find.
+
+def release_archive_url(lock: dict, release: str, asset: str) -> str:
+    """Build the release download URL for the lock's repository."""
+    repository = str(lock.get("repository") or "").strip()
+    if not repository or repository == CANONICAL_REPOSITORY:
+        base = CANONICAL_REPOSITORY_URL.rstrip("/")
+    elif repository.startswith("https://"):
+        base = repository.rstrip("/")
+    elif "://" in repository:
+        raise CheckError(
+            f"the player archive is fetched over https only, not {repository!r}"
+        )
+    else:
+        base = f"https://github.com/{repository.strip('/')}"
+    return f"{base}/releases/download/{release}/{asset}"
+
+
+def download_player_archive(url: str) -> bytes:
+    """Fetch the release archive with a timeout and size cap."""
+    if not url.startswith("https://"):
+        raise CheckError(f"the player archive is fetched over https only, not {url!r}")
+    with urlopen(url, timeout=DOWNLOAD_TIMEOUT_SECONDS) as response:  # noqa: S310
+        raw = response.read(MAX_FILE_BYTES + 1)
+    if len(raw) > MAX_FILE_BYTES:
+        raise CheckError(f"{url} exceeds {MAX_FILE_BYTES} bytes")
+    return raw
+
+
+def verify_archive_sha256(raw: bytes, expected: str, asset: str) -> None:
+    """Verify the archive's SHA-256 digest matches the lock's sha256 value."""
+    actual = hashlib.sha256(raw).hexdigest()
+    if not expected or actual != expected.lower():
+        raise CheckError(
+            f"{asset} SHA-256 mismatch: lock expects {expected!r}, got {actual!r}"
+        )
+
+
+def validate_archive_member(member: tarfile.TarInfo, seen: set[str]) -> str:
+    """Verify one tar member is an expected top-level regular file with no path traversal."""
+    name = member.name
+    if name.startswith("/") or ".." in name.split("/") or "/" in name or "\\" in name:
+        raise CheckError(f"unsafe archive member path {name!r}")
+    if not member.isfile():
+        raise CheckError(f"archive member {name!r} is not a regular file")
+    if name not in EXPECTED_PLAYER_FILES:
+        raise CheckError(f"unexpected archive member {name!r}")
+    if name in seen:
+        raise CheckError(f"duplicate archive member {name!r}")
+    if member.size > MAX_FILE_BYTES:
+        raise CheckError(f"archive member {name!r} exceeds {MAX_FILE_BYTES} bytes")
+    return name
+
+
+def extract_player_archive(raw: bytes) -> list[tuple[str, Path]]:
+    """Extract the three expected player files from a verified tar.gz archive."""
+    extracted: dict[str, bytes] = {}
+    try:
+        with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as archive:
+            for index, member in enumerate(archive):
+                if index >= MAX_PLAYER_FILES:
+                    raise CheckError(
+                        f"archive holds more than {MAX_PLAYER_FILES} members"
+                    )
+                name = validate_archive_member(member, set(extracted))
+                reader = archive.extractfile(member)
+                if reader is None:
+                    raise CheckError(f"cannot read archive member {name!r}")
+                data = reader.read(MAX_FILE_BYTES + 1)
+                if len(data) > MAX_FILE_BYTES:
+                    raise CheckError(
+                        f"archive member {name!r} exceeds {MAX_FILE_BYTES} bytes"
+                    )
+                extracted[name] = data
+    except (tarfile.TarError, OSError, EOFError) as error:
+        raise CheckError(f"invalid player archive: {error}") from error
+    if set(extracted) != set(EXPECTED_PLAYER_FILES):
+        raise CheckError(
+            f"archive members {sorted(extracted)!r} do not match {list(EXPECTED_PLAYER_FILES)!r}"
+        )
+    out_dir = Path(tempfile.mkdtemp(prefix="praetor-figures-player-"))
+    atexit.register(shutil.rmtree, out_dir, True)
+    for name in sorted(extracted):
+        (out_dir / name).write_bytes(extracted[name])
+    return [(f"{PLAYER_URI}/{name}", out_dir / name) for name in sorted(extracted)]
+
+
+def locked_player_files(lock_file: Path) -> list[tuple[str, Path]]:
+    """Resolve player files from player.lock.json, or warn and return none for SVG fallback."""
+    if not lock_file.is_file():
+        missing = f"unknown ({lock_file.name} is missing; praetorctl adopt writes it)"
+        log.warning(SVG_FALLBACK_WARNING, missing)
+        return []
+    lock = read_player_lock(lock_file)
+    release = str(lock.get("release") or "").strip()
+    if not release:
+        # An unreleased pin is the expected state until the engine's first release carries the
+        # archive, so the substitution is stated at INFO: a warning would fail every strict build.
+        log.info(SVG_FALLBACK_WARNING, "unreleased")
+        return []
+    asset = str(lock.get("asset") or PLAYER_ARCHIVE).strip()
+    url = release_archive_url(lock, release, asset)
+    try:
+        raw = download_player_archive(url)
+    except (URLError, TimeoutError, OSError) as error:
+        log.warning(SVG_FALLBACK_WARNING, f"{release} ({error})")
+        return []
+    verify_archive_sha256(raw, str(lock.get("sha256") or "").strip(), asset)
+    return extract_player_archive(raw)
+
+
+def published_files() -> list[tuple[str, Path]]:
+    """Each file the hook publishes: figures.css, then the player files, as (site URI, path).
+
+    In the engine repository player/ sits beside the hook; in an adopted repository
+    player.lock.json names the release archive to fetch and verify. When no release is
+    available, the site renders every figure as its SVG and logs one line: INFO for a pin
+    without a release, a warning (which fails a strict build) for a missing lock or a failed
+    download.
     """
-    names = (
-        sorted(path.name for path in PLAYER_DIR.iterdir() if path.is_file())
-        if PLAYER_DIR.is_dir()
-        else []
-    )
-    if len(names) > MAX_PLAYER_FILES:
-        where = PLAYER_DIR.as_posix()
-        raise CheckError(f"{where} holds more than {MAX_PLAYER_FILES} files")
-    served = [(f"{PLAYER_URI}/{name}", PLAYER_DIR / name) for name in names]
+    if PLAYER_DIR.is_dir():
+        names = sorted(path.name for path in PLAYER_DIR.iterdir() if path.is_file())
+        if len(names) > MAX_PLAYER_FILES:
+            where = PLAYER_DIR.as_posix()
+            raise CheckError(f"{where} holds more than {MAX_PLAYER_FILES} files")
+        served = [(f"{PLAYER_URI}/{name}", PLAYER_DIR / name) for name in names]
+    else:
+        served = locked_player_files(LOCK_FILE)
     return [(CSS_URI, CSS_FILE), *served]
 
 
@@ -223,11 +378,11 @@ def on_files(files, config):
 
     A docs_dir file at one of their paths is kept and reported.
     """
-    try:
-        published = published_files()
-    except CheckError as error:
-        log.warning("%s", error)
-        return files
+    published = (
+        _build_assets[1]
+        if _build_assets is not None and _build_assets[0] is config
+        else published_files()
+    )
     for uri, source in published:
         if uri in files.src_uris:
             log.warning(
