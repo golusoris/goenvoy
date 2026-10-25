@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.5](https://github.com/golusoris/goenvoy/compare/metadata/music/lastfm/v1.3.4...metadata/music/lastfm/v1.3.5) (2026-10-25)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.1 ([#162](https://github.com/golusoris/goenvoy/issues/162)) ([9182fcd](https://github.com/golusoris/goenvoy/commit/9182fcdbb8b8da4c2a248386237c5f7299287094))
+
 ## [1.3.4](https://github.com/golusoris/goenvoy/compare/metadata/music/lastfm/v1.3.3...metadata/music/lastfm/v1.3.4) (2026-10-23)
 
 

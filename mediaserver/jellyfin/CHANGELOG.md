@@ -6,6 +6,13 @@
 - Add WithUserAgent option.
 - Add `ProviderIDs` (JSON key `ProviderIds`) to `BaseItemDto`.
 
+## [3.2.0](https://github.com/golusoris/goenvoy/compare/mediaserver/jellyfin/v3.1.0...mediaserver/jellyfin/v3.2.0) (2026-10-25)
+
+
+### Features
+
+* **mediaserver:** add ProviderIDs to Jellyfin and Emby BaseItemDto ([#182](https://github.com/golusoris/goenvoy/issues/182)) ([4e7f84c](https://github.com/golusoris/goenvoy/commit/4e7f84ceba8a209fd57b0e94db2c4e50fd22ebe8))
+
 ## [3.1.0](https://github.com/golusoris/goenvoy/compare/mediaserver/jellyfin/v3.0.2...mediaserver/jellyfin/v3.1.0) (2026-10-23)
 
 
