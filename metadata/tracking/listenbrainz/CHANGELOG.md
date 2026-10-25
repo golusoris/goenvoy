@@ -4,6 +4,13 @@
 
 - Moved from `metadata/music/listenbrainz` to `metadata/tracking/listenbrainz`. Update imports accordingly.
 
+## [1.0.3](https://github.com/golusoris/goenvoy/compare/metadata/tracking/listenbrainz/v1.0.2...metadata/tracking/listenbrainz/v1.0.3) (2026-10-25)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.1 ([#162](https://github.com/golusoris/goenvoy/issues/162)) ([9182fcd](https://github.com/golusoris/goenvoy/commit/9182fcdbb8b8da4c2a248386237c5f7299287094))
+
 ## [1.0.2](https://github.com/golusoris/goenvoy/compare/metadata/tracking/listenbrainz/v1.0.1...metadata/tracking/listenbrainz/v1.0.2) (2026-10-23)
 
 

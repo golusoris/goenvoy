@@ -4,6 +4,13 @@
 
 - Fix data race on concurrent Set*/read of OAuth tokens and client secret.
 
+## [1.3.4](https://github.com/golusoris/goenvoy/compare/metadata/game/steam/v1.3.3...metadata/game/steam/v1.3.4) (2026-10-25)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.1 ([#162](https://github.com/golusoris/goenvoy/issues/162)) ([9182fcd](https://github.com/golusoris/goenvoy/commit/9182fcdbb8b8da4c2a248386237c5f7299287094))
+
 ## [1.3.3](https://github.com/golusoris/goenvoy/compare/metadata/game/steam/v1.3.2...metadata/game/steam/v1.3.3) (2026-10-23)
 
 
