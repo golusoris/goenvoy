@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.1](https://github.com/golusoris/goenvoy/compare/mediaserver/emby/v3.2.0...mediaserver/emby/v3.2.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* give every default HTTP client a private transport pool ([#183](https://github.com/golusoris/goenvoy/issues/183)) ([367d63f](https://github.com/golusoris/goenvoy/commit/367d63f8cecc2de3c4fc98a1e3d3f69c11c5080c))
+
 ## [3.2.0](https://github.com/golusoris/goenvoy/compare/mediaserver/emby/v3.1.0...mediaserver/emby/v3.2.0) (2026-10-25)
 
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.3.0](https://github.com/golusoris/goenvoy/compare/mediaserver/jellyfin/v3.2.0...mediaserver/jellyfin/v3.3.0) (2026-10-26)
+
+
+### Features
+
+* **mediaserver/jellyfin:** add QuickConnect, GetUser and parental policy fields ([#197](https://github.com/golusoris/goenvoy/issues/197)) ([2f67c56](https://github.com/golusoris/goenvoy/commit/2f67c560a85637cb1a4765cd63db9e7dbac2d0a4))
+
+
+### Bug Fixes
+
+* give every default HTTP client a private transport pool ([#183](https://github.com/golusoris/goenvoy/issues/183)) ([367d63f](https://github.com/golusoris/goenvoy/commit/367d63f8cecc2de3c4fc98a1e3d3f69c11c5080c))
+
 ## [3.2.0](https://github.com/golusoris/goenvoy/compare/mediaserver/jellyfin/v3.1.0...mediaserver/jellyfin/v3.2.0) (2026-10-25)
 
 
