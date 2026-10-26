@@ -24,7 +24,7 @@
   "downloadclient/sabnzbd": "2.0.3",
   "downloadclient/transmission": "2.0.3",
   "mediaserver": "1.3.1",
-  "mediaserver/audiobookshelf": "2.0.2",
+  "mediaserver/audiobookshelf": "2.1.0",
   "mediaserver/emby": "3.2.1",
   "mediaserver/jellyfin": "3.3.0",
   "mediaserver/kavita": "2.0.3",
