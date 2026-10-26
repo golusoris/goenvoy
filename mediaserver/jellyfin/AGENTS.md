@@ -10,7 +10,7 @@
 
 ## Auth model
 
-`Authorization: MediaBrowser Client=..., Device=..., DeviceId=..., Version=..., Token=...` header; token is obtained via `AuthenticateByName` or `WithAccessToken`.
+`Authorization: MediaBrowser Client=..., Device=..., DeviceId=..., Version=..., Token=...` header; token is obtained via `AuthenticateByName`, `AuthenticateUserByName`, `AuthenticateWithQuickConnect` (after `InitiateQuickConnect` + `AuthorizeQuickConnect`) or `WithAccessToken`.
 
 ## Pagination
 
