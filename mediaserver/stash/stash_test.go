@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/golusoris/goenvoy/mediaserver/stash/v2"
@@ -632,4 +633,484 @@ func TestNew_invalidURL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func strPtr(v string) *string { return &v }
+
+type capturedGQLRequest struct {
+	Query     string         `json:"query"`
+	Variables map[string]any `json:"variables"`
+}
+
+func newMutationServer(t *testing.T, dataField string, response any, onReq func(req capturedGQLRequest)) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		var req capturedGQLRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Errorf("decode request body: %v", err)
+		}
+		if onReq != nil {
+			onReq(req)
+		}
+		data, _ := json.Marshal(response)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{` + `"` + dataField + `":` + string(data) + `}}`))
+	}))
+}
+
+func assertGQLMessage(t *testing.T, err error, wantMsg string) {
+	t.Helper()
+	var gqlErr *stash.GraphQLError
+	if !errors.As(err, &gqlErr) {
+		t.Fatalf("expected *GraphQLError, got %T: %v", err, err)
+	}
+	if gqlErr.Message != wantMsg {
+		t.Errorf("Message = %q, want %q", gqlErr.Message, wantMsg)
+	}
+}
+
+func assertHTTPStatus(t *testing.T, err error, wantStatus int) {
+	t.Helper()
+	var apiErr *stash.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != wantStatus {
+		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, wantStatus)
+	}
+}
+
+func assertAbsent(t *testing.T, m map[string]any, key string) {
+	t.Helper()
+	if _, ok := m[key]; ok {
+		t.Errorf("key %q should be absent, got %v", key, m[key])
+	}
+}
+
+func assertPerformerIDs(t *testing.T, rawInput map[string]any, expected []string) {
+	t.Helper()
+	ids, ok := rawInput["performer_ids"].([]any)
+	if !ok || len(ids) != len(expected) {
+		t.Fatalf("performer_ids = %v, want %v", rawInput["performer_ids"], expected)
+	}
+	for i, exp := range expected {
+		if ids[i] != exp {
+			t.Errorf("performer_ids[%d] = %v, want %v", i, ids[i], exp)
+		}
+	}
+}
+
+func runSceneUpdateCapture(t *testing.T, input stash.SceneUpdateInput) map[string]any {
+	t.Helper()
+	var captured capturedGQLRequest
+	ts := newMutationServer(t, "sceneUpdate", stash.Scene{ID: "s1"}, func(req capturedGQLRequest) {
+		captured = req
+	})
+	t.Cleanup(ts.Close)
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := c.SceneUpdate(context.Background(), input); err != nil {
+		t.Fatalf("SceneUpdate: %v", err)
+	}
+	raw, ok := captured.Variables["input"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected map input, got %T", captured.Variables["input"])
+	}
+	return raw
+}
+
+// Stash v0.31.1 graphql/schema/schema.graphql:371.
+// Stash v0.31.1 graphql/schema/types/performer.graphql:67.
+func TestPerformerCreate_Success(t *testing.T) {
+	t.Parallel()
+
+	female := stash.GenderFemale
+	input := stash.PerformerCreateInput{
+		Name:      "Jane Doe",
+		Gender:    &female,
+		Rating100: intPtr(95),
+		TagIDs:    []string{"t1"},
+	}
+	expected := stash.Performer{ID: "p1", Name: "Jane Doe"}
+
+	var captured capturedGQLRequest
+	ts := newMutationServer(t, "performerCreate", expected, func(req capturedGQLRequest) {
+		captured = req
+	})
+	defer ts.Close()
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	got, err := c.PerformerCreate(context.Background(), input)
+	if err != nil {
+		t.Fatalf("PerformerCreate: %v", err)
+	}
+	if got.ID != "p1" || got.Name != "Jane Doe" {
+		t.Errorf("got %+v, want %+v", got, expected)
+	}
+	if !strings.Contains(captured.Query, "mutation PerformerCreate") || !strings.Contains(captured.Query, "performerCreate(input: $input)") {
+		t.Errorf("unexpected query: %q", captured.Query)
+	}
+	rawInput, ok := captured.Variables["input"].(map[string]any)
+	if !ok || rawInput["name"] != "Jane Doe" || rawInput["gender"] != "FEMALE" {
+		t.Errorf("unexpected variables input: %+v", captured.Variables)
+	}
+}
+
+// Stash v0.31.1 graphql/schema/types/performer.graphql:68.
+func TestPerformerCreate_Validation(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		t.Error("unexpected HTTP request on validation failure")
+	}))
+	t.Cleanup(ts.Close)
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	cases := []struct {
+		name  string
+		input stash.PerformerCreateInput
+	}{
+		{"empty_name", stash.PerformerCreateInput{Name: ""}},
+		{"whitespace_name", stash.PerformerCreateInput{Name: "   "}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := c.PerformerCreate(context.Background(), tc.input)
+			if !errors.Is(err, stash.ErrEmptyName) {
+				t.Fatalf("got err %v, want ErrEmptyName", err)
+			}
+		})
+	}
+}
+
+// Stash v0.31.1 graphql/schema/schema.graphql:371.
+func TestPerformerCreate_GraphQLError(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"errors":[{"message":"performer already exists"}]}`))
+	}))
+	defer ts.Close()
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.PerformerCreate(context.Background(), stash.PerformerCreateInput{Name: "Valid"})
+	assertGQLMessage(t, err, "performer already exists")
+}
+
+// Stash v0.31.1 graphql/schema/schema.graphql:371.
+func TestPerformerCreate_HTTP500(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("internal error"))
+	}))
+	defer ts.Close()
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.PerformerCreate(context.Background(), stash.PerformerCreateInput{Name: "Valid"})
+	assertHTTPStatus(t, err, http.StatusInternalServerError)
+}
+
+// Stash v0.31.1 graphql/schema/schema.graphql:372.
+// Stash v0.31.1 graphql/schema/types/performer.graphql:107.
+func TestPerformerUpdate_Success(t *testing.T) {
+	t.Parallel()
+
+	input := stash.PerformerUpdateInput{
+		ID:        "p1",
+		Name:      strPtr("Updated Performer"),
+		Rating100: intPtr(99),
+	}
+	expected := stash.Performer{ID: "p1", Name: "Updated Performer"}
+
+	var captured capturedGQLRequest
+	ts := newMutationServer(t, "performerUpdate", expected, func(req capturedGQLRequest) {
+		captured = req
+	})
+	defer ts.Close()
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	got, err := c.PerformerUpdate(context.Background(), input)
+	if err != nil {
+		t.Fatalf("PerformerUpdate: %v", err)
+	}
+	if got.ID != "p1" || got.Name != "Updated Performer" {
+		t.Errorf("got %+v, want %+v", got, expected)
+	}
+	if !strings.Contains(captured.Query, "mutation PerformerUpdate") || !strings.Contains(captured.Query, "performerUpdate(input: $input)") {
+		t.Errorf("unexpected query: %q", captured.Query)
+	}
+	rawInput, ok := captured.Variables["input"].(map[string]any)
+	if !ok || rawInput["id"] != "p1" || rawInput["name"] != "Updated Performer" {
+		t.Errorf("unexpected variables input: %+v", captured.Variables)
+	}
+}
+
+// Stash v0.31.1 graphql/schema/types/performer.graphql:108.
+func TestPerformerUpdate_Boundary(t *testing.T) {
+	t.Parallel()
+
+	var captured capturedGQLRequest
+	ts := newMutationServer(t, "performerUpdate", stash.Performer{ID: "p1"}, func(req capturedGQLRequest) {
+		captured = req
+	})
+	defer ts.Close()
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	// all-optional-nil sends only id
+	_, err = c.PerformerUpdate(context.Background(), stash.PerformerUpdateInput{ID: "p1"})
+	if err != nil {
+		t.Fatalf("PerformerUpdate: %v", err)
+	}
+	rawInput, ok := captured.Variables["input"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected map input, got %T", captured.Variables["input"])
+	}
+	if len(rawInput) != 1 || rawInput["id"] != "p1" {
+		t.Errorf("expected only id in input, got %+v", rawInput)
+	}
+}
+
+// Stash v0.31.1 graphql/schema/types/performer.graphql:108.
+func TestPerformerUpdate_Validation(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		t.Error("unexpected HTTP request on validation failure")
+	}))
+	t.Cleanup(ts.Close)
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	cases := []struct {
+		name  string
+		input stash.PerformerUpdateInput
+	}{
+		{"empty_id", stash.PerformerUpdateInput{ID: ""}},
+		{"whitespace_id", stash.PerformerUpdateInput{ID: "   "}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := c.PerformerUpdate(context.Background(), tc.input)
+			if !errors.Is(err, stash.ErrEmptyID) {
+				t.Fatalf("got err %v, want ErrEmptyID", err)
+			}
+		})
+	}
+}
+
+// Stash v0.31.1 graphql/schema/schema.graphql:372.
+func TestPerformerUpdate_GraphQLError(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"errors":[{"message":"performer not found"}]}`))
+	}))
+	defer ts.Close()
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.PerformerUpdate(context.Background(), stash.PerformerUpdateInput{ID: "p1"})
+	assertGQLMessage(t, err, "performer not found")
+}
+
+// Stash v0.31.1 graphql/schema/schema.graphql:372.
+func TestPerformerUpdate_HTTP500(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("server failure"))
+	}))
+	defer ts.Close()
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.PerformerUpdate(context.Background(), stash.PerformerUpdateInput{ID: "p1"})
+	assertHTTPStatus(t, err, http.StatusInternalServerError)
+}
+
+// Stash v0.31.1 graphql/schema/schema.graphql:291.
+// Stash v0.31.1 graphql/schema/types/scene.graphql:129.
+// Stash v0.31.1 graphql/schema/types/scene.graphql:146.
+func TestSceneUpdate_Success(t *testing.T) {
+	t.Parallel()
+
+	input := stash.SceneUpdateInput{
+		ID:           "s1",
+		Title:        strPtr("Updated Scene"),
+		PerformerIDs: []string{"p1", "p2"},
+	}
+	expected := stash.Scene{ID: "s1", Title: "Updated Scene"}
+
+	var captured capturedGQLRequest
+	ts := newMutationServer(t, "sceneUpdate", expected, func(req capturedGQLRequest) {
+		captured = req
+	})
+	defer ts.Close()
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	got, err := c.SceneUpdate(context.Background(), input)
+	if err != nil {
+		t.Fatalf("SceneUpdate: %v", err)
+	}
+	if got.ID != "s1" || got.Title != "Updated Scene" {
+		t.Errorf("got %+v, want %+v", got, expected)
+	}
+	if !strings.Contains(captured.Query, "mutation SceneUpdate") {
+		t.Errorf("unexpected query: %q", captured.Query)
+	}
+	rawInput, ok := captured.Variables["input"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected map input, got %T", captured.Variables["input"])
+	}
+	if rawInput["id"] != "s1" || rawInput["title"] != "Updated Scene" {
+		t.Errorf("unexpected variables input: %+v", captured.Variables)
+	}
+	assertPerformerIDs(t, rawInput, []string{"p1", "p2"})
+}
+
+// Stash v0.31.1 graphql/schema/types/scene.graphql:131.
+// Stash v0.31.1 graphql/schema/types/scene.graphql:146.
+func TestSceneUpdate_Boundary(t *testing.T) {
+	t.Parallel()
+
+	t.Run("all_optional_nil", func(t *testing.T) {
+		t.Parallel()
+		raw := runSceneUpdateCapture(t, stash.SceneUpdateInput{ID: "s1"})
+		if len(raw) != 1 || raw["id"] != "s1" {
+			t.Errorf("expected only id, got %+v", raw)
+		}
+	})
+
+	t.Run("performer_ids_nil", func(t *testing.T) {
+		t.Parallel()
+		raw := runSceneUpdateCapture(t, stash.SceneUpdateInput{ID: "s1", PerformerIDs: nil})
+		assertAbsent(t, raw, "performer_ids")
+	})
+
+	t.Run("performer_ids_empty", func(t *testing.T) {
+		t.Parallel()
+		raw := runSceneUpdateCapture(t, stash.SceneUpdateInput{ID: "s1", PerformerIDs: []string{}})
+		// Why: an empty non-nil slice clears the scene's performers; nil leaves them unchanged.
+		assertPerformerIDs(t, raw, []string{})
+	})
+
+	t.Run("performer_ids_populated", func(t *testing.T) {
+		t.Parallel()
+		raw := runSceneUpdateCapture(t, stash.SceneUpdateInput{ID: "s1", PerformerIDs: []string{"p1"}})
+		assertPerformerIDs(t, raw, []string{"p1"})
+	})
+}
+
+// Stash v0.31.1 graphql/schema/types/scene.graphql:131.
+func TestSceneUpdate_Validation(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		t.Error("unexpected HTTP request on validation failure")
+	}))
+	t.Cleanup(ts.Close)
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	cases := []struct {
+		name  string
+		input stash.SceneUpdateInput
+	}{
+		{"empty_id", stash.SceneUpdateInput{ID: ""}},
+		{"whitespace_id", stash.SceneUpdateInput{ID: "   "}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := c.SceneUpdate(context.Background(), tc.input)
+			if !errors.Is(err, stash.ErrEmptyID) {
+				t.Fatalf("got err %v, want ErrEmptyID", err)
+			}
+		})
+	}
+}
+
+// Stash v0.31.1 graphql/schema/schema.graphql:291.
+func TestSceneUpdate_GraphQLError(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"errors":[{"message":"scene not found"}]}`))
+	}))
+	defer ts.Close()
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.SceneUpdate(context.Background(), stash.SceneUpdateInput{ID: "s1"})
+	assertGQLMessage(t, err, "scene not found")
+}
+
+// Stash v0.31.1 graphql/schema/schema.graphql:291.
+func TestSceneUpdate_HTTP500(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("fatal server error"))
+	}))
+	defer ts.Close()
+
+	c, err := stash.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.SceneUpdate(context.Background(), stash.SceneUpdateInput{ID: "s1"})
+	assertHTTPStatus(t, err, http.StatusInternalServerError)
 }
