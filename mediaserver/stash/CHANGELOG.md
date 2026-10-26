@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/golusoris/goenvoy/compare/mediaserver/stash/v2.0.3...mediaserver/stash/v2.1.0) (2026-10-26)
+
+
+### Features
+
+* **mediaserver/stash:** add typed PerformerCreate, PerformerUpdate and SceneUpdate mutations ([#201](https://github.com/golusoris/goenvoy/issues/201)) ([bdbdae2](https://github.com/golusoris/goenvoy/commit/bdbdae2cfd23af3a05089930330f4dd3e2a4cb92))
+
 ## [2.0.3](https://github.com/golusoris/goenvoy/compare/mediaserver/stash/v2.0.2...mediaserver/stash/v2.0.3) (2026-10-26)
 
 

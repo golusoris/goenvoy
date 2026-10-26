@@ -31,7 +31,7 @@
   "mediaserver/komga": "2.0.2",
   "mediaserver/navidrome": "2.0.3",
   "mediaserver/plex": "2.0.2",
-  "mediaserver/stash": "2.0.3",
+  "mediaserver/stash": "2.1.0",
   "mediaserver/tautulli": "2.0.2",
   "mediaserver/tdarr": "3.0.3",
   "metadata": "1.4.3",
