@@ -4,9 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/golusoris/goenvoy/metadata"
 	"github.com/golusoris/goenvoy/metadata/adult/stashbox/v2"
@@ -524,4 +528,192 @@ func TestNew_invalidURL(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Why: stub mirrors stash-box v0.10.3 schema.graphql favoritePerformer/favoriteStudio(id: ID!, favorite: Boolean!): Boolean!.
+func newFavoriteServer(t *testing.T, wantField, wantID string, wantFav bool, body string, status int) (*httptest.Server, *atomic.Int32) {
+	t.Helper()
+	var calls atomic.Int32
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		if got := r.Header.Get("Apikey"); got != "key" {
+			t.Errorf("Apikey = %q, want %q", got, "key")
+		}
+		var req gqlRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Errorf("decode request: %v", err)
+		}
+		wantQuery := "mutation ($id: ID!, $favorite: Boolean!) { " + wantField + "(id: $id, favorite: $favorite) }"
+		if req.Query != wantQuery {
+			t.Errorf("query = %q, want %q", req.Query, wantQuery)
+		}
+		if got, ok := req.Variables["id"].(string); !ok || got != wantID {
+			t.Errorf("variables.id = %#v, want %q", req.Variables["id"], wantID)
+		}
+		if got, ok := req.Variables["favorite"].(bool); !ok || got != wantFav {
+			t.Errorf("variables.favorite = %#v (present=%v), want %v", req.Variables["favorite"], ok, wantFav)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(ts.Close)
+	return ts, &calls
+}
+
+type favoriteMethod struct {
+	name  string
+	field string
+	call  func(c *stashbox.Client, ctx context.Context, id string, fav bool) (bool, error)
+}
+
+func favoriteMethods() []favoriteMethod {
+	return []favoriteMethod{
+		{"performer", "favoritePerformer", (*stashbox.Client).FavoritePerformer},
+		{"studio", "favoriteStudio", (*stashbox.Client).FavoriteStudio},
+	}
+}
+
+type favoriteCase struct {
+	name    string
+	fav     bool
+	body    string
+	status  int
+	want    bool
+	wantErr func(error) bool
+}
+
+func favoriteCases(field string) []favoriteCase {
+	missing := func(err error) bool { return errors.Is(err, stashbox.ErrMissingResult) }
+	return []favoriteCase{
+		{name: "set true", fav: true, body: `{"data":{"` + field + `":true}}`, status: http.StatusOK, want: true},
+		{name: "unset sends explicit false", fav: false, body: `{"data":{"` + field + `":true}}`, status: http.StatusOK, want: true},
+		{name: "server returns false", fav: true, body: `{"data":{"` + field + `":false}}`, status: http.StatusOK, want: false},
+		{
+			name: "graphql error", fav: true, status: http.StatusOK,
+			body: `{"errors":[{"message":"not found"}],"data":null}`,
+			wantErr: func(err error) bool {
+				var ge *stashbox.GraphQLError
+				return errors.As(err, &ge) && ge.Message == "not found"
+			},
+		},
+		{
+			name: "http 500", fav: true, status: http.StatusInternalServerError, body: `boom`,
+			wantErr: func(err error) bool {
+				var ae *stashbox.APIError
+				return errors.As(err, &ae) && ae.StatusCode == http.StatusInternalServerError
+			},
+		},
+		{name: "null result", fav: true, status: http.StatusOK, body: `{"data":{"` + field + `":null}}`, wantErr: missing},
+		{name: "result field absent", fav: true, status: http.StatusOK, body: `{"data":{}}`, wantErr: missing},
+	}
+}
+
+func runFavoriteCase(t *testing.T, m favoriteMethod, tt favoriteCase) {
+	t.Helper()
+	ts, _ := newFavoriteServer(t, m.field, "uuid-1", tt.fav, tt.body, tt.status)
+	c, err := stashbox.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	got, err := m.call(c, context.Background(), "uuid-1", tt.fav)
+	if tt.wantErr != nil {
+		if err == nil || !tt.wantErr(err) {
+			t.Fatalf("err = %v, want matching error", err)
+		}
+		if !strings.Contains(err.Error(), "favorite "+m.name) {
+			t.Errorf("err = %q, want operation context", err)
+		}
+		return
+	}
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != tt.want {
+		t.Errorf("result = %v, want %v", got, tt.want)
+	}
+}
+
+func TestFavoriteMutations(t *testing.T) {
+	t.Parallel()
+
+	for _, m := range favoriteMethods() {
+		for _, tt := range favoriteCases(m.field) {
+			t.Run(m.name+"/"+tt.name, func(t *testing.T) {
+				t.Parallel()
+				runFavoriteCase(t, m, tt)
+			})
+		}
+	}
+}
+
+func TestFavoriteEmptyIDSendsNoRequest(t *testing.T) {
+	t.Parallel()
+
+	for _, m := range favoriteMethods() {
+		t.Run(m.name, func(t *testing.T) {
+			t.Parallel()
+			ts, calls := newFavoriteServer(t, m.field, "", true, `{"data":{}}`, http.StatusOK)
+			c, err := stashbox.New(ts.URL, "key")
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+			if _, err := m.call(c, context.Background(), "", true); !errors.Is(err, stashbox.ErrEmptyID) {
+				t.Fatalf("err = %v, want ErrEmptyID", err)
+			}
+			if n := calls.Load(); n != 0 {
+				t.Errorf("requests = %d, want 0", n)
+			}
+		})
+	}
+}
+
+func TestFavoriteContextDeadline(t *testing.T) {
+	t.Parallel()
+
+	for _, m := range favoriteMethods() {
+		t.Run(m.name, func(t *testing.T) {
+			t.Parallel()
+			release := make(chan struct{})
+			ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+				select {
+				case <-release:
+				case <-r.Context().Done():
+				}
+			}))
+			defer ts.Close()
+			defer close(release)
+
+			c, err := stashbox.New(ts.URL, "key")
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+			defer cancel()
+			if _, err := m.call(c, ctx, "uuid-1", true); !errors.Is(err, context.DeadlineExceeded) {
+				t.Fatalf("err = %v, want context.DeadlineExceeded", err)
+			}
+		})
+	}
+}
+
+func ExampleClient_FavoritePerformer() {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{"favoritePerformer":true}}`))
+	}))
+	defer ts.Close()
+
+	client, err := stashbox.New(ts.URL, "your-api-key")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	ok, err := client.FavoritePerformer(context.Background(), "performer-uuid", true)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(ok)
+	// Output: true
 }

@@ -7,6 +7,7 @@ last_verified: 2026-04-15
 # Upstream API — StashBox
 
 - **Canonical docs:** <https://github.com/stashapp/stash-box>
+- **Pinned schema:** v0.10.3 (commit 5eb3551)
 - **Last verified:** 2026-04-15
 
 ## What this API does
