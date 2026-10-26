@@ -1,18 +1,10 @@
 {
   "version": 1,
-  "generated_at": "2026-10-26T04:29:31Z",
+  "generated_at": "2026-10-26T08:04:17Z",
   "repository": "golusoris/goenvoy",
-  "commit_sha": "9dd9d8c0021625da648940dfc6b0235bede4507c",
-  "total_infractions": 22,
+  "commit_sha": "7e434fab2687355e2e973b4cf3bfaf6a147b6c24",
+  "total_infractions": 21,
   "infractions": [
-    {
-      "rule_id": "HISS-07",
-      "file_path": ".github/workflows/auto-assign.yml",
-      "line_number": 20,
-      "message": "'|| true' discards the command's failure; handle the exit status or test the condition instead",
-      "anchor": "text:d3e43475779f",
-      "fingerprint": ".github/workflows/auto-assign.yml:HISS-07:text:d3e43475779f#1"
-    },
     {
       "rule_id": "HISS-07",
       "file_path": "metadata/game/hasheous/hasheous.go",
