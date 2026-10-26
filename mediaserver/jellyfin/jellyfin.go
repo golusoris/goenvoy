@@ -98,6 +98,12 @@ var (
 	ErrEmptyCollectionID = errors.New("collection ID cannot be empty")
 	// ErrEmptyItemIDs is returned when an item ID is blank, or no item ID is given where one is required.
 	ErrEmptyItemIDs = errors.New("item IDs cannot be empty")
+	// ErrEmptyUserID is returned when a user ID is empty.
+	ErrEmptyUserID = errors.New("user ID cannot be empty")
+	// ErrEmptySecret is returned when a quick connect secret is empty.
+	ErrEmptySecret = errors.New("secret cannot be empty")
+	// ErrEmptyCode is returned when a quick connect code is empty.
+	ErrEmptyCode = errors.New("code cannot be empty")
 )
 
 // APIError is returned when the API responds with a non-2xx status.
@@ -233,18 +239,40 @@ func (c *Client) get(ctx context.Context, path string, params url.Values) ([]byt
 
 // Authentication.
 
-// AuthenticateByName authenticates with the server and stores the access token.
-func (c *Client) AuthenticateByName(ctx context.Context, username, password string) error {
+// AuthenticateUserByName authenticates with the server, stores the access token, and returns the result.
+func (c *Client) AuthenticateUserByName(ctx context.Context, username, password string) (*AuthenticationResult, error) {
 	var result AuthenticationResult
 	err := c.doRequest(ctx, http.MethodPost, "/Users/AuthenticateByName", &authRequest{
 		Username: username,
 		Pw:       password,
 	}, &result)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	c.accessToken = result.AccessToken
-	return nil
+	return &result, nil
+}
+
+// AuthenticateByName authenticates with the server and stores the access token.
+func (c *Client) AuthenticateByName(ctx context.Context, username, password string) error {
+	_, err := c.AuthenticateUserByName(ctx, username, password)
+	return err
+}
+
+// AuthenticateWithQuickConnect authenticates using an authorized Quick Connect secret.
+func (c *Client) AuthenticateWithQuickConnect(ctx context.Context, secret string) (*AuthenticationResult, error) {
+	if strings.TrimSpace(secret) == "" {
+		return nil, fmt.Errorf("jellyfin: authenticate with quick connect: %w", ErrEmptySecret)
+	}
+	var result AuthenticationResult
+	err := c.doRequest(ctx, http.MethodPost, "/Users/AuthenticateWithQuickConnect", &quickConnectRequest{
+		Secret: secret,
+	}, &result)
+	if err != nil {
+		return nil, err
+	}
+	c.accessToken = result.AccessToken
+	return &result, nil
 }
 
 // System endpoints.
@@ -299,6 +327,22 @@ func (c *Client) GetUsers(ctx context.Context) ([]UserDto, error) {
 // GetCurrentUser returns the current authenticated user.
 func (c *Client) GetCurrentUser(ctx context.Context) (*UserDto, error) {
 	data, err := c.get(ctx, "/Users/Me", nil)
+	if err != nil {
+		return nil, err
+	}
+	var user UserDto
+	if err := json.Unmarshal(data, &user); err != nil {
+		return nil, fmt.Errorf("jellyfin: decode user: %w", err)
+	}
+	return &user, nil
+}
+
+// GetUser returns a user by ID.
+func (c *Client) GetUser(ctx context.Context, userID string) (*UserDto, error) {
+	if strings.TrimSpace(userID) == "" {
+		return nil, fmt.Errorf("jellyfin: get user: %w", ErrEmptyUserID)
+	}
+	data, err := c.get(ctx, "/Users/"+url.PathEscape(userID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -449,4 +493,60 @@ func (c *Client) RemoveFromCollection(ctx context.Context, collectionID string, 
 		"ids": {strings.Join(itemIDs, ",")},
 	}.Encode()
 	return c.doRequest(ctx, http.MethodDelete, path, nil, nil)
+}
+
+// Quick Connect.
+
+// QuickConnectEnabled returns whether Quick Connect is enabled on the server.
+func (c *Client) QuickConnectEnabled(ctx context.Context) (bool, error) {
+	data, err := c.get(ctx, "/QuickConnect/Enabled", nil)
+	if err != nil {
+		return false, err
+	}
+	var enabled bool
+	if err := json.Unmarshal(data, &enabled); err != nil {
+		return false, fmt.Errorf("jellyfin: decode quick connect enabled: %w", err)
+	}
+	return enabled, nil
+}
+
+// InitiateQuickConnect initiates a new Quick Connect session.
+func (c *Client) InitiateQuickConnect(ctx context.Context) (*QuickConnectResult, error) {
+	var result QuickConnectResult
+	if err := c.doRequest(ctx, http.MethodPost, "/QuickConnect/Initiate", nil, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// GetQuickConnectState checks the state of an initiated Quick Connect session.
+func (c *Client) GetQuickConnectState(ctx context.Context, secret string) (*QuickConnectResult, error) {
+	if strings.TrimSpace(secret) == "" {
+		return nil, fmt.Errorf("jellyfin: get quick connect state: %w", ErrEmptySecret)
+	}
+	data, err := c.get(ctx, "/QuickConnect/Connect", url.Values{"secret": {secret}})
+	if err != nil {
+		return nil, err
+	}
+	var result QuickConnectResult
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, fmt.Errorf("jellyfin: decode quick connect result: %w", err)
+	}
+	return &result, nil
+}
+
+// AuthorizeQuickConnect authorizes an active Quick Connect session.
+func (c *Client) AuthorizeQuickConnect(ctx context.Context, code, userID string) (bool, error) {
+	if strings.TrimSpace(code) == "" {
+		return false, fmt.Errorf("jellyfin: authorize quick connect: %w", ErrEmptyCode)
+	}
+	q := url.Values{"code": {code}}
+	if userID != "" {
+		q.Set("userId", userID)
+	}
+	var authorized bool
+	if err := c.doRequest(ctx, http.MethodPost, "/QuickConnect/Authorize?"+q.Encode(), nil, &authorized); err != nil {
+		return false, err
+	}
+	return authorized, nil
 }

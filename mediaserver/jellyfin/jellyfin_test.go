@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -1046,4 +1047,961 @@ func TestBaseItemDto_ProviderIDs(t *testing.T) {
 			assertProviderIDs(t, item.ProviderIDs, tc.wantNil, tc.wantLen, tc.wantEntries)
 		})
 	}
+}
+
+func assertMaxParentalRating(t *testing.T, got *int, wantNil bool, wantVal int) {
+	t.Helper()
+	if wantNil {
+		if got != nil {
+			t.Errorf("got %v, want nil", *got)
+		}
+		return
+	}
+	if got == nil {
+		t.Fatal("got nil, want non-nil")
+	}
+	if *got != wantVal {
+		t.Errorf("got %d, want %d", *got, wantVal)
+	}
+}
+
+func TestUserPolicy_MaxParentalRating(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name      string
+		jsonStr   string
+		wantNil   bool
+		wantValue int
+	}{
+		{name: "absent -> nil", jsonStr: `{"IsAdministrator":false,"EnableAllFolders":true}`, wantNil: true},
+		{name: "0 -> non-nil 0", jsonStr: `{"MaxParentalRating":0,"EnableAllFolders":false}`, wantNil: false, wantValue: 0},
+		{name: "17 -> 17", jsonStr: `{"MaxParentalRating":17,"EnableAllFolders":true}`, wantNil: false, wantValue: 17},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var p jellyfin.UserPolicy
+			if err := json.Unmarshal([]byte(tc.jsonStr), &p); err != nil {
+				t.Fatalf("json.Unmarshal: %v", err)
+			}
+			assertMaxParentalRating(t, p.MaxParentalRating, tc.wantNil, tc.wantValue)
+		})
+	}
+}
+
+func assertAuthResult(t *testing.T, res *jellyfin.AuthenticationResult) {
+	t.Helper()
+	if res.AccessToken != "test-user-token-456" {
+		t.Errorf("AccessToken = %q, want test-user-token-456", res.AccessToken)
+	}
+	if res.ServerID != "srv-123" {
+		t.Errorf("ServerID = %q, want srv-123", res.ServerID)
+	}
+	if res.User == nil || res.User.ID != "usr-999" || res.User.Name != "admin" {
+		t.Errorf("User = %+v, want ID usr-999, Name admin", res.User)
+	}
+	if res.User.Policy == nil || res.User.Policy.MaxParentalRating == nil || *res.User.Policy.MaxParentalRating != 17 {
+		t.Errorf("User.Policy.MaxParentalRating = %v, want 17", res.User.Policy)
+	}
+	if !res.User.Policy.EnableAllFolders {
+		t.Errorf("User.Policy.EnableAllFolders = false, want true")
+	}
+}
+
+func newAuthTestServer(t *testing.T, expectedToken string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/Users/AuthenticateByName":
+			var body struct {
+				Username string `json:"Username"`
+				Pw       string `json:"Pw"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if body.Username != "admin" || body.Pw != "secret" {
+				t.Errorf("unexpected body: %+v", body)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{
+				"AccessToken": "` + expectedToken + `",
+				"ServerId": "srv-123",
+				"User": {
+					"Id": "usr-999",
+					"Name": "admin",
+					"Policy": {
+						"IsAdministrator": true,
+						"MaxParentalRating": 17,
+						"EnableAllFolders": true
+					}
+				}
+			}`))
+		case "/System/Ping":
+			auth := r.Header.Get("Authorization")
+			if !strings.Contains(auth, `Token="`+expectedToken+`"`) {
+				t.Errorf("Authorization header missing stored token: %q", auth)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`"pong"`))
+		}
+	}))
+}
+
+func TestAuthenticateUserByName(t *testing.T) {
+	t.Parallel()
+
+	ts := newAuthTestServer(t, "test-user-token-456")
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	res, err := c.AuthenticateUserByName(context.Background(), "admin", "secret")
+	if err != nil {
+		t.Fatalf("AuthenticateUserByName: %v", err)
+	}
+	if res == nil {
+		t.Fatal("expected non-nil result")
+	}
+	assertAuthResult(t, res)
+
+	if err := c.Ping(context.Background()); err != nil {
+		t.Fatalf("Ping follow-up: %v", err)
+	}
+}
+
+func TestAuthenticateUserByName_Error(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"message": "Invalid username or password"}`))
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	res, err := c.AuthenticateUserByName(context.Background(), "bad", "creds")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if res != nil {
+		t.Errorf("res = %v, want nil", res)
+	}
+	var apiErr *jellyfin.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *jellyfin.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusUnauthorized {
+		t.Errorf("StatusCode = %d, want 401", apiErr.StatusCode)
+	}
+}
+
+func assertUserDto(t *testing.T, user *jellyfin.UserDto) {
+	t.Helper()
+	if user == nil {
+		t.Fatal("expected non-nil user")
+	}
+	if user.ID != "usr-123" || user.Name != "alice" || user.ServerID != "srv-1" {
+		t.Errorf("unexpected user: %+v", user)
+	}
+	if user.Policy == nil || len(user.Policy.AllowedTags) != 2 || user.Policy.AllowedTags[0] != "family" {
+		t.Errorf("unexpected user policy: %+v", user.Policy)
+	}
+}
+
+func TestGetUser(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("method = %q, want GET", r.Method)
+		}
+		if r.URL.Path != "/Users/usr-123" {
+			t.Errorf("path = %q, want /Users/usr-123", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"Id": "usr-123",
+			"Name": "alice",
+			"ServerId": "srv-1",
+			"HasPassword": true,
+			"Policy": {
+				"IsAdministrator": false,
+				"EnableAllFolders": false,
+				"AllowedTags": ["family", "pg"],
+				"BlockedMediaFolders": ["fld-1", "fld-2"]
+			}
+		}`))
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	user, err := c.GetUser(context.Background(), "usr-123")
+	if err != nil {
+		t.Fatalf("GetUser: %v", err)
+	}
+	assertUserDto(t, user)
+}
+
+func TestGetUser_BlankInput(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		t.Errorf("server was hit for path %q, expected no request", r.URL.Path)
+	}))
+	t.Cleanup(ts.Close)
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	blanks := []struct {
+		name  string
+		input string
+	}{
+		{name: "empty", input: ""},
+		{name: "spaces", input: "   "},
+		{name: "tabs and newlines", input: "\t\n "},
+	}
+
+	for _, tc := range blanks {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			user, err := c.GetUser(context.Background(), tc.input)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if user != nil {
+				t.Errorf("user = %v, want nil", user)
+			}
+			if !errors.Is(err, jellyfin.ErrEmptyUserID) {
+				t.Errorf("err = %v, want errors.Is ErrEmptyUserID", err)
+			}
+		})
+	}
+}
+
+func TestGetUser_NotFound(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"message": "User not found"}`))
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	user, err := c.GetUser(context.Background(), "unknown-id")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if user != nil {
+		t.Errorf("user = %v, want nil", user)
+	}
+	var apiErr *jellyfin.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *jellyfin.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d, want 404", apiErr.StatusCode)
+	}
+}
+
+func TestGetUser_PathEscaping(t *testing.T) {
+	t.Parallel()
+
+	hit := false
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hit = true
+		if r.URL.EscapedPath() != "/Users/a%2Fb" {
+			t.Errorf("EscapedPath = %q, want /Users/a%%2Fb", r.URL.EscapedPath())
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"Id":"a/b","Name":"slashuser"}`))
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	user, err := c.GetUser(context.Background(), "a/b")
+	if err != nil {
+		t.Fatalf("GetUser: %v", err)
+	}
+	if !hit {
+		t.Fatal("server was not hit")
+	}
+	if user.ID != "a/b" {
+		t.Errorf("user.ID = %q, want a/b", user.ID)
+	}
+}
+
+func runQuickConnectEnabledTest(t *testing.T, respJSON string, want bool) {
+	t.Helper()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("method = %q, want GET", r.Method)
+		}
+		if r.URL.Path != "/QuickConnect/Enabled" {
+			t.Errorf("path = %q, want /QuickConnect/Enabled", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(respJSON))
+	}))
+	t.Cleanup(ts.Close)
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	got, err := c.QuickConnectEnabled(context.Background())
+	if err != nil {
+		t.Fatalf("QuickConnectEnabled: %v", err)
+	}
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func TestQuickConnectEnabled(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		respJSON string
+		want     bool
+	}{
+		{name: "enabled true", respJSON: "true", want: true},
+		{name: "enabled false", respJSON: "false", want: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runQuickConnectEnabledTest(t, tc.respJSON, tc.want)
+		})
+	}
+}
+
+func TestQuickConnectEnabled_Disabled503(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte(`{"message": "Quick connect is unavailable"}`))
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	got, err := c.QuickConnectEnabled(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if got {
+		t.Errorf("got = true, want false")
+	}
+	var apiErr *jellyfin.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *jellyfin.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusServiceUnavailable {
+		t.Errorf("StatusCode = %d, want 503", apiErr.StatusCode)
+	}
+}
+
+func assertInitiateResult(t *testing.T, res *jellyfin.QuickConnectResult) {
+	t.Helper()
+	if res == nil {
+		t.Fatal("expected non-nil result")
+	}
+	if res.Authenticated {
+		t.Errorf("Authenticated = true, want false")
+	}
+	if res.Secret != "sec-init-123" || res.Code != "654321" {
+		t.Errorf("Secret/Code = %q / %q, want sec-init-123 / 654321", res.Secret, res.Code)
+	}
+	if res.DeviceID != "dev-456" || res.DeviceName != "Living Room TV" {
+		t.Errorf("DeviceID/Name = %q / %q, want dev-456 / Living Room TV", res.DeviceID, res.DeviceName)
+	}
+	if res.AppName != "Jellyfin Web" || res.AppVersion != "10.8.13" {
+		t.Errorf("AppName/Version = %q / %q, want Jellyfin Web / 10.8.13", res.AppName, res.AppVersion)
+	}
+	if res.DateAdded != "2026-10-26T01:23:45Z" {
+		t.Errorf("DateAdded = %q, want 2026-10-26T01:23:45Z", res.DateAdded)
+	}
+}
+
+func TestInitiateQuickConnect(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		if r.URL.Path != "/QuickConnect/Initiate" {
+			t.Errorf("path = %q, want /QuickConnect/Initiate", r.URL.Path)
+		}
+		body, _ := io.ReadAll(r.Body)
+		if len(body) > 0 {
+			t.Errorf("expected empty body, got %q", string(body))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"Authenticated": false,
+			"Secret": "sec-init-123",
+			"Code": "654321",
+			"DeviceId": "dev-456",
+			"DeviceName": "Living Room TV",
+			"AppName": "Jellyfin Web",
+			"AppVersion": "10.8.13",
+			"DateAdded": "2026-10-26T01:23:45Z"
+		}`))
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	res, err := c.InitiateQuickConnect(context.Background())
+	if err != nil {
+		t.Fatalf("InitiateQuickConnect: %v", err)
+	}
+	assertInitiateResult(t, res)
+}
+
+func TestInitiateQuickConnect_Error401(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"message": "Unauthorized"}`))
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	res, err := c.InitiateQuickConnect(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if res != nil {
+		t.Errorf("res = %v, want nil", res)
+	}
+	var apiErr *jellyfin.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *jellyfin.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusUnauthorized {
+		t.Errorf("StatusCode = %d, want 401", apiErr.StatusCode)
+	}
+}
+
+func runGetQuickConnectStateTest(t *testing.T, secret, respJSON string, wantAuth bool) {
+	t.Helper()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("method = %q, want GET", r.Method)
+		}
+		if r.URL.Path != "/QuickConnect/Connect" {
+			t.Errorf("path = %q, want /QuickConnect/Connect", r.URL.Path)
+		}
+		if r.URL.Query().Get("secret") != secret {
+			t.Errorf("secret query = %q, want %q", r.URL.Query().Get("secret"), secret)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(respJSON))
+	}))
+	t.Cleanup(ts.Close)
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	res, err := c.GetQuickConnectState(context.Background(), secret)
+	if err != nil {
+		t.Fatalf("GetQuickConnectState: %v", err)
+	}
+	if res == nil {
+		t.Fatal("expected non-nil result")
+	}
+	if res.Authenticated != wantAuth {
+		t.Errorf("Authenticated = %v, want %v", res.Authenticated, wantAuth)
+	}
+	if res.Secret != secret {
+		t.Errorf("Secret = %q, want %q", res.Secret, secret)
+	}
+}
+
+func TestGetQuickConnectState(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name              string
+		secret            string
+		respJSON          string
+		wantAuthenticated bool
+	}{
+		{
+			name:              "authenticated false",
+			secret:            "sec-pending-1",
+			respJSON:          `{"Authenticated":false,"Secret":"sec-pending-1","Code":"111222"}`,
+			wantAuthenticated: false,
+		},
+		{
+			name:              "authenticated true",
+			secret:            "sec-authed-2",
+			respJSON:          `{"Authenticated":true,"Secret":"sec-authed-2","Code":"333444"}`,
+			wantAuthenticated: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runGetQuickConnectStateTest(t, tc.secret, tc.respJSON, tc.wantAuthenticated)
+		})
+	}
+}
+
+func TestGetQuickConnectState_BlankSecret(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		t.Errorf("server was hit for path %q, expected no request", r.URL.Path)
+	}))
+	t.Cleanup(ts.Close)
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	blanks := []struct {
+		name  string
+		input string
+	}{
+		{name: "empty", input: ""},
+		{name: "spaces", input: "   "},
+		{name: "tabs and newlines", input: "\t\n "},
+	}
+
+	for _, tc := range blanks {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			res, err := c.GetQuickConnectState(context.Background(), tc.input)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if res != nil {
+				t.Errorf("res = %v, want nil", res)
+			}
+			if !errors.Is(err, jellyfin.ErrEmptySecret) {
+				t.Errorf("err = %v, want errors.Is ErrEmptySecret", err)
+			}
+		})
+	}
+}
+
+func TestGetQuickConnectState_NotFound(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"message": "Secret not found"}`))
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	res, err := c.GetQuickConnectState(context.Background(), "unknown-secret")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if res != nil {
+		t.Errorf("res = %v, want nil", res)
+	}
+	var apiErr *jellyfin.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *jellyfin.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusNotFound {
+		t.Errorf("StatusCode = %d, want 404", apiErr.StatusCode)
+	}
+}
+
+func assertAuthorizeQueryParams(t *testing.T, r *http.Request, code, userID string, wantHasUID bool) {
+	t.Helper()
+	if r.URL.Query().Get("code") != code {
+		t.Errorf("code query = %q, want %q", r.URL.Query().Get("code"), code)
+	}
+	if wantHasUID {
+		if r.URL.Query().Get("userId") != userID {
+			t.Errorf("userId query = %q, want %q", r.URL.Query().Get("userId"), userID)
+		}
+		return
+	}
+	if r.URL.Query().Has("userId") {
+		t.Errorf("userId query present unexpectedly: %q", r.URL.Query().Get("userId"))
+	}
+}
+
+func runAuthorizeQuickConnectTest(t *testing.T, code, userID string, wantHasUID bool, respBody string, wantResult bool) {
+	t.Helper()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		if r.URL.Path != "/QuickConnect/Authorize" {
+			t.Errorf("path = %q, want /QuickConnect/Authorize", r.URL.Path)
+		}
+		assertAuthorizeQueryParams(t, r, code, userID, wantHasUID)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(respBody))
+	}))
+	t.Cleanup(ts.Close)
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ok, err := c.AuthorizeQuickConnect(context.Background(), code, userID)
+	if err != nil {
+		t.Fatalf("AuthorizeQuickConnect: %v", err)
+	}
+	if ok != wantResult {
+		t.Errorf("AuthorizeQuickConnect = %v, want %v", ok, wantResult)
+	}
+}
+
+func TestAuthorizeQuickConnect(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name       string
+		code       string
+		userID     string
+		wantHasUID bool
+		respBody   string
+		wantResult bool
+	}{
+		{name: "with userID true", code: "123456", userID: "usr-abc", wantHasUID: true, respBody: "true", wantResult: true},
+		{name: "without userID true", code: "654321", userID: "", wantHasUID: false, respBody: "true", wantResult: true},
+		{name: "with userID false", code: "111111", userID: "usr-xyz", wantHasUID: true, respBody: "false", wantResult: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runAuthorizeQuickConnectTest(t, tc.code, tc.userID, tc.wantHasUID, tc.respBody, tc.wantResult)
+		})
+	}
+}
+
+func TestAuthorizeQuickConnect_BlankCode(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		t.Errorf("server was hit for path %q, expected no request", r.URL.Path)
+	}))
+	t.Cleanup(ts.Close)
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	blanks := []struct {
+		name  string
+		input string
+	}{
+		{name: "empty", input: ""},
+		{name: "spaces", input: "   "},
+		{name: "tabs and newlines", input: "\t\n "},
+	}
+
+	for _, tc := range blanks {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ok, err := c.AuthorizeQuickConnect(context.Background(), tc.input, "user1")
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if ok {
+				t.Errorf("ok = true, want false")
+			}
+			if !errors.Is(err, jellyfin.ErrEmptyCode) {
+				t.Errorf("err = %v, want errors.Is ErrEmptyCode", err)
+			}
+		})
+	}
+}
+
+func runAuthorizeErrorTest(t *testing.T, statusCode int) {
+	t.Helper()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
+		_, _ = w.Write([]byte(`{"message": "error"}`))
+	}))
+	t.Cleanup(ts.Close)
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	ok, err := c.AuthorizeQuickConnect(context.Background(), "123456", "user1")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if ok {
+		t.Errorf("ok = true, want false")
+	}
+	var apiErr *jellyfin.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *jellyfin.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != statusCode {
+		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, statusCode)
+	}
+}
+
+func TestAuthorizeQuickConnect_Errors(t *testing.T) {
+	t.Parallel()
+
+	codes := []struct {
+		name       string
+		statusCode int
+	}{
+		{name: "401 unauthorized", statusCode: http.StatusUnauthorized},
+		{name: "403 forbidden", statusCode: http.StatusForbidden},
+	}
+
+	for _, tc := range codes {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runAuthorizeErrorTest(t, tc.statusCode)
+		})
+	}
+}
+
+func newQuickConnectAuthServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/Users/AuthenticateWithQuickConnect":
+			var body struct {
+				Secret string `json:"Secret"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if body.Secret != "sec-authorized-789" {
+				t.Errorf("Secret = %q, want sec-authorized-789", body.Secret)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{
+				"AccessToken": "qc-jwt-token-999",
+				"ServerId": "srv-qc",
+				"User": {"Id": "usr-qc", "Name": "qcuser"}
+			}`))
+		case "/System/Ping":
+			auth := r.Header.Get("Authorization")
+			if !strings.Contains(auth, `Token="qc-jwt-token-999"`) {
+				t.Errorf("Authorization header missing stored token: %q", auth)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`"pong"`))
+		}
+	}))
+}
+
+func TestAuthenticateWithQuickConnect(t *testing.T) {
+	t.Parallel()
+
+	ts := newQuickConnectAuthServer(t)
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	res, err := c.AuthenticateWithQuickConnect(context.Background(), "sec-authorized-789")
+	if err != nil {
+		t.Fatalf("AuthenticateWithQuickConnect: %v", err)
+	}
+	if res == nil || res.AccessToken != "qc-jwt-token-999" || res.ServerID != "srv-qc" {
+		t.Fatalf("unexpected res: %+v", res)
+	}
+	if res.User == nil || res.User.ID != "usr-qc" || res.User.Name != "qcuser" {
+		t.Errorf("User = %+v, want ID usr-qc, Name qcuser", res.User)
+	}
+
+	if err := c.Ping(context.Background()); err != nil {
+		t.Fatalf("Ping follow-up: %v", err)
+	}
+}
+
+func TestAuthenticateWithQuickConnect_BlankSecret(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		t.Errorf("server was hit for path %q, expected no request", r.URL.Path)
+	}))
+	t.Cleanup(ts.Close)
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	blanks := []struct {
+		name  string
+		input string
+	}{
+		{name: "empty", input: ""},
+		{name: "spaces", input: "   "},
+		{name: "tabs and newlines", input: "\t\n "},
+	}
+
+	for _, tc := range blanks {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			res, err := c.AuthenticateWithQuickConnect(context.Background(), tc.input)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if res != nil {
+				t.Errorf("res = %v, want nil", res)
+			}
+			if !errors.Is(err, jellyfin.ErrEmptySecret) {
+				t.Errorf("err = %v, want errors.Is ErrEmptySecret", err)
+			}
+		})
+	}
+}
+
+func TestAuthenticateWithQuickConnect_BadRequest400(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"message": "Invalid secret"}`))
+	}))
+	defer ts.Close()
+
+	c, err := jellyfin.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	res, err := c.AuthenticateWithQuickConnect(context.Background(), "invalid-secret")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if res != nil {
+		t.Errorf("res = %v, want nil", res)
+	}
+	var apiErr *jellyfin.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *jellyfin.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusBadRequest {
+		t.Errorf("StatusCode = %d, want 400", apiErr.StatusCode)
+	}
+}
+
+func assertPolicyRatings(t *testing.T, p *jellyfin.UserPolicy) {
+	t.Helper()
+	if p.MaxParentalRating == nil || *p.MaxParentalRating != 12 {
+		t.Errorf("MaxParentalRating = %v, want 12", p.MaxParentalRating)
+	}
+	if p.MaxParentalSubRating == nil || *p.MaxParentalSubRating != 3 {
+		t.Errorf("MaxParentalSubRating = %v, want 3", p.MaxParentalSubRating)
+	}
+}
+
+func assertPolicyFoldersAndTags(t *testing.T, p *jellyfin.UserPolicy) {
+	t.Helper()
+	if p.EnableAllFolders {
+		t.Errorf("EnableAllFolders = true, want false")
+	}
+	if len(p.AllowedTags) != 2 || p.AllowedTags[0] != "safe" || p.AllowedTags[1] != "family" {
+		t.Errorf("AllowedTags = %v", p.AllowedTags)
+	}
+	if len(p.EnabledFolders) != 2 || p.EnabledFolders[0] != "fld-a" || p.EnabledFolders[1] != "fld-b" {
+		t.Errorf("EnabledFolders = %v", p.EnabledFolders)
+	}
+	if len(p.BlockedMediaFolders) != 1 || p.BlockedMediaFolders[0] != "fld-c" {
+		t.Errorf("BlockedMediaFolders = %v", p.BlockedMediaFolders)
+	}
+}
+
+func TestUserPolicy_FullDecode(t *testing.T) {
+	t.Parallel()
+
+	jsonStr := `{
+		"IsAdministrator": true,
+		"IsHidden": false,
+		"IsDisabled": false,
+		"BlockedTags": ["tag1"],
+		"EnableContentDeletion": true,
+		"MaxParentalRating": 12,
+		"MaxParentalSubRating": 3,
+		"AllowedTags": ["safe", "family"],
+		"EnableAllFolders": false,
+		"EnabledFolders": ["fld-a", "fld-b"],
+		"BlockedMediaFolders": ["fld-c"]
+	}`
+
+	var p jellyfin.UserPolicy
+	if err := json.Unmarshal([]byte(jsonStr), &p); err != nil {
+		t.Fatalf("json.Unmarshal: %v", err)
+	}
+
+	if !p.IsAdministrator || p.IsHidden || p.IsDisabled || !p.EnableContentDeletion {
+		t.Errorf("base flags mismatch: %+v", p)
+	}
+	if len(p.BlockedTags) != 1 || p.BlockedTags[0] != "tag1" {
+		t.Errorf("BlockedTags = %v", p.BlockedTags)
+	}
+	assertPolicyRatings(t, &p)
+	assertPolicyFoldersAndTags(t, &p)
 }
