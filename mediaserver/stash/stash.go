@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -130,6 +131,10 @@ const (
 	queryStats        = `query { stats { scene_count scenes_size scenes_duration image_count images_size gallery_count performer_count studio_count tag_count total_o_count total_play_count } }`
 	queryVersion      = `query { version { version hash build_type } }`
 	querySystemStatus = `query { systemStatus { databaseSchema databasePath appSchema status os } }`
+
+	mutationPerformerCreate = `mutation PerformerCreate($input: PerformerCreateInput!) { performerCreate(input: $input) {` + performerFields + `} }`
+	mutationPerformerUpdate = `mutation PerformerUpdate($input: PerformerUpdateInput!) { performerUpdate(input: $input) {` + performerFields + `} }`
+	mutationSceneUpdate     = `mutation SceneUpdate($input: SceneUpdateInput!) { sceneUpdate(input: $input) {` + sceneFields + `} }`
 )
 
 // Option configures a [Client].
@@ -202,6 +207,12 @@ type graphQLResponse struct {
 	Data   json.RawMessage `json:"data"`
 	Errors []GraphQLError  `json:"errors"`
 }
+
+// ErrEmptyName is returned when a required performer name is empty.
+var ErrEmptyName = errors.New("name cannot be empty")
+
+// ErrEmptyID is returned when a required entity ID is empty.
+var ErrEmptyID = errors.New("id cannot be empty")
 
 // APIError is returned when the server responds with a non-2xx status.
 type APIError struct {
@@ -484,4 +495,51 @@ func (c *Client) GetSystemStatus(ctx context.Context) (*SystemStatus, error) {
 		return nil, err
 	}
 	return out.SystemStatus, nil
+}
+
+// Mutations.
+
+// PerformerCreate creates a new performer.
+// Stash v0.31.1 graphql/schema/schema.graphql:371.
+func (c *Client) PerformerCreate(ctx context.Context, input PerformerCreateInput) (*Performer, error) {
+	if strings.TrimSpace(input.Name) == "" {
+		return nil, fmt.Errorf("stash: performer create: %w", ErrEmptyName)
+	}
+	var out struct {
+		PerformerCreate *Performer `json:"performerCreate"`
+	}
+	if err := c.Query(ctx, mutationPerformerCreate, map[string]any{"input": input}, &out); err != nil {
+		return nil, err
+	}
+	return out.PerformerCreate, nil
+}
+
+// PerformerUpdate updates an existing performer.
+// Stash v0.31.1 graphql/schema/schema.graphql:372.
+func (c *Client) PerformerUpdate(ctx context.Context, input PerformerUpdateInput) (*Performer, error) {
+	if strings.TrimSpace(input.ID) == "" {
+		return nil, fmt.Errorf("stash: performer update: %w", ErrEmptyID)
+	}
+	var out struct {
+		PerformerUpdate *Performer `json:"performerUpdate"`
+	}
+	if err := c.Query(ctx, mutationPerformerUpdate, map[string]any{"input": input}, &out); err != nil {
+		return nil, err
+	}
+	return out.PerformerUpdate, nil
+}
+
+// SceneUpdate updates an existing scene.
+// Stash v0.31.1 graphql/schema/schema.graphql:291.
+func (c *Client) SceneUpdate(ctx context.Context, input SceneUpdateInput) (*Scene, error) {
+	if strings.TrimSpace(input.ID) == "" {
+		return nil, fmt.Errorf("stash: scene update: %w", ErrEmptyID)
+	}
+	var out struct {
+		SceneUpdate *Scene `json:"sceneUpdate"`
+	}
+	if err := c.Query(ctx, mutationSceneUpdate, map[string]any{"input": input}, &out); err != nil {
+		return nil, err
+	}
+	return out.SceneUpdate, nil
 }

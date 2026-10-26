@@ -240,3 +240,192 @@ type SystemStatus struct {
 	Status         string `json:"status"`
 	OS             string `json:"os"`
 }
+
+// GenderEnum represents a performer gender.
+// Stash v0.31.1 graphql/schema/types/performer.graphql:1.
+type GenderEnum string
+
+const (
+	// GenderMale indicates male gender.
+	// Stash v0.31.1 graphql/schema/types/performer.graphql:2.
+	GenderMale GenderEnum = "MALE"
+	// GenderFemale indicates female gender.
+	// Stash v0.31.1 graphql/schema/types/performer.graphql:3.
+	GenderFemale GenderEnum = "FEMALE"
+	// GenderTransgenderMale indicates transgender male gender.
+	// Stash v0.31.1 graphql/schema/types/performer.graphql:4.
+	GenderTransgenderMale GenderEnum = "TRANSGENDER_MALE"
+	// GenderTransgenderFemale indicates transgender female gender.
+	// Stash v0.31.1 graphql/schema/types/performer.graphql:5.
+	GenderTransgenderFemale GenderEnum = "TRANSGENDER_FEMALE"
+	// GenderIntersex indicates intersex gender.
+	// Stash v0.31.1 graphql/schema/types/performer.graphql:6.
+	GenderIntersex GenderEnum = "INTERSEX"
+	// GenderNonBinary indicates non-binary gender.
+	// Stash v0.31.1 graphql/schema/types/performer.graphql:7.
+	GenderNonBinary GenderEnum = "NON_BINARY"
+)
+
+// CircumcisedEnum represents performer circumcision status.
+// Stash v0.31.1 graphql/schema/types/performer.graphql:10.
+type CircumcisedEnum string
+
+const (
+	// CircumcisedCut indicates circumcised status.
+	// Stash v0.31.1 graphql/schema/types/performer.graphql:11.
+	CircumcisedCut CircumcisedEnum = "CUT"
+	// CircumcisedUncut indicates uncircumcised status.
+	// Stash v0.31.1 graphql/schema/types/performer.graphql:12.
+	CircumcisedUncut CircumcisedEnum = "UNCUT"
+)
+
+// StashIDInput specifies an external StashBox ID mapping input.
+// Stash v0.31.1 graphql/schema/types/stash-box.graphql:22.
+type StashIDInput struct { //nolint:revive // StashIDInput mirrors upstream GraphQL type name verbatim.
+	Endpoint  string  `json:"endpoint"`
+	StashID   string  `json:"stash_id"`
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
+// CustomFieldsInput specifies mutation inputs for custom fields.
+// Stash v0.31.1 graphql/schema/types/metadata.graphql:369.
+type CustomFieldsInput struct {
+	Full    map[string]any `json:"full,omitempty"`
+	Partial map[string]any `json:"partial,omitempty"`
+	Remove  []string       `json:"remove,omitzero"`
+}
+
+// SceneMovieInput specifies a movie assignment input for a scene.
+// Stash v0.31.1 graphql/schema/types/scene.graphql:88.
+type SceneMovieInput struct {
+	MovieID    string `json:"movie_id"`
+	SceneIndex *int   `json:"scene_index,omitempty"`
+}
+
+// SceneGroupInput specifies a group assignment input for a scene.
+// Stash v0.31.1 graphql/schema/types/scene.graphql:93.
+type SceneGroupInput struct {
+	GroupID    string `json:"group_id"`
+	SceneIndex *int   `json:"scene_index,omitempty"`
+}
+
+// PerformerCreateInput defines input fields for creating a performer.
+// Stash v0.31.1 graphql/schema/types/performer.graphql:67.
+type PerformerCreateInput struct {
+	Name           string  `json:"name"`
+	Disambiguation *string `json:"disambiguation,omitempty"`
+	// Deprecated: use URLs.
+	URL          *string          `json:"url,omitempty"`
+	URLs         []string         `json:"urls,omitzero"`
+	Gender       *GenderEnum      `json:"gender,omitempty"`
+	Birthdate    *string          `json:"birthdate,omitempty"`
+	Ethnicity    *string          `json:"ethnicity,omitempty"`
+	Country      *string          `json:"country,omitempty"`
+	EyeColor     *string          `json:"eye_color,omitempty"`
+	HeightCM     *int             `json:"height_cm,omitempty"`
+	Measurements *string          `json:"measurements,omitempty"`
+	FakeTits     *string          `json:"fake_tits,omitempty"`
+	PenisLength  *float64         `json:"penis_length,omitempty"`
+	Circumcised  *CircumcisedEnum `json:"circumcised,omitempty"`
+	// Deprecated: use CareerStart and CareerEnd.
+	CareerLength *string  `json:"career_length,omitempty"`
+	CareerStart  *string  `json:"career_start,omitempty"`
+	CareerEnd    *string  `json:"career_end,omitempty"`
+	Tattoos      *string  `json:"tattoos,omitempty"`
+	Piercings    *string  `json:"piercings,omitempty"`
+	AliasList    []string `json:"alias_list,omitzero"`
+	// Deprecated: use URLs.
+	Twitter *string `json:"twitter,omitempty"`
+	// Deprecated: use URLs.
+	Instagram     *string        `json:"instagram,omitempty"`
+	Favorite      *bool          `json:"favorite,omitempty"`
+	TagIDs        []string       `json:"tag_ids,omitzero"`
+	Image         *string        `json:"image,omitempty"`
+	StashIDs      []StashIDInput `json:"stash_ids,omitzero"`
+	Rating100     *int           `json:"rating100,omitempty"`
+	Details       *string        `json:"details,omitempty"`
+	DeathDate     *string        `json:"death_date,omitempty"`
+	HairColor     *string        `json:"hair_color,omitempty"`
+	Weight        *int           `json:"weight,omitempty"`
+	IgnoreAutoTag *bool          `json:"ignore_auto_tag,omitempty"`
+	CustomFields  map[string]any `json:"custom_fields,omitempty"`
+}
+
+// PerformerUpdateInput defines input fields for updating a performer.
+// Stash v0.31.1 graphql/schema/types/performer.graphql:107.
+// A nil slice leaves the field unchanged; an empty non-nil slice clears it.
+type PerformerUpdateInput struct {
+	ID             string  `json:"id"`
+	Name           *string `json:"name,omitempty"`
+	Disambiguation *string `json:"disambiguation,omitempty"`
+	// Deprecated: use URLs.
+	URL          *string          `json:"url,omitempty"`
+	URLs         []string         `json:"urls,omitzero"`
+	Gender       *GenderEnum      `json:"gender,omitempty"`
+	Birthdate    *string          `json:"birthdate,omitempty"`
+	Ethnicity    *string          `json:"ethnicity,omitempty"`
+	Country      *string          `json:"country,omitempty"`
+	EyeColor     *string          `json:"eye_color,omitempty"`
+	HeightCM     *int             `json:"height_cm,omitempty"`
+	Measurements *string          `json:"measurements,omitempty"`
+	FakeTits     *string          `json:"fake_tits,omitempty"`
+	PenisLength  *float64         `json:"penis_length,omitempty"`
+	Circumcised  *CircumcisedEnum `json:"circumcised,omitempty"`
+	// Deprecated: use CareerStart and CareerEnd.
+	CareerLength *string  `json:"career_length,omitempty"`
+	CareerStart  *string  `json:"career_start,omitempty"`
+	CareerEnd    *string  `json:"career_end,omitempty"`
+	Tattoos      *string  `json:"tattoos,omitempty"`
+	Piercings    *string  `json:"piercings,omitempty"`
+	AliasList    []string `json:"alias_list,omitzero"`
+	// Deprecated: use URLs.
+	Twitter *string `json:"twitter,omitempty"`
+	// Deprecated: use URLs.
+	Instagram     *string            `json:"instagram,omitempty"`
+	Favorite      *bool              `json:"favorite,omitempty"`
+	TagIDs        []string           `json:"tag_ids,omitzero"`
+	Image         *string            `json:"image,omitempty"`
+	StashIDs      []StashIDInput     `json:"stash_ids,omitzero"`
+	Rating100     *int               `json:"rating100,omitempty"`
+	Details       *string            `json:"details,omitempty"`
+	DeathDate     *string            `json:"death_date,omitempty"`
+	HairColor     *string            `json:"hair_color,omitempty"`
+	Weight        *int               `json:"weight,omitempty"`
+	IgnoreAutoTag *bool              `json:"ignore_auto_tag,omitempty"`
+	CustomFields  *CustomFieldsInput `json:"custom_fields,omitempty"`
+}
+
+// SceneUpdateInput defines input fields for updating a scene.
+// Stash v0.31.1 graphql/schema/types/scene.graphql:129.
+// A nil slice leaves the field unchanged; an empty non-nil slice clears it.
+type SceneUpdateInput struct {
+	ClientMutationID *string `json:"clientMutationId,omitempty"`
+	ID               string  `json:"id"`
+	Title            *string `json:"title,omitempty"`
+	Code             *string `json:"code,omitempty"`
+	Details          *string `json:"details,omitempty"`
+	Director         *string `json:"director,omitempty"`
+	// Deprecated: use URLs.
+	URL       *string  `json:"url,omitempty"`
+	URLs      []string `json:"urls,omitzero"`
+	Date      *string  `json:"date,omitempty"`
+	Rating100 *int     `json:"rating100,omitempty"`
+	// Deprecated: unsupported upstream; Stash has sceneIncrementO/sceneDecrementO.
+	OCounter     *int              `json:"o_counter,omitempty"`
+	Organized    *bool             `json:"organized,omitempty"`
+	StudioID     *string           `json:"studio_id,omitempty"`
+	GalleryIDs   []string          `json:"gallery_ids,omitzero"`
+	PerformerIDs []string          `json:"performer_ids,omitzero"`
+	Groups       []SceneGroupInput `json:"groups,omitzero"`
+	// Deprecated: use Groups.
+	Movies       []SceneMovieInput `json:"movies,omitzero"`
+	TagIDs       []string          `json:"tag_ids,omitzero"`
+	CoverImage   *string           `json:"cover_image,omitempty"`
+	StashIDs     []StashIDInput    `json:"stash_ids,omitzero"`
+	ResumeTime   *float64          `json:"resume_time,omitempty"`
+	PlayDuration *float64          `json:"play_duration,omitempty"`
+	// Deprecated: unsupported upstream; Stash has sceneIncrementPlayCount/sceneDecrementPlayCount.
+	PlayCount     *int               `json:"play_count,omitempty"`
+	PrimaryFileID *string            `json:"primary_file_id,omitempty"`
+	CustomFields  *CustomFieldsInput `json:"custom_fields,omitempty"`
+}
