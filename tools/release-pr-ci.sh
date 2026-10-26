@@ -5,7 +5,8 @@
 # check.
 #   usage: tools/release-pr-ci.sh OWNER/REPO
 #   needs: gh with a token that may read pull requests and write actions
-#   env:   RELEASE_PR_CI_TRIES (default 6), RELEASE_PR_CI_WAIT seconds (default 10)
+#   env:   RELEASE_PR_AUTHORS (default "app/plurano-release app/github-actions"),
+#          RELEASE_PR_CI_TRIES (default 6), RELEASE_PR_CI_WAIT seconds (default 10)
 set -euo pipefail
 
 if [ $# -ne 1 ]; then
@@ -21,9 +22,22 @@ if [[ ! "$TRIES" =~ ^[1-9][0-9]?$ ]] || [[ ! "$WAIT" =~ ^[0-9]{1,3}$ ]]; then
   exit 2
 fi
 
+AUTHORS="${RELEASE_PR_AUTHORS:-app/plurano-release app/github-actions}"
+read -r -a author_list <<< "$AUTHORS"
+if [ ${#author_list[@]} -eq 0 ]; then
+  echo "error: unexpected RELEASE_PR_AUTHORS" >&2
+  exit 2
+fi
+for a in "${author_list[@]}"; do
+  if [[ ! "$a" =~ ^app/[a-z0-9-]+$ ]]; then
+    echo "error: unexpected RELEASE_PR_AUTHORS" >&2
+    exit 2
+  fi
+done
+
 HEADS="$("$GH" pr list --repo "$REPO" --state open \
-  --author 'app/github-actions' --label 'autorelease: pending' \
-  --json headRefName,headRefOid --jq '.[] | "\(.headRefName) \(.headRefOid)"')"
+  --label 'autorelease: pending' \
+  --json author,headRefName,headRefOid --jq '.[] | "\(.author.login) \(.headRefName) \(.headRefOid)"')"
 if [ -z "$HEADS" ]; then
   echo "No open release pull request."
   exit 0
@@ -35,11 +49,23 @@ runs_on() {
     --jq '.workflow_runs[] | "\(.id) \(.conclusion // "none") \(.head_branch) \(.head_repository.full_name)"'
 }
 
-while read -r branch sha; do
+while read -r author branch sha; do
+  allowed=0
+  for a in "${author_list[@]}"; do
+    if [ "$author" = "$a" ]; then
+      allowed=1
+      break
+    fi
+  done
+  if [ "$allowed" -eq 0 ]; then
+    echo "Refused release pull request on $branch: author $author is not a release app." >&2
+    continue
+  fi
   if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
     echo "error: unexpected head for $branch: $sha" >&2
     exit 1
   fi
+  echo "Release pull request on $branch at $sha."
   # The runs appear a moment after release-please has pushed the branch.
   runs=""
   for ((try = 1; try <= TRIES; try++)); do

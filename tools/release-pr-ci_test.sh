@@ -31,13 +31,16 @@ esac
 STUB
 chmod 0755 "$WORK/gh"
 
-# run_case NAME HEADS RUNS WANT_RC WANT_APPROVALS [APPROVE]
+# run_case NAME HEADS RUNS WANT_RC WANT_APPROVALS [APPROVE] [AUTHORS]
 run_case() {
   local name="$1" rc=0 got
   : > "$WORK/log"
-  GH_BIN="$WORK/gh" STUB_HEADS="$2" STUB_RUNS="$3" STUB_LOG="$WORK/log" \
-    STUB_APPROVE="${6:-ok}" RELEASE_PR_CI_TRIES=2 RELEASE_PR_CI_WAIT=0 \
-    bash "$HERE/release-pr-ci.sh" owner/repo > "$WORK/out" 2>&1 || rc=$?
+  (
+    [ $# -ge 7 ] && export RELEASE_PR_AUTHORS="$7"
+    GH_BIN="$WORK/gh" STUB_HEADS="$2" STUB_RUNS="$3" STUB_LOG="$WORK/log" \
+      STUB_APPROVE="${6:-ok}" RELEASE_PR_CI_TRIES=2 RELEASE_PR_CI_WAIT=0 \
+      bash "$HERE/release-pr-ci.sh" owner/repo > "$WORK/out" 2>&1
+  ) || rc=$?
   got="$(wc -l < "$WORK/log")"
   if [ "$rc" -ne "$4" ] || [ "$got" -ne "$5" ]; then
     printf 'FAIL %s: exit %s with %s approvals, want exit %s with %s\n' "$name" "$rc" "$got" "$4" "$5" >&2
@@ -47,7 +50,7 @@ run_case() {
   echo "ok   $name: exit $rc, $got approvals"
 }
 
-HEAD="release-branch $SHA"
+HEAD="app/plurano-release release-branch $SHA"
 
 run_case waiting "$HEAD" "11 action_required release-branch owner/repo
 12 action_required release-branch owner/repo" 0 2
@@ -66,6 +69,19 @@ grep -q 'no pull request run on release-branch' "$WORK/out"
 run_case api-fails "$HEAD" fail 1 0
 run_case approve-fails "$HEAD" "11 action_required release-branch owner/repo" 1 0 fail
 run_case odd-run "$HEAD" "null action_required release-branch owner/repo" 1 0
-run_case odd-head "release-branch not-a-sha" "11 action_required release-branch owner/repo" 1 0
+run_case odd-head "app/plurano-release release-branch not-a-sha" "11 action_required release-branch owner/repo" 1 0
+run_case github-actions "app/github-actions release-branch $SHA" "11 action_required release-branch owner/repo" 0 1
+grep -qx 'repos/owner/repo/actions/runs/11/approve' "$WORK/log"
+run_case wrong-author "app/evil-bot release-branch $SHA" "11 action_required release-branch owner/repo" 0 0
+grep -q 'Refused release pull request' "$WORK/out"
+run_case human-author "someone release-branch $SHA" "11 action_required release-branch owner/repo" 0 0
+grep -q 'Refused release pull request' "$WORK/out"
+run_case mixed "app/plurano-release release-branch $SHA
+app/evil-bot other-branch $SHA" "11 action_required release-branch owner/repo
+12 action_required other-branch owner/repo" 0 1
+grep -qx 'repos/owner/repo/actions/runs/11/approve' "$WORK/log"
+grep -q 'Refused release pull request' "$WORK/out"
+run_case bad-authors "$HEAD" "" 2 0 ok "app/x;rm"
+grep -q 'error: unexpected RELEASE_PR_AUTHORS' "$WORK/out"
 
-echo "release pull request CI: 3 approved, 4 skipped, 5 refused"
+echo "release pull request CI: 5 approved, 4 skipped, 8 refused"
