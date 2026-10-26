@@ -35,7 +35,7 @@
   "mediaserver/tautulli": "2.0.2",
   "mediaserver/tdarr": "3.0.3",
   "metadata": "1.4.3",
-  "metadata/adult/stashbox": "2.0.4",
+  "metadata/adult/stashbox": "2.1.0",
   "metadata/adult/tpdb": "1.3.6",
   "metadata/anime/anidb": "1.3.5",
   "metadata/anime/anilist": "1.3.4",

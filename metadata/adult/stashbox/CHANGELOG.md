@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/golusoris/goenvoy/compare/metadata/adult/stashbox/v2.0.4...metadata/adult/stashbox/v2.1.0) (2026-10-26)
+
+
+### Features
+
+* **metadata/adult/stashbox:** add FavoritePerformer and FavoriteStudio mutations ([#206](https://github.com/golusoris/goenvoy/issues/206)) ([3017966](https://github.com/golusoris/goenvoy/commit/30179669c016994689f3fec9ab8eddb9d93191c7))
+
 ## [2.0.4](https://github.com/golusoris/goenvoy/compare/metadata/adult/stashbox/v2.0.3...metadata/adult/stashbox/v2.0.4) (2026-10-25)
 
 
