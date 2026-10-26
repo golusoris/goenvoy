@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -380,4 +381,45 @@ func (c *Client) GetConfig(ctx context.Context) (*Config, error) {
 		return nil, err
 	}
 	return out.GetConfig, nil
+}
+
+// Favorite mutations; signatures from stash-box v0.10.3 graphql/schema/schema.graphql:
+// favoritePerformer(id: ID!, favorite: Boolean!): Boolean! and favoriteStudio(id: ID!, favorite: Boolean!): Boolean!.
+const (
+	mutationFavoritePerformer = `mutation ($id: ID!, $favorite: Boolean!) { favoritePerformer(id: $id, favorite: $favorite) }`
+	mutationFavoriteStudio    = `mutation ($id: ID!, $favorite: Boolean!) { favoriteStudio(id: $id, favorite: $favorite) }`
+)
+
+var (
+	// ErrEmptyID is returned, wrapped, when a mutation is called with an empty entity id.
+	ErrEmptyID = errors.New("empty id")
+	// ErrMissingResult is returned, wrapped, when the server omits a non-null mutation result.
+	ErrMissingResult = errors.New("missing mutation result")
+)
+
+// FavoritePerformer marks (favorite=true) or unmarks (favorite=false) a performer
+// as a favorite of the authenticated user and returns the server's result.
+func (c *Client) FavoritePerformer(ctx context.Context, id string, favorite bool) (bool, error) {
+	return c.favorite(ctx, mutationFavoritePerformer, "favoritePerformer", "favorite performer", id, favorite)
+}
+
+// FavoriteStudio marks (favorite=true) or unmarks (favorite=false) a studio
+// as a favorite of the authenticated user and returns the server's result.
+func (c *Client) FavoriteStudio(ctx context.Context, id string, favorite bool) (bool, error) {
+	return c.favorite(ctx, mutationFavoriteStudio, "favoriteStudio", "favorite studio", id, favorite)
+}
+
+func (c *Client) favorite(ctx context.Context, mutation, field, op, id string, favorite bool) (bool, error) {
+	if id == "" {
+		return false, fmt.Errorf("stashbox: %s: %w", op, ErrEmptyID)
+	}
+	var out map[string]*bool
+	if err := c.Query(ctx, mutation, map[string]any{"id": id, "favorite": favorite}, &out); err != nil {
+		return false, fmt.Errorf("stashbox: %s: %w", op, err)
+	}
+	res := out[field]
+	if res == nil {
+		return false, fmt.Errorf("stashbox: %s: %w", op, ErrMissingResult)
+	}
+	return *res, nil
 }
