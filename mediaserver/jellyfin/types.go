@@ -36,6 +36,25 @@ type UserPolicy struct {
 	IsDisabled            bool     `json:"IsDisabled"`
 	BlockedTags           []string `json:"BlockedTags,omitempty"`
 	EnableContentDeletion bool     `json:"EnableContentDeletion"`
+	// MaxParentalRating is the maximum parental rating allowed; nil means no limit.
+	MaxParentalRating    *int     `json:"MaxParentalRating,omitempty"`
+	MaxParentalSubRating *int     `json:"MaxParentalSubRating,omitempty"`
+	AllowedTags          []string `json:"AllowedTags,omitempty"`
+	EnableAllFolders     bool     `json:"EnableAllFolders"`
+	EnabledFolders       []string `json:"EnabledFolders,omitempty"`
+	BlockedMediaFolders  []string `json:"BlockedMediaFolders,omitempty"`
+}
+
+// QuickConnectResult represents the result of a Quick Connect initiation or check.
+type QuickConnectResult struct {
+	Authenticated bool   `json:"Authenticated"`
+	Secret        string `json:"Secret"`
+	Code          string `json:"Code"`
+	DeviceID      string `json:"DeviceId"`
+	DeviceName    string `json:"DeviceName"`
+	AppName       string `json:"AppName"`
+	AppVersion    string `json:"AppVersion"`
+	DateAdded     string `json:"DateAdded"`
 }
 
 // SessionInfoDto represents an active session.
@@ -131,4 +150,9 @@ type PublicSystemInfo struct {
 type authRequest struct {
 	Username string `json:"Username"`
 	Pw       string `json:"Pw"`
+}
+
+// quickConnectRequest is the body for AuthenticateWithQuickConnect.
+type quickConnectRequest struct {
+	Secret string `json:"Secret"`
 }

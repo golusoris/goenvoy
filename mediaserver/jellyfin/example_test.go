@@ -36,3 +36,19 @@ func Example() {
 	}
 	fmt.Printf("Total items: %d\n", items.TotalRecordCount)
 }
+
+func ExampleClient_InitiateQuickConnect() {
+	client, err := jellyfin.New("http://192.168.1.100:8096")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ctx := context.Background()
+
+	result, err := client.InitiateQuickConnect(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("Code: %s, Secret: %s\n", result.Code, result.Secret)
+}
