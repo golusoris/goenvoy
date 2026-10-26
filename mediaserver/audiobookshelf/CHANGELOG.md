@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.2](https://github.com/golusoris/goenvoy/compare/mediaserver/audiobookshelf/v2.0.1...mediaserver/audiobookshelf/v2.0.2) (2026-10-26)
+
+
+### Bug Fixes
+
+* give every default HTTP client a private transport pool ([#183](https://github.com/golusoris/goenvoy/issues/183)) ([367d63f](https://github.com/golusoris/goenvoy/commit/367d63f8cecc2de3c4fc98a1e3d3f69c11c5080c))
+
 ## [2.0.1](https://github.com/golusoris/goenvoy/compare/mediaserver/audiobookshelf/v2.0.0...mediaserver/audiobookshelf/v2.0.1) (2026-10-23)
 
 

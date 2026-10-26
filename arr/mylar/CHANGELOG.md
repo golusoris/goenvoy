@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.2](https://github.com/golusoris/goenvoy/compare/arr/mylar/v3.0.1...arr/mylar/v3.0.2) (2026-10-26)
+
+
+### Bug Fixes
+
+* give every default HTTP client a private transport pool ([#183](https://github.com/golusoris/goenvoy/issues/183)) ([367d63f](https://github.com/golusoris/goenvoy/commit/367d63f8cecc2de3c4fc98a1e3d3f69c11c5080c))
+
 ## [3.0.1](https://github.com/golusoris/goenvoy/compare/arr/mylar/v3.0.0...arr/mylar/v3.0.1) (2026-10-23)
 
 
