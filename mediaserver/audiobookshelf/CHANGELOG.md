@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/golusoris/goenvoy/compare/mediaserver/audiobookshelf/v2.0.2...mediaserver/audiobookshelf/v2.1.0) (2026-10-26)
+
+
+### Features
+
+* **mediaserver/audiobookshelf:** close v2.37.2 gaps in users, auth, pagination and podcasts ([#203](https://github.com/golusoris/goenvoy/issues/203)) ([e24e2a0](https://github.com/golusoris/goenvoy/commit/e24e2a01d1a0e82fee5ac8908e61bfb3d9c3bd93))
+
 ## [2.0.2](https://github.com/golusoris/goenvoy/compare/mediaserver/audiobookshelf/v2.0.1...mediaserver/audiobookshelf/v2.0.2) (2026-10-26)
 
 
