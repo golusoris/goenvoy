@@ -50,6 +50,7 @@ type SiteRef struct {
 // TagRef is a tag reference embedded in resources.
 type TagRef struct {
 	ID   int    `json:"id"`
+	UUID string `json:"uuid"`
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 }
@@ -57,6 +58,7 @@ type TagRef struct {
 // DirectorRef is a director reference.
 type DirectorRef struct {
 	ID   int    `json:"id"`
+	UUID string `json:"uuid"`
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 }
@@ -186,6 +188,7 @@ type Site struct {
 // Tag represents a tag resource.
 type Tag struct {
 	ID   int    `json:"id"`
+	UUID string `json:"uuid"`
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 }
@@ -193,6 +196,7 @@ type Tag struct {
 // Director represents a director resource.
 type Director struct {
 	ID   int    `json:"id"`
+	UUID string `json:"uuid"`
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 }

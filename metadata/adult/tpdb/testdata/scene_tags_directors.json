@@ -1,0 +1,24 @@
+{
+  "data": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "_id": 1001,
+    "title": "Fixture Scene",
+    "slug": "fixture-scene",
+    "tags": [
+      {
+        "id": 301,
+        "uuid": "00000000-0000-4000-8000-000000000301",
+        "name": "Fixture Tag",
+        "slug": "fixture-tag"
+      }
+    ],
+    "directors": [
+      {
+        "id": 401,
+        "uuid": "00000000-0000-4000-8000-000000000401",
+        "name": "Fixture Director",
+        "slug": "fixture-director"
+      }
+    ]
+  }
+}
