@@ -7,7 +7,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"regexp"
+	"slices"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -693,6 +697,251 @@ func TestFavoriteContextDeadline(t *testing.T) {
 			if _, err := m.call(c, ctx, "uuid-1", true); !errors.Is(err, context.DeadlineExceeded) {
 				t.Fatalf("err = %v, want context.DeadlineExceeded", err)
 			}
+		})
+	}
+}
+
+type queryCapture struct {
+	mu    sync.Mutex
+	query string
+}
+
+func (qc *queryCapture) set(q string) {
+	qc.mu.Lock()
+	defer qc.mu.Unlock()
+	qc.query = q
+}
+
+func (qc *queryCapture) get() string {
+	qc.mu.Lock()
+	defer qc.mu.Unlock()
+	return qc.query
+}
+
+func checkPerformerQueryTokens(t *testing.T, query string) {
+	t.Helper()
+	forbidden := []string{"birthdate", "deathdate", "weight", "measurements"}
+	for _, tok := range forbidden {
+		re := regexp.MustCompile(`\b` + tok + `\b`)
+		if re.MatchString(query) {
+			t.Errorf("sent query contains forbidden token %q: %s", tok, query)
+		}
+	}
+	required := []string{"birth_date", "merged_ids", "merged_into_id", "cup_size"}
+	for _, tok := range required {
+		re := regexp.MustCompile(`\b` + tok + `\b`)
+		if !re.MatchString(query) {
+			t.Errorf("sent query missing required token %q: %s", tok, query)
+		}
+	}
+}
+
+func TestPerformerQuery_Tokens(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		call func(context.Context, *stashbox.Client) error
+	}{
+		{
+			name: "FindPerformer",
+			call: func(ctx context.Context, c *stashbox.Client) error {
+				_, err := c.FindPerformer(ctx, "00000000-0000-4000-8000-000000000001")
+				return err
+			},
+		},
+		{
+			name: "QueryPerformers",
+			call: func(ctx context.Context, c *stashbox.Client) error {
+				_, _, err := c.QueryPerformers(ctx, &stashbox.QueryInput{Page: 1, PerPage: 10})
+				return err
+			},
+		},
+		{
+			name: "SearchPerformers",
+			call: func(ctx context.Context, c *stashbox.Client) error {
+				_, err := c.SearchPerformers(ctx, "test", 10)
+				return err
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var qc queryCapture
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var req gqlRequest
+				_ = json.NewDecoder(r.Body).Decode(&req)
+				qc.set(req.Query)
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(`{"data":{"findPerformer":{"id":"p1"},"queryPerformers":{"count":0,"performers":[]},"searchPerformer":[]}}`))
+			}))
+			defer ts.Close()
+
+			c, err := stashbox.New(ts.URL, "key")
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+			if err := tc.call(context.Background(), c); err != nil {
+				t.Fatalf("call: %v", err)
+			}
+			checkPerformerQueryTokens(t, qc.get())
+		})
+	}
+}
+
+func assertPerformerV0103Strings(t *testing.T, res *stashbox.Performer) {
+	t.Helper()
+	if res.BirthDate != "1990-01-02" {
+		t.Errorf("BirthDate = %q, want %q", res.BirthDate, "1990-01-02")
+	}
+	if res.DeathDate != "" {
+		t.Errorf("DeathDate = %q, want empty", res.DeathDate)
+	}
+	if res.CupSize != "C" {
+		t.Errorf("CupSize = %q, want %q", res.CupSize, "C")
+	}
+	if res.SceneCount != 42 {
+		t.Errorf("SceneCount = %d, want 42", res.SceneCount)
+	}
+}
+
+func assertPerformerV0103Sizes(t *testing.T, res *stashbox.Performer) {
+	t.Helper()
+	if res.BandSize == nil || *res.BandSize != 34 {
+		t.Errorf("BandSize = %v, want 34", res.BandSize)
+	}
+	if res.WaistSize == nil || *res.WaistSize != 26 {
+		t.Errorf("WaistSize = %v, want 26", res.WaistSize)
+	}
+	if res.HipSize == nil || *res.HipSize != 36 {
+		t.Errorf("HipSize = %v, want 36", res.HipSize)
+	}
+}
+
+func assertPerformerV0103Merged(t *testing.T, res *stashbox.Performer) {
+	t.Helper()
+	wantIDs := []string{
+		"00000000-0000-4000-8000-000000000002",
+		"00000000-0000-4000-8000-000000000003",
+	}
+	if !slices.Equal(res.MergedIDs, wantIDs) {
+		t.Errorf("MergedIDs = %v, want %v", res.MergedIDs, wantIDs)
+	}
+	if res.MergedIntoID != "" {
+		t.Errorf("MergedIntoID = %q, want empty", res.MergedIntoID)
+	}
+}
+
+func assertPerformerV0103Fields(t *testing.T, res *stashbox.Performer) {
+	t.Helper()
+	assertPerformerV0103Strings(t, res)
+	assertPerformerV0103Sizes(t, res)
+	assertPerformerV0103Merged(t, res)
+}
+
+func TestFindPerformer_DecodeV0103(t *testing.T) {
+	t.Parallel()
+
+	fixture, err := os.ReadFile("testdata/find_performer_v0103.json")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(fixture)
+	}))
+	defer ts.Close()
+
+	c, err := stashbox.New(ts.URL, "key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	res, err := c.FindPerformer(context.Background(), "00000000-0000-4000-8000-000000000001")
+	if err != nil {
+		t.Fatalf("FindPerformer: %v", err)
+	}
+	assertPerformerV0103Fields(t, res)
+}
+
+func assertEmptyMergedIDs(t *testing.T, res *stashbox.Performer) {
+	t.Helper()
+	if len(res.MergedIDs) != 0 {
+		t.Errorf("len(MergedIDs) = %d, want 0", len(res.MergedIDs))
+	}
+	if res.MergedIntoID != "" {
+		t.Errorf("MergedIntoID = %q, want empty", res.MergedIntoID)
+	}
+}
+
+func assertMergedIntoIDSet(t *testing.T, res *stashbox.Performer) {
+	t.Helper()
+	if res.MergedIntoID != "00000000-0000-4000-8000-000000000099" {
+		t.Errorf("MergedIntoID = %q, want 00000000-0000-4000-8000-000000000099", res.MergedIntoID)
+	}
+	if len(res.MergedIDs) != 0 {
+		t.Errorf("len(MergedIDs) = %d, want 0", len(res.MergedIDs))
+	}
+}
+
+func assertNullMeasurements(t *testing.T, res *stashbox.Performer) {
+	t.Helper()
+	if res.BandSize != nil {
+		t.Errorf("BandSize = %v, want nil", res.BandSize)
+	}
+	if res.WaistSize != nil {
+		t.Errorf("WaistSize = %v, want nil", res.WaistSize)
+	}
+	if res.HipSize != nil {
+		t.Errorf("HipSize = %v, want nil", res.HipSize)
+	}
+}
+
+func TestFindPerformer_Boundary(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		jsonBody string
+		assertFn func(t *testing.T, res *stashbox.Performer)
+	}{
+		{
+			name:     "empty merged_ids array",
+			jsonBody: `{"data":{"findPerformer":{"id":"p1","name":"P1","merged_ids":[],"merged_into_id":null,"scene_count":0}}}`,
+			assertFn: assertEmptyMergedIDs,
+		},
+		{
+			name:     "merged_into_id set",
+			jsonBody: `{"data":{"findPerformer":{"id":"p1","name":"P1","merged_ids":[],"merged_into_id":"00000000-0000-4000-8000-000000000099","scene_count":0}}}`,
+			assertFn: assertMergedIntoIDSet,
+		},
+		{
+			name:     "null measurements pointers",
+			jsonBody: `{"data":{"findPerformer":{"id":"p1","name":"P1","band_size":null,"waist_size":null,"hip_size":null,"scene_count":0}}}`,
+			assertFn: assertNullMeasurements,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = w.Write([]byte(tc.jsonBody))
+			}))
+			defer ts.Close()
+
+			c, err := stashbox.New(ts.URL, "key")
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+			res, err := c.FindPerformer(context.Background(), "p1")
+			if err != nil {
+				t.Fatalf("FindPerformer: %v", err)
+			}
+			tc.assertFn(t, res)
 		})
 	}
 }

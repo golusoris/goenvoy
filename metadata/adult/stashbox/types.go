@@ -2,19 +2,23 @@ package stashbox
 
 // Performer represents an adult performer.
 type Performer struct {
-	ID              string         `json:"id"`
-	Name            string         `json:"name"`
-	Disambiguation  string         `json:"disambiguation,omitempty"`
-	Gender          string         `json:"gender,omitempty"`
-	Birthdate       string         `json:"birthdate,omitempty"`
-	Deathdate       string         `json:"deathdate,omitempty"`
-	Height          *int           `json:"height,omitempty"`
-	Weight          *int           `json:"weight,omitempty"`
-	HairColor       string         `json:"hair_color,omitempty"`
-	EyeColor        string         `json:"eye_color,omitempty"`
-	Ethnicity       string         `json:"ethnicity,omitempty"`
-	BreastType      string         `json:"breast_type,omitempty"`
-	Country         string         `json:"country,omitempty"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Disambiguation string `json:"disambiguation,omitempty"`
+	Gender         string `json:"gender,omitempty"`
+	// Deprecated: no longer populated; stash-box v0.10.3 deprecates birthdate. Use BirthDate.
+	Birthdate string `json:"birthdate,omitempty"`
+	// Deprecated: no longer populated; stash-box v0.10.3 has no deathdate. Use DeathDate.
+	Deathdate string `json:"deathdate,omitempty"`
+	Height    *int   `json:"height,omitempty"`
+	// Deprecated: no longer populated; stash-box v0.10.3 has no weight field.
+	Weight     *int   `json:"weight,omitempty"`
+	HairColor  string `json:"hair_color,omitempty"`
+	EyeColor   string `json:"eye_color,omitempty"`
+	Ethnicity  string `json:"ethnicity,omitempty"`
+	BreastType string `json:"breast_type,omitempty"`
+	Country    string `json:"country,omitempty"`
+	// Deprecated: no longer populated; stash-box v0.10.3 deprecates measurements. Use CupSize, BandSize, WaistSize and HipSize.
 	Measurements    string         `json:"measurements,omitempty"`
 	CareerStartYear *int           `json:"career_start_year,omitempty"`
 	CareerEndYear   *int           `json:"career_end_year,omitempty"`
@@ -27,6 +31,16 @@ type Performer struct {
 	Deleted         bool           `json:"deleted"`
 	Created         string         `json:"created"`
 	Updated         string         `json:"updated"`
+
+	BirthDate    string   `json:"birth_date,omitempty"`
+	DeathDate    string   `json:"death_date,omitempty"`
+	CupSize      string   `json:"cup_size,omitempty"`
+	BandSize     *int     `json:"band_size,omitempty"`
+	WaistSize    *int     `json:"waist_size,omitempty"`
+	HipSize      *int     `json:"hip_size,omitempty"`
+	SceneCount   int      `json:"scene_count"`
+	MergedIDs    []string `json:"merged_ids,omitempty"`
+	MergedIntoID string   `json:"merged_into_id,omitempty"`
 }
 
 // Scene represents a filmed scene.

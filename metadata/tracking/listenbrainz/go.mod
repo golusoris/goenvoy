@@ -2,4 +2,4 @@ module github.com/golusoris/goenvoy/metadata/tracking/listenbrainz
 
 go 1.26.10
 
-require github.com/golusoris/goenvoy/metadata v1.4.1
+require github.com/golusoris/goenvoy/metadata v1.4.3
