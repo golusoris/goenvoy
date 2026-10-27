@@ -21,11 +21,21 @@ type Marker struct {
 	Seconds int    `json:"seconds"`
 }
 
+// MediaSizeMap represents image URLs keyed by size.
+type MediaSizeMap struct {
+	Full   string `json:"full,omitempty"`
+	Large  string `json:"large,omitempty"`
+	Medium string `json:"medium,omitempty"`
+	Small  string `json:"small,omitempty"`
+}
+
 // MediaEntry represents an image/poster entry.
 type MediaEntry struct {
-	ID   int    `json:"id"`
-	URL  string `json:"url"`
-	Type string `json:"type"`
+	ID    int    `json:"id"`
+	URL   string `json:"url"`
+	Type  string `json:"type"`
+	Size  int    `json:"size,omitempty"`
+	Order int    `json:"order,omitempty"`
 }
 
 // SiteRef is a minimal site reference embedded in scenes.
@@ -70,27 +80,31 @@ type Link struct {
 
 // Scene represents a scene resource from the API.
 type Scene struct {
-	ID          int            `json:"id"`
-	PID         string         `json:"_id"`
-	Title       string         `json:"title"`
-	Type        string         `json:"type"`
-	Slug        string         `json:"slug"`
-	ExternalID  string         `json:"external_id"`
-	Description string         `json:"description"`
-	Rating      float64        `json:"rating"`
-	SiteID      int            `json:"site_id"`
-	Date        string         `json:"date"`
-	URL         string         `json:"url"`
-	Image       string         `json:"image"`
-	BackImage   string         `json:"back_image"`
-	PosterImage string         `json:"poster_image"`
-	Poster      string         `json:"poster"`
-	Trailer     string         `json:"trailer"`
-	Duration    int            `json:"duration"`
-	Format      string         `json:"format"`
-	SKU         string         `json:"sku"`
-	Backgrounds []MediaEntry   `json:"backgrounds"`
-	Posters     []MediaEntry   `json:"posters"`
+	ID          int     `json:"id"`
+	PID         string  `json:"_id"`
+	Title       string  `json:"title"`
+	Type        string  `json:"type"`
+	Slug        string  `json:"slug"`
+	ExternalID  string  `json:"external_id"`
+	Description string  `json:"description"`
+	Rating      float64 `json:"rating"`
+	SiteID      int     `json:"site_id"`
+	Date        string  `json:"date"`
+	URL         string  `json:"url"`
+	Image       string  `json:"image"`
+	BackImage   string  `json:"back_image"`
+	PosterImage string  `json:"poster_image"`
+	Poster      string  `json:"poster"`
+	Trailer     string  `json:"trailer"`
+	Duration    int     `json:"duration"`
+	Format      string  `json:"format"`
+	SKU         string  `json:"sku"`
+	// Deprecated: no longer populated; the live key is "background", a size map. Use Background.
+	Backgrounds []MediaEntry `json:"-"`
+	// Deprecated: no longer populated; the live API returns a size map. Use PosterSizes.
+	Posters     []MediaEntry   `json:"-"`
+	PosterSizes MediaSizeMap   `json:"posters"`
+	Background  MediaSizeMap   `json:"background"`
 	Media       []MediaEntry   `json:"media"`
 	Performers  []PerformerRef `json:"performers"`
 	Site        *SiteRef       `json:"site"`
@@ -218,4 +232,51 @@ type Jav struct {
 	Directors   []DirectorRef  `json:"directors"`
 	CreatedAt   string         `json:"created_at"`
 	UpdatedAt   string         `json:"updated_at"`
+}
+
+// ChangeRecord represents an entity change record.
+type ChangeRecord struct {
+	ID   int    `json:"id"`
+	UUID string `json:"uuid"`
+}
+
+// ChangeEntity specifies the type of entity for change tracking.
+type ChangeEntity string
+
+const (
+	// ChangeScenes tracks scene changes.
+	ChangeScenes ChangeEntity = "scenes"
+	// ChangeMovies tracks movie changes.
+	ChangeMovies ChangeEntity = "movies"
+	// ChangeJav tracks JAV changes.
+	ChangeJav ChangeEntity = "jav"
+	// ChangePerformers tracks performer changes.
+	ChangePerformers ChangeEntity = "performers"
+)
+
+// FavouriteType specifies the type of entity for favorites.
+type FavouriteType string
+
+const (
+	// FavouritePerformer indicates a performer favorite.
+	FavouritePerformer FavouriteType = "performer"
+	// FavouriteSite indicates a site favorite.
+	FavouriteSite FavouriteType = "site"
+)
+
+// PerformerSite represents a performer-site relationship from the API.
+type PerformerSite struct {
+	ID        string     `json:"id"`
+	NumericID int        `json:"_id"`
+	SiteID    int        `json:"site_id"`
+	Name      string     `json:"name"`
+	Bio       string     `json:"bio"`
+	IsParent  bool       `json:"is_parent"`
+	Extras    ExtraData  `json:"extra"`
+	Image     string     `json:"image"`
+	Thumbnail string     `json:"thumbnail"`
+	Face      string     `json:"face"`
+	Scenes    []Scene    `json:"scenes,omitempty"`
+	Parent    *Performer `json:"parent,omitempty"`
+	Site      *Site      `json:"site,omitempty"`
 }

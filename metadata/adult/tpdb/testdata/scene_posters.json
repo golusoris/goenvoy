@@ -1,0 +1,19 @@
+{
+  "data": {
+    "title": "Fixture Scene",
+    "type": "Scene",
+    "slug": "fixture-scene",
+    "posters": {
+      "full": "https://cdn.example.test/scene/poster-full.jpg",
+      "large": "https://cdn.example.test/scene/poster-large.jpg",
+      "medium": "https://cdn.example.test/scene/poster-medium.jpg",
+      "small": null
+    },
+    "background": {
+      "full": "https://cdn.example.test/scene/bg-full.jpg",
+      "large": "https://cdn.example.test/scene/bg-large.jpg",
+      "medium": "https://cdn.example.test/scene/bg-medium.jpg",
+      "small": "https://cdn.example.test/scene/bg-small.jpg"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "data": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "_id": 1,
+    "site_id": 10,
+    "name": "Fixture Performer Site",
+    "bio": "Fixture Bio",
+    "is_parent": false,
+    "extra": {
+      "gender": "Female",
+      "birthday": "1995-01-01"
+    },
+    "image": "https://cdn.example.test/ps/image.jpg",
+    "thumbnail": "https://cdn.example.test/ps/thumb.jpg",
+    "face": "https://cdn.example.test/ps/face.jpg",
+    "parent": {
+      "name": "Fixture Parent Performer",
+      "slug": "fixture-parent-performer"
+    },
+    "site": {
+      "id": 10,
+      "name": "Fixture Site",
+      "short_name": "FS",
+      "url": "https://site.example.test"
+    }
+  }
+}
