@@ -1,0 +1,20 @@
+{
+  "data": {
+    "name": "Fixture Performer",
+    "slug": "fixture-performer",
+    "posters": [
+      {
+        "id": 101,
+        "url": "https://cdn.example.test/performer/poster1.jpg",
+        "size": 102400,
+        "order": 1
+      },
+      {
+        "id": 102,
+        "url": "https://cdn.example.test/performer/poster2.jpg",
+        "size": 204800,
+        "order": 2
+      }
+    ]
+  }
+}

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/golusoris/goenvoy/metadata"
 )
@@ -355,6 +356,75 @@ func (c *Client) GetPerformerMovies(ctx context.Context, id string, page, perPag
 	return resp.Data, &resp.Meta, nil
 }
 
+// Performer Sites.
+
+// PerformerSiteSearchParams configures performer-site search filters.
+type PerformerSiteSearchParams struct {
+	Query           string
+	OrderBy         string
+	Letter          string
+	Parent          string
+	ParentID        int
+	ParentOperation string
+	Site            string
+	SiteID          int
+	Page            int
+	PerPage         int
+}
+
+func (p *PerformerSiteSearchParams) values() url.Values {
+	if p == nil {
+		return nil
+	}
+	v := pageParams(p.Page, p.PerPage)
+	if p.Query != "" {
+		v.Set("q", p.Query)
+	}
+	if p.OrderBy != "" {
+		v.Set("orderBy", p.OrderBy)
+	}
+	if p.Letter != "" {
+		v.Set("letter", p.Letter)
+	}
+	if p.Parent != "" {
+		v.Set("parent", p.Parent)
+	}
+	if p.ParentID != 0 {
+		v.Set("parent_id", strconv.Itoa(p.ParentID))
+	}
+	if p.ParentOperation != "" {
+		v.Set("parent_operation", p.ParentOperation)
+	}
+	if p.Site != "" {
+		v.Set("site", p.Site)
+	}
+	if p.SiteID != 0 {
+		v.Set("site_id", strconv.Itoa(p.SiteID))
+	}
+	return v
+}
+
+// SearchPerformerSites searches for performer-site associations.
+func (c *Client) SearchPerformerSites(ctx context.Context, params *PerformerSiteSearchParams) ([]PerformerSite, *Pagination, error) {
+	var resp listResponse[PerformerSite]
+	if err := c.get(ctx, "/performer-sites", params.values(), &resp); err != nil {
+		return nil, nil, err
+	}
+	if resp.Data == nil {
+		resp.Data = []PerformerSite{}
+	}
+	return resp.Data, &resp.Meta, nil
+}
+
+// GetPerformerSite returns a single performer-site association by ID or slug.
+func (c *Client) GetPerformerSite(ctx context.Context, id string) (*PerformerSite, error) {
+	var resp itemResponse[PerformerSite]
+	if err := c.get(ctx, "/performer-sites/"+url.PathEscape(id), nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp.Data, nil
+}
+
 // Sites.
 
 // SearchSites searches for sites/studios.
@@ -482,18 +552,84 @@ func (c *Client) LookupByHash(ctx context.Context, hash string) ([]Scene, error)
 	return c.FindSceneByHash(ctx, hash)
 }
 
+// Favorites.
+
+// ListFavourites returns favorite entity IDs for the given type.
+func (c *Client) ListFavourites(ctx context.Context, t FavouriteType) ([]int, error) {
+	if t != FavouritePerformer && t != FavouriteSite {
+		return nil, fmt.Errorf("tpdb: invalid favorite type: %q", t)
+	}
+	params := url.Values{"type": {string(t)}}
+	var resp struct {
+		Data []int `json:"data"`
+	}
+	if err := c.get(ctx, "/favourites", params, &resp); err != nil { //nolint:misspell // Upstream API endpoint uses British spelling
+		return nil, err
+	}
+	if resp.Data == nil {
+		resp.Data = []int{}
+	}
+	return resp.Data, nil
+}
+
+// ToggleFavourite toggles the favorite status of a performer or site.
+func (c *Client) ToggleFavourite(ctx context.Context, t FavouriteType, id int) (bool, error) {
+	if t != FavouritePerformer && t != FavouriteSite {
+		return false, fmt.Errorf("tpdb: invalid favorite type: %q", t)
+	}
+	params := url.Values{
+		"type":  {string(t)},
+		"value": {strconv.Itoa(id)},
+	}
+	var resp struct {
+		Value bool `json:"value"`
+	}
+	if err := c.doRequest(ctx, http.MethodPost, "/favourites", params, &resp); err != nil { //nolint:misspell // Upstream API endpoint uses British spelling
+		return false, err
+	}
+	return resp.Value, nil
+}
+
 // Changes.
 
-// GetChanges returns recently changed scene IDs since the given timestamp.
-// The timestamp should be in RFC3339 format.
-func (c *Client) GetChanges(ctx context.Context, since string, page, perPage int) ([]Scene, *Pagination, error) {
-	var resp listResponse[Scene]
-	p := pageParams(page, perPage)
-	if since != "" {
-		p.Set("timestamp", since)
+// ListChanges returns recently changed entity records.
+func (c *Client) ListChanges(ctx context.Context, entity ChangeEntity, from time.Time, page, perPage int) ([]ChangeRecord, *Pagination, error) {
+	if entity != ChangeScenes && entity != ChangeMovies && entity != ChangeJav && entity != ChangePerformers {
+		return nil, nil, fmt.Errorf("tpdb: invalid change entity: %q", entity)
 	}
-	if err := c.get(ctx, "/changelog", p, &resp); err != nil {
+	p := pageParams(page, perPage)
+	if !from.IsZero() {
+		p.Set("from", from.UTC().Format(time.RFC3339))
+	}
+	var resp listResponse[ChangeRecord]
+	if err := c.get(ctx, "/changes/"+url.PathEscape(string(entity)), p, &resp); err != nil {
 		return nil, nil, err
 	}
+	if resp.Data == nil {
+		resp.Data = []ChangeRecord{}
+	}
 	return resp.Data, &resp.Meta, nil
+}
+
+// GetChanges returns recently changed scene IDs since the given timestamp.
+//
+// Deprecated: use [Client.ListChanges].
+func (c *Client) GetChanges(ctx context.Context, since string, page, perPage int) ([]Scene, *Pagination, error) {
+	var from time.Time
+	if since != "" {
+		var err error
+		from, err = time.Parse(time.RFC3339, since)
+		if err != nil {
+			return nil, nil, fmt.Errorf("tpdb: parse since: %w", err)
+		}
+	}
+	records, meta, err := c.ListChanges(ctx, ChangeScenes, from, page, perPage)
+	if err != nil {
+		return nil, nil, err
+	}
+	scenes := make([]Scene, len(records))
+	for i, r := range records {
+		scenes[i] = Scene{ID: r.ID, PID: r.UUID}
+	}
+	return scenes, meta, nil
 }

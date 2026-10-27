@@ -16,3 +16,6 @@ Personal API token passed as `Authorization: Bearer <token>`.
 
 - Old API docs URL returns 404; client behavior matches current
   service API surface until upstream publishes stable docs.
+- Scene posters/background: size map.
+- Performer posters: MediaResource array.
+- Changes: /changes/{type}.
