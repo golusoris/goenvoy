@@ -17,9 +17,11 @@ import (
 // GraphQL field fragments.
 const performerFields = `
 	id name disambiguation gender
-	birthdate deathdate height weight
+	birth_date death_date height
+	cup_size band_size waist_size hip_size
 	hair_color eye_color ethnicity breast_type
-	country measurements career_start_year career_end_year
+	country career_start_year career_end_year
+	scene_count merged_ids merged_into_id
 	aliases
 	urls { url site { id name url } }
 	images { id url width height }
