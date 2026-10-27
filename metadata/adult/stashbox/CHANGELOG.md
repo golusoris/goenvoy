@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.2.0](https://github.com/golusoris/goenvoy/compare/metadata/adult/stashbox/v2.1.0...metadata/adult/stashbox/v2.2.0) (2026-10-27)
+
+
+### Features
+
+* **metadata/adult/stashbox:** select stash-box v0.10.3 performer fields ([#209](https://github.com/golusoris/goenvoy/issues/209)) ([e7bc362](https://github.com/golusoris/goenvoy/commit/e7bc362d6ce1edc368db5d416035d7ef79ead31e))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.3 ([#194](https://github.com/golusoris/goenvoy/issues/194)) ([6054bca](https://github.com/golusoris/goenvoy/commit/6054bcae0791d621d92a038c5d52ad3d090298bb))
+
 ## [2.1.0](https://github.com/golusoris/goenvoy/compare/metadata/adult/stashbox/v2.0.4...metadata/adult/stashbox/v2.1.0) (2026-10-26)
 
 

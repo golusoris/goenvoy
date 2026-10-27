@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.4](https://github.com/golusoris/goenvoy/compare/metadata/game/screenscraper/v2.0.3...metadata/game/screenscraper/v2.0.4) (2026-10-27)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.3 ([#194](https://github.com/golusoris/goenvoy/issues/194)) ([6054bca](https://github.com/golusoris/goenvoy/commit/6054bcae0791d621d92a038c5d52ad3d090298bb))
+
 ## [2.0.3](https://github.com/golusoris/goenvoy/compare/metadata/game/screenscraper/v2.0.2...metadata/game/screenscraper/v2.0.3) (2026-10-25)
 
 

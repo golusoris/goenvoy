@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.3](https://github.com/golusoris/goenvoy/compare/downloadclient/queue/v1.1.2...downloadclient/queue/v1.1.3) (2026-10-27)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/deluge/v2 to v2.0.3 ([#189](https://github.com/golusoris/goenvoy/issues/189)) ([edc8fed](https://github.com/golusoris/goenvoy/commit/edc8fed83deaae8c93dc1ab3cdc8e152ecbeff6c))
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/nzbget/v2 to v2.0.3 ([#190](https://github.com/golusoris/goenvoy/issues/190)) ([a0e5ba7](https://github.com/golusoris/goenvoy/commit/a0e5ba70857f35a1b053b00dc53767bffea1bc76))
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/qbit/v2 to v2.0.3 ([#191](https://github.com/golusoris/goenvoy/issues/191)) ([b575359](https://github.com/golusoris/goenvoy/commit/b5753599b4da313b172006f665c57282622d1fad))
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/rtorrent/v2 to v2.1.2 ([#196](https://github.com/golusoris/goenvoy/issues/196)) ([fc8fc78](https://github.com/golusoris/goenvoy/commit/fc8fc783930ca78573caf1855da1ab5ec99c8e6c))
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/sabnzbd/v2 to v2.0.3 ([#192](https://github.com/golusoris/goenvoy/issues/192)) ([8aa8f08](https://github.com/golusoris/goenvoy/commit/8aa8f089f8863f7a4ea3cf27fd40cd4fc0ee0b6a))
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/transmission/v2 to v2.0.3 ([#193](https://github.com/golusoris/goenvoy/issues/193)) ([fc82306](https://github.com/golusoris/goenvoy/commit/fc82306bacf2994bfff51e23a096a9b5a187927a))
+
 ## [1.1.2](https://github.com/golusoris/goenvoy/compare/downloadclient/queue/v1.1.1...downloadclient/queue/v1.1.2) (2026-10-26)
 
 
