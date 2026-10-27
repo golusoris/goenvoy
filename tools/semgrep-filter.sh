@@ -9,12 +9,7 @@ sarif=$1
 today=${2:-$(date -u +%F)}
 
 # file, full rule id, expiry (inclusive), reason. Category B: 3 days.
-exceptions='[
-  {"file": "tools/figures/mkdocs_hook.py",
-   "rule": "python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected",
-   "expires": "2026-10-28",
-   "reason": "category B, golusoris-goenvoy-readopt-semgrep-urllib-20261025: engine-managed hook, https-only URL checked before urlopen; removed by the re-adopt carrying engine-semgrep-nosemgrep-figures-hook-20261025"}
-]'
+exceptions='[]'
 
 jq -r --arg today "$today" --argjson ex "$exceptions" \
   '$ex[] | select(.expires < $today) | "semgrep exception expired \(.expires): \(.file) \(.rule)"' -n >&2

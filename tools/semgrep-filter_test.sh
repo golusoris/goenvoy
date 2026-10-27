@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Planted cases for tools/semgrep-filter.sh: the excepted file and rule pass before
-# expiry; another file, another rule, an expired date and an unsuppressed extra fail.
+# Planted cases for tools/semgrep-filter.sh: a nosemgrep-suppressed result passes; the
+# retired mkdocs_hook.py urllib exception, another file, another rule and an unsuppressed extra fail.
 #   usage: tools/semgrep-filter_test.sh
 set -euo pipefail
 
@@ -36,14 +36,11 @@ expect() {
 plant empty
 expect pass empty 2026-10-25
 
-plant excepted "$(result "$RULE" "$FILE")"
-expect pass excepted 2026-10-28
+plant retired "$(result "$RULE" "$FILE")"
+expect fail retired 2026-10-27
 
-plant excepted-dot "$(result "$RULE" "./$FILE")"
-expect pass excepted-dot 2026-10-25
-
-plant expired "$(result "$RULE" "$FILE")"
-expect fail expired 2026-10-29
+plant retired-dot "$(result "$RULE" "./$FILE")"
+expect fail retired-dot 2026-10-25
 
 plant other-file "$(result "$RULE" tools/figures/other.py)"
 expect fail other-file 2026-10-25
