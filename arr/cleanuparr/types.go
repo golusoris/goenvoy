@@ -97,3 +97,110 @@ type StrikeSummary struct {
 	ReturningDownloads int  `json:"returningDownloads"` //nolint:tagliatelle // Cleanuparr speaks camelCase.
 	Partial            bool `json:"partial"`            //nolint:tagliatelle // Cleanuparr speaks camelCase.
 }
+
+// ArrKind identifies a supported *arr application type for configuration queries.
+type ArrKind string
+
+const (
+	// ArrKindSonarr represents Sonarr.
+	ArrKindSonarr ArrKind = "sonarr"
+	// ArrKindRadarr represents Radarr.
+	ArrKindRadarr ArrKind = "radarr"
+	// ArrKindLidarr represents Lidarr.
+	ArrKindLidarr ArrKind = "lidarr"
+	// ArrKindReadarr represents Readarr.
+	ArrKindReadarr ArrKind = "readarr"
+	// ArrKindWhisparr represents Whisparr.
+	ArrKindWhisparr ArrKind = "whisparr"
+	// ArrKindSportarr represents Sportarr.
+	ArrKindSportarr ArrKind = "sportarr"
+	// ArrKindLazyLibrarian represents LazyLibrarian.
+	ArrKindLazyLibrarian ArrKind = "lazylibrarian"
+)
+
+// SeekerInstance represents a media manager instance in SeekerConfig.
+// Known InstanceType values: "Sonarr", "Radarr", "Lidarr", "Readarr", "Whisparr", "Sportarr", "LazyLibrarian".
+type SeekerInstance struct {
+	ArrInstanceID         string     `json:"arrInstanceId"`
+	InstanceName          string     `json:"instanceName"`
+	InstanceType          string     `json:"instanceType"`
+	Enabled               bool       `json:"enabled"`
+	SkipTags              []string   `json:"skipTags"`
+	LastProcessedAt       *time.Time `json:"lastProcessedAt,omitempty"`
+	ArrInstanceEnabled    bool       `json:"arrInstanceEnabled"`
+	ActiveDownloadLimit   int        `json:"activeDownloadLimit"`
+	IgnoreStruckDownloads bool       `json:"ignoreStruckDownloads"`
+	MinCycleTimeDays      int        `json:"minCycleTimeDays"`
+	MonitoredOnly         bool       `json:"monitoredOnly"`
+	UseCutoff             bool       `json:"useCutoff"`
+	UseCustomFormatScore  bool       `json:"useCustomFormatScore"`
+}
+
+// SeekerConfig represents the seeker configuration returned by GET /api/configuration/seeker.
+// Known SelectionStrategy values: "BalancedWeighted", "OldestSearchFirst", "OldestSearchWeighted", "NewestFirst", "NewestWeighted", "Random".
+type SeekerConfig struct {
+	SearchEnabled          bool             `json:"searchEnabled"`
+	SearchInterval         uint16           `json:"searchInterval"`
+	ProactiveSearchEnabled bool             `json:"proactiveSearchEnabled"`
+	SelectionStrategy      string           `json:"selectionStrategy"`
+	UseRoundRobin          bool             `json:"useRoundRobin"`
+	PostReleaseGraceHours  int              `json:"postReleaseGraceHours"`
+	Instances              []SeekerInstance `json:"instances"`
+}
+
+// GeneralLogConfig represents logging configuration within GeneralConfig.
+type GeneralLogConfig struct {
+	Level                 string `json:"level"`
+	RollingSizeMB         uint16 `json:"rollingSizeMB"`
+	RetainedFileCount     uint16 `json:"retainedFileCount"`
+	TimeLimitHours        uint16 `json:"timeLimitHours"`
+	ArchiveEnabled        bool   `json:"archiveEnabled"`
+	ArchiveRetainedCount  uint16 `json:"archiveRetainedCount"`
+	ArchiveTimeLimitHours uint16 `json:"archiveTimeLimitHours"`
+}
+
+// GeneralAuthConfig represents authentication configuration within GeneralConfig.
+type GeneralAuthConfig struct {
+	DisableAuthForLocalAddresses bool     `json:"disableAuthForLocalAddresses"`
+	TrustForwardedHeaders        bool     `json:"trustForwardedHeaders"`
+	TrustedNetworks              []string `json:"trustedNetworks"`
+}
+
+// GeneralConfig represents the general system configuration returned by GET /api/configuration/general.
+// Known HTTPCertificateValidation values: "Enabled", "DisabledForLocalAddresses", "Disabled".
+type GeneralConfig struct {
+	DisplaySupportBanner        bool              `json:"displaySupportBanner"`
+	DryRun                      bool              `json:"dryRun"`
+	HTTPMaxRetries              uint16            `json:"httpMaxRetries"`
+	HTTPTimeout                 uint16            `json:"httpTimeout"`
+	HTTPCertificateValidation   string            `json:"httpCertificateValidation"`
+	HTTPSendUserAgent           bool              `json:"httpSendUserAgent"`
+	StatusCheckEnabled          bool              `json:"statusCheckEnabled"`
+	IgnoredDownloads            []string          `json:"ignoredDownloads"`
+	ConnectivityCheckEnabled    bool              `json:"connectivityCheckEnabled"`
+	ConnectivityCheckURLs       []string          `json:"connectivityCheckUrls"`
+	StrikeInactivityWindowHours uint16            `json:"strikeInactivityWindowHours"`
+	HistoryRetentionDays        uint16            `json:"historyRetentionDays"`
+	Log                         GeneralLogConfig  `json:"log"`
+	Auth                        GeneralAuthConfig `json:"auth"`
+}
+
+// ArrInstance represents an individual *arr service instance configuration.
+// By design, this type has no ApiKey field and no catch-all fields to prevent secret exposure.
+type ArrInstance struct {
+	ID          string  `json:"id"`
+	Enabled     bool    `json:"enabled"`
+	Version     float32 `json:"version"`
+	Name        string  `json:"name"`
+	URL         string  `json:"url"`
+	ExternalURL *string `json:"externalUrl,omitempty"`
+}
+
+// ArrConfig represents an *arr service configuration returned by GET /api/configuration/{kind}.
+// Known Type values: "Sonarr", "Radarr", "Lidarr", "Readarr", "Whisparr", "Sportarr", "LazyLibrarian".
+type ArrConfig struct {
+	ID                     string        `json:"id"`
+	Type                   string        `json:"type"`
+	FailedImportMaxStrikes int16         `json:"failedImportMaxStrikes"`
+	Instances              []ArrInstance `json:"instances"`
+}

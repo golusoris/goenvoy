@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/golusoris/goenvoy/arr/v2"
@@ -132,4 +133,37 @@ func (c *Client) SummarizeStrikes(ctx context.Context) (*StrikeSummary, error) {
 		}
 	}
 	return &sum, nil
+}
+
+// GetSeekerConfig returns the seeker configuration from GET /api/configuration/seeker.
+func (c *Client) GetSeekerConfig(ctx context.Context) (*SeekerConfig, error) {
+	var out SeekerConfig
+	if err := c.base.Get(ctx, "/api/configuration/seeker", &out); err != nil {
+		return nil, fmt.Errorf("cleanuparr: get seeker config: %w", err)
+	}
+	return &out, nil
+}
+
+// GetGeneralConfig returns the general configuration from GET /api/configuration/general.
+func (c *Client) GetGeneralConfig(ctx context.Context) (*GeneralConfig, error) {
+	var out GeneralConfig
+	if err := c.base.Get(ctx, "/api/configuration/general", &out); err != nil {
+		return nil, fmt.Errorf("cleanuparr: get general config: %w", err)
+	}
+	return &out, nil
+}
+
+// GetArrConfig returns the *arr application configuration from GET /api/configuration/{kind}.
+func (c *Client) GetArrConfig(ctx context.Context, kind ArrKind) (*ArrConfig, error) {
+	switch kind {
+	case ArrKindSonarr, ArrKindRadarr, ArrKindLidarr, ArrKindReadarr, ArrKindWhisparr, ArrKindSportarr, ArrKindLazyLibrarian:
+	default:
+		return nil, fmt.Errorf("cleanuparr: get arr config: unknown kind %q", kind)
+	}
+	path := "/api/configuration/" + url.PathEscape(string(kind))
+	var out ArrConfig
+	if err := c.base.Get(ctx, path, &out); err != nil {
+		return nil, fmt.Errorf("cleanuparr: get arr config: %w", err)
+	}
+	return &out, nil
 }
