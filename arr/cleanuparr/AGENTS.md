@@ -24,3 +24,7 @@ API key passed in `X-Api-Key` HTTP header via `arr.BaseClient`.
 - READ-ONLY module: only HTTP GET endpoints are accessed. Any mutating operation is prohibited.
 - `GET /api/status` wraps application metadata under `"application"` and media managers under `"mediaManagers"`.
 - `RecentStrikeDto.IsDryRun` wire property is `isDryRun`.
+- `GET /api/configuration/seeker` returns seeker intervals, proactive search flags, and media manager instances.
+- `GET /api/configuration/general` returns general system settings, logging configuration, and authentication rules.
+- `GET /api/configuration/{kind}` returns *arr service configuration (`sonarr`, `radarr`, `lidarr`, `readarr`, `whisparr`, `sportarr`, `lazylibrarian`).
+- `ArrInstance` is an explicit allow-list without `apiKey` or catch-all fields to prevent secret exposure.

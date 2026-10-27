@@ -51,6 +51,12 @@ func TestClientNeverWrites(t *testing.T) {
 			fmt.Fprintln(w, `[]`)
 		case "/api/strikes":
 			fmt.Fprintln(w, `{"items":[],"page":1,"pageSize":500,"totalCount":0,"totalPages":0}`)
+		case "/api/configuration/seeker":
+			fmt.Fprintln(w, `{"searchEnabled":false,"searchInterval":60,"proactiveSearchEnabled":false,"selectionStrategy":"BalancedWeighted","useRoundRobin":false,"postReleaseGraceHours":0,"instances":[]}`)
+		case "/api/configuration/general":
+			fmt.Fprintln(w, `{"displaySupportBanner":false,"dryRun":false,"httpMaxRetries":3,"httpTimeout":30,"httpCertificateValidation":"Enabled","httpSendUserAgent":true,"statusCheckEnabled":false,"ignoredDownloads":[],"connectivityCheckEnabled":false,"connectivityCheckUrls":[],"strikeInactivityWindowHours":24,"historyRetentionDays":7,"log":{"level":"info","rollingSizeMB":10,"retainedFileCount":5,"timeLimitHours":24,"archiveEnabled":false,"archiveRetainedCount":0,"archiveTimeLimitHours":0},"auth":{"disableAuthForLocalAddresses":false,"trustForwardedHeaders":false,"trustedNetworks":[]}}`)
+		case "/api/configuration/sonarr":
+			fmt.Fprintln(w, `{"id":"00000000-0000-0000-0000-000000000001","type":"Sonarr","failedImportMaxStrikes":3,"instances":[]}`)
 		default:
 			t.Errorf("unexpected path: %s", r.URL.Path)
 			w.WriteHeader(http.StatusNotFound)
@@ -75,6 +81,15 @@ func TestClientNeverWrites(t *testing.T) {
 	}
 	if _, err := client.SummarizeStrikes(ctx); err != nil {
 		t.Errorf("SummarizeStrikes failed: %v", err)
+	}
+	if _, err := client.GetSeekerConfig(ctx); err != nil {
+		t.Errorf("GetSeekerConfig failed: %v", err)
+	}
+	if _, err := client.GetGeneralConfig(ctx); err != nil {
+		t.Errorf("GetGeneralConfig failed: %v", err)
+	}
+	if _, err := client.GetArrConfig(ctx, cleanuparr.ArrKindSonarr); err != nil {
+		t.Errorf("GetArrConfig failed: %v", err)
 	}
 }
 
@@ -757,6 +772,15 @@ func TestNegative_MalformedJSON(t *testing.T) {
 	if _, err := client.SummarizeStrikes(ctx); err == nil {
 		t.Errorf("expected error for malformed JSON in SummarizeStrikes, got nil")
 	}
+	if _, err := client.GetSeekerConfig(ctx); err == nil {
+		t.Errorf("expected error for malformed JSON in GetSeekerConfig, got nil")
+	}
+	if _, err := client.GetGeneralConfig(ctx); err == nil {
+		t.Errorf("expected error for malformed JSON in GetGeneralConfig, got nil")
+	}
+	if _, err := client.GetArrConfig(ctx, cleanuparr.ArrKindSonarr); err == nil {
+		t.Errorf("expected error for malformed JSON in GetArrConfig, got nil")
+	}
 }
 
 func TestNegative_NoApiKeyLeakInErrors(t *testing.T) {
@@ -778,5 +802,544 @@ func TestNegative_NoApiKeyLeakInErrors(t *testing.T) {
 	}
 	if strings.Contains(err.Error(), secretKey) {
 		t.Fatalf("security violation: secret API key found in error message: %q", err.Error())
+	}
+	_, err = client.GetSeekerConfig(context.Background())
+	if err != nil && strings.Contains(err.Error(), secretKey) {
+		t.Fatalf("security violation: secret API key found in error message: %q", err.Error())
+	}
+	_, err = client.GetGeneralConfig(context.Background())
+	if err != nil && strings.Contains(err.Error(), secretKey) {
+		t.Fatalf("security violation: secret API key found in error message: %q", err.Error())
+	}
+	_, err = client.GetArrConfig(context.Background(), cleanuparr.ArrKindSonarr)
+	if err != nil && strings.Contains(err.Error(), secretKey) {
+		t.Fatalf("security violation: secret API key found in error message: %q", err.Error())
+	}
+}
+
+func TestGetSeekerConfig_Success(t *testing.T) {
+	t.Parallel()
+
+	server := newMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("expected GET, got %s", r.Method)
+		}
+		if r.Header.Get("X-Api-Key") != "clean-secret" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		if r.URL.Path != "/api/configuration/seeker" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintln(w, `{
+			"searchEnabled": true,
+			"searchInterval": 15,
+			"proactiveSearchEnabled": true,
+			"selectionStrategy": "BalancedWeighted",
+			"useRoundRobin": true,
+			"postReleaseGraceHours": 4,
+			"instances": [
+				{
+					"arrInstanceId": "11111111-1111-1111-1111-111111111111",
+					"instanceName": "sonarr-main",
+					"instanceType": "Sonarr",
+					"enabled": true,
+					"skipTags": ["archive", "slow"],
+					"lastProcessedAt": "2026-09-20T08:00:00Z",
+					"arrInstanceEnabled": true,
+					"activeDownloadLimit": 10,
+					"ignoreStruckDownloads": true,
+					"minCycleTimeDays": 2,
+					"monitoredOnly": true,
+					"useCutoff": true,
+					"useCustomFormatScore": false
+				},
+				{
+					"arrInstanceId": "22222222-2222-2222-2222-222222222222",
+					"instanceName": "radarr-main",
+					"instanceType": "Radarr",
+					"enabled": false,
+					"skipTags": [],
+					"lastProcessedAt": null,
+					"arrInstanceEnabled": false,
+					"activeDownloadLimit": 5,
+					"ignoreStruckDownloads": false,
+					"minCycleTimeDays": 1,
+					"monitoredOnly": false,
+					"useCutoff": false,
+					"useCustomFormatScore": true
+				}
+			]
+		}`)
+	})
+
+	client, err := cleanuparr.New(server.URL, "clean-secret")
+	if err != nil {
+		t.Fatalf("unexpected New error: %v", err)
+	}
+
+	cfg, err := client.GetSeekerConfig(context.Background())
+	if err != nil {
+		t.Fatalf("GetSeekerConfig error: %v", err)
+	}
+
+	if !cfg.SearchEnabled {
+		t.Errorf("expected SearchEnabled true")
+	}
+	if cfg.SearchInterval != 15 {
+		t.Errorf("expected SearchInterval 15, got %d", cfg.SearchInterval)
+	}
+	if !cfg.ProactiveSearchEnabled {
+		t.Errorf("expected ProactiveSearchEnabled true")
+	}
+	if cfg.SelectionStrategy != "BalancedWeighted" {
+		t.Errorf("expected SelectionStrategy 'BalancedWeighted', got %q", cfg.SelectionStrategy)
+	}
+	if !cfg.UseRoundRobin {
+		t.Errorf("expected UseRoundRobin true")
+	}
+	if cfg.PostReleaseGraceHours != 4 {
+		t.Errorf("expected PostReleaseGraceHours 4, got %d", cfg.PostReleaseGraceHours)
+	}
+	if len(cfg.Instances) != 2 {
+		t.Fatalf("expected 2 instances, got %d", len(cfg.Instances))
+	}
+
+	// Instance 0 (lastProcessedAt set)
+	inst0 := cfg.Instances[0]
+	if inst0.ArrInstanceID != "11111111-1111-1111-1111-111111111111" {
+		t.Errorf("expected ArrInstanceID 11111111-1111-1111-1111-111111111111, got %q", inst0.ArrInstanceID)
+	}
+	if inst0.InstanceName != "sonarr-main" {
+		t.Errorf("expected InstanceName sonarr-main, got %q", inst0.InstanceName)
+	}
+	if inst0.InstanceType != "Sonarr" {
+		t.Errorf("expected InstanceType Sonarr, got %q", inst0.InstanceType)
+	}
+	if !inst0.Enabled {
+		t.Errorf("expected Enabled true")
+	}
+	if len(inst0.SkipTags) != 2 || inst0.SkipTags[0] != "archive" || inst0.SkipTags[1] != "slow" {
+		t.Errorf("unexpected SkipTags: %v", inst0.SkipTags)
+	}
+	if inst0.LastProcessedAt == nil {
+		t.Fatalf("expected non-nil LastProcessedAt")
+	}
+	if inst0.LastProcessedAt.Year() != 2026 {
+		t.Errorf("expected Year 2026, got %v", inst0.LastProcessedAt)
+	}
+	if !inst0.ArrInstanceEnabled {
+		t.Errorf("expected ArrInstanceEnabled true")
+	}
+	if inst0.ActiveDownloadLimit != 10 {
+		t.Errorf("expected ActiveDownloadLimit 10, got %d", inst0.ActiveDownloadLimit)
+	}
+	if !inst0.IgnoreStruckDownloads {
+		t.Errorf("expected IgnoreStruckDownloads true")
+	}
+	if inst0.MinCycleTimeDays != 2 {
+		t.Errorf("expected MinCycleTimeDays 2, got %d", inst0.MinCycleTimeDays)
+	}
+	if !inst0.MonitoredOnly {
+		t.Errorf("expected MonitoredOnly true")
+	}
+	if !inst0.UseCutoff {
+		t.Errorf("expected UseCutoff true")
+	}
+	if inst0.UseCustomFormatScore {
+		t.Errorf("expected UseCustomFormatScore false")
+	}
+
+	// Instance 1 (lastProcessedAt null)
+	inst1 := cfg.Instances[1]
+	if inst1.ArrInstanceID != "22222222-2222-2222-2222-222222222222" {
+		t.Errorf("expected ArrInstanceID 22222222-2222-2222-2222-222222222222, got %q", inst1.ArrInstanceID)
+	}
+	if inst1.InstanceName != "radarr-main" {
+		t.Errorf("expected InstanceName radarr-main, got %q", inst1.InstanceName)
+	}
+	if inst1.InstanceType != "Radarr" {
+		t.Errorf("expected InstanceType Radarr, got %q", inst1.InstanceType)
+	}
+	if inst1.Enabled {
+		t.Errorf("expected Enabled false")
+	}
+	if len(inst1.SkipTags) != 0 {
+		t.Errorf("expected empty SkipTags, got %v", inst1.SkipTags)
+	}
+	if inst1.LastProcessedAt != nil {
+		t.Errorf("expected nil LastProcessedAt for instance 1, got %v", inst1.LastProcessedAt)
+	}
+	if inst1.ArrInstanceEnabled {
+		t.Errorf("expected ArrInstanceEnabled false")
+	}
+	if inst1.ActiveDownloadLimit != 5 {
+		t.Errorf("expected ActiveDownloadLimit 5, got %d", inst1.ActiveDownloadLimit)
+	}
+	if inst1.IgnoreStruckDownloads {
+		t.Errorf("expected IgnoreStruckDownloads false")
+	}
+	if inst1.MinCycleTimeDays != 1 {
+		t.Errorf("expected MinCycleTimeDays 1, got %d", inst1.MinCycleTimeDays)
+	}
+	if inst1.MonitoredOnly {
+		t.Errorf("expected MonitoredOnly false")
+	}
+	if inst1.UseCutoff {
+		t.Errorf("expected UseCutoff false")
+	}
+	if !inst1.UseCustomFormatScore {
+		t.Errorf("expected UseCustomFormatScore true")
+	}
+}
+
+func TestGetGeneralConfig_Success(t *testing.T) {
+	t.Parallel()
+
+	server := newMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("expected GET, got %s", r.Method)
+		}
+		if r.Header.Get("X-Api-Key") != "clean-secret" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		if r.URL.Path != "/api/configuration/general" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintln(w, `{
+			"displaySupportBanner": true,
+			"dryRun": true,
+			"httpMaxRetries": 5,
+			"httpTimeout": 60,
+			"httpCertificateValidation": "Enabled",
+			"httpSendUserAgent": true,
+			"statusCheckEnabled": true,
+			"ignoredDownloads": ["dl-1", "dl-2"],
+			"connectivityCheckEnabled": true,
+			"connectivityCheckUrls": ["http://connectivity.test/check"],
+			"strikeInactivityWindowHours": 48,
+			"historyRetentionDays": 30,
+			"log": {
+				"level": "debug",
+				"rollingSizeMB": 20,
+				"retainedFileCount": 10,
+				"timeLimitHours": 72,
+				"archiveEnabled": true,
+				"archiveRetainedCount": 3,
+				"archiveTimeLimitHours": 168
+			},
+			"auth": {
+				"disableAuthForLocalAddresses": true,
+				"trustForwardedHeaders": true,
+				"trustedNetworks": ["10.0.0.0/8", "192.168.1.0/24"]
+			}
+		}`)
+	})
+
+	client, err := cleanuparr.New(server.URL, "clean-secret")
+	if err != nil {
+		t.Fatalf("unexpected New error: %v", err)
+	}
+
+	cfg, err := client.GetGeneralConfig(context.Background())
+	if err != nil {
+		t.Fatalf("GetGeneralConfig error: %v", err)
+	}
+
+	if !cfg.DisplaySupportBanner {
+		t.Errorf("expected DisplaySupportBanner true")
+	}
+	if !cfg.DryRun {
+		t.Errorf("expected DryRun true")
+	}
+	if cfg.HTTPMaxRetries != 5 {
+		t.Errorf("expected HTTPMaxRetries 5, got %d", cfg.HTTPMaxRetries)
+	}
+	if cfg.HTTPTimeout != 60 {
+		t.Errorf("expected HTTPTimeout 60, got %d", cfg.HTTPTimeout)
+	}
+	if cfg.HTTPCertificateValidation != "Enabled" {
+		t.Errorf("expected HTTPCertificateValidation 'Enabled', got %q", cfg.HTTPCertificateValidation)
+	}
+	if !cfg.HTTPSendUserAgent {
+		t.Errorf("expected HTTPSendUserAgent true")
+	}
+	if !cfg.StatusCheckEnabled {
+		t.Errorf("expected StatusCheckEnabled true")
+	}
+	if len(cfg.IgnoredDownloads) != 2 || cfg.IgnoredDownloads[0] != "dl-1" || cfg.IgnoredDownloads[1] != "dl-2" {
+		t.Errorf("unexpected IgnoredDownloads: %v", cfg.IgnoredDownloads)
+	}
+	if !cfg.ConnectivityCheckEnabled {
+		t.Errorf("expected ConnectivityCheckEnabled true")
+	}
+	if len(cfg.ConnectivityCheckURLs) != 1 || cfg.ConnectivityCheckURLs[0] != "http://connectivity.test/check" {
+		t.Errorf("unexpected ConnectivityCheckURLs: %v", cfg.ConnectivityCheckURLs)
+	}
+	if cfg.StrikeInactivityWindowHours != 48 {
+		t.Errorf("expected StrikeInactivityWindowHours 48, got %d", cfg.StrikeInactivityWindowHours)
+	}
+	if cfg.HistoryRetentionDays != 30 {
+		t.Errorf("expected HistoryRetentionDays 30, got %d", cfg.HistoryRetentionDays)
+	}
+
+	// Log
+	if cfg.Log.Level != "debug" {
+		t.Errorf("expected Log.Level 'debug', got %q", cfg.Log.Level)
+	}
+	if cfg.Log.RollingSizeMB != 20 {
+		t.Errorf("expected Log.RollingSizeMB 20, got %d", cfg.Log.RollingSizeMB)
+	}
+	if cfg.Log.RetainedFileCount != 10 {
+		t.Errorf("expected Log.RetainedFileCount 10, got %d", cfg.Log.RetainedFileCount)
+	}
+	if cfg.Log.TimeLimitHours != 72 {
+		t.Errorf("expected Log.TimeLimitHours 72, got %d", cfg.Log.TimeLimitHours)
+	}
+	if !cfg.Log.ArchiveEnabled {
+		t.Errorf("expected Log.ArchiveEnabled true")
+	}
+	if cfg.Log.ArchiveRetainedCount != 3 {
+		t.Errorf("expected Log.ArchiveRetainedCount 3, got %d", cfg.Log.ArchiveRetainedCount)
+	}
+	if cfg.Log.ArchiveTimeLimitHours != 168 {
+		t.Errorf("expected Log.ArchiveTimeLimitHours 168, got %d", cfg.Log.ArchiveTimeLimitHours)
+	}
+
+	// Auth
+	if !cfg.Auth.DisableAuthForLocalAddresses {
+		t.Errorf("expected Auth.DisableAuthForLocalAddresses true")
+	}
+	if !cfg.Auth.TrustForwardedHeaders {
+		t.Errorf("expected Auth.TrustForwardedHeaders true")
+	}
+	if len(cfg.Auth.TrustedNetworks) != 2 || cfg.Auth.TrustedNetworks[0] != "10.0.0.0/8" || cfg.Auth.TrustedNetworks[1] != "192.168.1.0/24" {
+		t.Errorf("unexpected Auth.TrustedNetworks: %v", cfg.Auth.TrustedNetworks)
+	}
+}
+
+func TestGetArrConfig_Success(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		kind       cleanuparr.ArrKind
+		targetPath string
+		serverType string
+		instName   string
+		instURL    string
+	}{
+		{
+			kind:       cleanuparr.ArrKindSonarr,
+			targetPath: "/api/configuration/sonarr",
+			serverType: "Sonarr",
+			instName:   "sonarr-main",
+			instURL:    "http://sonarr.test:8989",
+		},
+		{
+			kind:       cleanuparr.ArrKindRadarr,
+			targetPath: "/api/configuration/radarr",
+			serverType: "Radarr",
+			instName:   "radarr-main",
+			instURL:    "http://radarr.test:7878",
+		},
+		{
+			kind:       cleanuparr.ArrKindLazyLibrarian,
+			targetPath: "/api/configuration/lazylibrarian",
+			serverType: "LazyLibrarian",
+			instName:   "lazylibrarian-main",
+			instURL:    "http://lazylibrarian.test:5299",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(string(tt.kind), func(t *testing.T) {
+			t.Parallel()
+
+			secretAPIKeyToLeak := "fixture-key-must-not-decode"
+			server := newMockServer(t, func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodGet {
+					t.Errorf("expected GET, got %s", r.Method)
+				}
+				if r.Header.Get("X-Api-Key") != "clean-secret" {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				if r.URL.Path != tt.targetPath {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprintf(w, `{
+					"id": "33333333-3333-3333-3333-333333333333",
+					"type": "%s",
+					"failedImportMaxStrikes": 3,
+					"instances": [
+						{
+							"id": "44444444-4444-4444-4444-444444444444",
+							"enabled": true,
+							"version": 3.0,
+							"name": "%s",
+							"url": "%s",
+							"externalUrl": "http://sonarr.public:8989",
+							"apiKey": "%s"
+						}
+					]
+				}`+"\n", tt.serverType, tt.instName, tt.instURL, secretAPIKeyToLeak)
+			})
+
+			client, err := cleanuparr.New(server.URL, "clean-secret")
+			if err != nil {
+				t.Fatalf("unexpected New error: %v", err)
+			}
+
+			cfg, err := client.GetArrConfig(context.Background(), tt.kind)
+			if err != nil {
+				t.Fatalf("GetArrConfig error: %v", err)
+			}
+
+			if cfg.ID != "33333333-3333-3333-3333-333333333333" {
+				t.Errorf("expected ID 33333333-3333-3333-3333-333333333333, got %q", cfg.ID)
+			}
+			if cfg.Type != tt.serverType {
+				t.Errorf("expected Type %s, got %q", tt.serverType, cfg.Type)
+			}
+			if cfg.FailedImportMaxStrikes != 3 {
+				t.Errorf("expected FailedImportMaxStrikes 3, got %d", cfg.FailedImportMaxStrikes)
+			}
+			if len(cfg.Instances) != 1 {
+				t.Fatalf("expected 1 instance, got %d", len(cfg.Instances))
+			}
+
+			inst := cfg.Instances[0]
+			if inst.ID != "44444444-4444-4444-4444-444444444444" {
+				t.Errorf("expected instance ID 44444444-4444-4444-4444-444444444444, got %q", inst.ID)
+			}
+			if !inst.Enabled {
+				t.Errorf("expected Enabled true")
+			}
+			if inst.Version != 3.0 {
+				t.Errorf("expected Version 3.0, got %f", inst.Version)
+			}
+			if inst.Name != tt.instName {
+				t.Errorf("expected Name %s, got %q", tt.instName, inst.Name)
+			}
+			if inst.URL != tt.instURL {
+				t.Errorf("expected URL %s, got %q", tt.instURL, inst.URL)
+			}
+			if inst.ExternalURL == nil || *inst.ExternalURL != "http://sonarr.public:8989" {
+				t.Errorf("expected ExternalURL 'http://sonarr.public:8989', got %v", inst.ExternalURL)
+			}
+
+			// Security: apiKey must not decode into struct anywhere
+			marshaled, err := json.Marshal(cfg)
+			if err != nil {
+				t.Fatalf("json.Marshal failed: %v", err)
+			}
+			if strings.Contains(string(marshaled), secretAPIKeyToLeak) {
+				t.Fatalf("security violation: secret apiKey found in decoded struct JSON: %s", string(marshaled))
+			}
+		})
+	}
+}
+
+func TestGetArrConfig_UnknownKind(t *testing.T) {
+	t.Parallel()
+
+	var handlerHit atomic.Bool
+	server := newMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		handlerHit.Store(true)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	client, err := cleanuparr.New(server.URL, "key")
+	if err != nil {
+		t.Fatalf("unexpected New error: %v", err)
+	}
+
+	invalidKinds := []cleanuparr.ArrKind{
+		"prowlarr",
+		"../x",
+		"invalid",
+		"",
+	}
+
+	for _, k := range invalidKinds {
+		_, err := client.GetArrConfig(context.Background(), k)
+		if err == nil {
+			t.Errorf("expected error for invalid kind %q, got nil", k)
+		}
+	}
+
+	if handlerHit.Load() {
+		t.Errorf("server handler was hit for invalid kinds, expected no request sent")
+	}
+}
+
+func TestNegative_Config_APIError500(t *testing.T) {
+	t.Parallel()
+
+	server := newMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+	})
+
+	client, err := cleanuparr.New(server.URL, "key")
+	if err != nil {
+		t.Fatalf("unexpected New error: %v", err)
+	}
+
+	ctx := context.Background()
+
+	// Seeker 500
+	_, err = client.GetSeekerConfig(ctx)
+	if err == nil {
+		t.Fatalf("expected error from GetSeekerConfig 500, got nil")
+	}
+	var apiErr *cleanuparr.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected errors.As *cleanuparr.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusInternalServerError {
+		t.Errorf("expected status code 500, got %d", apiErr.StatusCode)
+	}
+	if !strings.HasPrefix(err.Error(), "cleanuparr: get seeker config:") {
+		t.Errorf("expected prefix 'cleanuparr: get seeker config:', got %q", err.Error())
+	}
+
+	// General 500
+	_, err = client.GetGeneralConfig(ctx)
+	if err == nil {
+		t.Fatalf("expected error from GetGeneralConfig 500, got nil")
+	}
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected errors.As *cleanuparr.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusInternalServerError {
+		t.Errorf("expected status code 500, got %d", apiErr.StatusCode)
+	}
+	if !strings.HasPrefix(err.Error(), "cleanuparr: get general config:") {
+		t.Errorf("expected prefix 'cleanuparr: get general config:', got %q", err.Error())
+	}
+
+	// Arr 500
+	_, err = client.GetArrConfig(ctx, cleanuparr.ArrKindSonarr)
+	if err == nil {
+		t.Fatalf("expected error from GetArrConfig 500, got nil")
+	}
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected errors.As *cleanuparr.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != http.StatusInternalServerError {
+		t.Errorf("expected status code 500, got %d", apiErr.StatusCode)
+	}
+	if !strings.HasPrefix(err.Error(), "cleanuparr: get arr config:") {
+		t.Errorf("expected prefix 'cleanuparr: get arr config:', got %q", err.Error())
 	}
 }
