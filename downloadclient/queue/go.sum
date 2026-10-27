@@ -2,8 +2,8 @@ github.com/golusoris/goenvoy/downloadclient/deluge/v2 v2.0.3 h1:ouOlW82Ob2cj3HsS
 github.com/golusoris/goenvoy/downloadclient/deluge/v2 v2.0.3/go.mod h1:qgVt2UG2ek1uL4BnPXuOfpe9eko0nl3iYD5qP4jkNCs=
 github.com/golusoris/goenvoy/downloadclient/nzbget/v2 v2.0.3 h1:pzbkMv25yhl5U5EYIvgC94VknA1DJBmeth6BowcOi4c=
 github.com/golusoris/goenvoy/downloadclient/nzbget/v2 v2.0.3/go.mod h1:vBjfOUR1GJQUbTUQJwj4s/IqOtuRlcr6OS/Xu6LyRAE=
-github.com/golusoris/goenvoy/downloadclient/qbit/v2 v2.0.1 h1:xwlggo5DBCKj3NuYl8tE5kHbOIqXzj1DM2mEyFiVjtQ=
-github.com/golusoris/goenvoy/downloadclient/qbit/v2 v2.0.1/go.mod h1:iU18ZSQT/NsYkysPUnAoUA+B05e2BTxCO6vOJfltjmk=
+github.com/golusoris/goenvoy/downloadclient/qbit/v2 v2.0.3 h1:ElAW9eU26AK+sVqsWDNe+XrLT0qtuamSJFYGnAHPIDo=
+github.com/golusoris/goenvoy/downloadclient/qbit/v2 v2.0.3/go.mod h1:iNU2rGTObFXlilRRMuGXjaY9rVYgYelGvyQxveutAsY=
 github.com/golusoris/goenvoy/downloadclient/rtorrent/v2 v2.0.1 h1:GLt5Z1LBtOs0/3y+PRoGoiIfqrZ2WGnsajH5JOFpYgE=
 github.com/golusoris/goenvoy/downloadclient/rtorrent/v2 v2.0.1/go.mod h1:r+WKPF3cGgKm5DFApHuJ1gN2Swf67Gkak/pnoE8Pc5I=
 github.com/golusoris/goenvoy/downloadclient/sabnzbd/v2 v2.0.1 h1:5MJ8X6SXQ16UeG/VhigwjNgueOla6otUSGFcWYKLlP4=
