@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0](https://github.com/golusoris/goenvoy/compare/metadata/adult/tpdb/v1.3.6...metadata/adult/tpdb/v1.4.0) (2026-10-27)
+
+
+### Features
+
+* **metadata/adult/tpdb:** add performer sites, favourites, changes feed ([#210](https://github.com/golusoris/goenvoy/issues/210)) ([2ad3db2](https://github.com/golusoris/goenvoy/commit/2ad3db2ffe1e858c4344d826176a839453eeb1e3))
+* **metadata/adult/tpdb:** add uuid to tags and directors ([#212](https://github.com/golusoris/goenvoy/issues/212)) ([dcaf10b](https://github.com/golusoris/goenvoy/commit/dcaf10bdcbee4f465dcb58e9cbe9fe2a75762b75))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.3 ([#194](https://github.com/golusoris/goenvoy/issues/194)) ([6054bca](https://github.com/golusoris/goenvoy/commit/6054bcae0791d621d92a038c5d52ad3d090298bb))
+* **metadata/adult/tpdb:** decode the uuid id and numeric _id keys ([#211](https://github.com/golusoris/goenvoy/issues/211)) ([4128c4b](https://github.com/golusoris/goenvoy/commit/4128c4b6e0db3d48ab3e6c91791e704976b8f358))
+
 ## [1.3.6](https://github.com/golusoris/goenvoy/compare/metadata/adult/tpdb/v1.3.5...metadata/adult/tpdb/v1.3.6) (2026-10-25)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.6](https://github.com/golusoris/goenvoy/compare/metadata/video/opensubtitles/v1.3.5...metadata/video/opensubtitles/v1.3.6) (2026-10-27)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.3 ([#194](https://github.com/golusoris/goenvoy/issues/194)) ([6054bca](https://github.com/golusoris/goenvoy/commit/6054bcae0791d621d92a038c5d52ad3d090298bb))
+
 ## [1.3.5](https://github.com/golusoris/goenvoy/compare/metadata/video/opensubtitles/v1.3.4...metadata/video/opensubtitles/v1.3.5) (2026-10-25)
 
 

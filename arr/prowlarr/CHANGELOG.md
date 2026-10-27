@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.7](https://github.com/golusoris/goenvoy/compare/arr/prowlarr/v2.1.6...arr/prowlarr/v2.1.7) (2026-10-27)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/arr/v2 to v2.6.2 ([#188](https://github.com/golusoris/goenvoy/issues/188)) ([8e38d2d](https://github.com/golusoris/goenvoy/commit/8e38d2d9ab3b324abdcb21630aed26e8bbcc8ce4))
+
 ## [2.1.6](https://github.com/golusoris/goenvoy/compare/arr/prowlarr/v2.1.5...arr/prowlarr/v2.1.6) (2026-10-25)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.3](https://github.com/golusoris/goenvoy/compare/arr/lidarr/v1.6.2...arr/lidarr/v1.6.3) (2026-10-27)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/arr/v2 to v2.6.2 ([#188](https://github.com/golusoris/goenvoy/issues/188)) ([8e38d2d](https://github.com/golusoris/goenvoy/commit/8e38d2d9ab3b324abdcb21630aed26e8bbcc8ce4))
+
 ## [1.6.2](https://github.com/golusoris/goenvoy/compare/arr/lidarr/v1.6.1...arr/lidarr/v1.6.2) (2026-10-25)
 
 
