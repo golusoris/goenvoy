@@ -1,0 +1,16 @@
+{
+  "data": [
+    {
+      "id": 401,
+      "uuid": "00000000-0000-4000-8000-000000000401",
+      "name": "Fixture Director",
+      "slug": "fixture-director"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "per_page": 25,
+    "current_page": 1,
+    "last_page": 1
+  }
+}

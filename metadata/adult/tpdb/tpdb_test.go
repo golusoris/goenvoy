@@ -297,7 +297,7 @@ func TestGetSite(t *testing.T) {
 func TestListTags(t *testing.T) {
 	t.Parallel()
 
-	tags := []tpdb.Tag{{ID: 1, Name: "Brunette", Slug: "brunette"}}
+	tags := []tpdb.Tag{{ID: 1, UUID: "00000000-0000-4000-8000-000000000001", Name: "Brunette", Slug: "brunette"}}
 	ts := newListServer(t, "/tags", "tag-token", tags)
 	defer ts.Close()
 
@@ -312,6 +312,9 @@ func TestListTags(t *testing.T) {
 	if result[0].Slug != "brunette" {
 		t.Errorf("Slug = %q, want %q", result[0].Slug, "brunette")
 	}
+	if result[0].UUID != "00000000-0000-4000-8000-000000000001" {
+		t.Errorf("UUID = %q, want %q", result[0].UUID, "00000000-0000-4000-8000-000000000001")
+	}
 	if pg.Total != 1 {
 		t.Errorf("Total = %d, want 1", pg.Total)
 	}
@@ -320,7 +323,7 @@ func TestListTags(t *testing.T) {
 func TestGetTag(t *testing.T) {
 	t.Parallel()
 
-	tag := tpdb.Tag{ID: 7, Name: "Blonde", Slug: "blonde"}
+	tag := tpdb.Tag{ID: 7, UUID: "00000000-0000-4000-8000-000000000007", Name: "Blonde", Slug: "blonde"}
 	ts := newItemServer(t, "/tags/blonde", "gt-token", tag)
 	defer ts.Close()
 
@@ -332,12 +335,15 @@ func TestGetTag(t *testing.T) {
 	if result.Name != "Blonde" {
 		t.Errorf("Name = %q, want %q", result.Name, "Blonde")
 	}
+	if result.UUID != "00000000-0000-4000-8000-000000000007" {
+		t.Errorf("UUID = %q, want %q", result.UUID, "00000000-0000-4000-8000-000000000007")
+	}
 }
 
 func TestListDirectors(t *testing.T) {
 	t.Parallel()
 
-	dirs := []tpdb.Director{{ID: 1, Name: "John Doe", Slug: "john-doe"}}
+	dirs := []tpdb.Director{{ID: 1, UUID: "00000000-0000-4000-8000-000000000001", Name: "John Doe", Slug: "john-doe"}}
 	ts := newListServer(t, "/directors", "dir-token", dirs)
 	defer ts.Close()
 
@@ -351,6 +357,9 @@ func TestListDirectors(t *testing.T) {
 	}
 	if result[0].Name != "John Doe" {
 		t.Errorf("Name = %q, want %q", result[0].Name, "John Doe")
+	}
+	if result[0].UUID != "00000000-0000-4000-8000-000000000001" {
+		t.Errorf("UUID = %q, want %q", result[0].UUID, "00000000-0000-4000-8000-000000000001")
 	}
 	if pg.Total != 1 {
 		t.Errorf("Total = %d, want 1", pg.Total)
@@ -586,7 +595,7 @@ func TestGetPerformerMovies(t *testing.T) {
 func TestGetDirector(t *testing.T) {
 	t.Parallel()
 
-	dir := tpdb.Director{ID: 12, Name: "Test Director", Slug: "test-director"}
+	dir := tpdb.Director{ID: 12, UUID: "00000000-0000-4000-8000-000000000012", Name: "Test Director", Slug: "test-director"}
 	ts := newItemServer(t, "/directors/test-director", "gd-token", dir)
 	defer ts.Close()
 
@@ -600,6 +609,9 @@ func TestGetDirector(t *testing.T) {
 	}
 	if d.Slug != "test-director" {
 		t.Errorf("Slug = %q, want %q", d.Slug, "test-director")
+	}
+	if d.UUID != "00000000-0000-4000-8000-000000000012" {
+		t.Errorf("UUID = %q, want %q", d.UUID, "00000000-0000-4000-8000-000000000012")
 	}
 }
 
@@ -1480,6 +1492,230 @@ func TestGetScene_IDBoundaries(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			checkSceneIDBoundary(t, tt)
+		})
+	}
+}
+
+type uuidFixtureCase struct {
+	name        string
+	fixturePath string
+	wantPath    string
+	verify      func(t *testing.T, c *tpdb.Client)
+}
+
+func checkUUIDFixtureCase(t *testing.T, tc uuidFixtureCase) {
+	t.Helper()
+	fixture, err := os.ReadFile(tc.fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != tc.wantPath {
+			t.Errorf("got %s %s, want GET %s", r.Method, r.URL.Path, tc.wantPath)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(fixture)
+	}))
+	defer ts.Close()
+
+	c := tpdb.New("test-token", metadata.WithBaseURL(ts.URL))
+	tc.verify(t, c)
+}
+
+func verifySceneTagsDirectors(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	s, err := c.GetScene(context.Background(), "00000000-0000-4000-8000-000000000001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Tags) != 1 || s.Tags[0].ID != 301 || s.Tags[0].UUID != "00000000-0000-4000-8000-000000000301" {
+		t.Errorf("Tags[0] = %+v, want ID 301 and uuid 00000000-0000-4000-8000-000000000301", s.Tags)
+	}
+	if len(s.Directors) != 1 || s.Directors[0].ID != 401 || s.Directors[0].UUID != "00000000-0000-4000-8000-000000000401" {
+		t.Errorf("Directors[0] = %+v, want ID 401 and uuid 00000000-0000-4000-8000-000000000401", s.Directors)
+	}
+}
+
+func verifyTagDirect(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	tag, err := c.GetTag(context.Background(), "00000000-0000-4000-8000-000000000301")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tag.ID != 301 || tag.UUID != "00000000-0000-4000-8000-000000000301" {
+		t.Errorf("Tag = %+v, want ID 301 and uuid 00000000-0000-4000-8000-000000000301", tag)
+	}
+}
+
+func verifyDirectorDirect(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	dir, err := c.GetDirector(context.Background(), "00000000-0000-4000-8000-000000000401")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dir.ID != 401 || dir.UUID != "00000000-0000-4000-8000-000000000401" {
+		t.Errorf("Director = %+v, want ID 401 and uuid 00000000-0000-4000-8000-000000000401", dir)
+	}
+}
+
+func verifyListTagsDirect(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	tags, _, err := c.ListTags(context.Background(), "", 1, 25)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tags) != 1 || tags[0].ID != 301 || tags[0].UUID != "00000000-0000-4000-8000-000000000301" {
+		t.Errorf("Tags[0] = %+v, want ID 301 and uuid 00000000-0000-4000-8000-000000000301", tags)
+	}
+}
+
+func verifyListDirectorsDirect(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	dirs, _, err := c.ListDirectors(context.Background(), "", 1, 25)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(dirs) != 1 || dirs[0].ID != 401 || dirs[0].UUID != "00000000-0000-4000-8000-000000000401" {
+		t.Errorf("Directors[0] = %+v, want ID 401 and uuid 00000000-0000-4000-8000-000000000401", dirs)
+	}
+}
+
+func TestTagDirectorUUID_Positive(t *testing.T) {
+	t.Parallel()
+
+	tests := []uuidFixtureCase{
+		{
+			name:        "scene_tags_directors",
+			fixturePath: "testdata/scene_tags_directors.json",
+			wantPath:    "/scenes/00000000-0000-4000-8000-000000000001",
+			verify:      verifySceneTagsDirectors,
+		},
+		{
+			name:        "tag_direct",
+			fixturePath: "testdata/tag.json",
+			wantPath:    "/tags/00000000-0000-4000-8000-000000000301",
+			verify:      verifyTagDirect,
+		},
+		{
+			name:        "director_direct",
+			fixturePath: "testdata/director.json",
+			wantPath:    "/directors/00000000-0000-4000-8000-000000000401",
+			verify:      verifyDirectorDirect,
+		},
+		{
+			name:        "tags_list_direct",
+			fixturePath: "testdata/tags_list.json",
+			wantPath:    "/tags",
+			verify:      verifyListTagsDirect,
+		},
+		{
+			name:        "directors_list_direct",
+			fixturePath: "testdata/directors_list.json",
+			wantPath:    "/directors",
+			verify:      verifyListDirectorsDirect,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			checkUUIDFixtureCase(t, tt)
+		})
+	}
+}
+
+type uuidBoundaryCase struct {
+	name    string
+	payload []byte
+	check   func(t *testing.T, c *tpdb.Client)
+}
+
+func checkUUIDBoundary(t *testing.T, tc uuidBoundaryCase) {
+	t.Helper()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(tc.payload)
+	}))
+	defer ts.Close()
+
+	c := tpdb.New("test-token", metadata.WithBaseURL(ts.URL))
+	tc.check(t, c)
+}
+
+func checkSceneEmptyUUID(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	s, err := c.GetScene(context.Background(), "00000000-0000-4000-8000-000000000001")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.Tags[0].UUID != "" || s.Directors[0].UUID != "" {
+		t.Errorf("Tag UUID = %q, Director UUID = %q, want empty", s.Tags[0].UUID, s.Directors[0].UUID)
+	}
+}
+
+func checkTagEmptyUUID(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	tag, err := c.GetTag(context.Background(), "301")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if tag.UUID != "" {
+		t.Errorf("Tag UUID = %q, want empty", tag.UUID)
+	}
+}
+
+func checkDirectorEmptyUUID(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	dir, err := c.GetDirector(context.Background(), "401")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if dir.UUID != "" {
+		t.Errorf("Director UUID = %q, want empty", dir.UUID)
+	}
+}
+
+func TestTagDirectorUUID_Boundaries(t *testing.T) {
+	t.Parallel()
+
+	tests := []uuidBoundaryCase{
+		{
+			name:    "scene_uuid_absent",
+			payload: []byte(`{"data":{"id":"00000000-0000-4000-8000-000000000001","_id":1001,"title":"Scene","tags":[{"id":301,"name":"Tag"}],"directors":[{"id":401,"name":"Dir"}]}}`),
+			check:   checkSceneEmptyUUID,
+		},
+		{
+			name:    "scene_uuid_null",
+			payload: []byte(`{"data":{"id":"00000000-0000-4000-8000-000000000001","_id":1001,"title":"Scene","tags":[{"id":301,"uuid":null,"name":"Tag"}],"directors":[{"id":401,"uuid":null,"name":"Dir"}]}}`),
+			check:   checkSceneEmptyUUID,
+		},
+		{
+			name:    "tag_uuid_absent",
+			payload: []byte(`{"data":{"id":301,"name":"Tag"}}`),
+			check:   checkTagEmptyUUID,
+		},
+		{
+			name:    "tag_uuid_null",
+			payload: []byte(`{"data":{"id":301,"uuid":null,"name":"Tag"}}`),
+			check:   checkTagEmptyUUID,
+		},
+		{
+			name:    "director_uuid_absent",
+			payload: []byte(`{"data":{"id":401,"name":"Dir"}}`),
+			check:   checkDirectorEmptyUUID,
+		},
+		{
+			name:    "director_uuid_null",
+			payload: []byte(`{"data":{"id":401,"uuid":null,"name":"Dir"}}`),
+			check:   checkDirectorEmptyUUID,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			checkUUIDBoundary(t, tt)
 		})
 	}
 }
