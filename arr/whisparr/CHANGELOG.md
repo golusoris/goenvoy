@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/golusoris/goenvoy/compare/arr/whisparr/v1.5.2...arr/whisparr/v1.6.0) (2026-10-27)
+
+
+### Features
+
+* **arr/whisparr:** add manual import candidates and the ManualImport command ([#219](https://github.com/golusoris/goenvoy/issues/219)) ([4d1864d](https://github.com/golusoris/goenvoy/commit/4d1864d278d8874db26741433ea95625f3c21b1d))
+
 ## [1.5.2](https://github.com/golusoris/goenvoy/compare/arr/whisparr/v1.5.1...arr/whisparr/v1.5.2) (2026-10-27)
 
 
