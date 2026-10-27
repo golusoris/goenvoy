@@ -61,10 +61,6 @@ exceptions:
     tool: golangci-lint
     reason: 'category D: golangci-lint runs in the pinned reusable workflow golusoris/golusoris ci-go.yml (ci.yml job ci, golangci-version v2.13.2); audit does not read remote reusable workflows; manifest caps expiry at 90 days'
     expires: "2027-01-16"
-  - rule: declared-linters
-    tool: trivy
-    reason: 'category C: trivy runs in the pre-commit hook only (.pre-commit-config.yaml); no CI workflow runs it yet; add a CI job, then remove this entry'
-    expires: "2026-10-28"
   - rule: HISS-19
     path: arr/jackett/jackett.go
     reason: 'category D (ledger golusoris-goenvoy-dc-exceptions-20261018): catParams query builder repeated in two separate Go modules; folding needs a new inter-module require; manifest caps expiry at 90 days'
