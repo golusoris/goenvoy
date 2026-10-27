@@ -8,5 +8,5 @@ github.com/golusoris/goenvoy/downloadclient/rtorrent/v2 v2.0.1 h1:GLt5Z1LBtOs0/3
 github.com/golusoris/goenvoy/downloadclient/rtorrent/v2 v2.0.1/go.mod h1:r+WKPF3cGgKm5DFApHuJ1gN2Swf67Gkak/pnoE8Pc5I=
 github.com/golusoris/goenvoy/downloadclient/sabnzbd/v2 v2.0.3 h1:4JYEwmWDIaEufBkOGEPXIcirG+lavGE4KDCfWntzsPk=
 github.com/golusoris/goenvoy/downloadclient/sabnzbd/v2 v2.0.3/go.mod h1:SwsZjJNnS+OesTuA+P1dxdfC4yyqD6yJdgfZ8iLVIdo=
-github.com/golusoris/goenvoy/downloadclient/transmission/v2 v2.0.1 h1:zoUyfLU3atEuM27IxkO/kBUkdewaLN4/v4uTGB803yU=
-github.com/golusoris/goenvoy/downloadclient/transmission/v2 v2.0.1/go.mod h1:OhH4eYrzrSq8jyv4pVGVGo9zpfVwk7KJjn5ucacorcY=
+github.com/golusoris/goenvoy/downloadclient/transmission/v2 v2.0.3 h1:BLabA3KLKtg/nkdka0jxn4emQSjOoyFp1YmtQmyBGkY=
+github.com/golusoris/goenvoy/downloadclient/transmission/v2 v2.0.3/go.mod h1:zdIY7IPHfCN4LVJKjzIG5xZBl40hMr15HjRptmlYOlg=
