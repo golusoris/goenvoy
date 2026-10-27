@@ -1264,6 +1264,9 @@ func TestMediaRequest_DecodeProcessingFields(t *testing.T) {
 	if movieReq.Seasons != nil {
 		t.Errorf("movieReq.Seasons = %v, want nil", movieReq.Seasons)
 	}
+	if !movieReq.ServerAssigned || movieReq.ServerID != 0 {
+		t.Errorf("movieReq server = (%d, assigned %t), want (0, assigned true)", movieReq.ServerID, movieReq.ServerAssigned)
+	}
 
 	// TV request assertions
 	tvReq := results[1]
@@ -1291,6 +1294,9 @@ func TestMediaRequest_DecodeProcessingFields(t *testing.T) {
 	}
 	if tvReq.RequestedBy == nil || tvReq.RequestedBy.Name() != "bob" {
 		t.Errorf("tvReq.RequestedBy.Name() = %v, want %q", tvReq.RequestedBy, "bob")
+	}
+	if !tvReq.ServerAssigned || tvReq.ServerID != 1 {
+		t.Errorf("tvReq server = (%d, assigned %t), want (1, assigned true)", tvReq.ServerID, tvReq.ServerAssigned)
 	}
 
 	// TV request boundary case: empty seasons slice
