@@ -1,3 +1,6 @@
+# Recorded API fixtures: tests read their bytes; keep LF on every platform.
+**/testdata/*.json text eol=lf
+
 # BEGIN praetor managed attributes (praetorctl adopt)
 # praetorctl audit hashes these files; keep their checkout bytes the same on every platform.
 .devcontainer/Dockerfile.praetor text eol=lf

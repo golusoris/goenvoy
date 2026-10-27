@@ -1,0 +1,68 @@
+{
+  "data": {
+    "findPerformer": {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "Fixture Performer",
+      "disambiguation": "Synthetic Performer",
+      "gender": "FEMALE",
+      "birth_date": "1990-01-02",
+      "death_date": null,
+      "height": 170,
+      "cup_size": "C",
+      "band_size": 34,
+      "waist_size": 26,
+      "hip_size": 36,
+      "hair_color": "BLONDE",
+      "eye_color": "BLUE",
+      "ethnicity": "CAUCASIAN",
+      "breast_type": "NATURAL",
+      "country": "US",
+      "career_start_year": 2010,
+      "career_end_year": 2020,
+      "scene_count": 42,
+      "merged_ids": [
+        "00000000-0000-4000-8000-000000000002",
+        "00000000-0000-4000-8000-000000000003"
+      ],
+      "merged_into_id": null,
+      "aliases": [
+        "Fixture Alias 1",
+        "Fixture Alias 2"
+      ],
+      "urls": [
+        {
+          "url": "https://example.com/performer",
+          "site": {
+            "id": "00000000-0000-4000-8000-000000000010",
+            "name": "Example Site",
+            "url": "https://example.com"
+          }
+        }
+      ],
+      "images": [
+        {
+          "id": "00000000-0000-4000-8000-000000000020",
+          "url": "https://example.com/image.jpg",
+          "width": 800,
+          "height": 1200
+        }
+      ],
+      "tattoos": [
+        {
+          "location": "Arm",
+          "description": "Star"
+        }
+      ],
+      "piercings": [
+        {
+          "location": "Nose",
+          "description": "Ring"
+        }
+      ],
+      "is_favorite": false,
+      "deleted": false,
+      "created": "2020-01-01T00:00:00Z",
+      "updated": "2020-01-02T00:00:00Z"
+    }
+  }
+}
