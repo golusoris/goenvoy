@@ -19,6 +19,7 @@ Paged endpoints (queue, history, wanted, blocklist, log) take `page` and `pageSi
 ## API notes
 
 Queue management: `GetQueueWithOptions` and `DeleteQueueItemWithOptions` support advanced filtering, nested inclusion, and extended deletion flags across v2 (Sonarr-based) and v3 (Radarr-based) clients.
+Manual import: `GetManualImportCandidates` and `SendManualImport` cover v2 (Sonarr-based, series/episodes/no indexerFlags) and v3 (Radarr-based, movie/indexerFlags).
 
 ## Known quirks
 
