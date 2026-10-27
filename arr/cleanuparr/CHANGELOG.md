@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/golusoris/goenvoy/compare/arr/cleanuparr/v1.0.4...arr/cleanuparr/v1.1.0) (2026-10-27)
+
+
+### Features
+
+* **arr/cleanuparr:** read the Seeker, general and arr configuration ([#216](https://github.com/golusoris/goenvoy/issues/216)) ([8fc9cb7](https://github.com/golusoris/goenvoy/commit/8fc9cb7aa83f27331c14fbbf529d779b800b9d3c))
+
 ## [1.0.4](https://github.com/golusoris/goenvoy/compare/arr/cleanuparr/v1.0.3...arr/cleanuparr/v1.0.4) (2026-10-27)
 
 
