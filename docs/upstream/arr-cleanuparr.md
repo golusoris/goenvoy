@@ -13,6 +13,15 @@ last_verified: 2026-10-16
 
 Cleanuparr — automated queue cleaner, failed-download striker, and stalled-download management tool for the *arr stack.
 
+## Endpoints
+
+- `GET /api/status` — server runtime status and media manager instance counts.
+- `GET /api/strikes/recent` — recent strikes clamped to `[1, 50]`.
+- `GET /api/strikes` — paginated download item strikes.
+- `GET /api/configuration/seeker` — seeker search intervals, proactive search, and instance configurations.
+- `GET /api/configuration/general` — general application settings, logging, and auth rules.
+- `GET /api/configuration/{kind}` — *arr service configuration (`sonarr`, `radarr`, `lidarr`, `readarr`, `whisparr`, `sportarr`, `lazylibrarian`).
+
 ## Related
 
 - Service module: see `arr/cleanuparr` in the monorepo tree.
