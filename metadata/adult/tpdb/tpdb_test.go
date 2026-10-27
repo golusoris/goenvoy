@@ -640,8 +640,19 @@ func TestLookupByHash(t *testing.T) {
 	}
 }
 
+func assertScenePostersIDs(t *testing.T, s *tpdb.Scene) {
+	t.Helper()
+	if s.ID != 101 {
+		t.Errorf("ID = %d, want 101", s.ID)
+	}
+	if s.PID != "00000000-0000-4000-8000-000000000001" {
+		t.Errorf("PID = %q, want 00000000-0000-4000-8000-000000000001", s.PID)
+	}
+}
+
 func assertScenePosters(t *testing.T, s *tpdb.Scene) {
 	t.Helper()
+	assertScenePostersIDs(t, s)
 	if s.Title != "Fixture Scene" {
 		t.Errorf("Title = %q, want Fixture Scene", s.Title)
 	}
@@ -685,20 +696,36 @@ func TestGetScene_PostersFixture(t *testing.T) {
 	assertScenePosters(t, scene)
 }
 
+func assertPerformerPostersIDs(t *testing.T, p *tpdb.Performer) {
+	t.Helper()
+	if p.ID != 102 {
+		t.Errorf("ID = %d, want 102", p.ID)
+	}
+	if p.PID != "00000000-0000-4000-8000-000000000002" {
+		t.Errorf("PID = %q, want 00000000-0000-4000-8000-000000000002", p.PID)
+	}
+}
+
+func assertPerformerPosterEntries(t *testing.T, posters []tpdb.MediaEntry) {
+	t.Helper()
+	if len(posters) != 2 {
+		t.Fatalf("len(Posters) = %d, want 2", len(posters))
+	}
+	if posters[0].ID != 101 || posters[0].Size != 102400 || posters[0].Order != 1 {
+		t.Errorf("Posters[0] = %+v", posters[0])
+	}
+	if posters[1].ID != 102 || posters[1].Size != 204800 || posters[1].Order != 2 {
+		t.Errorf("Posters[1] = %+v", posters[1])
+	}
+}
+
 func assertPerformerPosters(t *testing.T, p *tpdb.Performer) {
 	t.Helper()
+	assertPerformerPostersIDs(t, p)
 	if p.Name != "Fixture Performer" {
 		t.Errorf("Name = %q, want Fixture Performer", p.Name)
 	}
-	if len(p.Posters) != 2 {
-		t.Fatalf("len(Posters) = %d, want 2", len(p.Posters))
-	}
-	if p.Posters[0].ID != 101 || p.Posters[0].Size != 102400 || p.Posters[0].Order != 1 {
-		t.Errorf("Posters[0] = %+v", p.Posters[0])
-	}
-	if p.Posters[1].ID != 102 || p.Posters[1].Size != 204800 || p.Posters[1].Order != 2 {
-		t.Errorf("Posters[1] = %+v", p.Posters[1])
-	}
+	assertPerformerPosterEntries(t, p.Posters)
 }
 
 func TestGetPerformer_PostersFixture(t *testing.T) {
@@ -997,14 +1024,28 @@ func assertPerformerSiteBasics(t *testing.T, ps *tpdb.PerformerSite) {
 	}
 }
 
+func assertPerformerSiteParent(t *testing.T, p *tpdb.Performer) {
+	t.Helper()
+	if p == nil {
+		t.Fatal("Parent is nil")
+	}
+	if p.Name != "Fixture Parent Performer" {
+		t.Errorf("Parent.Name = %q", p.Name)
+	}
+	if p.ID != 120 {
+		t.Errorf("Parent.ID = %d, want 120", p.ID)
+	}
+	if p.PID != "00000000-0000-4000-8000-000000000020" {
+		t.Errorf("Parent.PID = %q", p.PID)
+	}
+}
+
 func assertPerformerSiteRelations(t *testing.T, ps *tpdb.PerformerSite) {
 	t.Helper()
 	if ps.Image == "" || ps.Thumbnail == "" || ps.Face == "" {
 		t.Errorf("images empty: %+v", ps)
 	}
-	if ps.Parent == nil || ps.Parent.Name != "Fixture Parent Performer" {
-		t.Errorf("Parent = %+v", ps.Parent)
-	}
+	assertPerformerSiteParent(t, ps.Parent)
 	if ps.Site == nil || ps.Site.ID != 10 || ps.Site.Name != "Fixture Site" {
 		t.Errorf("Site = %+v", ps.Site)
 	}
@@ -1207,6 +1248,238 @@ func TestToggleFavourite(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			checkToggleFavouriteCase(t, tt)
+		})
+	}
+}
+
+type idFixtureCase struct {
+	name        string
+	fixturePath string
+	wantPath    string
+	verify      func(t *testing.T, c *tpdb.Client)
+}
+
+func verifyScenePerformerRef(t *testing.T, refs []tpdb.PerformerRef, wantID int, wantPID string) {
+	t.Helper()
+	if len(refs) != 1 {
+		t.Fatalf("len(refs) = %d, want 1", len(refs))
+	}
+	if refs[0].ID != wantID {
+		t.Errorf("PerformerRef ID = %d, want %d", refs[0].ID, wantID)
+	}
+	if refs[0].PID != wantPID {
+		t.Errorf("PerformerRef PID = %q, want %q", refs[0].PID, wantPID)
+	}
+}
+
+func verifySceneSiteRef(t *testing.T, site *tpdb.SiteRef, wantID int, wantUUID string) {
+	t.Helper()
+	if site == nil {
+		t.Fatal("Site is nil")
+	}
+	if site.ID != wantID {
+		t.Errorf("Site ID = %d, want %d", site.ID, wantID)
+	}
+	if site.UUID != wantUUID {
+		t.Errorf("Site UUID = %q, want %q", site.UUID, wantUUID)
+	}
+}
+
+func verifySceneIDs(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	s, err := c.GetScene(context.Background(), "00000000-0000-4000-8000-000000000001")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.ID != 1001 {
+		t.Errorf("Scene ID = %d, want 1001", s.ID)
+	}
+	if s.PID != "00000000-0000-4000-8000-000000000001" {
+		t.Errorf("Scene PID = %q, want 00000000-0000-4000-8000-000000000001", s.PID)
+	}
+	verifyScenePerformerRef(t, s.Performers, 1011, "00000000-0000-4000-8000-000000000011")
+	verifySceneSiteRef(t, s.Site, 201, "00000000-0000-4000-8000-000000000201")
+}
+
+func verifyPerformerIDs(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	p, err := c.GetPerformer(context.Background(), "00000000-0000-4000-8000-000000000002")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.ID != 1002 || p.PID != "00000000-0000-4000-8000-000000000002" {
+		t.Errorf("Performer ID=%d PID=%q, want 1002 and uuid", p.ID, p.PID)
+	}
+}
+
+func verifyMovieIDs(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	m, err := c.GetMovie(context.Background(), "00000000-0000-4000-8000-000000000003")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.ID != 1003 || m.PID != "00000000-0000-4000-8000-000000000003" {
+		t.Errorf("Movie ID=%d PID=%q, want 1003 and uuid", m.ID, m.PID)
+	}
+}
+
+func verifyJavIDs(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	j, err := c.GetJav(context.Background(), "00000000-0000-4000-8000-000000000004")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if j.ID != 1004 || j.PID != "00000000-0000-4000-8000-000000000004" {
+		t.Errorf("Jav ID=%d PID=%q, want 1004 and uuid", j.ID, j.PID)
+	}
+}
+
+func verifySearchScenesIDs(t *testing.T, c *tpdb.Client) {
+	t.Helper()
+	scenes, pg, err := c.SearchScenes(context.Background(), &tpdb.SceneSearchParams{Query: "search"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(scenes) != 1 {
+		t.Fatalf("len(scenes) = %d, want 1", len(scenes))
+	}
+	if pg.Total != 1 {
+		t.Errorf("pg.Total = %d, want 1", pg.Total)
+	}
+	s := scenes[0]
+	if s.ID != 1005 {
+		t.Errorf("Scene ID = %d, want 1005", s.ID)
+	}
+	if s.PID != "00000000-0000-4000-8000-000000000005" {
+		t.Errorf("Scene PID = %q, want 00000000-0000-4000-8000-000000000005", s.PID)
+	}
+	verifyScenePerformerRef(t, s.Performers, 1015, "00000000-0000-4000-8000-000000000015")
+	verifySceneSiteRef(t, s.Site, 205, "00000000-0000-4000-8000-000000000205")
+}
+
+func checkIDFixtureCase(t *testing.T, tc idFixtureCase) {
+	t.Helper()
+	fixture, err := os.ReadFile(tc.fixturePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != tc.wantPath {
+			t.Errorf("got %s %s, want GET %s", r.Method, r.URL.Path, tc.wantPath)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(fixture)
+	}))
+	defer ts.Close()
+
+	c := tpdb.New("test-token", metadata.WithBaseURL(ts.URL))
+	tc.verify(t, c)
+}
+
+func TestIDDecoding_Positive(t *testing.T) {
+	t.Parallel()
+
+	tests := []idFixtureCase{
+		{
+			name:        "scene_ids",
+			fixturePath: "testdata/scene_ids.json",
+			wantPath:    "/scenes/00000000-0000-4000-8000-000000000001",
+			verify:      verifySceneIDs,
+		},
+		{
+			name:        "performer_ids",
+			fixturePath: "testdata/performer_ids.json",
+			wantPath:    "/performers/00000000-0000-4000-8000-000000000002",
+			verify:      verifyPerformerIDs,
+		},
+		{
+			name:        "movie_ids",
+			fixturePath: "testdata/movie_ids.json",
+			wantPath:    "/movies/00000000-0000-4000-8000-000000000003",
+			verify:      verifyMovieIDs,
+		},
+		{
+			name:        "jav_ids",
+			fixturePath: "testdata/jav_ids.json",
+			wantPath:    "/jav/00000000-0000-4000-8000-000000000004",
+			verify:      verifyJavIDs,
+		},
+		{
+			name:        "scenes_list_ids",
+			fixturePath: "testdata/scenes_list_ids.json",
+			wantPath:    "/scenes",
+			verify:      verifySearchScenesIDs,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			checkIDFixtureCase(t, tt)
+		})
+	}
+}
+
+type idBoundaryCase struct {
+	name    string
+	payload []byte
+	wantErr bool
+	wantID  int
+	wantPID string
+}
+
+func checkSceneIDBoundary(t *testing.T, tc idBoundaryCase) {
+	t.Helper()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(tc.payload)
+	}))
+	defer ts.Close()
+
+	c := tpdb.New("test-token", metadata.WithBaseURL(ts.URL))
+	s, err := c.GetScene(context.Background(), "00000000-0000-4000-8000-000000000001")
+	if tc.wantErr {
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		return
+	}
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.ID != tc.wantID || s.PID != tc.wantPID {
+		t.Errorf("ID=%d PID=%q, want ID=%d PID=%q", s.ID, s.PID, tc.wantID, tc.wantPID)
+	}
+}
+
+func TestGetScene_IDBoundaries(t *testing.T) {
+	t.Parallel()
+
+	tests := []idBoundaryCase{
+		{
+			name:    "negative_number_id",
+			payload: []byte(`{"data":{"id":123,"_id":1001,"title":"Bad ID"}}`),
+			wantErr: true,
+		},
+		{
+			name:    "boundary_missing_numeric_id",
+			payload: []byte(`{"data":{"id":"00000000-0000-4000-8000-000000000001","title":"No Numeric ID"}}`),
+			wantErr: false,
+			wantID:  0,
+			wantPID: "00000000-0000-4000-8000-000000000001",
+		},
+		{
+			name:    "boundary_float_numeric_id",
+			payload: []byte(`{"data":{"id":"00000000-0000-4000-8000-000000000001","_id":1.0e3,"title":"Float Numeric ID"}}`),
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			checkSceneIDBoundary(t, tt)
 		})
 	}
 }

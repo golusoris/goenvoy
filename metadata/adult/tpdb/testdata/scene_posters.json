@@ -1,5 +1,7 @@
 {
   "data": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "_id": 101,
     "title": "Fixture Scene",
     "type": "Scene",
     "slug": "fixture-scene",

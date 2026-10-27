@@ -63,8 +63,10 @@ type DirectorRef struct {
 
 // PerformerRef is a minimal performer reference embedded in scenes.
 type PerformerRef struct {
-	ID     int           `json:"id"`
-	PID    string        `json:"_id"`
+	// ID is the numeric ThePornDB id (live key `_id`).
+	ID int `json:"_id"`
+	// PID is the UUID (live key `id`).
+	PID    string        `json:"id"`
 	Name   string        `json:"name"`
 	Slug   string        `json:"slug"`
 	Image  string        `json:"image"`
@@ -80,8 +82,10 @@ type Link struct {
 
 // Scene represents a scene resource from the API.
 type Scene struct {
-	ID          int     `json:"id"`
-	PID         string  `json:"_id"`
+	// ID is the numeric ThePornDB id (live key `_id`).
+	ID int `json:"_id"`
+	// PID is the UUID (live key `id`).
+	PID         string  `json:"id"`
 	Title       string  `json:"title"`
 	Type        string  `json:"type"`
 	Slug        string  `json:"slug"`
@@ -139,8 +143,10 @@ type ExtraData struct {
 
 // Performer represents a performer resource from the API.
 type Performer struct {
-	ID             int            `json:"id"`
-	PID            string         `json:"_id"`
+	// ID is the numeric ThePornDB id (live key `_id`).
+	ID int `json:"_id"`
+	// PID is the UUID (live key `id`).
+	PID            string         `json:"id"`
 	Slug           string         `json:"slug"`
 	Name           string         `json:"name"`
 	FullName       string         `json:"full_name"`
@@ -193,8 +199,10 @@ type Director struct {
 
 // Movie represents a movie/DVD resource from the API.
 type Movie struct {
-	ID          int            `json:"id"`
-	PID         string         `json:"_id"`
+	// ID is the numeric ThePornDB id (live key `_id`).
+	ID int `json:"_id"`
+	// PID is the UUID (live key `id`).
+	PID         string         `json:"id"`
 	Title       string         `json:"title"`
 	Slug        string         `json:"slug"`
 	Description string         `json:"description"`
@@ -215,8 +223,10 @@ type Movie struct {
 
 // Jav represents a JAV (Japanese Adult Video) resource.
 type Jav struct {
-	ID          int            `json:"id"`
-	PID         string         `json:"_id"`
+	// ID is the numeric ThePornDB id (live key `_id`).
+	ID int `json:"_id"`
+	// PID is the UUID (live key `id`).
+	PID         string         `json:"id"`
 	Title       string         `json:"title"`
 	Slug        string         `json:"slug"`
 	Description string         `json:"description"`

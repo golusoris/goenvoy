@@ -1,0 +1,31 @@
+{
+  "data": [
+    {
+      "id": "00000000-0000-4000-8000-000000000005",
+      "_id": 1005,
+      "title": "Fixture Scene Search",
+      "slug": "fixture-scene-search",
+      "performers": [
+        {
+          "id": "00000000-0000-4000-8000-000000000015",
+          "_id": 1015,
+          "name": "Fixture Search Performer",
+          "slug": "fixture-search-performer"
+        }
+      ],
+      "site": {
+        "id": 205,
+        "uuid": "00000000-0000-4000-8000-000000000205",
+        "name": "Fixture Search Site",
+        "short_name": "FSS",
+        "url": "https://cdn.example.test/site-search"
+      }
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "per_page": 25,
+    "current_page": 1,
+    "last_page": 1
+  }
+}
