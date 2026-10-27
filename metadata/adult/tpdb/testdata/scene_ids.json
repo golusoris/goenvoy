@@ -1,0 +1,23 @@
+{
+  "data": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "_id": 1001,
+    "title": "Fixture Scene",
+    "slug": "fixture-scene",
+    "performers": [
+      {
+        "id": "00000000-0000-4000-8000-000000000011",
+        "_id": 1011,
+        "name": "Fixture Performer 1",
+        "slug": "fixture-performer-1"
+      }
+    ],
+    "site": {
+      "id": 201,
+      "uuid": "00000000-0000-4000-8000-000000000201",
+      "name": "Fixture Site 1",
+      "short_name": "FS1",
+      "url": "https://cdn.example.test/site1"
+    }
+  }
+}

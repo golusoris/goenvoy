@@ -14,6 +14,8 @@
     "thumbnail": "https://cdn.example.test/ps/thumb.jpg",
     "face": "https://cdn.example.test/ps/face.jpg",
     "parent": {
+      "id": "00000000-0000-4000-8000-000000000020",
+      "_id": 120,
       "name": "Fixture Parent Performer",
       "slug": "fixture-parent-performer"
     },

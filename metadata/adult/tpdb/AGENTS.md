@@ -19,3 +19,4 @@ Personal API token passed as `Authorization: Bearer <token>`.
 - Scene posters/background: size map.
 - Performer posters: MediaResource array.
 - Changes: /changes/{type}.
+- Scene/Performer/Movie/Jav/PerformerRef: ID = `_id` int, PID = `id` uuid.
