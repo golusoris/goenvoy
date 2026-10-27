@@ -75,6 +75,9 @@
           },
           {
             "context": "Semgrep analysis"
+          },
+          {
+            "context": "Trivy filesystem scan"
           }
         ],
         "strict_required_status_checks_policy": true

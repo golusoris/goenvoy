@@ -66,3 +66,50 @@ jobs:
         with:
           sarif_file: semgrep.sarif
           category: semgrep
+
+  trivy:
+    name: Trivy filesystem scan
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      # Checkout repository source tree
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Download, verify, and unpack pinned Trivy release
+      - name: Install Trivy
+        shell: bash
+        run: |
+          set -euo pipefail
+          TRIVY_VERSION="0.76.1"
+          TRIVY_SHA256="c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0"
+          curl -sSfL --max-time 60 https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz -o "$RUNNER_TEMP/trivy.tar.gz"
+          echo "$TRIVY_SHA256  $RUNNER_TEMP/trivy.tar.gz" | sha256sum -c
+          mkdir -p "$RUNNER_TEMP/trivy-bin"
+          tar -xzf "$RUNNER_TEMP/trivy.tar.gz" -C "$RUNNER_TEMP/trivy-bin"
+          echo "$RUNNER_TEMP/trivy-bin" >> "$GITHUB_PATH"
+          rm "$RUNNER_TEMP/trivy.tar.gz"
+
+      # Verify Trivy detection on a planted vulnerable module
+      - name: Verify Trivy detection (planted case)
+        shell: bash
+        run: |
+          set -euo pipefail
+          plant="$RUNNER_TEMP/trivy-planted"
+          mkdir -p "$plant"
+          printf 'module example.com/trivy-planted\n\ngo 1.21\n\nrequire golang.org/x/net v0.16.0\n' > "$plant/go.mod"
+          output=$(trivy fs --scanners vuln --severity HIGH,CRITICAL "$plant")
+          echo "$output"
+          if ! echo "$output" | grep -q "CVE-2023-39325"; then
+            echo "::error::Planted vulnerability CVE-2023-39325 not detected by Trivy"
+            exit 1
+          fi
+          rm -rf "$plant"
+
+      # Run filesystem scan for vulnerabilities and secrets
+      - name: Scan repository (vuln, secret)
+        shell: bash
+        run: |
+          set -euo pipefail
+          trivy fs --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 .
