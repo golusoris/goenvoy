@@ -14,7 +14,7 @@
   "arr/readarr": "1.5.3",
   "arr/seerr": "1.6.2",
   "arr/sonarr": "1.5.6",
-  "arr/whisparr": "1.5.2",
+  "arr/whisparr": "1.6.0",
   "downloadclient": "1.4.1",
   "downloadclient/deluge": "2.0.4",
   "downloadclient/nzbget": "2.0.3",
