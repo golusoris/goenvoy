@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.4](https://github.com/golusoris/goenvoy/compare/downloadclient/deluge/v2.0.3...downloadclient/deluge/v2.0.4) (2026-10-27)
+
+
+### Bug Fixes
+
+* **downloadclient/deluge:** read the version from Deluge 2 daemons ([#217](https://github.com/golusoris/goenvoy/issues/217)) ([ae66e0c](https://github.com/golusoris/goenvoy/commit/ae66e0c664f5caed8f3261f60c41084b41748f55))
+
 ## [2.0.3](https://github.com/golusoris/goenvoy/compare/downloadclient/deluge/v2.0.2...downloadclient/deluge/v2.0.3) (2026-10-26)
 
 
