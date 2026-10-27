@@ -356,6 +356,27 @@ type QualityDefinitionLimitsResource struct {
 	Max int `json:"max"`
 }
 
+// QualityModel pairs a quality definition with its revision.
+type QualityModel struct {
+	Quality  Quality  `json:"quality"`
+	Revision Revision `json:"revision"`
+}
+
+// Quality identifies a quality tier.
+type Quality struct {
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	Source     string `json:"source"`
+	Resolution int    `json:"resolution"`
+}
+
+// Revision tracks repack and version information for a release.
+type Revision struct {
+	Version  int  `json:"version"`
+	Real     int  `json:"real"`
+	IsRepack bool `json:"isRepack"`
+}
+
 // ---------- V3 additional types ----------.
 
 // AlternativeTitleResource represents an alternative title for a movie.

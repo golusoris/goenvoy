@@ -13,6 +13,11 @@ last_verified: 2026-04-15
 
 Whisparr (v2/v3 Eros) — adult video automation.
 
+## Endpoints
+
+- `GET /api/v3/manualimport` — lists manual import candidates (v2 series/episodes, v3 movie).
+- `POST /api/v3/command` (`name: ManualImport`) — queues manual import command.
+
 ## Related
 
 - Service module: see `arr/whisparr` in the monorepo tree.

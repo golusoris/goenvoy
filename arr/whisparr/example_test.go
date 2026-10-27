@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
 
 	"github.com/golusoris/goenvoy/arr/whisparr"
 )
@@ -128,4 +130,31 @@ func ExampleClientV3_DeleteQueueItemWithOptions() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func ExampleClientV3_GetManualImportCandidates() {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintln(w, `[{"id":1,"name":"scene.mkv","relativePath":"scene.mkv","path":"/downloads/scene.mkv","size":1048576,"quality":{"quality":{"id":1,"name":"SDTV","source":"television","resolution":480},"revision":{"version":1,"real":0,"isRepack":false}},"languages":[],"customFormats":[],"rejections":[]}]`)
+	}))
+	defer server.Close()
+
+	client, err := whisparr.NewV3(server.URL, "test-key")
+	if err != nil {
+		return
+	}
+
+	candidates, err := client.GetManualImportCandidates(context.Background(), whisparr.ManualImportOptionsV3{
+		DownloadID:          "ABC123",
+		FilterExistingFiles: true,
+	})
+	if err != nil {
+		return
+	}
+
+	for _, c := range candidates {
+		fmt.Println(c.Name)
+	}
+	// Output:
+	// scene.mkv
 }
