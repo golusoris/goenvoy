@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/golusoris/goenvoy/downloadclient/deluge/v2"
@@ -233,22 +234,185 @@ func TestForceRecheck(t *testing.T) {
 	}
 }
 
-func TestGetVersion(t *testing.T) {
-	t.Parallel()
+type rpcMethodResponse struct {
+	result any
+	err    *deluge.APIError
+}
 
-	ts := newRPCServer(t, "daemon.info", "2.1.1")
+type versionTestCase struct {
+	name           string
+	responses      map[string]rpcMethodResponse
+	wantVersion    string
+	wantErr        bool
+	wantErrCode    int
+	wantInfoCalled bool
+}
+
+func newFakeRPCServer(t *testing.T, responses map[string]rpcMethodResponse, calls map[string]int, mu *sync.Mutex) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req rpcRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Errorf("decode request: %v", err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		mu.Lock()
+		calls[req.Method]++
+		mu.Unlock()
+
+		respDef, ok := responses[req.Method]
+		if !ok {
+			t.Errorf("unexpected RPC method: %s", req.Method)
+			http.Error(w, "unexpected method", http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if respDef.err != nil {
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":     req.ID,
+				"result": nil,
+				"error": map[string]any{
+					"message": respDef.err.Message,
+					"code":    respDef.err.Code,
+				},
+			})
+			return
+		}
+
+		resultJSON, err := json.Marshal(respDef.result)
+		if err != nil {
+			t.Errorf("marshal result: %v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"id":     req.ID,
+			"result": json.RawMessage(resultJSON),
+			"error":  nil,
+		})
+	}))
+}
+
+func assertVersionSuccess(t *testing.T, got, want string, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != want {
+		t.Errorf("version = %q, want %q", got, want)
+	}
+}
+
+func assertVersionError(t *testing.T, err error, wantCode int) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if wantCode == 0 {
+		return
+	}
+	var apiErr *deluge.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *deluge.APIError, got %T: %v", err, err)
+	}
+	if apiErr.Code != wantCode {
+		t.Errorf("apiErr.Code = %d, want %d", apiErr.Code, wantCode)
+	}
+}
+
+func assertVersionCallCount(t *testing.T, calls map[string]int, mu *sync.Mutex, wantInfoCalled bool) {
+	t.Helper()
+	mu.Lock()
+	count := calls["daemon.info"]
+	mu.Unlock()
+
+	if wantInfoCalled && count == 0 {
+		t.Error("daemon.info was not called, want called")
+	}
+	if !wantInfoCalled && count > 0 {
+		t.Errorf("daemon.info was called %d times, want 0", count)
+	}
+}
+
+func runGetVersionTestCase(t *testing.T, tc versionTestCase) {
+	t.Helper()
+	var (
+		mu    sync.Mutex
+		calls = make(map[string]int)
+	)
+
+	ts := newFakeRPCServer(t, tc.responses, calls, &mu)
 	defer ts.Close()
 
 	c, err := deluge.New(ts.URL)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+
 	v, err := c.GetVersion(context.Background())
-	if err != nil {
-		t.Fatal(err)
+	if tc.wantErr {
+		assertVersionError(t, err, tc.wantErrCode)
+	} else {
+		assertVersionSuccess(t, v, tc.wantVersion, err)
 	}
-	if v != "2.1.1" {
-		t.Errorf("version = %q, want %q", v, "2.1.1")
+
+	assertVersionCallCount(t, calls, &mu, tc.wantInfoCalled)
+}
+
+func TestGetVersion(t *testing.T) {
+	t.Parallel()
+
+	tests := []versionTestCase{
+		{
+			name: "deluge 2 daemon",
+			responses: map[string]rpcMethodResponse{
+				"daemon.get_version": {result: "2.2.0"},
+				"daemon.info":        {err: &deluge.APIError{Code: 2, Message: "Unknown method"}},
+			},
+			wantVersion:    "2.2.0",
+			wantErr:        false,
+			wantInfoCalled: false,
+		},
+		{
+			name: "deluge 1 daemon",
+			responses: map[string]rpcMethodResponse{
+				"daemon.get_version": {err: &deluge.APIError{Code: 2, Message: "Unknown method"}},
+				"daemon.info":        {result: "1.3.15"},
+			},
+			wantVersion:    "1.3.15",
+			wantErr:        false,
+			wantInfoCalled: true,
+		},
+		{
+			name: "negative non-2 error",
+			responses: map[string]rpcMethodResponse{
+				"daemon.get_version": {err: &deluge.APIError{Code: 1, Message: "Not authenticated"}},
+				"daemon.info":        {result: "1.3.15"},
+			},
+			wantErr:        true,
+			wantErrCode:    1,
+			wantInfoCalled: false,
+		},
+		{
+			name: "negative both methods unknown",
+			responses: map[string]rpcMethodResponse{
+				"daemon.get_version": {err: &deluge.APIError{Code: 2, Message: "Unknown method"}},
+				"daemon.info":        {err: &deluge.APIError{Code: 2, Message: "Unknown method"}},
+			},
+			wantErr:        true,
+			wantErrCode:    2,
+			wantInfoCalled: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runGetVersionTestCase(t, tc)
+		})
 	}
 }
 

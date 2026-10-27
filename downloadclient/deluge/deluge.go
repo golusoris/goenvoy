@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,8 +16,9 @@ import (
 )
 
 const (
-	defaultTimeout   = 30 * time.Second
-	defaultUserAgent = "goenvoy/0.0.1"
+	defaultTimeout       = 30 * time.Second
+	defaultUserAgent     = "goenvoy/0.0.1"
+	errCodeUnknownMethod = 2
 )
 
 // Option configures a [Client].
@@ -263,9 +265,18 @@ func (c *Client) GetFreeSpace(ctx context.Context, path string) (int64, error) {
 }
 
 // GetVersion returns the Deluge daemon version string.
+// It queries daemon.get_version (Deluge 2.x) and falls back to daemon.info (Deluge 1.x).
 func (c *Client) GetVersion(ctx context.Context) (string, error) {
 	var version string
-	if err := c.call(ctx, "daemon.info", []any{}, &version); err != nil {
+	if err := c.call(ctx, "daemon.get_version", []any{}, &version); err != nil {
+		var apiErr *APIError
+		if errors.As(err, &apiErr) && apiErr.Code == errCodeUnknownMethod {
+			// Why: Deluge 1.x daemons export daemon.info instead of daemon.get_version.
+			if err := c.call(ctx, "daemon.info", []any{}, &version); err != nil {
+				return "", err
+			}
+			return version, nil
+		}
 		return "", err
 	}
 	return version, nil
