@@ -36,8 +36,8 @@ specs:
     license: GPL-3.0
   - name: seerr
     repository: seerr-team/seerr
-    tag: v3.5.0
-    commit: e2f24cb46079746936516c723b09820360f95113
+    tag: v3.5.1
+    commit: 564bfb08b54caa374bddaf820abfd226e5e69151
     path: seerr-api.yml
     sha256: 9533fc4ce04a5e68ef3d7c2deef5a25c43b560dbde07c361eb0f736fce66bf56
     license: MIT
