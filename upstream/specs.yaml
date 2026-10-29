@@ -29,8 +29,8 @@ specs:
     license: GPL-3.0
   - name: lidarr
     repository: Lidarr/Lidarr
-    tag: v3.1.0.4875
-    commit: 350860e524029b7fb4165ed14fbcabb11217ada2
+    tag: v3.1.6.5079
+    commit: da7b4dfb1a9e7e1d6625c2dbc3fff96971ab26bd
     path: src/Lidarr.Api.V1/openapi.json
     sha256: 4ae9e79e9662898ed4704ce80f091161587a9f0d664f9e518b11a038616e491f
     license: GPL-3.0
