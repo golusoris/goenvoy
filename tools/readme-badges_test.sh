@@ -13,7 +13,9 @@ trap 'rm -rf "$WORK"' EXIT
 expect_refusal() {
   local name="$1" needle="$2" out
   shift 2
-  if out="$(bash "$HERE/readme-badges.sh" "$@" 2>&1)"; then
+  # Why: callers can override the script path to test copies in other directories.
+  local script="${SCRIPT_PATH:-$HERE/readme-badges.sh}"
+  if out="$(bash "$script" "$@" 2>&1)"; then
     printf 'FAIL %s: accepted\n%s\n' "$name" "$out" >&2
     exit 1
   fi
@@ -230,7 +232,8 @@ esac
 
 # Case (q): scanned root slug detected from root arg git origin -> 1
 # Why: without --repo, slug must come from scanned root git origin, not script checkout.
-mkdir -p "$WORK/case_q/.github/workflows"
+mkdir -p "$WORK/case_q_script/tools" "$WORK/case_q/.github/workflows"
+cp "$HERE/readme-badges.sh" "$WORK/case_q_script/tools/readme-badges.sh"
 git -C "$WORK/case_q" init -q
 git -C "$WORK/case_q" remote add origin https://github.com/acme/widgets.git
 cat <<'EOF' > "$WORK/case_q/README.md"
@@ -238,7 +241,8 @@ cat <<'EOF' > "$WORK/case_q/README.md"
 
 [CI](https://github.com/acme/widgets/actions/workflows/missing.yml)
 EOF
-expect_refusal "case_q: scanned root slug from target root origin" "missing.yml" "$WORK/case_q"
+SCRIPT_PATH="$WORK/case_q_script/tools/readme-badges.sh" \
+  expect_refusal "case_q: scanned root slug from target root origin" "missing.yml" "$WORK/case_q"
 
 # Real check on the repo root -> 0
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
