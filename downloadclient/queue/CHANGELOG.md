@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/golusoris/goenvoy/compare/downloadclient/queue/v1.1.3...downloadclient/queue/v1.1.4) (2026-11-01)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/deluge/v2 to v2.0.4 ([#221](https://github.com/golusoris/goenvoy/issues/221)) ([6c1a083](https://github.com/golusoris/goenvoy/commit/6c1a083708d164394f072b61b783e5eeac961d35))
+
 ## [1.1.3](https://github.com/golusoris/goenvoy/compare/downloadclient/queue/v1.1.2...downloadclient/queue/v1.1.3) (2026-10-27)
 
 
