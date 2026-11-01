@@ -114,9 +114,13 @@ func TestCheckRefusesPlantedDefects(t *testing.T) {
 		"baseline prod":     {begin + baseline + strings.Replace(path, "a_test", "a", 1) + text + end, "is not an exception comment"},
 		"baseline no text":  {begin + baseline + path + end, "no function text selector"},
 		"baseline wildcard": {begin + baseline + path + "        text: .*\n" + end, "is not an exception comment"},
-		"baseline no list":  {begin + baseline + "      - path: ^arr/a_test\\.go$\n" + text + end, "no complexity linter line"},
+		"baseline no list":  {begin + baseline + strings.Replace(path, "          - gocyclo\n", "", 1) + text + end, "no complexity linter line"},
 		"baseline reused":   {begin + baseline + path + text + path + text + end, "has no \"category"},
 		"dangling comment":  {begin + baseline + end, "before the end marker"},
+		"baseline no key":   {begin + baseline + strings.Replace(path, "        linters:\n", "", 1) + text + end, "is not an exception comment"},
+		"dated no key":      {begin + strings.Replace(rule, "        linters:\n", "", 1) + end, "is not an exception comment"},
+		"key twice":         {begin + strings.Replace(rule, "        linters:\n", strings.Repeat("        linters:\n", 2), 1) + end, "is not an exception comment"},
+		"key before path":   {begin + "        linters:\n" + rule + end, "is not an exception comment"},
 	}
 	for name, c := range cases {
 		_, err := Check(header+c.rules, day(t, "2026-10-19"))

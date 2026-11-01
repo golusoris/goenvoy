@@ -59,8 +59,9 @@ type scan struct {
 	generated bool
 	seenBlock bool
 	expiry    string
-	pending   int // kind named by the last comment, not yet consumed by a path
-	rule      int // kind of the rule being read
+	pending   int  // kind named by the last comment, not yet consumed by a path
+	rule      int  // kind of the rule being read
+	hasKey    bool // the rule has its linters: key
 	hasLinter bool
 	hasText   bool
 	rules     int
@@ -123,7 +124,11 @@ func (s *scan) generatedLine(line string, lineNumber int) error {
 	if pathLine.MatchString(line) {
 		return s.pathLine(lineNumber)
 	}
-	if line == "" || line == lintersKey {
+	if line == "" {
+		return nil
+	}
+	if line == lintersKey && s.rule != kindNone && !s.hasKey {
+		s.hasKey = true
 		return nil
 	}
 	if s.ruleLine(line) {
@@ -163,8 +168,11 @@ func (s *scan) pathLine(lineNumber int) error {
 	return nil
 }
 
-// ruleLine records a linter or text line the current rule kind allows.
+// ruleLine records a linter or text line the current rule kind allows below its linters: key.
 func (s *scan) ruleLine(line string) bool {
+	if !s.hasKey {
+		return false
+	}
 	switch {
 	case s.rule == kindDated && linterLine.MatchString(line):
 		s.hasLinter = true
@@ -182,7 +190,7 @@ func (s *scan) ruleLine(line string) bool {
 // selector: either gap widens the exclusion to every linter or every function of the file.
 func (s *scan) finish(lineNumber int) error {
 	rule, hasLinter, hasText := s.rule, s.hasLinter, s.hasText
-	s.rule, s.hasLinter, s.hasText = kindNone, false, false
+	s.rule, s.hasKey, s.hasLinter, s.hasText = kindNone, false, false, false
 	switch {
 	case rule == kindNone:
 		return nil
