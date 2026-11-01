@@ -266,6 +266,28 @@ GIT_DIR="$WORK/case_r_other/.git" \
   SCRIPT_PATH="$WORK/case_r_script/tools/readme-badges.sh" \
   expect_refusal "case_r: scanned root slug with foreign GIT_DIR" "missing.yml" "$WORK/case_r"
 
+# Case (s): scanned root slug ignores GIT_CONFIG_GLOBAL and GIT_CONFIG_COUNT/KEY/VALUE -> 1
+# Why: only the scanned repository's own config file names the origin.
+mkdir -p "$WORK/case_s_script/tools" "$WORK/case_s/.github/workflows"
+cp "$HERE/readme-badges.sh" "$WORK/case_s_script/tools/readme-badges.sh"
+clean_git -C "$WORK/case_s" init -q
+clean_git -C "$WORK/case_s" remote add origin https://github.com/acme/widgets.git
+cat <<'EOF' > "$WORK/case_s_global.gitconfig"
+[remote "origin"]
+	url = https://github.com/other/repo.git
+EOF
+cat <<'EOF' > "$WORK/case_s/README.md"
+# Project
+
+[CI](https://github.com/acme/widgets/actions/workflows/missing.yml)
+EOF
+GIT_CONFIG_GLOBAL="$WORK/case_s_global.gitconfig" \
+  GIT_CONFIG_COUNT=1 \
+  GIT_CONFIG_KEY_0=remote.origin.url \
+  GIT_CONFIG_VALUE_0=https://github.com/other/repo.git \
+  SCRIPT_PATH="$WORK/case_s_script/tools/readme-badges.sh" \
+  expect_refusal "case_s: scanned root slug with foreign git config" "missing.yml" "$WORK/case_s"
+
 # Real check on the repo root -> 0
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 expect_pattern "repo: real check" "workflow references ok" --repo golusoris/goenvoy "$REPO_ROOT"
