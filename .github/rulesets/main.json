@@ -62,6 +62,9 @@
             "context": "Upstream spec pins"
           },
           {
+            "context": "Workflow check / Workflow check"
+          },
+          {
             "context": "Workflows (actionlint, pinned actions)"
           },
           {

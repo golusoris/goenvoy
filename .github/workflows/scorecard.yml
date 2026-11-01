@@ -7,6 +7,7 @@ on:
   # scorecard-action accepts the default branch and pull request events only.
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
     - cron: '15 6 * * 1'
   workflow_dispatch:

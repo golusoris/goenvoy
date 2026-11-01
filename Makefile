@@ -127,6 +127,10 @@ hooks-test: ## Claude Code edit guard: planted import cases
 badges-check: ## README workflow badges point at existing workflows: planted cases, then the repository
 	bash tools/readme-badges_test.sh
 
+.PHONY: workflow-ready-check
+workflow-ready-check: ## Workflows with pull_request trigger have ready_for_review: planted cases, then the repository
+	bash tools/workflow-ready_test.sh
+
 doc: ## Local godoc server at :6060
 	@echo "Starting godoc server at http://localhost:6060"
 	@godoc -http=:6060
@@ -141,6 +145,7 @@ verify-all:
 	@$(PRAETORCTL) audit
 	@$(MAKE) --no-print-directory hooks-test
 	@$(MAKE) --no-print-directory badges-check
+	@$(MAKE) --no-print-directory workflow-ready-check
 	@$(MAKE) --no-print-directory ci-all
 
 compile-context:
