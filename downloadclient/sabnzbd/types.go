@@ -70,6 +70,19 @@ type VersionInfo struct {
 	Version string `json:"version"`
 }
 
+// Priority represents a download queue priority in SABnzbd.
+type Priority int
+
+// SABnzbd queue priority values matching upstream constants.py.
+const (
+	PriorityDefault Priority = -100
+	PriorityPaused  Priority = -2
+	PriorityLow     Priority = -1
+	PriorityNormal  Priority = 0
+	PriorityHigh    Priority = 1
+	PriorityForce   Priority = 2
+)
+
 // addResult is the response from adding an NZB.
 type addResult struct {
 	Status bool     `json:"status"`

@@ -13,6 +13,11 @@ last_verified: 2026-04-15
 
 qBittorrent WebUI API. Cookie-session auth via /api/v2/auth/login.
 
+## Endpoints
+
+- `POST /api/v2/torrents/stop` — stops torrents by hashes (`hashes` param, pipe-delimited or `all`; qBittorrent 5.0+).
+- `POST /api/v2/torrents/start` — starts torrents by hashes (`hashes` param, pipe-delimited or `all`; qBittorrent 5.0+).
+
 ## Related
 
 - Service module: see `downloadclient/qbit` in the monorepo tree.

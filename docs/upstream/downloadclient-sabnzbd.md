@@ -13,6 +13,10 @@ last_verified: 2026-04-15
 
 SABnzbd — HTTP GET API with ?apikey=... query parameter.
 
+## Endpoints
+
+- `GET /api?mode=queue&name=priority` — sets download queue priority by NZO ID; returns `{"position": n}` (-1 on unknown job).
+
 ## Related
 
 - Service module: see `downloadclient/sabnzbd` in the monorepo tree.

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
 
 	"github.com/golusoris/goenvoy/downloadclient/qbit/v2"
 )
@@ -35,4 +37,25 @@ func Example() {
 		log.Fatal(err)
 	}
 	fmt.Printf("Total torrents: %d\n", len(torrents))
+}
+
+func ExampleClient_StopTorrents() {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts.Close()
+
+	client, err := qbit.New(ts.URL)
+	if err != nil {
+		return
+	}
+
+	if err := client.StopTorrents(context.Background(), []string{"all"}); err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("stopped")
+
+	// Output:
+	// stopped
 }
