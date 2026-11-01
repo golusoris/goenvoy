@@ -39,5 +39,26 @@ expect "file with single-line foreign import" 2 a.go $'package a\n\nimport errs 
 expect "dev-tool module" 0 /repo/tools/go/upstreamspec/manifest.go $'package main\n\nimport (\n\t"go.yaml.in/yaml/v3"\n)\n'
 expect "library module named tools" 2 /repo/arr/tools.go $'package arr\n\nimport (\n\t"go.yaml.in/yaml/v3"\n)\n'
 expect "not a go file" 0 a.md $'import (\n\t"github.com/pkg/errors"\n)'
+expect "quoted path in block comment" 0 a.go $'package a\n\nimport ( /* see\n\t"github.com/pkg/errors"\n*/\n\t"net/http"\n)\n'
+expect "comment after group opener" 2 a.go $'package a\n\nimport ( // deps\n\t"github.com/pkg/errors"\n)\n'
+expect "grouped import without space" 2 a.go 'import("github.com/pkg/errors")'
+expect "grouped specs on one line" 2 a.go 'import ("net/http"; "github.com/pkg/errors")'
+expect "file with syntax error below imports" 2 a.go $'package a\n\nimport "github.com/pkg/errors"\n\nfunc f( {'
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+printf 'package a\n\nimport (\n\t"net/http"\n)\n' > "$tmp/a.go"
+expect_edit() { # name, want, old_string, new_string
+  local payload got
+  payload=$(jq -n --arg f "$tmp/a.go" --arg o "$3" --arg n "$4" '{tool_name:"Edit",tool_input:{file_path:$f,old_string:$o,new_string:$n}}')
+  printf '%s' "$payload" | bash "$hook" >/dev/null 2>&1
+  got=$?
+  if [ "$got" != "$2" ]; then
+    printf 'FAIL %s: exit %s, want %s\n' "$1" "$got" "$2"
+    fail=1
+  fi
+}
+expect_edit "edit adds foreign import" 2 $'\t"net/http"' $'\t"net/http"\n\n\t"github.com/pkg/errors"'
+expect_edit "edit adds stdlib import" 0 $'\t"net/http"' $'\t"net/http"\n\t"strings"'
+expect_edit "edit adds own module" 0 $'\t"net/http"' $'\t"net/http"\n\n\t"github.com/golusoris/goenvoy/arr/v2"'
 [ "$fail" = 0 ] && echo "guard-go-edit: all planted cases pass"
 exit "$fail"

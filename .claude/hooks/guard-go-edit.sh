@@ -20,34 +20,23 @@ esac
 deny() { printf 'blocked by .claude/hooks/guard-go-edit.sh (%s):\n  %s\n' "$file_path" "$1" >&2; exit 2; }
 
 # rule 1: no non-stdlib imports (ADR-0001). Allowed: stdlib, golang.org/x/..., goenvoy's own modules.
-# Why: Edit payloads are often bare import-block fragments, so every import-spec-shaped line counts.
-# Why: a complete file (package clause) is read only up to its first declaration; imports precede
-# every declaration, so raw-string fixtures further down are never taken for imports.
-whole=0
+# Why: go/parser reads the edited file as the compiler does; regex matching missed import forms.
 # Why: tools/go is the dev-tool module (its go.mod; Makefile MODULES excludes it); ADR-0001 binds library modules.
-case "$file_path" in tools/go/*|*/tools/go/*) whole=skip ;; esac
-[ "$whole" = 0 ] && grep -qE '^package[[:space:]]+[A-Za-z_]' <<<"$content" && whole=1
-in_block=0
-foreign=""
-while [ "$whole" != skip ] && IFS= read -r line; do
-  line="${line#"${line%%[![:space:]]*}"}"
-  if [ "$whole" = 1 ]; then
-    [[ $line =~ ^(func|type|var|const)([[:space:]]|\(|$) ]] && break
-    [[ $line =~ ^import[[:space:]]*\([[:space:]]*$ ]] && { in_block=1; continue; }
-    [[ $in_block = 1 && $line == \)* ]] && { in_block=0; continue; }
-    [[ $in_block = 0 && ! $line =~ ^import[[:space:]] ]] && continue
-  fi
-  [[ $line =~ ^import[[:space:]]+(.*)$ ]] && line="${BASH_REMATCH[1]}"
-  [[ $line =~ ^(([A-Za-z_][A-Za-z0-9_]*|\.)[[:space:]]+)?\"([^\"]+)\"[[:space:]]*(//.*)?$ ]] || continue
-  case "${BASH_REMATCH[2]}" in return|go|defer|case|else) continue ;; esac
-  path="${BASH_REMATCH[3]}"
-  case "$path" in github.com/golusoris/goenvoy/*|golang.org/x/*) continue ;; esac
-  # Why: stdlib paths never carry a dot in their first element; module paths always do.
-  [[ ${path%%/*} == *.* ]] && foreign+="$path "
-done <<<"$content"
-if [ -n "$foreign" ]; then
-  deny "non-stdlib import blocked (${foreign% }) — goenvoy is pure stdlib (ADR-0001). If you truly need a dep, write an ADR first."
-fi
+case "$file_path" in
+  tools/go/*|*/tools/go/*) ;;
+  *)
+    if command -v go >/dev/null 2>&1; then
+      guard_src="$(dirname "$0")/importguard/main.go"
+      guard_bin="${XDG_CACHE_HOME:-$HOME/.cache}/goenvoy-importguard/$(sha256sum "$guard_src" | cut -c1-16)"
+      # Why: go run reports every non-zero exit as 1, so the binary is built once per source hash.
+      [ -x "$guard_bin" ] || go build -o "$guard_bin" "$guard_src" >&2 || deny "importguard build failed"
+      rc=0
+      printf '%s' "$payload" | "$guard_bin" >&2 || rc=$?
+      [ "$rc" = 2 ] && deny "non-stdlib import blocked (details above). goenvoy is pure stdlib (ADR-0001). If you truly need a dep, write an ADR first."
+      [ "$rc" = 0 ] || deny "importguard exited $rc"
+    fi
+  ;;
+esac
 
 # rule 2: InsecureSkipVerify without justification
 if printf '%s' "$content" | grep -E 'InsecureSkipVerify:[[:space:]]*true' >/dev/null; then
