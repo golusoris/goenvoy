@@ -19,8 +19,12 @@ esac
 
 deny() { printf 'blocked by .claude/hooks/guard-go-edit.sh (%s):\n  %s\n' "$file_path" "$1" >&2; exit 2; }
 
-# rule 1: no non-stdlib imports (ADR-0001). golang.org/x/... allowed.
-if printf '%s' "$content" | grep -E '^[[:space:]]*"(github\.com|gopkg\.in|gitlab\.com|bitbucket\.org)/' >/dev/null; then
+# rule 1: no non-stdlib imports (ADR-0001). golang.org/x/... and goenvoy's own modules allowed.
+# Why: an optional alias ("name " or "_ " / ". ") precedes the path in aliased imports.
+foreign=$(printf '%s' "$content" \
+  | grep -E '^[[:space:]]*([A-Za-z_.][A-Za-z0-9_]*[[:space:]]+)?"(github\.com|gopkg\.in|gitlab\.com|bitbucket\.org)/' \
+  | grep -vE '"github\.com/golusoris/goenvoy/' || true)
+if [ -n "$foreign" ]; then
   deny "non-stdlib import blocked — goenvoy is pure stdlib (ADR-0001). If you truly need a dep, write an ADR first."
 fi
 

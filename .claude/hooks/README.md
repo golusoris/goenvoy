@@ -23,6 +23,9 @@ spend a round trip on rules it already knows.
 - `guard-go-edit.sh` does not exempt `*_test.go` from the stdlib check; tests
   must also stay pure stdlib.
 - `golang.org/x/...` imports are allowed where needed for Go project tooling.
+- goenvoy's own modules (`github.com/golusoris/goenvoy/...`) are allowed; a
+  lookalike path such as `goenvoyx` is not. Aliased and blank imports are
+  checked too. Planted cases: `make hooks-test`.
 - The live-API host denylist is intentionally small. Add hosts when a real
   regression appears.
 

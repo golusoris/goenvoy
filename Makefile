@@ -120,6 +120,9 @@ lint-exceptions: ## Dated complexity exceptions in .golangci.yml: planted cases,
 lint-exceptions-gen: ## Regenerate the dated complexity exceptions from a measured lint run (#141)
 	bash tools/lint-exceptions.sh
 
+hooks-test: ## Claude Code edit guard: planted import cases
+	bash .claude/hooks/guard-go-edit_test.sh
+
 doc: ## Local godoc server at :6060
 	@echo "Starting godoc server at http://localhost:6060"
 	@godoc -http=:6060
@@ -132,6 +135,7 @@ verify-all:
 	@$(PRAETORCTL) compile-context --verify
 	@$(PRAETORCTL) caveman check --configured-sources
 	@$(PRAETORCTL) audit
+	@$(MAKE) --no-print-directory hooks-test
 	@$(MAKE) --no-print-directory ci-all
 
 compile-context:
