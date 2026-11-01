@@ -19,10 +19,26 @@ esac
 
 deny() { printf 'blocked by .claude/hooks/guard-go-edit.sh (%s):\n  %s\n' "$file_path" "$1" >&2; exit 2; }
 
-# rule 1: no non-stdlib imports (ADR-0001). golang.org/x/... allowed.
-if printf '%s' "$content" | grep -E '^[[:space:]]*"(github\.com|gopkg\.in|gitlab\.com|bitbucket\.org)/' >/dev/null; then
-  deny "non-stdlib import blocked — goenvoy is pure stdlib (ADR-0001). If you truly need a dep, write an ADR first."
-fi
+# rule 1: no non-stdlib imports (ADR-0001). Allowed: stdlib, golang.org/x/..., goenvoy's own modules.
+# Why: go/parser reads the edited file as the compiler does; regex matching missed import forms.
+# Why: tools/go is the dev-tool module (its go.mod; Makefile MODULES excludes it); ADR-0001 binds library modules.
+case "$file_path" in
+  tools/go/*|*/tools/go/*) ;;
+  *)
+    if command -v go >/dev/null 2>&1; then
+      guard_src="$(dirname "$0")/importguard/main.go"
+      # Why: cksum is POSIX (Linux, macOS, BSD); the key only names a build of our own source.
+      guard_key=$(cksum <"$guard_src") || deny "cksum failed on $guard_src"
+      guard_bin="${XDG_CACHE_HOME:-$HOME/.cache}/goenvoy-importguard/${guard_key%% *}"
+      # Why: go run reports every non-zero exit as 1, so the binary is built once per source hash.
+      [ -x "$guard_bin" ] || go build -o "$guard_bin" "$guard_src" >&2 || deny "importguard build failed"
+      rc=0
+      printf '%s' "$payload" | "$guard_bin" >&2 || rc=$?
+      [ "$rc" = 2 ] && deny "non-stdlib import blocked (details above). goenvoy is pure stdlib (ADR-0001). If you truly need a dep, write an ADR first."
+      [ "$rc" = 0 ] || deny "importguard exited $rc"
+    fi
+  ;;
+esac
 
 # rule 2: InsecureSkipVerify without justification
 if printf '%s' "$content" | grep -E 'InsecureSkipVerify:[[:space:]]*true' >/dev/null; then
