@@ -288,6 +288,24 @@ GIT_CONFIG_GLOBAL="$WORK/case_s_global.gitconfig" \
   SCRIPT_PATH="$WORK/case_s_script/tools/readme-badges.sh" \
   expect_refusal "case_s: scanned root slug with foreign git config" "missing.yml" "$WORK/case_s"
 
+# Case (t): scanned root slug detected from include.path git origin -> 1
+# Why: .git/config can name origin via include.path; config lookup must pass --includes.
+mkdir -p "$WORK/case_t_script/tools" "$WORK/case_t/.github/workflows"
+cp "$HERE/readme-badges.sh" "$WORK/case_t_script/tools/readme-badges.sh"
+clean_git -C "$WORK/case_t" init -q
+cat <<'EOF' > "$WORK/case_t/.git/origin.inc"
+[remote "origin"]
+	url = https://github.com/acme/widgets.git
+EOF
+clean_git -C "$WORK/case_t" config --local include.path origin.inc
+cat <<'EOF' > "$WORK/case_t/README.md"
+# Project
+
+[CI](https://github.com/acme/widgets/actions/workflows/missing.yml)
+EOF
+SCRIPT_PATH="$WORK/case_t_script/tools/readme-badges.sh" \
+  expect_refusal "case_t: scanned root slug from include.path origin" "missing.yml" "$WORK/case_t"
+
 # Real check on the repo root -> 0
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 expect_pattern "repo: real check" "workflow references ok" --repo golusoris/goenvoy "$REPO_ROOT"

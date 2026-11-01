@@ -53,7 +53,7 @@ clean_git() {
 if [ -z "$REPO_SLUG" ]; then
   origin_url=""
   # Why: exit 1 means no origin is set; the slug check below then refuses.
-  if url="$(clean_git -C "$ROOT" config --local --get remote.origin.url 2>/dev/null)"; then
+  if url="$(clean_git -C "$ROOT" config --local --includes --get remote.origin.url 2>/dev/null)"; then
     origin_url="$url"
   fi
   origin_url="${origin_url%.git}"
