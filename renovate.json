@@ -120,6 +120,17 @@
       "automerge": false
     },
     {
+      "description": "praetor-managed engine: updates arrive in one coordinated adoption pull request",
+      "matchPackageNames": [
+        "github.com/cordanaLLM/praetor",
+        "github.com/cordanaLLM/praetor/**",
+        "github.com/cordanaLLM/praetor/cmd/standardsctl",
+        "cordanaLLM/praetor",
+        "cordanaLLM/praetor/**"
+      ],
+      "enabled": false
+    },
+    {
       "description": "praetor-managed files: praetorctl adopt ships their updates and praetorctl audit locks them byte for byte",
       "matchFileNames": [
         ".github/workflows/praetor-docs.yml",

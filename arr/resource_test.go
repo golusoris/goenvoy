@@ -51,19 +51,7 @@ func TestResourceHelpers(t *testing.T) {
 		"POST": func() (*arr.Tag, error) { return arr.PostOne[arr.Tag](ctx, c, "/tag", body) },
 		"PUT":  func() (*arr.Tag, error) { return arr.PutOne[arr.Tag](ctx, c, "/tag", body) },
 	}
-	for method, call := range ones {
-		got, err := call()
-		if err != nil {
-			t.Fatalf("%s one: %v", method, err)
-		}
-		want := method
-		if method != "GET" {
-			want += "x"
-		}
-		if got.ID != 7 || got.Label != want {
-			t.Errorf("%s one = %+v, want ID 7 label %q", method, got, want)
-		}
-	}
+	checkOneHelpers(t, ones)
 
 	lists := map[string]func() ([]arr.Tag, error){
 		"GET":  func() ([]arr.Tag, error) { return arr.GetList[arr.Tag](ctx, c, "/tag/list") },
@@ -81,6 +69,23 @@ func TestResourceHelpers(t *testing.T) {
 	}
 	if len(*seen) != 6 {
 		t.Errorf("requests = %v, want 6", *seen)
+	}
+}
+
+func checkOneHelpers(t *testing.T, ones map[string]func() (*arr.Tag, error)) {
+	t.Helper()
+	for method, call := range ones {
+		got, err := call()
+		if err != nil {
+			t.Fatalf("%s one: %v", method, err)
+		}
+		want := method
+		if method != "GET" {
+			want += "x"
+		}
+		if got.ID != 7 || got.Label != want {
+			t.Errorf("%s one = %+v, want ID 7 label %q", method, got, want)
+		}
 	}
 }
 

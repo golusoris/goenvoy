@@ -1,6 +1,7 @@
 package lintexceptions
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,6 +63,19 @@ func TestCheckAcceptsDatedRules(t *testing.T) {
 	}
 }
 
+func TestCheckAcceptsBaselineRules(t *testing.T) {
+	t.Parallel()
+	config := header + begin + rule +
+		"      # baseline #141\n" +
+		"      - path: ^arr/b_test\\.go$\n        linters:\n          - funlen\n" +
+		"        text: Function 'TestB'\n" +
+		end
+	rules, err := Check(config, day(t, "2026-10-19"))
+	if err != nil || rules != 2 {
+		t.Fatalf("Check = %d, %v; want 2, nil", rules, err)
+	}
+}
+
 func TestCheckAcceptsNoGeneratedBlock(t *testing.T) {
 	t.Parallel()
 	rules, err := Check(header+"formatters:\n", day(t, "2026-10-19"))
@@ -82,24 +96,40 @@ func TestCheckReadsCRLFLines(t *testing.T) {
 func TestCheckRefusesPlantedDefects(t *testing.T) {
 	t.Parallel()
 	path := "      - path: ^arr/a_test\\.go$\n        linters:\n          - gocyclo\n"
-	cases := map[string]string{
-		"expired":         begin + "      # category C, entered 2026-10-01, expires 2026-10-11, #141\n" + path + end,
-		"untagged":        begin + path + end,
-		"no category":     begin + "      # expires 2026-10-29, #141\n" + path + end,
-		"bad date":        begin + "      # category C, expires 2026-13-40, #141\n" + path + end,
-		"production file": begin + strings.Replace(rule, "a_test", "a", 1) + end,
-		"other linter":    begin + strings.Replace(rule, "gocognit", "errcheck", 1) + end,
-		"text rule":       begin + strings.Replace(rule, "        linters:\n          - gocognit\n", "        text: anything\n", 1) + end,
-		"no end marker":   begin + rule,
-		"tier outside":    "      - path: (.+)_test\\.go\n        linters:\n          - funlen\n",
+	baseline := "      # baseline #141\n"
+	text := "        text: func `TestA`\n"
+	cases := map[string]struct{ rules, want string }{
+		"expired":           {begin + "      # category C, entered 2026-10-01, expires 2026-10-11, #141\n" + path + end, "expired on 2026-10-11"},
+		"untagged":          {begin + path + end, "has no \"category"},
+		"no category":       {begin + "      # expires 2026-10-29, #141\n" + path + end, "is not an exception comment"},
+		"bad date":          {begin + "      # category C, expires 2026-13-40, #141\n" + path + end, `expiry "2026-13-40"`},
+		"production file":   {begin + strings.Replace(rule, "a_test", "a", 1) + end, "is not an exception comment"},
+		"other linter":      {begin + strings.Replace(rule, "gocognit", "errcheck", 1) + end, "is not an exception comment"},
+		"text rule":         {begin + strings.Replace(rule, "        linters:\n          - gocognit\n", "        text: anything\n", 1) + end, "is not an exception comment"},
+		"dated no linter":   {begin + strings.Replace(rule, "          - gocognit\n", "", 1) + end, "no complexity linter line"},
+		"no end marker":     {begin + rule, "no end marker"},
+		"tier outside":      {"      - path: (.+)_test\\.go\n        linters:\n          - funlen\n", "outside the generated block"},
+		"text on dated":     {begin + rule + text + end, "is not an exception comment"},
+		"baseline cyclop":   {begin + baseline + strings.Replace(path, "gocyclo", "cyclop", 1) + text + end, "is not an exception comment"},
+		"baseline prod":     {begin + baseline + strings.Replace(path, "a_test", "a", 1) + text + end, "is not an exception comment"},
+		"baseline no text":  {begin + baseline + path + end, "no function text selector"},
+		"baseline wildcard": {begin + baseline + path + "        text: .*\n" + end, "is not an exception comment"},
+		"baseline no list":  {begin + baseline + strings.Replace(path, "          - gocyclo\n", "", 1) + text + end, "no complexity linter line"},
+		"baseline reused":   {begin + baseline + path + text + path + text + end, "has no \"category"},
+		"dangling comment":  {begin + baseline + end, "before the end marker"},
+		"baseline no key":   {begin + baseline + strings.Replace(path, "        linters:\n", "", 1) + text + end, "is not an exception comment"},
+		"dated no key":      {begin + strings.Replace(rule, "        linters:\n", "", 1) + end, "is not an exception comment"},
+		"key twice":         {begin + strings.Replace(rule, "        linters:\n", strings.Repeat("        linters:\n", 2), 1) + end, "is not an exception comment"},
+		"key before path":   {begin + "        linters:\n" + rule + end, "is not an exception comment"},
 	}
-	for name, rules := range cases {
-		if _, err := Check(header+rules, day(t, "2026-10-19")); err == nil {
-			t.Errorf("%s: Check accepted %q", name, rules)
+	for name, c := range cases {
+		_, err := Check(header+c.rules, day(t, "2026-10-19"))
+		if err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%s: Check = %v; want an error containing %q", name, err, c.want)
 		}
 	}
-	if _, err := Check("linters:\n  enable:\n    - gocyclo\n", day(t, "2026-10-19")); err == nil {
-		t.Error("a configuration without a rules block was accepted")
+	if _, err := Check("linters:\n  enable:\n    - gocyclo\n", day(t, "2026-10-19")); !errors.Is(err, errNoRules) {
+		t.Errorf("a configuration without a rules block: err = %v, want errNoRules", err)
 	}
 }
 
