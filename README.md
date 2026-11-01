@@ -1,7 +1,6 @@
 # goenvoy
 
 [![CI](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/golusoris/goenvoy/actions/workflows/codeql.yml/badge.svg)](https://github.com/golusoris/goenvoy/actions/workflows/codeql.yml)
 [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/golusoris/goenvoy)](https://coderabbit.ai)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/40988f0fd89c4cd5a17c857fe5bac649)](https://app.codacy.com/gh/golusoris/goenvoy/dashboard)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/golusoris/goenvoy/badge)](https://scorecard.dev/viewer/?uri=github.com/golusoris/goenvoy)
