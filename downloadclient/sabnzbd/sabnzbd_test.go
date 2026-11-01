@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
 	"github.com/golusoris/goenvoy/downloadclient/sabnzbd/v2"
@@ -316,6 +317,124 @@ func TestNew_invalidURL(t *testing.T) {
 			}
 			if c != nil {
 				t.Fatal("expected nil client")
+			}
+		})
+	}
+}
+
+func checkPriorityQuery(t *testing.T, r *http.Request, nzoID, wantValue2 string) {
+	t.Helper()
+	q := r.URL.Query()
+	want := map[string]string{
+		"mode": "queue", "name": "priority", "value": nzoID,
+		"value2": wantValue2, "apikey": "test-key", "output": "json",
+	}
+	for key, value := range want {
+		if got := q.Get(key); got != value {
+			t.Errorf("%s = %q, want %q", key, got, value)
+		}
+	}
+	if r.Method != http.MethodGet {
+		t.Errorf("method = %q, want GET", r.Method)
+	}
+}
+
+func newClient(t *testing.T, handler http.HandlerFunc) *sabnzbd.Client {
+	t.Helper()
+	ts := httptest.NewServer(handler)
+	t.Cleanup(ts.Close)
+	c, err := sabnzbd.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return c
+}
+
+func TestSetPriority(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name     string
+		nzoID    string
+		priority sabnzbd.Priority
+		wantVal2 string
+		position int
+	}{
+		{"default boundary", "nzo-default", sabnzbd.PriorityDefault, "-100", 3},
+		{"paused", "nzo-paused", sabnzbd.PriorityPaused, "-2", 4},
+		{"low", "nzo-low", sabnzbd.PriorityLow, "-1", 2},
+		{"normal boundary zero", "nzo-normal", sabnzbd.PriorityNormal, "0", 0},
+		{"high", "nzo-high", sabnzbd.PriorityHigh, "1", 1},
+		{"force boundary", "nzo-force", sabnzbd.PriorityForce, "2", 0},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c := newClient(t, func(w http.ResponseWriter, r *http.Request) {
+				checkPriorityQuery(t, r, tc.nzoID, tc.wantVal2)
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(map[string]int{"position": tc.position})
+			})
+			pos, err := c.SetPriority(context.Background(), tc.nzoID, tc.priority)
+			if err != nil || pos != tc.position {
+				t.Fatalf("SetPriority = %d, %v; want %d, nil", pos, err, tc.position)
+			}
+		})
+	}
+}
+
+func TestSetPriority_RefusedInput(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name     string
+		nzoID    string
+		priority sabnzbd.Priority
+		want     error
+	}{
+		{"empty id", "", sabnzbd.PriorityNormal, sabnzbd.ErrEmptyNZOID},
+		{"above force", "nzo-123", 3, sabnzbd.ErrInvalidPriority},
+		{"below default", "nzo-123", -101, sabnzbd.ErrInvalidPriority},
+		{"gap below paused", "nzo-123", -3, sabnzbd.ErrInvalidPriority},
+		{"far above", "nzo-123", 100, sabnzbd.ErrInvalidPriority},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var hits atomic.Int64
+			c := newClient(t, func(_ http.ResponseWriter, _ *http.Request) { hits.Add(1) })
+			_, err := c.SetPriority(context.Background(), tc.nzoID, tc.priority)
+			if !errors.Is(err, tc.want) || hits.Load() != 0 {
+				t.Fatalf("err = %v, hits = %d; want %v, 0", err, hits.Load(), tc.want)
+			}
+		})
+	}
+}
+
+func TestSetPriority_ServerErrors(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name    string
+		handler http.HandlerFunc
+		check   func(error) bool
+	}{
+		{"unknown job", func(w http.ResponseWriter, _ *http.Request) {
+			_ = json.NewEncoder(w).Encode(map[string]int{"position": -1})
+		}, func(err error) bool { return errors.Is(err, sabnzbd.ErrUnknownJob) }},
+		{"api error", func(w http.ResponseWriter, _ *http.Request) {
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": false, "error": "Cannot change priority"})
+		}, func(err error) bool {
+			var apiErr *sabnzbd.APIError
+			return errors.As(err, &apiErr) && apiErr.Message == "Cannot change priority"
+		}},
+		{"http 500", func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+		}, func(err error) bool { return err != nil }},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			pos, err := newClient(t, tc.handler).SetPriority(context.Background(), "nzo-123", sabnzbd.PriorityHigh)
+			if !tc.check(err) || pos != -1 {
+				t.Fatalf("SetPriority = %d, %v; want -1 and the expected error", pos, err)
 			}
 		})
 	}

@@ -3,6 +3,7 @@ package sabnzbd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+)
+
+// Sentinel errors returned by SABnzbd client operations.
+var (
+	ErrEmptyNZOID      = errors.New("sabnzbd: empty NZO ID")
+	ErrInvalidPriority = errors.New("sabnzbd: invalid priority")
+	ErrUnknownJob      = errors.New("sabnzbd: unknown job")
 )
 
 const (
@@ -201,6 +209,34 @@ func (c *Client) SetSpeedLimit(ctx context.Context, limit string) error {
 		"value": {limit},
 	}
 	return c.get(ctx, "config", params, nil)
+}
+
+// SetPriority sets the queue priority for a download job and returns its new queue position.
+func (c *Client) SetPriority(ctx context.Context, nzoID string, p Priority) (int, error) {
+	if nzoID == "" {
+		return -1, ErrEmptyNZOID
+	}
+	switch p {
+	case PriorityDefault, PriorityPaused, PriorityLow, PriorityNormal, PriorityHigh, PriorityForce:
+	default:
+		return -1, fmt.Errorf("%w: %d", ErrInvalidPriority, p)
+	}
+
+	var res struct {
+		Position int `json:"position"`
+	}
+	params := url.Values{
+		"name":   {"priority"},
+		"value":  {nzoID},
+		"value2": {strconv.Itoa(int(p))},
+	}
+	if err := c.get(ctx, "queue", params, &res); err != nil {
+		return -1, err
+	}
+	if res.Position == -1 {
+		return -1, ErrUnknownJob
+	}
+	return res.Position, nil
 }
 
 // History methods.

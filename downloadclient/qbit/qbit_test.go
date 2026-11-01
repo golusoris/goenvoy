@@ -1271,3 +1271,90 @@ func TestNew_invalidURL(t *testing.T) {
 		})
 	}
 }
+
+// stopStartMethod names one of the qBittorrent 5.x stop/start endpoints under test.
+type stopStartMethod struct {
+	name     string
+	wantPath string
+	call     func(c *qbit.Client, ctx context.Context, hashes []string) error
+}
+
+func stopStartMethods() []stopStartMethod {
+	return []stopStartMethod{
+		{"StopTorrents", "/api/v2/torrents/stop", func(c *qbit.Client, ctx context.Context, h []string) error {
+			return c.StopTorrents(ctx, h)
+		}},
+		{"StartTorrents", "/api/v2/torrents/start", func(c *qbit.Client, ctx context.Context, h []string) error {
+			return c.StartTorrents(ctx, h)
+		}},
+	}
+}
+
+func newHashesServer(t *testing.T, wantPath, wantHashes string) *httptest.Server {
+	t.Helper()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != wantPath {
+			t.Errorf("request = %s %s, want POST %s", r.Method, r.URL.Path, wantPath)
+		}
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("ParseForm: %v", err)
+		}
+		if got := r.FormValue("hashes"); got != wantHashes {
+			t.Errorf("hashes = %q, want %q", got, wantHashes)
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(ts.Close)
+	return ts
+}
+
+func TestStopAndStartTorrents(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name   string
+		hashes []string
+		want   string
+	}{
+		{"positive multiple hashes", []string{"a", "b"}, "a|b"},
+		{"boundary all", []string{"all"}, "all"},
+		{"boundary single hash", []string{"a"}, "a"},
+	}
+	for _, m := range stopStartMethods() {
+		for _, tc := range cases {
+			t.Run(m.name+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+				c, err := qbit.New(newHashesServer(t, m.wantPath, tc.want).URL)
+				if err != nil {
+					t.Fatalf("New: %v", err)
+				}
+				if err := m.call(c, context.Background(), tc.hashes); err != nil {
+					t.Fatal(err)
+				}
+			})
+		}
+	}
+}
+
+func TestStopAndStartTorrents_HTTPError(t *testing.T) {
+	t.Parallel()
+	for _, m := range stopStartMethods() {
+		for _, code := range []int{http.StatusNotFound, http.StatusForbidden} {
+			t.Run(m.name+"/"+http.StatusText(code), func(t *testing.T) {
+				t.Parallel()
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(code)
+				}))
+				t.Cleanup(ts.Close)
+				c, err := qbit.New(ts.URL)
+				if err != nil {
+					t.Fatalf("New: %v", err)
+				}
+				var apiErr *qbit.APIError
+				err = m.call(c, context.Background(), []string{"a"})
+				if !errors.As(err, &apiErr) || apiErr.StatusCode != code {
+					t.Fatalf("err = %v, want *qbit.APIError with status %d", err, code)
+				}
+			})
+		}
+	}
+}
