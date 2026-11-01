@@ -23,6 +23,15 @@ spend a round trip on rules it already knows.
 - `guard-go-edit.sh` does not exempt `*_test.go` from the stdlib check; tests
   must also stay pure stdlib.
 - `golang.org/x/...` imports are allowed where needed for Go project tooling.
+- goenvoy's own modules (`github.com/golusoris/goenvoy/...`) are allowed; a
+  lookalike path such as `goenvoyx` is not. Planted cases: `make hooks-test`.
+- The import check is `importguard/main.go`: it parses the file as it will be
+  after the Edit or Write with `go/parser`, so every import form counts and
+  comments or string contents do not. The hook builds it once per source hash
+  into `$XDG_CACHE_HOME/goenvoy-importguard/`; without `go` on `PATH` the check
+  is skipped and the depguard lint in CI still applies.
+- `tools/go/` is the dev-tool module and keeps its own dependencies; the
+  import check skips it, as the Makefile `MODULES` list does.
 - The live-API host denylist is intentionally small. Add hosts when a real
   regression appears.
 
