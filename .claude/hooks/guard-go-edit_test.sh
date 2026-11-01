@@ -33,6 +33,11 @@ expect "own path in trailing comment" 2 a.go $'import (\n\t"github.com/pkg/error
 expect "return of a string" 0 a.go $'func f() string {\n\treturn "github.com/pkg/errors"\n}'
 expect "slice of strings" 0 a.go $'var s = []string{\n\t"github.com/pkg/errors",\n}'
 expect "edit fragment" 2 a.go $'\t"github.com/pkg/errors"'
+expect "file with raw-string fixture" 0 a_test.go $'package a\n\nimport (\n\t"testing"\n)\n\nconst fixture = `[\n"example.com"\n]`\n\nfunc TestA(t *testing.T) {}'
+expect "file with foreign import" 2 a.go $'package a\n\nimport (\n\t"net/http"\n\t"github.com/pkg/errors"\n)\n\nfunc f() {}'
+expect "file with single-line foreign import" 2 a.go $'package a\n\nimport errs "github.com/pkg/errors"\n\nvar _ = errs.New'
+expect "dev-tool module" 0 /repo/tools/go/upstreamspec/manifest.go $'package main\n\nimport (\n\t"go.yaml.in/yaml/v3"\n)\n'
+expect "library module named tools" 2 /repo/arr/tools.go $'package arr\n\nimport (\n\t"go.yaml.in/yaml/v3"\n)\n'
 expect "not a go file" 0 a.md $'import (\n\t"github.com/pkg/errors"\n)'
 [ "$fail" = 0 ] && echo "guard-go-edit: all planted cases pass"
 exit "$fail"

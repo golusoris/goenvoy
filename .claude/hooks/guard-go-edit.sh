@@ -21,9 +21,22 @@ deny() { printf 'blocked by .claude/hooks/guard-go-edit.sh (%s):\n  %s\n' "$file
 
 # rule 1: no non-stdlib imports (ADR-0001). Allowed: stdlib, golang.org/x/..., goenvoy's own modules.
 # Why: Edit payloads are often bare import-block fragments, so every import-spec-shaped line counts.
+# Why: a complete file (package clause) is read only up to its first declaration; imports precede
+# every declaration, so raw-string fixtures further down are never taken for imports.
+whole=0
+# Why: tools/go is the dev-tool module (its go.mod; Makefile MODULES excludes it); ADR-0001 binds library modules.
+case "$file_path" in tools/go/*|*/tools/go/*) whole=skip ;; esac
+[ "$whole" = 0 ] && grep -qE '^package[[:space:]]+[A-Za-z_]' <<<"$content" && whole=1
+in_block=0
 foreign=""
-while IFS= read -r line; do
+while [ "$whole" != skip ] && IFS= read -r line; do
   line="${line#"${line%%[![:space:]]*}"}"
+  if [ "$whole" = 1 ]; then
+    [[ $line =~ ^(func|type|var|const)([[:space:]]|\(|$) ]] && break
+    [[ $line =~ ^import[[:space:]]*\([[:space:]]*$ ]] && { in_block=1; continue; }
+    [[ $in_block = 1 && $line == \)* ]] && { in_block=0; continue; }
+    [[ $in_block = 0 && ! $line =~ ^import[[:space:]] ]] && continue
+  fi
   [[ $line =~ ^import[[:space:]]+(.*)$ ]] && line="${BASH_REMATCH[1]}"
   [[ $line =~ ^(([A-Za-z_][A-Za-z0-9_]*|\.)[[:space:]]+)?\"([^\"]+)\"[[:space:]]*(//.*)?$ ]] || continue
   case "${BASH_REMATCH[2]}" in return|go|defer|case|else) continue ;; esac
