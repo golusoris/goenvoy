@@ -60,5 +60,18 @@ expect_edit() { # name, want, old_string, new_string
 expect_edit "edit adds foreign import" 2 $'\t"net/http"' $'\t"net/http"\n\n\t"github.com/pkg/errors"'
 expect_edit "edit adds stdlib import" 0 $'\t"net/http"' $'\t"net/http"\n\t"strings"'
 expect_edit "edit adds own module" 0 $'\t"net/http"' $'\t"net/http"\n\n\t"github.com/golusoris/goenvoy/arr/v2"'
+# Why: hosts without GNU coreutils (macOS) lack sha256sum; the guard must still block there.
+nosha="$tmp/bin"
+mkdir -p "$nosha"
+for tool in bash jq go cksum cut dirname grep cat; do
+  ln -s "$(command -v "$tool")" "$nosha/$tool"
+done
+payload=$(jq -n '{tool_name:"Write",tool_input:{file_path:"a.go",content:"package a\n\nimport \"github.com/pkg/errors\"\n"}}')
+got=0
+printf '%s' "$payload" | PATH="$nosha" "$nosha/bash" "$hook" >/dev/null 2>&1 || got=$?
+if [ "$got" != 2 ]; then
+  printf 'FAIL host without sha256sum: exit %s, want 2\n' "$got"
+  fail=1
+fi
 [ "$fail" = 0 ] && echo "guard-go-edit: all planted cases pass"
 exit "$fail"
