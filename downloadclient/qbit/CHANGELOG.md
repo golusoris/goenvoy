@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/golusoris/goenvoy/compare/downloadclient/qbit/v2.0.3...downloadclient/qbit/v2.1.0) (2026-11-01)
+
+
+### Features
+
+* **downloadclient:** add sabnzbd SetPriority and qbit Stop/StartTorrents ([#228](https://github.com/golusoris/goenvoy/issues/228)) ([f10f5d3](https://github.com/golusoris/goenvoy/commit/f10f5d3db75ae44e0c9be3cfd7893181e693ab21))
+
 ## [2.0.3](https://github.com/golusoris/goenvoy/compare/downloadclient/qbit/v2.0.2...downloadclient/qbit/v2.0.3) (2026-10-26)
 
 
