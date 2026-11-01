@@ -12,7 +12,8 @@ name: CI
 # aggregate status gate stay local.
 on:
   pull_request:
-    branches: [main]
+    # Why: praetor-main-protection ruleset targets main and lts-* branches.
+    branches: [main, 'lts-*']
   workflow_dispatch:
 
 permissions:
