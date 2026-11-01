@@ -15,3 +15,4 @@
 ## Known quirks
 
 - Every request sets `Referer` header matching base URL — qBittorrent rejects requests without it.
+- 5.0+ replaces pause/resume with stop/start (`/api/v2/torrents/stop`, `/api/v2/torrents/start`); pipe-separated hashes or `"all"`.

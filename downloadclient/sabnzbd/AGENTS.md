@@ -11,3 +11,7 @@
 ## Auth model
 
 API key passed as `apikey` query parameter.
+
+## Known quirks
+
+- Queue priority mutation: `mode=queue`, `name=priority`, `value=<nzo_id>`, `value2=<p>`; returns `{"position": n}`, -1 = unknown job.
