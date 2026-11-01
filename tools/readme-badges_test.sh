@@ -228,6 +228,18 @@ case "$out" in
     ;;
 esac
 
+# Case (q): scanned root slug detected from root arg git origin -> 1
+# Why: without --repo, slug must come from scanned root git origin, not script checkout.
+mkdir -p "$WORK/case_q/.github/workflows"
+git -C "$WORK/case_q" init -q
+git -C "$WORK/case_q" remote add origin https://github.com/acme/widgets.git
+cat <<'EOF' > "$WORK/case_q/README.md"
+# Project
+
+[CI](https://github.com/acme/widgets/actions/workflows/missing.yml)
+EOF
+expect_refusal "case_q: scanned root slug from target root origin" "missing.yml" "$WORK/case_q"
+
 # Real check on the repo root -> 0
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 expect_pattern "repo: real check" "workflow references ok" --repo golusoris/goenvoy "$REPO_ROOT"

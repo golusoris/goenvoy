@@ -47,8 +47,8 @@ fi
 
 if [ -z "$REPO_SLUG" ]; then
   origin_url=""
-  if git -C "$REPO_ROOT" remote get-url origin >/dev/null 2>&1; then
-    origin_url="$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null)"
+  if git -C "$ROOT" remote get-url origin >/dev/null 2>&1; then
+    origin_url="$(git -C "$ROOT" remote get-url origin 2>/dev/null)"
   fi
   origin_url="${origin_url%.git}"
   origin_url="${origin_url%/}"
