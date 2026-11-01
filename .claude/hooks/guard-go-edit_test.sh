@@ -23,6 +23,16 @@ expect "third party aliased" 2 a.go $'import (\n\terrs "github.com/pkg/errors"\n
 expect "third party blank" 2 a.go $'import (\n\t_ "gopkg.in/yaml.v3"\n)'
 expect "lookalike module" 2 a.go $'import (\n\t"github.com/golusoris/goenvoyx/arr"\n)'
 expect "own and foreign" 2 a.go $'import (\n\t"github.com/golusoris/goenvoy/arr/v2"\n\t"github.com/pkg/errors"\n)'
+expect "single-line import" 2 a.go 'import "github.com/pkg/errors"'
+expect "single-line aliased" 2 a.go 'import errs "github.com/pkg/errors"'
+expect "single-line blank" 2 a.go 'import _ "gopkg.in/yaml.v3"'
+expect "single-line dot" 2 a.go 'import . "github.com/pkg/errors"'
+expect "single-line own module" 0 a.go 'import arr "github.com/golusoris/goenvoy/arr/v2"'
+expect "unlisted host" 2 a.go $'import (\n\t"example.com/mod"\n)'
+expect "own path in trailing comment" 2 a.go $'import (\n\t"github.com/pkg/errors" // like "github.com/golusoris/goenvoy/arr/v2"\n)'
+expect "return of a string" 0 a.go $'func f() string {\n\treturn "github.com/pkg/errors"\n}'
+expect "slice of strings" 0 a.go $'var s = []string{\n\t"github.com/pkg/errors",\n}'
+expect "edit fragment" 2 a.go $'\t"github.com/pkg/errors"'
 expect "not a go file" 0 a.md $'import (\n\t"github.com/pkg/errors"\n)'
 [ "$fail" = 0 ] && echo "guard-go-edit: all planted cases pass"
 exit "$fail"

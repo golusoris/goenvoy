@@ -19,13 +19,21 @@ esac
 
 deny() { printf 'blocked by .claude/hooks/guard-go-edit.sh (%s):\n  %s\n' "$file_path" "$1" >&2; exit 2; }
 
-# rule 1: no non-stdlib imports (ADR-0001). golang.org/x/... and goenvoy's own modules allowed.
-# Why: an optional alias ("name " or "_ " / ". ") precedes the path in aliased imports.
-foreign=$(printf '%s' "$content" \
-  | grep -E '^[[:space:]]*([A-Za-z_.][A-Za-z0-9_]*[[:space:]]+)?"(github\.com|gopkg\.in|gitlab\.com|bitbucket\.org)/' \
-  | grep -vE '"github\.com/golusoris/goenvoy/' || true)
+# rule 1: no non-stdlib imports (ADR-0001). Allowed: stdlib, golang.org/x/..., goenvoy's own modules.
+# Why: Edit payloads are often bare import-block fragments, so every import-spec-shaped line counts.
+foreign=""
+while IFS= read -r line; do
+  line="${line#"${line%%[![:space:]]*}"}"
+  [[ $line =~ ^import[[:space:]]+(.*)$ ]] && line="${BASH_REMATCH[1]}"
+  [[ $line =~ ^(([A-Za-z_][A-Za-z0-9_]*|\.)[[:space:]]+)?\"([^\"]+)\"[[:space:]]*(//.*)?$ ]] || continue
+  case "${BASH_REMATCH[2]}" in return|go|defer|case|else) continue ;; esac
+  path="${BASH_REMATCH[3]}"
+  case "$path" in github.com/golusoris/goenvoy/*|golang.org/x/*) continue ;; esac
+  # Why: stdlib paths never carry a dot in their first element; module paths always do.
+  [[ ${path%%/*} == *.* ]] && foreign+="$path "
+done <<<"$content"
 if [ -n "$foreign" ]; then
-  deny "non-stdlib import blocked — goenvoy is pure stdlib (ADR-0001). If you truly need a dep, write an ADR first."
+  deny "non-stdlib import blocked (${foreign% }) — goenvoy is pure stdlib (ADR-0001). If you truly need a dep, write an ADR first."
 fi
 
 # rule 2: InsecureSkipVerify without justification
