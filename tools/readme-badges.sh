@@ -45,10 +45,15 @@ if [ ! -d "$ROOT" ]; then
   exit 1
 fi
 
+# Why: run git without repository-location variables that callers (like git hooks) may export.
+clean_git() {
+  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_NAMESPACE git "$@"
+}
+
 if [ -z "$REPO_SLUG" ]; then
   origin_url=""
-  if git -C "$ROOT" remote get-url origin >/dev/null 2>&1; then
-    origin_url="$(git -C "$ROOT" remote get-url origin 2>/dev/null)"
+  if clean_git -C "$ROOT" remote get-url origin >/dev/null 2>&1; then
+    origin_url="$(clean_git -C "$ROOT" remote get-url origin 2>/dev/null)"
   fi
   origin_url="${origin_url%.git}"
   origin_url="${origin_url%/}"

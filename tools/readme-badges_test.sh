@@ -9,6 +9,11 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+# Why: run git without caller repository-location variables (e.g. when run from a git hook).
+clean_git() {
+  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_NAMESPACE git "$@"
+}
+
 # expect_refusal NAME NEEDLE ARGS...: the script must fail and name NEEDLE.
 expect_refusal() {
   local name="$1" needle="$2" out
@@ -210,8 +215,8 @@ expect_refusal "case_o: single-quoted href full URL acme/widgets missing" "missi
 
 # Case (p): default-slug detection from git origin -> 1
 mkdir -p "$WORK/case_p/tools" "$WORK/case_p/.github/workflows"
-git -C "$WORK/case_p" init -q
-git -C "$WORK/case_p" remote add origin https://github.com/acme/widgets.git
+clean_git -C "$WORK/case_p" init -q
+clean_git -C "$WORK/case_p" remote add origin https://github.com/acme/widgets.git
 cp "$HERE/readme-badges.sh" "$WORK/case_p/tools/readme-badges.sh"
 cat <<'EOF' > "$WORK/case_p/README.md"
 # Project
@@ -234,8 +239,8 @@ esac
 # Why: without --repo, slug must come from scanned root git origin, not script checkout.
 mkdir -p "$WORK/case_q_script/tools" "$WORK/case_q/.github/workflows"
 cp "$HERE/readme-badges.sh" "$WORK/case_q_script/tools/readme-badges.sh"
-git -C "$WORK/case_q" init -q
-git -C "$WORK/case_q" remote add origin https://github.com/acme/widgets.git
+clean_git -C "$WORK/case_q" init -q
+clean_git -C "$WORK/case_q" remote add origin https://github.com/acme/widgets.git
 cat <<'EOF' > "$WORK/case_q/README.md"
 # Project
 
@@ -243,6 +248,23 @@ cat <<'EOF' > "$WORK/case_q/README.md"
 EOF
 SCRIPT_PATH="$WORK/case_q_script/tools/readme-badges.sh" \
   expect_refusal "case_q: scanned root slug from target root origin" "missing.yml" "$WORK/case_q"
+
+# Case (r): scanned root slug detected when caller exports GIT_DIR to a different repository -> 1
+# Why: git hooks export GIT_DIR; slug must come from scanned root git origin, not caller GIT_DIR.
+mkdir -p "$WORK/case_r_script/tools" "$WORK/case_r/.github/workflows" "$WORK/case_r_other"
+cp "$HERE/readme-badges.sh" "$WORK/case_r_script/tools/readme-badges.sh"
+clean_git -C "$WORK/case_r" init -q
+clean_git -C "$WORK/case_r" remote add origin https://github.com/acme/widgets.git
+clean_git -C "$WORK/case_r_other" init -q
+clean_git -C "$WORK/case_r_other" remote add origin https://github.com/other/repo.git
+cat <<'EOF' > "$WORK/case_r/README.md"
+# Project
+
+[CI](https://github.com/acme/widgets/actions/workflows/missing.yml)
+EOF
+GIT_DIR="$WORK/case_r_other/.git" \
+  SCRIPT_PATH="$WORK/case_r_script/tools/readme-badges.sh" \
+  expect_refusal "case_r: scanned root slug with foreign GIT_DIR" "missing.yml" "$WORK/case_r"
 
 # Real check on the repo root -> 0
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
