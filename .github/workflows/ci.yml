@@ -6,9 +6,10 @@ name: CI
 # repo tags each module independently (release-please, tag-separator "/", e.g.
 # anime/shoko/v1.2.3), and ci-go.yml's apidiff job only knows a single global
 # `git describe` tag, which would compare against an unrelated module's most
-# recent release in this monorepo. pr-title, the workflow-file gate
-# (tools/workflow-check.sh), the release manifest gate
-# (tools/release-manifest.sh) and the aggregate status gate also stay local.
+# recent release in this monorepo. The workflow-file gate (actionlint and the
+# action pin check) is plurano/horistes's reusable workflow-check.yml.
+# pr-title, the release manifest gate (tools/release-manifest.sh) and the
+# aggregate status gate stay local.
 on:
   pull_request:
     branches: [main]
@@ -47,23 +48,36 @@ jobs:
 
   # Runs on every pull request: a change that touches no module skips the
   # matrices below, and the workflow files and the release manifest are then
-  # all that is left to gate.
+  # all that is left to gate. The shared workflow lints the workflows with
+  # actionlint and checks every action pin and its version comment.
+  workflow-check:
+    name: Workflow check
+    permissions:
+      contents: read
+    uses: plurano/horistes/.github/workflows/workflow-check.yml@0cf1751b0a80090b6385098500fdacf377b3cdef # main 2026-10-27 (#83)
+    with:
+      runner: ubuntu-26.04
+
+  # The required check keeps its name: it fails unless the shared workflow
+  # check passed, and runs under always() so a failed or cancelled call still
+  # reports here instead of being skipped (a skipped job reports success).
   workflows:
     name: Workflows (actionlint, pinned actions)
+    needs: workflow-check
+    if: always()
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
+      - name: Fail unless the shared workflow check passed
+        if: needs.workflow-check.result != 'success'
+        env:
+          RESULT: ${{ needs.workflow-check.result }}
+        run: |
+          echo "::error::The shared workflow check did not pass: $RESULT"
+          exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - name: Check refuses its planted cases
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash tools/workflow-check_test.sh
-      - name: Lint workflows and check action pins
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: bash tools/workflow-check.sh
       - name: Release manifest check refuses its planted cases
         run: bash tools/release-manifest_test.sh
       - name: Release manifest versions match the module paths
@@ -334,12 +348,12 @@ jobs:
   status:
     name: CI success
     if: always()
-    needs: [workflows, upstream-specs, lint-exceptions, secret-scan, discover, ci, apidiff]
+    needs: [workflow-check, workflows, upstream-specs, lint-exceptions, secret-scan, discover, ci, apidiff]
     runs-on: ubuntu-26.04
     steps:
       - name: Check results
         run: |
-          for j in workflows upstream_specs lint_exceptions secret_scan discover; do
+          for j in workflow_check workflows upstream_specs lint_exceptions secret_scan discover; do
             var="${j}_result"; got="${!var}"
             if [ "$got" != success ]; then
               echo "job $j: $got"; exit 1
@@ -360,6 +374,7 @@ jobs:
           echo "All checks passed."
         env:
           modules: ${{ needs.discover.outputs.modules }}
+          workflow_check_result: ${{ needs.workflow-check.result }}
           workflows_result: ${{ needs.workflows.result }}
           upstream_specs_result: ${{ needs.upstream-specs.result }}
           lint_exceptions_result: ${{ needs.lint-exceptions.result }}
