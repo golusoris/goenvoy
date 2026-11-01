@@ -9,9 +9,32 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-# Why: run git without caller repository-location variables (e.g. when run from a git hook).
-clean_git() {
-  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_NAMESPACE git "$@"
+# expect_status NAME STATUS NEEDLE ARGS...: the script must exit STATUS and name NEEDLE.
+expect_status() {
+  local name="$1" want_status="$2" needle="$3" script out status=0
+  shift 3
+  # Why: callers can override the script path to test copies in other directories.
+  script="${SCRIPT_PATH:-$HERE/readme-badges.sh}"
+  if out="$(bash "$script" "$@" 2>&1)"; then
+    status=0
+  else
+    status=$?
+  fi
+  if [ "$status" -ne "$want_status" ]; then
+    printf 'FAIL %s: got status %d, want %d\n%s\n' "$name" "$status" "$want_status" "$out" >&2
+    exit 1
+  fi
+  if [ -n "$needle" ]; then
+    case "$out" in
+      *"$needle"*) echo "ok   $name: refused ($needle, status $status)" ;;
+      *)
+        printf 'FAIL %s: refused without "%s"\n%s\n' "$name" "$needle" "$out" >&2
+        exit 1
+        ;;
+    esac
+  else
+    echo "ok   $name: refused (status $status)"
+  fi
 }
 
 # expect_refusal NAME NEEDLE ARGS...: the script must fail and name NEEDLE.
@@ -213,98 +236,15 @@ cat <<'EOF' > "$WORK/case_o/README.md"
 EOF
 expect_refusal "case_o: single-quoted href full URL acme/widgets missing" "missing.yml" --repo acme/widgets "$WORK/case_o"
 
-# Case (p): default-slug detection from git origin -> 1
-mkdir -p "$WORK/case_p/tools" "$WORK/case_p/.github/workflows"
-clean_git -C "$WORK/case_p" init -q
-clean_git -C "$WORK/case_p" remote add origin https://github.com/acme/widgets.git
-cp "$HERE/readme-badges.sh" "$WORK/case_p/tools/readme-badges.sh"
-cat <<'EOF' > "$WORK/case_p/README.md"
-# Project
+# Case (u): no --repo -> exit status exactly 2 and output names --repo
+mkdir -p "$WORK/case_u"
+touch "$WORK/case_u/README.md"
+expect_status "case_u: no --repo" 2 "--repo" "$WORK/case_u"
 
-[CI](https://github.com/acme/widgets/actions/workflows/missing.yml)
-EOF
-if out="$(bash "$WORK/case_p/tools/readme-badges.sh" 2>&1)"; then
-  printf 'FAIL %s: accepted\n%s\n' "case_p: default-slug detection" "$out" >&2
-  exit 1
-fi
-case "$out" in
-  *"missing.yml"*) echo "ok   case_p: default-slug detection: refused (missing.yml)" ;;
-  *)
-    printf 'FAIL %s: refused without "%s"\n%s\n' "case_p: default-slug detection" "missing.yml" "$out" >&2
-    exit 1
-    ;;
-esac
-
-# Case (q): scanned root slug detected from root arg git origin -> 1
-# Why: without --repo, slug must come from scanned root git origin, not script checkout.
-mkdir -p "$WORK/case_q_script/tools" "$WORK/case_q/.github/workflows"
-cp "$HERE/readme-badges.sh" "$WORK/case_q_script/tools/readme-badges.sh"
-clean_git -C "$WORK/case_q" init -q
-clean_git -C "$WORK/case_q" remote add origin https://github.com/acme/widgets.git
-cat <<'EOF' > "$WORK/case_q/README.md"
-# Project
-
-[CI](https://github.com/acme/widgets/actions/workflows/missing.yml)
-EOF
-SCRIPT_PATH="$WORK/case_q_script/tools/readme-badges.sh" \
-  expect_refusal "case_q: scanned root slug from target root origin" "missing.yml" "$WORK/case_q"
-
-# Case (r): scanned root slug detected when caller exports GIT_DIR to a different repository -> 1
-# Why: git hooks export GIT_DIR; slug must come from scanned root git origin, not caller GIT_DIR.
-mkdir -p "$WORK/case_r_script/tools" "$WORK/case_r/.github/workflows" "$WORK/case_r_other"
-cp "$HERE/readme-badges.sh" "$WORK/case_r_script/tools/readme-badges.sh"
-clean_git -C "$WORK/case_r" init -q
-clean_git -C "$WORK/case_r" remote add origin https://github.com/acme/widgets.git
-clean_git -C "$WORK/case_r_other" init -q
-clean_git -C "$WORK/case_r_other" remote add origin https://github.com/other/repo.git
-cat <<'EOF' > "$WORK/case_r/README.md"
-# Project
-
-[CI](https://github.com/acme/widgets/actions/workflows/missing.yml)
-EOF
-GIT_DIR="$WORK/case_r_other/.git" \
-  SCRIPT_PATH="$WORK/case_r_script/tools/readme-badges.sh" \
-  expect_refusal "case_r: scanned root slug with foreign GIT_DIR" "missing.yml" "$WORK/case_r"
-
-# Case (s): scanned root slug ignores GIT_CONFIG_GLOBAL and GIT_CONFIG_COUNT/KEY/VALUE -> 1
-# Why: only the scanned repository's own config file names the origin.
-mkdir -p "$WORK/case_s_script/tools" "$WORK/case_s/.github/workflows"
-cp "$HERE/readme-badges.sh" "$WORK/case_s_script/tools/readme-badges.sh"
-clean_git -C "$WORK/case_s" init -q
-clean_git -C "$WORK/case_s" remote add origin https://github.com/acme/widgets.git
-cat <<'EOF' > "$WORK/case_s_global.gitconfig"
-[remote "origin"]
-	url = https://github.com/other/repo.git
-EOF
-cat <<'EOF' > "$WORK/case_s/README.md"
-# Project
-
-[CI](https://github.com/acme/widgets/actions/workflows/missing.yml)
-EOF
-GIT_CONFIG_GLOBAL="$WORK/case_s_global.gitconfig" \
-  GIT_CONFIG_COUNT=1 \
-  GIT_CONFIG_KEY_0=remote.origin.url \
-  GIT_CONFIG_VALUE_0=https://github.com/other/repo.git \
-  SCRIPT_PATH="$WORK/case_s_script/tools/readme-badges.sh" \
-  expect_refusal "case_s: scanned root slug with foreign git config" "missing.yml" "$WORK/case_s"
-
-# Case (t): scanned root slug detected from include.path git origin -> 1
-# Why: .git/config can name origin via include.path; config lookup must pass --includes.
-mkdir -p "$WORK/case_t_script/tools" "$WORK/case_t/.github/workflows"
-cp "$HERE/readme-badges.sh" "$WORK/case_t_script/tools/readme-badges.sh"
-clean_git -C "$WORK/case_t" init -q
-cat <<'EOF' > "$WORK/case_t/.git/origin.inc"
-[remote "origin"]
-	url = https://github.com/acme/widgets.git
-EOF
-clean_git -C "$WORK/case_t" config --local include.path origin.inc
-cat <<'EOF' > "$WORK/case_t/README.md"
-# Project
-
-[CI](https://github.com/acme/widgets/actions/workflows/missing.yml)
-EOF
-SCRIPT_PATH="$WORK/case_t_script/tools/readme-badges.sh" \
-  expect_refusal "case_t: scanned root slug from include.path origin" "missing.yml" "$WORK/case_t"
+# Case (v): --repo with no slash -> exit status exactly 2
+mkdir -p "$WORK/case_v"
+touch "$WORK/case_v/README.md"
+expect_status "case_v: --repo with no slash" 2 "" --repo widgets "$WORK/case_v"
 
 # Real check on the repo root -> 0
 REPO_ROOT="$(cd "$HERE/.." && pwd)"

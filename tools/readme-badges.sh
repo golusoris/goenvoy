@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Verify that GitHub Actions workflow badges and links in top-level Markdown
 # files point at workflow files that exist under .github/workflows.
-#   usage: tools/readme-badges.sh [--repo owner/name] [root]
+#   usage: tools/readme-badges.sh --repo owner/name [root]
 set -euo pipefail
 
 REPO_SLUG=""
@@ -11,7 +11,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --repo)
       if [ $# -lt 2 ]; then
-        echo "usage: ${0##*/} [--repo owner/name] [root]" >&2
+        echo "usage: ${0##*/} --repo owner/name [root]" >&2
         exit 2
       fi
       REPO_SLUG="$2"
@@ -22,12 +22,12 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     -*)
-      echo "usage: ${0##*/} [--repo owner/name] [root]" >&2
+      echo "usage: ${0##*/} --repo owner/name [root]" >&2
       exit 2
       ;;
     *)
       if [ -n "$TARGET_ROOT" ]; then
-        echo "usage: ${0##*/} [--repo owner/name] [root]" >&2
+        echo "usage: ${0##*/} --repo owner/name [root]" >&2
         exit 2
       fi
       TARGET_ROOT="$1"
@@ -45,26 +45,16 @@ if [ ! -d "$ROOT" ]; then
   exit 1
 fi
 
-# Why: only the scanned repository's own config file names the origin.
-clean_git() {
-  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_COMMON_DIR -u GIT_OBJECT_DIRECTORY -u GIT_NAMESPACE git "$@"
-}
-
 if [ -z "$REPO_SLUG" ]; then
-  origin_url=""
-  # Why: exit 1 means no origin is set; the slug check below then refuses.
-  if url="$(clean_git -C "$ROOT" config --local --includes --get remote.origin.url 2>/dev/null)"; then
-    origin_url="$url"
-  fi
-  origin_url="${origin_url%.git}"
-  origin_url="${origin_url%/}"
-  if [[ "$origin_url" =~ [:/]([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)$ ]]; then
-    REPO_SLUG="${BASH_REMATCH[1]}"
-  fi
+  echo "error: --repo owner/name is required" >&2
+  echo "usage: ${0##*/} --repo owner/name [root]" >&2
+  exit 2
 fi
 
-if [ -z "$REPO_SLUG" ]; then
-  echo "error: could not determine repository slug (use --repo owner/name)" >&2
+# Why: owner/name slug is required to scope workflow references to this repository.
+if [[ ! "$REPO_SLUG" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+  echo "error: --repo must be owner/name" >&2
+  echo "usage: ${0##*/} --repo owner/name [root]" >&2
   exit 2
 fi
 
