@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
 
 	"github.com/golusoris/goenvoy/arr/sonarr"
 )
@@ -120,4 +122,72 @@ func ExampleClient_SendManualImport() {
 		log.Fatal(err)
 	}
 	fmt.Printf("command %d queued\n", cmd.ID)
+}
+
+func ExampleClient_GetMediaCover() {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "image/jpeg")
+		fmt.Fprint(w, "fake-cover-bytes")
+	}))
+	defer server.Close()
+
+	client, err := sonarr.New(server.URL, "example-api-key")
+	if err != nil {
+		return
+	}
+
+	cover, err := client.GetMediaCover(context.Background(), 1, "poster.jpg")
+	if err != nil {
+		return
+	}
+
+	fmt.Printf("Cover bytes: %d\n", len(cover))
+	// Output:
+	// Cover bytes: 16
+}
+
+func ExampleClient_GetCalendarFeed() {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/calendar")
+		fmt.Fprintln(w, "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nEND:VCALENDAR")
+	}))
+	defer server.Close()
+
+	client, err := sonarr.New(server.URL, "example-api-key")
+	if err != nil {
+		return
+	}
+
+	feed, err := client.GetCalendarFeed(context.Background(), &sonarr.CalendarFeedOptions{
+		Unmonitored: true,
+	})
+	if err != nil {
+		return
+	}
+
+	fmt.Println(feed[:15])
+	// Output:
+	// BEGIN:VCALENDAR
+}
+
+func ExampleClient_GetSeriesByTVDBID() {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `[{"id":7,"title":"Breaking Bad","tvdbId":81189}]`)
+	}))
+	defer server.Close()
+
+	client, err := sonarr.New(server.URL, "example-api-key")
+	if err != nil {
+		return
+	}
+
+	series, err := client.GetSeriesByTVDBID(context.Background(), 81189)
+	if err != nil || len(series) == 0 {
+		return
+	}
+
+	fmt.Printf("%s (id %d)\n", series[0].Title, series[0].ID)
+	// Output:
+	// Breaking Bad (id 7)
 }

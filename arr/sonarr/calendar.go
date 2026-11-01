@@ -4,9 +4,56 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/golusoris/goenvoy/arr/v2"
 )
+
+// CalendarFeedOptions configures optional query parameters for [Client.GetCalendarFeed].
+type CalendarFeedOptions struct {
+	PastDays      *int
+	FutureDays    *int
+	Tags          []string
+	Unmonitored   bool
+	PremieresOnly bool
+	AsAllDay      bool
+}
+
+func (opts *CalendarFeedOptions) values() url.Values {
+	if opts == nil {
+		return nil
+	}
+	q := make(url.Values)
+	if opts.PastDays != nil {
+		q.Set("pastDays", strconv.Itoa(*opts.PastDays))
+	}
+	if opts.FutureDays != nil {
+		q.Set("futureDays", strconv.Itoa(*opts.FutureDays))
+	}
+	if len(opts.Tags) > 0 {
+		q.Set("tags", strings.Join(opts.Tags, ","))
+	}
+	if opts.Unmonitored {
+		q.Set("unmonitored", "true")
+	}
+	if opts.PremieresOnly {
+		q.Set("premieresOnly", "true")
+	}
+	if opts.AsAllDay {
+		q.Set("asAllDay", "true")
+	}
+	return q
+}
+
+// GetCalendarFeed retrieves the Sonarr iCalendar feed in iCal format.
+func (c *Client) GetCalendarFeed(ctx context.Context, opts *CalendarFeedOptions) (string, error) {
+	path := "/feed/v3/calendar/sonarr.ics"
+	if q := opts.values(); len(q) > 0 {
+		path += "?" + q.Encode()
+	}
+	return c.base.GetText(ctx, path)
+}
 
 // GetCalendar returns episodes airing between start and end (RFC 3339 timestamps).
 func (c *Client) GetCalendar(ctx context.Context, start, end string, unmonitored bool) ([]Episode, error) {

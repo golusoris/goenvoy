@@ -2,8 +2,10 @@ package sonarr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"github.com/golusoris/goenvoy/arr/v2"
 )
@@ -11,6 +13,18 @@ import (
 // GetAllSeries returns every series configured in Sonarr.
 func (c *Client) GetAllSeries(ctx context.Context) ([]Series, error) {
 	return arr.GetList[Series](ctx, c.base, "/api/v3/series")
+}
+
+// ErrInvalidTVDBID is returned when a TVDB ID is non-positive.
+var ErrInvalidTVDBID = errors.New("sonarr: invalid TVDB ID")
+
+// GetSeriesByTVDBID returns the library series that carry the given TVDB ID (GET /api/v3/series?tvdbId=);
+// the list is empty when the series is not in the library.
+func (c *Client) GetSeriesByTVDBID(ctx context.Context, tvdbID int) ([]Series, error) {
+	if tvdbID <= 0 {
+		return nil, ErrInvalidTVDBID
+	}
+	return arr.GetList[Series](ctx, c.base, "/api/v3/series?tvdbId="+strconv.Itoa(tvdbID))
 }
 
 // GetSeries returns a single series by its database ID.
