@@ -14,6 +14,7 @@ on:
   pull_request:
     # Why: praetor-main-protection ruleset targets main and lts-* branches.
     branches: [main, 'lts-*']
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions:
@@ -87,6 +88,8 @@ jobs:
         run: bash tools/release-pr-ci_test.sh
       - name: README workflow badges point at existing workflows
         run: bash tools/readme-badges_test.sh
+      - name: Workflows with pull_request trigger have ready_for_review
+        run: bash tools/workflow-ready_test.sh
 
   # The upstream OpenAPI spec pins (upstream/specs.yaml): the checker refuses
   # its planted cases, then every pinned file must still have its sha256.
