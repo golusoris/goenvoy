@@ -271,7 +271,7 @@ func TestTake_Deluge(t *testing.T) {
 		switch body.Method {
 		case "auth.login":
 			reply(len(body.Params) == 1 && body.Params[0] == "delugepass")
-		case "daemon.info":
+		case "daemon.get_version", "daemon.info":
 			reply("2.1.1")
 		case "core.get_torrents_status":
 			reply(map[string]any{
@@ -682,7 +682,7 @@ func TestNeverWrites(t *testing.T) {
 			switch body.Method {
 			case "auth.login":
 				writeJSON(t, w, map[string]any{"result": true, "error": nil, "id": body.ID})
-			case "daemon.info":
+			case "daemon.get_version", "daemon.info":
 				writeJSON(t, w, map[string]any{"result": "2.1.0", "error": nil, "id": body.ID})
 			case "core.get_torrents_status":
 				writeJSON(t, w, map[string]any{"result": map[string]any{}, "error": nil, "id": body.ID})
@@ -902,7 +902,7 @@ func TestTake_Deluge_EmptySecretSendsLogin(t *testing.T) {
 		case "auth.login":
 			loginReceived.Store(true)
 			reply(len(body.Params) == 1 && body.Params[0] == "")
-		case "daemon.info":
+		case "daemon.get_version", "daemon.info":
 			reply("2.1.1")
 		case "core.get_torrents_status":
 			reply(map[string]any{})
