@@ -70,6 +70,8 @@ jobs:
         run: bash tools/release-manifest.sh check
       - name: Release pull request run approval refuses its planted cases
         run: bash tools/release-pr-ci_test.sh
+      - name: README workflow badges point at existing workflows
+        run: bash tools/readme-badges_test.sh
 
   # The upstream OpenAPI spec pins (upstream/specs.yaml): the checker refuses
   # its planted cases, then every pinned file must still have its sha256.

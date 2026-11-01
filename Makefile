@@ -123,6 +123,10 @@ lint-exceptions-gen: ## Regenerate the dated complexity exceptions from a measur
 hooks-test: ## Claude Code edit guard: planted import cases
 	bash .claude/hooks/guard-go-edit_test.sh
 
+.PHONY: badges-check
+badges-check: ## README workflow badges point at existing workflows: planted cases, then the repository
+	bash tools/readme-badges_test.sh
+
 doc: ## Local godoc server at :6060
 	@echo "Starting godoc server at http://localhost:6060"
 	@godoc -http=:6060
@@ -136,6 +140,7 @@ verify-all:
 	@$(PRAETORCTL) caveman check --configured-sources
 	@$(PRAETORCTL) audit
 	@$(MAKE) --no-print-directory hooks-test
+	@$(MAKE) --no-print-directory badges-check
 	@$(MAKE) --no-print-directory ci-all
 
 compile-context:
