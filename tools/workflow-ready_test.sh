@@ -87,6 +87,32 @@ on:
 EOF
 expect_pass "case_e: no pull_request trigger" "$WORK/case_e"
 
+# Why: case f: only a .yaml workflow with pull_request and no types must be refused.
+mkdir -p "$WORK/case_f/.github/workflows"
+cat <<'EOF' > "$WORK/case_f/.github/workflows/push.yml"
+name: Push
+on:
+  push:
+    branches: [main]
+EOF
+cat <<'EOF' > "$WORK/case_f/.github/workflows/ci.yaml"
+name: CI
+on:
+  pull_request:
+    branches: [main]
+EOF
+expect_refusal "case_f: only a .yaml workflow with pull_request and no types" ".github/workflows/ci.yaml" "$WORK/case_f"
+
+# Why: case g: .yaml workflow with ready_for_review must pass.
+mkdir -p "$WORK/case_g/.github/workflows"
+cat <<'EOF' > "$WORK/case_g/.github/workflows/ci.yaml"
+name: CI
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+EOF
+expect_pass "case_g: .yaml workflow with ready_for_review" "$WORK/case_g"
+
 # Why: verify the real repository passes.
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 expect_pass "repo: real check" "$REPO_ROOT"

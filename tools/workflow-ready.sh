@@ -32,7 +32,7 @@ if [ ! -d "$ROOT" ]; then
 fi
 
 shopt -s nullglob
-files=("$ROOT"/.github/workflows/*.yml)
+files=("$ROOT"/.github/workflows/*.yml "$ROOT"/.github/workflows/*.yaml)
 
 if [ ${#files[@]} -eq 0 ]; then
   echo "error: no workflow files found in $ROOT/.github/workflows" >&2
