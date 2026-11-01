@@ -123,7 +123,7 @@ make verify-all
 8. Per module per merged commit: 0 lint, 0 gosec, 0 govulncheck, race green, coverage >= 70%. `//nolint` needs same-line reason.
 9. Breaking public API: `Migration:` footer, before/after Go snippets; `apidiff` vs last tag.
 10. User input in URL paths -> `url.PathEscape`.
-11. Comments: one-line `// Why:` only. No new Markdown docs unless asked.
+11. Comments: exported Go declaration -> doc comment (starts with name, ends with period; revive + godot enforce); other comments one-line `// Why:`. No new Markdown docs unless asked.
 12. Tests: `httptest` only, never live APIs. New method -> table-driven test + runnable godoc example.
 
 ## CI gates
