@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Verify that GitHub Actions workflow badges and links in top-level Markdown
 # files point at workflow files that exist under .github/workflows.
-#   usage: tools/readme-badges.sh [--repo owner/name] [root]
+#   usage: tools/readme-badges.sh --repo owner/name [root]
 set -euo pipefail
 
 REPO_SLUG=""
@@ -11,7 +11,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --repo)
       if [ $# -lt 2 ]; then
-        echo "usage: ${0##*/} [--repo owner/name] [root]" >&2
+        echo "usage: ${0##*/} --repo owner/name [root]" >&2
         exit 2
       fi
       REPO_SLUG="$2"
@@ -22,12 +22,12 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     -*)
-      echo "usage: ${0##*/} [--repo owner/name] [root]" >&2
+      echo "usage: ${0##*/} --repo owner/name [root]" >&2
       exit 2
       ;;
     *)
       if [ -n "$TARGET_ROOT" ]; then
-        echo "usage: ${0##*/} [--repo owner/name] [root]" >&2
+        echo "usage: ${0##*/} --repo owner/name [root]" >&2
         exit 2
       fi
       TARGET_ROOT="$1"
@@ -46,19 +46,15 @@ if [ ! -d "$ROOT" ]; then
 fi
 
 if [ -z "$REPO_SLUG" ]; then
-  origin_url=""
-  if git -C "$REPO_ROOT" remote get-url origin >/dev/null 2>&1; then
-    origin_url="$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null)"
-  fi
-  origin_url="${origin_url%.git}"
-  origin_url="${origin_url%/}"
-  if [[ "$origin_url" =~ [:/]([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)$ ]]; then
-    REPO_SLUG="${BASH_REMATCH[1]}"
-  fi
+  echo "error: --repo owner/name is required" >&2
+  echo "usage: ${0##*/} --repo owner/name [root]" >&2
+  exit 2
 fi
 
-if [ -z "$REPO_SLUG" ]; then
-  echo "error: could not determine repository slug (use --repo owner/name)" >&2
+# Why: owner/name slug is required to scope workflow references to this repository.
+if [[ ! "$REPO_SLUG" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+  echo "error: --repo must be owner/name" >&2
+  echo "usage: ${0##*/} --repo owner/name [root]" >&2
   exit 2
 fi
 

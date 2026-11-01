@@ -9,11 +9,41 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+# expect_status NAME STATUS NEEDLE ARGS...: the script must exit STATUS and name NEEDLE.
+expect_status() {
+  local name="$1" want_status="$2" needle="$3" script out status=0
+  shift 3
+  # Why: callers can override the script path to test copies in other directories.
+  script="${SCRIPT_PATH:-$HERE/readme-badges.sh}"
+  if out="$(bash "$script" "$@" 2>&1)"; then
+    status=0
+  else
+    status=$?
+  fi
+  if [ "$status" -ne "$want_status" ]; then
+    printf 'FAIL %s: got status %d, want %d\n%s\n' "$name" "$status" "$want_status" "$out" >&2
+    exit 1
+  fi
+  if [ -n "$needle" ]; then
+    case "$out" in
+      *"$needle"*) echo "ok   $name: refused ($needle, status $status)" ;;
+      *)
+        printf 'FAIL %s: refused without "%s"\n%s\n' "$name" "$needle" "$out" >&2
+        exit 1
+        ;;
+    esac
+  else
+    echo "ok   $name: refused (status $status)"
+  fi
+}
+
 # expect_refusal NAME NEEDLE ARGS...: the script must fail and name NEEDLE.
 expect_refusal() {
   local name="$1" needle="$2" out
   shift 2
-  if out="$(bash "$HERE/readme-badges.sh" "$@" 2>&1)"; then
+  # Why: callers can override the script path to test copies in other directories.
+  local script="${SCRIPT_PATH:-$HERE/readme-badges.sh}"
+  if out="$(bash "$script" "$@" 2>&1)"; then
     printf 'FAIL %s: accepted\n%s\n' "$name" "$out" >&2
     exit 1
   fi
@@ -206,27 +236,15 @@ cat <<'EOF' > "$WORK/case_o/README.md"
 EOF
 expect_refusal "case_o: single-quoted href full URL acme/widgets missing" "missing.yml" --repo acme/widgets "$WORK/case_o"
 
-# Case (p): default-slug detection from git origin -> 1
-mkdir -p "$WORK/case_p/tools" "$WORK/case_p/.github/workflows"
-git -C "$WORK/case_p" init -q
-git -C "$WORK/case_p" remote add origin https://github.com/acme/widgets.git
-cp "$HERE/readme-badges.sh" "$WORK/case_p/tools/readme-badges.sh"
-cat <<'EOF' > "$WORK/case_p/README.md"
-# Project
+# Case (u): no --repo -> exit status exactly 2 and output names --repo
+mkdir -p "$WORK/case_u"
+touch "$WORK/case_u/README.md"
+expect_status "case_u: no --repo" 2 "--repo" "$WORK/case_u"
 
-[CI](https://github.com/acme/widgets/actions/workflows/missing.yml)
-EOF
-if out="$(bash "$WORK/case_p/tools/readme-badges.sh" 2>&1)"; then
-  printf 'FAIL %s: accepted\n%s\n' "case_p: default-slug detection" "$out" >&2
-  exit 1
-fi
-case "$out" in
-  *"missing.yml"*) echo "ok   case_p: default-slug detection: refused (missing.yml)" ;;
-  *)
-    printf 'FAIL %s: refused without "%s"\n%s\n' "case_p: default-slug detection" "missing.yml" "$out" >&2
-    exit 1
-    ;;
-esac
+# Case (v): --repo with no slash -> exit status exactly 2
+mkdir -p "$WORK/case_v"
+touch "$WORK/case_v/README.md"
+expect_status "case_v: --repo with no slash" 2 "" --repo widgets "$WORK/case_v"
 
 # Real check on the repo root -> 0
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
