@@ -74,8 +74,8 @@ done
 # Pattern for workflow references:
 # 1) github.com/<owner>/<repo>/actions/workflows/<file>
 # 2) actions/workflows/<file> (not preceded by github.com/<owner>/<repo>/)
-# where <file> is [A-Za-z0-9._-]+\.ya?ml
-workflow_re="(github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/)?actions/workflows/([A-Za-z0-9._-]+\.ya?ml)"
+# where <file> is [A-Za-z0-9._-]+
+workflow_re="(github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/)?actions/workflows/([A-Za-z0-9._-]+)"
 
 misses=0
 ok_refs=0
@@ -98,12 +98,15 @@ for f in "${files[@]}"; do
         wf="${BASH_REMATCH[3]}"
         cur="${cur#*"$matched"}"
 
+        # Why: trailing dots are sentence punctuation; strip them without a loop.
+        wf="${wf%"${wf##*[!.]}"}"
+
         # Why: ignore references to workflows hosted in other repositories.
         if [ -n "$owner_repo" ] && [ "${owner_repo,,}" != "${REPO_SLUG,,}" ]; then
           continue
         fi
 
-        if [ -f "$ROOT/.github/workflows/$wf" ]; then
+        if [ -n "$wf" ] && [ -f "$ROOT/.github/workflows/$wf" ]; then
           ok_refs=$((ok_refs + 1))
         else
           printf 'readme-badges: %s:%s: workflow %s not in .github/workflows\n' "$rel" "$lnum" "$wf" >&2

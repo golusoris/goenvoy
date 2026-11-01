@@ -178,9 +178,59 @@ cat <<'EOF' > "$WORK/case_l/README.md"
 EOF
 expect_refusal "case_l: relative badge missing" "gone.yml" --repo acme/widgets "$WORK/case_l"
 
+# Case (m): link to ci.yml-old where only ci.yml exists -> 1
+mkdir -p "$WORK/case_m/.github/workflows"
+touch "$WORK/case_m/.github/workflows/ci.yml"
+cat <<'EOF' > "$WORK/case_m/README.md"
+# Project
+
+[CI Old](https://github.com/acme/widgets/actions/workflows/ci.yml-old)
+EOF
+expect_refusal "case_m: link to ci.yml-old where only ci.yml exists" "ci.yml-old" --repo acme/widgets "$WORK/case_m"
+
+# Case (n): double-quoted img src relative to missing gone.yml -> 1
+mkdir -p "$WORK/case_n/.github/workflows"
+cat <<'EOF' > "$WORK/case_n/README.md"
+# Project
+
+<img src="../../actions/workflows/gone.yml/badge.svg">
+EOF
+expect_refusal "case_n: double-quoted img src relative to missing gone.yml" "gone.yml" --repo acme/widgets "$WORK/case_n"
+
+# Case (o): single-quoted href full URL acme/widgets missing -> 1
+mkdir -p "$WORK/case_o/.github/workflows"
+cat <<'EOF' > "$WORK/case_o/README.md"
+# Project
+
+<a href='https://github.com/acme/widgets/actions/workflows/missing.yml'>CI</a>
+EOF
+expect_refusal "case_o: single-quoted href full URL acme/widgets missing" "missing.yml" --repo acme/widgets "$WORK/case_o"
+
+# Case (p): default-slug detection from git origin -> 1
+mkdir -p "$WORK/case_p/tools" "$WORK/case_p/.github/workflows"
+git -C "$WORK/case_p" init -q
+git -C "$WORK/case_p" remote add origin https://github.com/acme/widgets.git
+cp "$HERE/readme-badges.sh" "$WORK/case_p/tools/readme-badges.sh"
+cat <<'EOF' > "$WORK/case_p/README.md"
+# Project
+
+[CI](https://github.com/acme/widgets/actions/workflows/missing.yml)
+EOF
+if out="$(bash "$WORK/case_p/tools/readme-badges.sh" 2>&1)"; then
+  printf 'FAIL %s: accepted\n%s\n' "case_p: default-slug detection" "$out" >&2
+  exit 1
+fi
+case "$out" in
+  *"missing.yml"*) echo "ok   case_p: default-slug detection: refused (missing.yml)" ;;
+  *)
+    printf 'FAIL %s: refused without "%s"\n%s\n' "case_p: default-slug detection" "missing.yml" "$out" >&2
+    exit 1
+    ;;
+esac
+
 # Real check on the repo root -> 0
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
-expect_pattern "repo: real check" "workflow references ok" "$REPO_ROOT"
-(cd "$REPO_ROOT" && expect_pattern "repo: default root" "workflow references ok")
+expect_pattern "repo: real check" "workflow references ok" --repo golusoris/goenvoy "$REPO_ROOT"
+(cd "$REPO_ROOT" && expect_pattern "repo: default root" "workflow references ok" --repo golusoris/goenvoy)
 
 echo "readme-badges: all planted cases pass"
