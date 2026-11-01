@@ -3,11 +3,13 @@
 // Every rule between the praetor:generated-exceptions markers under linters.exclusions.rules
 // names one test file and one of funlen, gocyclo, gocognit or cyclop, carries the comment
 // "category <A-D>, entered <date>, expires <date>, #<issue>" on the line above it, and is not
-// past its date. A complexity linter outside that block fails, so no file tier comes back.
+// past its date. A "baseline #<issue>" rule instead pins one function of a test file under
+// funlen, gocyclo or gocognit through a "text:" line; the engine ratchet only lets it shrink.
+// A complexity linter outside that block fails, so no file tier comes back.
 //
 // This check is itself an exception to one mechanism per behavior (HISS-19; category C,
-// entered 2026-10-19, expires 2026-10-29, #141): it stands in until goenvoy adopts the engine
-// audit that judges these exclusions (cordanaLLM/praetor#1388), and goes in that adoption change.
+// entered 2026-11-01, expires 2026-11-11, #141): the engine audit judges the same block in the
+// local hooks, and this check keeps a CI barrier until the CI runs that audit.
 // Adapted from tekmora/epitrop tools/lintexceptions (same author).
 package lintexceptions
 
@@ -20,7 +22,7 @@ import (
 )
 
 // selfExpiry is the date this package's own exception runs out.
-const selfExpiry = "2026-10-29"
+const selfExpiry = "2026-11-11"
 
 // maxLines bounds the configuration lines one check reads.
 const maxLines = 100000
@@ -32,6 +34,9 @@ const (
 )
 
 var (
+	baselineLine   = regexp.MustCompile(`^      # baseline #\d+$`)
+	baselineLinter = regexp.MustCompile(`^          - (?:funlen|gocyclo|gocognit)$`)
+	textLine       = regexp.MustCompile(`^        text: \S.*$`)
 	commentLine    = regexp.MustCompile(`^      # category [A-D], (?:entered \d{4}-\d{2}-\d{2}, )?expires (\d{4}-\d{2}-\d{2}), #\d+$`)
 	pathLine       = regexp.MustCompile(`^      - path: \^\S+_test\\\.go\$$`)
 	linterLine     = regexp.MustCompile(`^          - (?:funlen|gocyclo|gocognit|cyclop)$`)
@@ -47,6 +52,7 @@ type scan struct {
 	generated bool
 	seenBlock bool
 	expiry    string
+	baseline  bool
 	rules     int
 }
 
@@ -96,21 +102,40 @@ func (s *scan) line(line string, lineNumber int) error {
 // generatedLine judges one line inside the generated block against the allowed shapes.
 func (s *scan) generatedLine(line string, lineNumber int) error {
 	if match := commentLine.FindStringSubmatch(line); match != nil {
-		s.expiry = match[1]
+		s.expiry, s.baseline = match[1], false
+		return nil
+	}
+	if baselineLine.MatchString(line) {
+		s.expiry, s.baseline = "", true
 		return nil
 	}
 	if pathLine.MatchString(line) {
-		if err := checkRule(s.expiry, s.today, lineNumber); err != nil {
-			return err
-		}
-		s.rules++
-		s.expiry = ""
-		return nil
+		return s.pathLine(lineNumber)
 	}
-	if line == "" || line == lintersKey || linterLine.MatchString(line) {
+	if line == "" || line == lintersKey || s.ruleLine(line) {
 		return nil
 	}
 	return fmt.Errorf("line %d: %q is not an exception comment, test-file path or complexity linter line", lineNumber, line)
+}
+
+// pathLine opens one rule: a dated rule must be current, a baseline rule needs its comment.
+func (s *scan) pathLine(lineNumber int) error {
+	if !s.baseline {
+		if err := checkRule(s.expiry, s.today, lineNumber); err != nil {
+			return err
+		}
+	}
+	s.rules++
+	s.expiry = ""
+	return nil
+}
+
+// ruleLine reports whether the line is a linter or text line the current rule kind allows.
+func (s *scan) ruleLine(line string) bool {
+	if s.baseline {
+		return baselineLinter.MatchString(line) || textLine.MatchString(line)
+	}
+	return linterLine.MatchString(line)
 }
 
 // rulesStart returns the index of the first line after "    rules:" inside "  exclusions:".

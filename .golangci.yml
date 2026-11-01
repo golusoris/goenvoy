@@ -197,282 +197,646 @@ linters:
           - wrapcheck
           - gosec
       # praetor:generated-exceptions begin (praetorctl linters exceptions; never edit by hand)
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
-      - path: ^arr/bazarr/bazarr_test\.go$
-        linters:
-          - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^arr/bazarr/bazarr_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
-      - path: ^arr/bazarr/bazarr_test\.go$
-        linters:
-          - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestSetMovieProfile`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^arr/cleanuparr/cleanuparr_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^arr/cleanuparr/cleanuparr_test\.go$
         linters:
           - funlen
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: Function 'TestApplicationStatus_StartTimeParsed'
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestGetArrConfig_Success'
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestGetGeneralConfig_Success'
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestGetSeekerConfig_Success'
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestGetStrikes_Success'
+      # baseline #141
       - path: ^arr/cleanuparr/cleanuparr_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestApplicationStatus_StartTimeParsed`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocognit
+        text: func `TestGetArrConfig_Success`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocognit
+        text: func `TestGetGeneralConfig_Success`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocognit
+        text: func `TestGetRecentStrikes_Success`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocognit
+        text: func `TestGetSeekerConfig_Success`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocognit
+        text: func `TestGetStatus_Success`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocognit
+        text: func `TestGetStrikes_Clamping`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocognit
+        text: func `TestGetStrikes_Success`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocognit
+        text: func `TestNegative_Config_APIError500`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocognit
+        text: func `TestNew`
+      # baseline #141
       - path: ^arr/cleanuparr/cleanuparr_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestApplicationStatus_StartTimeParsed`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestClientNeverWrites`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestGetArrConfig_Success`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestGetGeneralConfig_Success`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestGetRecentStrikes_Success`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestGetSeekerConfig_Success`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestGetStatus_Success`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestGetStrikes_Success`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestNegative_APIError500`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestNegative_Config_APIError500`
+      # baseline #141
+      - path: ^arr/cleanuparr/cleanuparr_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestSummarizeStrikes_Success`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^arr/client_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^arr/client_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestBaseClient_Head`
+      # baseline #141
+      - path: ^arr/client_test\.go$
+        linters:
+          - gocognit
+        text: func `TestNewServiceClient`
+      # baseline #141
       - path: ^arr/client_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestNewServiceClient`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^arr/jackett/jackett_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^arr/jackett/jackett_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestGetCapabilities`
+      # baseline #141
+      - path: ^arr/jackett/jackett_test\.go$
+        linters:
+          - gocognit
+        text: func `TestSearch`
+      # baseline #141
+      - path: ^arr/jackett/jackett_test\.go$
+        linters:
+          - gocognit
+        text: func `TestTVSearch`
+      # baseline #141
       - path: ^arr/jackett/jackett_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestGetCapabilities`
+      # baseline #141
+      - path: ^arr/jackett/jackett_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestSearch`
+      # baseline #141
       - path: ^arr/lidarr/queue_options_test\.go$
         linters:
           - funlen
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: Function 'TestGetQueueWithOptions_NestedMonitored'
+      # baseline #141
+      - path: ^arr/lidarr/queue_options_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestGetQueueWithOptions_QueryString'
+      # baseline #141
       - path: ^arr/lidarr/queue_options_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestDeleteQueueItemWithOptions`
+      # baseline #141
+      - path: ^arr/lidarr/queue_options_test\.go$
+        linters:
+          - gocognit
+        text: func `TestGetQueueWithOptions_QueryString`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^arr/nzbhydra/nzbhydra_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^arr/nzbhydra/nzbhydra_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestGetStats`
+      # baseline #141
+      - path: ^arr/nzbhydra/nzbhydra_test\.go$
+        linters:
+          - gocognit
+        text: func `TestSearch`
+      # baseline #141
+      - path: ^arr/nzbhydra/nzbhydra_test\.go$
+        linters:
+          - gocognit
+        text: func `TestTVSearch`
+      # baseline #141
       - path: ^arr/nzbhydra/nzbhydra_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestGetCapabilities`
+      # baseline #141
+      - path: ^arr/nzbhydra/nzbhydra_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestGetStats`
+      # baseline #141
+      - path: ^arr/nzbhydra/nzbhydra_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestSearch`
+      # baseline #141
+      - path: ^arr/nzbhydra/nzbhydra_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestTVSearch`
+      # baseline #141
       - path: ^arr/readarr/queue_options_test\.go$
         linters:
           - funlen
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: Function 'TestGetQueueWithOptions_NestedMonitored'
+      # baseline #141
+      - path: ^arr/readarr/queue_options_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestGetQueueWithOptions_QueryString'
+      # baseline #141
       - path: ^arr/readarr/queue_options_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
-      - path: ^arr/resource_test\.go$
-        linters:
-          - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
-      - path: ^arr/resource_test\.go$
+        text: func `TestDeleteQueueItemWithOptions`
+      # baseline #141
+      - path: ^arr/readarr/queue_options_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
-      - path: ^arr/resource_test\.go$
-        linters:
-          - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestGetQueueWithOptions_QueryString`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^arr/seerr/seerr_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^arr/seerr/seerr_test\.go$
         linters:
           - funlen
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: Function 'TestGetRadarrSettings'
+      # baseline #141
+      - path: ^arr/seerr/seerr_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestGetSonarrSettings'
+      # baseline #141
+      - path: ^arr/seerr/seerr_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestMediaRequest_DecodeProcessingFields'
+      # baseline #141
+      - path: ^arr/seerr/seerr_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestServiceSettings_URL'
+      # baseline #141
+      - path: ^arr/seerr/seerr_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestUser_Name'
+      # baseline #141
       - path: ^arr/seerr/seerr_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestGetRadarrSettings`
+      # baseline #141
+      - path: ^arr/seerr/seerr_test\.go$
+        linters:
+          - gocognit
+        text: func `TestGetSonarrSettings`
+      # baseline #141
+      - path: ^arr/seerr/seerr_test\.go$
+        linters:
+          - gocognit
+        text: func `TestMediaRequest_DecodeProcessingFields`
+      # baseline #141
       - path: ^arr/seerr/seerr_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestGetRadarrSettings`
+      # baseline #141
+      - path: ^arr/seerr/seerr_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestGetSonarrSettings`
+      # baseline #141
+      - path: ^arr/seerr/seerr_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestMediaRequest_DecodeProcessingFields`
+      # baseline #141
       - path: ^arr/seerr/server_id_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestServerIDMarshal`
+      # baseline #141
       - path: ^arr/whisparr/whisparr_extra_test\.go$
         linters:
           - funlen
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: Function 'TestV2AdditionalEndpointWrappers'
+      # baseline #141
+      - path: ^arr/whisparr/whisparr_extra_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestV3ConfigEndpointWrappers'
+      # baseline #141
+      - path: ^arr/whisparr/whisparr_extra_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestV3ProviderEndpointWrappers'
+      # baseline #141
+      - path: ^arr/whisparr/whisparr_extra_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestV3QueueReleaseAndQualityWrappers'
+      # baseline #141
+      - path: ^arr/whisparr/whisparr_extra_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestV3RemainingEndpointWrappers'
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^downloadclient/queue/queue_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^downloadclient/queue/queue_test\.go$
         linters:
           - funlen
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: Function 'TestNeverWrites'
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestTake_Deluge'
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestTake_QBittorrent'
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - funlen
+        text: Function 'TestTake_RTorrent'
+      # baseline #141
       - path: ^downloadclient/queue/queue_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestNeverWrites`
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocognit
+        text: func `TestTake_Deluge`
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocognit
+        text: func `TestTake_NZBGet`
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocognit
+        text: func `TestTake_QBittorrent`
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocognit
+        text: func `TestTake_RTorrent`
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocognit
+        text: func `TestTake_Transmission`
+      # baseline #141
       - path: ^downloadclient/queue/queue_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestNeverWrites`
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestTake_Deluge`
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestTake_NZBGet`
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestTake_QBittorrent`
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestTake_RTorrent`
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestTake_SABnzbd`
+      # baseline #141
+      - path: ^downloadclient/queue/queue_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestTake_Transmission`
+      # baseline #141
       - path: ^downloadclient/rtorrent/rtorrent_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestAPIError`
+      # baseline #141
+      - path: ^downloadclient/rtorrent/rtorrent_test\.go$
+        linters:
+          - gocognit
+        text: func `TestGetTorrents_hashing`
+      # baseline #141
       - path: ^downloadclient/transmission/transmission_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestSetTorrentSpeedLimits`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^metadata/anime/anidb/anidb_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^metadata/anime/anidb/anidb_test\.go$
         linters:
           - funlen
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: Function 'TestSearchByTitle'
+      # baseline #141
+      - path: ^metadata/anime/anidb/anidb_test\.go$
+        linters:
+          - funlen
+        text: Function 'getTestAnime'
+      # baseline #141
       - path: ^metadata/anime/anidb/anidb_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestSearchByTitle`
+      # baseline #141
       - path: ^metadata/anime/anidb/anidb_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestSearchByTitle`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^metadata/anime/kitsu/kitsu_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^metadata/anime/kitsu/kitsu_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestAuthenticate`
+      # baseline #141
       - path: ^metadata/anime/kitsu/kitsu_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestAuthenticate`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^metadata/anime/mal/mal_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^metadata/anime/mal/mal_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestExchangeCode`
+      # baseline #141
       - path: ^metadata/anime/mal/mal_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestExchangeCode`
+      # baseline #141
+      - path: ^metadata/anime/mal/mal_test\.go$
+        linters:
+          - gocyclo
+        text: func `TestGetAnimeSubtypes`
+      # baseline #141
       - path: ^metadata/client_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestDoJSON_ErrorResponse`
+      # baseline #141
+      - path: ^metadata/client_test\.go$
+        linters:
+          - gocognit
+        text: func `TestDoJSON_Methods`
+      # baseline #141
+      - path: ^metadata/client_test\.go$
+        linters:
+          - gocognit
+        text: func `TestDoRaw`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^metadata/game/hasheous/hasheous_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^metadata/game/hasheous/hasheous_test\.go$
         linters:
           - funlen
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: Function 'TestLookupByHash'
+      # baseline #141
       - path: ^metadata/game/hasheous/hasheous_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestLookupByHash`
+      # baseline #141
       - path: ^metadata/game/hasheous/hasheous_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestLookupByHash`
+      # baseline #141
       - path: ^metadata/game/launchbox/launchbox_test\.go$
         linters:
           - funlen
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: Function 'makeTestZip'
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^metadata/game/rawg/rawg_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^metadata/game/rawg/rawg_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestSearchGames`
+      # baseline #141
       - path: ^metadata/game/rawg/rawg_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestSearchGames`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^metadata/game/screenscraper/screenscraper_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^metadata/game/screenscraper/screenscraper_test\.go$
         linters:
           - funlen
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: Function 'TestGetGameInfo'
+      # baseline #141
       - path: ^metadata/game/screenscraper/screenscraper_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestGetGameInfo`
+      # baseline #141
       - path: ^metadata/game/screenscraper/screenscraper_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestGetGameInfo`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^metadata/music/spotify/spotify_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^metadata/music/spotify/spotify_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestSearch`
+      # baseline #141
       - path: ^metadata/music/spotify/spotify_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestSearch`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^metadata/tracking/letterboxd/letterboxd_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^metadata/tracking/letterboxd/letterboxd_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestNewWithClientCredentials`
+      # baseline #141
       - path: ^metadata/tracking/letterboxd/letterboxd_test\.go$
         linters:
           - gocyclo
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestNewWithClientCredentials`
+      # baseline #141
       - path: ^metadata/tracking/listenbrainz/listenbrainz_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestSubmitListens`
+      # baseline #141
       - path: ^metadata/tracking/trakt/trakt_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `TestExchangeCode`
+      # baseline #141
       - path: ^tools/flaresolverr/flaresolverr_test\.go$
         linters:
           - gocognit
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+        text: func `newTestServer`
+      # category C, entered 2026-11-01, expires 2026-11-11, #141
       - path: ^tools/go/upstreamspec/manifest_test\.go$
         linters:
           - cyclop
-      # category C, entered 2026-10-19, expires 2026-10-29, #141
+      # baseline #141
       - path: ^tools/go/upstreamspec/manifest_test\.go$
         linters:
           - gocyclo
+        text: func `TestReadManifest`
       # praetor:generated-exceptions end
 
 formatters:

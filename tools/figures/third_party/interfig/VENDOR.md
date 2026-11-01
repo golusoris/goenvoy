@@ -30,10 +30,12 @@ repository-root `LICENSE` at the pinned commit, copied verbatim.
 - `REUSE.toml` labels `tools/figures/third_party/interfig/upstream/**` as MIT
   with an override annotation placed after the repository-wide `**` table. This
   file, `vendor.json` and everything outside `upstream/` stay EUPL-1.2.
-- The committed player in `tools/figures/player/` carries an
+- The figure player bundle carries an
   `interfig (c) 2025 Vectorize AI, Inc. MIT` banner, because the upstream
-  source has no header of its own, and `player/THIRD-PARTY-LICENSES.txt` carries
-  the full license text (`tools/figures/bundle.mjs`).
+  source has no header of its own, and the bundle's `THIRD-PARTY-LICENSES.txt`
+  carries the full license text. The engine builds the bundle; an adopting
+  repository receives it as the release archive that
+  `tools/figures/player.lock.json` names.
 - Every exported SVG carries a credit comment, and the site footer credits
   Vectorize (`copyright` in `mkdocs.yml`).
 
@@ -87,6 +89,10 @@ starts as a child process. Praetor's build never calls that script:
 
 ## Updating the pin
 
+This section runs in the engine repository, which owns the vendored tree and
+holds `scripts/sync_interfig.py`. An adopting repository has none of these steps:
+it receives each update through `praetorctl adopt`.
+
 `scripts/sync_interfig.py` owns the pin (ADR-0015, section 8):
 
 - `python3 scripts/sync_interfig.py verify` runs offline, in
@@ -99,7 +105,7 @@ starts as a child process. Praetor's build never calls that script:
   compare URL and the update command, and 1 on any other failure.
 - `python3 scripts/sync_interfig.py update --commit <sha>` vendors `<sha>`, a
   full 40-character commit sha, runs the upstream tests and the figure build,
-  and rebuilds the committed player.
+  and rebuilds the player bundle.
 
 The weekly `interfig-sync.yml` workflow runs `check` and fails with the update
 command when upstream has moved. To update the pin:
@@ -116,23 +122,25 @@ command when upstream has moved. To update the pin:
    neither included nor excluded, or if the upstream `react` peer range does
    not admit the `react` version in `tools/figures/package.json`. Otherwise it
    swaps in the new `upstream/` and `vendor.json` together, restoring the
-   previous tree if the swap fails, then runs the upstream tests,
-   `npm --prefix tools/figures run build`, the locked
+   previous tree if the swap fails, then runs the upstream tests and
+   `npm --prefix tools/figures run build`. Where the repository builds the
+   figure player (the engine), it then also runs the locked
    `npm ci --prefix tools/figures --ignore-scripts` and
-   `npm --prefix tools/figures run bundle`, which rewrites the committed player
-   in `tools/figures/player/`. If any of them fails, revert the update.
-   `git clean` removes the new upstream files and figure outputs that
-   `git checkout` leaves behind:
+   `npm --prefix tools/figures run bundle`, which rewrites the player bundle;
+   an adopting repository has no bundle step. If any of them fails, revert the
+   update, including a rewritten player bundle. `git clean` removes the new
+   upstream files and figure outputs that `git checkout` leaves behind:
 
    ```bash
-   git checkout -- tools/figures/third_party/interfig docs/assets/figures tools/figures/player
+   git checkout -- tools/figures/third_party/interfig docs/assets/figures
    git clean -fd -- tools/figures/third_party/interfig/upstream docs/assets/figures
    ```
 
 2. Add a new upstream file to the include or exclude list in `vendor.json`
    first, when step 1 stops on one.
 3. Commit the rewritten `upstream/`, `vendor.json`, the regenerated
-   `docs/assets/figures/` and the rebuilt `tools/figures/player/`. The command
+   `docs/assets/figures/` and, where the update rebuilt one, the player bundle.
+   The command
    prints the upstream commits under `hindsight-interfig/` since the old pin and
    the compare URL for the pull-request body. The list is best effort: when
    GitHub rate-limits or fails the request, the update still succeeds and

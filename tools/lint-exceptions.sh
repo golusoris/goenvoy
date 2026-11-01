@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Regenerate the dated complexity exceptions in .golangci.yml from a measured lint run (#141).
 # Needs golangci-lint, jq and praetorctl (engine with cordanaLLM/praetor#1388) on PATH.
-# tools/go/lintexceptions (make lint-exceptions) judges the result.
+# praetorctl audit (hooks) and tools/go/lintexceptions (make lint-exceptions, CI) judge the result.
 set -euo pipefail
 root=$(git rev-parse --show-toplevel)
 cd "$root"

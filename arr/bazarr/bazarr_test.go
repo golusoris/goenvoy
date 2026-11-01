@@ -95,19 +95,7 @@ func TestSetSeriesProfile(t *testing.T) {
 		if r.URL.Path != "/api/series" {
 			t.Errorf("path = %q, want /api/series", r.URL.Path)
 		}
-		var body struct {
-			SeriesID  []int    `json:"seriesid"`
-			ProfileID []string `json:"profileid"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode: %v", err)
-		}
-		if len(body.SeriesID) != 2 || body.SeriesID[0] != 1 || body.SeriesID[1] != 2 {
-			t.Errorf("seriesid = %#v, want [1 2]", body.SeriesID)
-		}
-		if len(body.ProfileID) != 1 || body.ProfileID[0] != "eng" {
-			t.Errorf("profileid = %#v, want [eng]", body.ProfileID)
-		}
+		checkSeriesProfileBody(t, r)
 		w.WriteHeader(http.StatusNoContent)
 	}))
 	defer srv.Close()
@@ -119,6 +107,24 @@ func TestSetSeriesProfile(t *testing.T) {
 
 	if err := c.SetSeriesProfile(context.Background(), []int{1, 2}, []string{"eng"}); err != nil {
 		t.Fatalf("SetSeriesProfile: %v", err)
+	}
+}
+
+func checkSeriesProfileBody(t *testing.T, r *http.Request) {
+	t.Helper()
+	var body struct {
+		SeriesID  []int    `json:"seriesid"`
+		ProfileID []string `json:"profileid"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		t.Errorf("decode: %v", err)
+		return
+	}
+	if len(body.SeriesID) != 2 || body.SeriesID[0] != 1 || body.SeriesID[1] != 2 {
+		t.Errorf("seriesid = %#v, want [1 2]", body.SeriesID)
+	}
+	if len(body.ProfileID) != 1 || body.ProfileID[0] != "eng" {
+		t.Errorf("profileid = %#v, want [eng]", body.ProfileID)
 	}
 }
 

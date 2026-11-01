@@ -62,6 +62,19 @@ func TestCheckAcceptsDatedRules(t *testing.T) {
 	}
 }
 
+func TestCheckAcceptsBaselineRules(t *testing.T) {
+	t.Parallel()
+	config := header + begin + rule +
+		"      # baseline #141\n" +
+		"      - path: ^arr/b_test\\.go$\n        linters:\n          - funlen\n" +
+		"        text: Function 'TestB'\n" +
+		end
+	rules, err := Check(config, day(t, "2026-10-19"))
+	if err != nil || rules != 2 {
+		t.Fatalf("Check = %d, %v; want 2, nil", rules, err)
+	}
+}
+
 func TestCheckAcceptsNoGeneratedBlock(t *testing.T) {
 	t.Parallel()
 	rules, err := Check(header+"formatters:\n", day(t, "2026-10-19"))
@@ -91,6 +104,9 @@ func TestCheckRefusesPlantedDefects(t *testing.T) {
 		"other linter":    begin + strings.Replace(rule, "gocognit", "errcheck", 1) + end,
 		"text rule":       begin + strings.Replace(rule, "        linters:\n          - gocognit\n", "        text: anything\n", 1) + end,
 		"no end marker":   begin + rule,
+		"text on dated":   begin + rule + "        text: func `TestA`\n" + end,
+		"baseline cyclop": begin + "      # baseline #141\n" + strings.Replace(path, "gocyclo", "cyclop", 1) + end,
+		"baseline prod":   begin + "      # baseline #141\n" + strings.Replace(path, "a_test", "a", 1) + end,
 		"tier outside":    "      - path: (.+)_test\\.go\n        linters:\n          - funlen\n",
 	}
 	for name, rules := range cases {
