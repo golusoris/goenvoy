@@ -371,6 +371,7 @@ func (c *Client) DeleteTorrents(ctx context.Context, hashes []string, deleteFile
 }
 
 // PauseTorrents pauses torrents by their hashes.
+// On qBittorrent 5.0+, use [Client.StopTorrents] instead.
 // Use "all" as single element to pause all torrents.
 func (c *Client) PauseTorrents(ctx context.Context, hashes []string) error {
 	form := url.Values{}
@@ -379,11 +380,30 @@ func (c *Client) PauseTorrents(ctx context.Context, hashes []string) error {
 }
 
 // ResumeTorrents resumes torrents by their hashes.
+// On qBittorrent 5.0+, use [Client.StartTorrents] instead.
 // Use "all" as single element to resume all torrents.
 func (c *Client) ResumeTorrents(ctx context.Context, hashes []string) error {
 	form := url.Values{}
 	form.Set("hashes", strings.Join(hashes, "|"))
 	return c.post(ctx, "/api/v2/torrents/resume", form)
+}
+
+// StopTorrents stops torrents by their hashes.
+// This is a qBittorrent 5.0+ endpoint; servers before 5.0 serve PauseTorrents instead.
+// Use "all" as single element to stop all torrents.
+func (c *Client) StopTorrents(ctx context.Context, hashes []string) error {
+	form := url.Values{}
+	form.Set("hashes", strings.Join(hashes, "|"))
+	return c.post(ctx, "/api/v2/torrents/stop", form)
+}
+
+// StartTorrents starts torrents by their hashes.
+// This is a qBittorrent 5.0+ endpoint; servers before 5.0 serve ResumeTorrents instead.
+// Use "all" as single element to start all torrents.
+func (c *Client) StartTorrents(ctx context.Context, hashes []string) error {
+	form := url.Values{}
+	form.Set("hashes", strings.Join(hashes, "|"))
+	return c.post(ctx, "/api/v2/torrents/start", form)
 }
 
 // RecheckTorrents rechecks torrents by their hashes.
