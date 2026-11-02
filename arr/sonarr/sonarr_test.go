@@ -767,7 +767,9 @@ func runCalendarFeedTest(t *testing.T, opts *sonarr.CalendarFeedOptions, status 
 		verifyCalendarFeedRequest(t, r, wantQuery)
 		w.Header().Set("Content-Type", "text/calendar")
 		w.WriteHeader(status)
-		_, _ = io.Copy(w, strings.NewReader(resp))
+		if _, err := io.Copy(w, strings.NewReader(resp)); err != nil {
+			t.Errorf("runCalendarFeedTest: write fixture: %v", err)
+		}
 	}))
 	defer srv.Close()
 
@@ -1355,7 +1357,9 @@ func runUpdateRootFolderTest(t *testing.T, status int, body string, wantErr bool
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
-		_, _ = io.Copy(w, strings.NewReader(body))
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+			t.Errorf("runUpdateRootFolderTest: write fixture: %v", err)
+		}
 	}))
 	defer srv.Close()
 
@@ -1888,7 +1892,9 @@ func runUploadBackupTest(t *testing.T, status int, body string, wantErr bool) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		verifyUploadBackupRequest(t, r)
 		w.WriteHeader(status)
-		_, _ = io.Copy(w, strings.NewReader(body))
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+			t.Errorf("runUploadBackupTest: write fixture: %v", err)
+		}
 	}))
 	defer srv.Close()
 
@@ -3929,7 +3935,9 @@ func runMediaCoverRequest(t *testing.T, seriesID int, filename, wantPath string,
 		verifyMediaCoverRequest(t, r, wantPath)
 		w.Header().Set("Content-Type", "image/jpeg")
 		w.WriteHeader(status)
-		_, _ = io.Copy(w, bytes.NewReader(resp))
+		if _, err := io.Copy(w, bytes.NewReader(resp)); err != nil {
+			t.Errorf("runMediaCoverRequest: write fixture: %v", err)
+		}
 	}))
 	defer srv.Close()
 
