@@ -30,6 +30,9 @@ func (c *Client) DeleteRootFolder(ctx context.Context, id int) error {
 // ---------- Release Profiles ----------.
 
 // UpdateRootFolder updates an existing root folder.
+//
+// Deprecated: Sonarr serves no PUT /api/v3/rootfolder/{id} (RootFolderController, v4.0.20);
+// the call fails with 404 or 405. Delete and re-add the root folder instead.
 func (c *Client) UpdateRootFolder(ctx context.Context, rf *arr.RootFolder) (*arr.RootFolder, error) {
 	path := fmt.Sprintf("/api/v3/rootfolder/%d", rf.ID)
 	return arr.PutOne[arr.RootFolder](ctx, c.base, path, rf)

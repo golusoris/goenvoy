@@ -108,7 +108,8 @@ func (c *Client) HeadPing(ctx context.Context) error {
 
 // ---------- Backup Upload ----------.
 
-// UploadBackup uploads a backup file via multipart form POST.
+// UploadBackup uploads and restores a backup archive via multipart form POST.
+// Sonarr stores the upload and immediately restores it, triggering an application restart; no upload-only endpoint exists.
 func (c *Client) UploadBackup(ctx context.Context, fileName string, data io.Reader) error {
-	return c.base.Upload(ctx, "/api/v3/system/backup/upload", "file", fileName, data)
+	return c.base.Upload(ctx, "/api/v3/system/backup/restore/upload", "file", fileName, data)
 }

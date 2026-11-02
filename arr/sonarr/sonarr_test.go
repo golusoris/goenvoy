@@ -1,12 +1,14 @@
 package sonarr_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -699,6 +701,191 @@ func TestGetCalendar(t *testing.T) {
 	}
 }
 
+// checkAPIError asserts that err is an arr.APIError with the expected status code.
+func checkAPIError(t *testing.T, err error, wantStatus int) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	var apiErr *arr.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *arr.APIError, got %T: %v", err, err)
+	}
+	if apiErr.StatusCode != wantStatus {
+		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, wantStatus)
+	}
+}
+
+// checkFeedQuery verifies that the request query parameters match expected values.
+func checkFeedQuery(t *testing.T, reqQuery, wantQuery url.Values) {
+	t.Helper()
+	if len(reqQuery) != len(wantQuery) {
+		t.Errorf("query param count = %d, want %d (got %v)", len(reqQuery), len(wantQuery), reqQuery)
+	}
+	for k, v := range wantQuery {
+		if got := reqQuery.Get(k); got != v[0] {
+			t.Errorf("query[%q] = %q, want %q", k, got, v[0])
+		}
+	}
+}
+
+// checkFeedNoQuery asserts that the request URI carries no query string or delimiter.
+func checkFeedNoQuery(t *testing.T, r *http.Request) {
+	t.Helper()
+	if r.URL.RawQuery != "" {
+		t.Errorf("RawQuery = %q, want empty", r.URL.RawQuery)
+	}
+	if strings.Contains(r.RequestURI, "?") {
+		t.Errorf("RequestURI %q contains '?'", r.RequestURI)
+	}
+}
+
+// verifyCalendarFeedRequest verifies the HTTP method, auth, path, and query parameters.
+func verifyCalendarFeedRequest(t *testing.T, r *http.Request, wantQuery url.Values) {
+	t.Helper()
+	if r.Method != http.MethodGet {
+		t.Errorf("method = %s, want GET", r.Method)
+	}
+	if r.Header.Get("X-Api-Key") != "test-key" {
+		t.Errorf("X-Api-Key = %q, want test-key", r.Header.Get("X-Api-Key"))
+	}
+	if r.URL.Path != "/feed/v3/calendar/sonarr.ics" {
+		t.Errorf("path = %q, want /feed/v3/calendar/sonarr.ics", r.URL.Path)
+	}
+	if wantQuery != nil {
+		checkFeedQuery(t, r.URL.Query(), wantQuery)
+	}
+	if wantQuery != nil && len(wantQuery) == 0 {
+		checkFeedNoQuery(t, r)
+	}
+}
+
+// runCalendarFeedTest executes a test against the calendar feed endpoint.
+func runCalendarFeedTest(t *testing.T, opts *sonarr.CalendarFeedOptions, status int, resp string, wantQuery url.Values, wantErr bool) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		verifyCalendarFeedRequest(t, r, wantQuery)
+		w.Header().Set("Content-Type", "text/calendar")
+		w.WriteHeader(status)
+		if _, err := io.Copy(w, strings.NewReader(resp)); err != nil {
+			t.Errorf("runCalendarFeedTest: write fixture: %v", err)
+		}
+	}))
+	defer srv.Close()
+
+	c, _ := sonarr.New(srv.URL, "test-key")
+	got, err := c.GetCalendarFeed(context.Background(), opts)
+
+	if wantErr {
+		checkAPIError(t, err, status)
+		return
+	}
+	if err != nil {
+		t.Fatalf("GetCalendarFeed: %v", err)
+	}
+	if got != resp {
+		t.Errorf("got %q, want %q", got, resp)
+	}
+}
+
+// TestGetCalendarFeed tests retrieving the iCalendar feed.
+func TestGetCalendarFeed(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		opts         *sonarr.CalendarFeedOptions
+		serverStatus int
+		responseBody string
+		wantQuery    url.Values
+		wantErr      bool
+	}{
+		{
+			name:         "nil options",
+			serverStatus: http.StatusOK,
+			responseBody: "BEGIN:VCALENDAR\nEND:VCALENDAR",
+			wantQuery:    url.Values{},
+		},
+		{
+			name:         "empty options struct",
+			opts:         &sonarr.CalendarFeedOptions{},
+			serverStatus: http.StatusOK,
+			responseBody: "BEGIN:VCALENDAR\nEND:VCALENDAR",
+			wantQuery:    url.Values{},
+		},
+		{
+			name:         "error 401 unauthorized",
+			serverStatus: http.StatusUnauthorized,
+			responseBody: "Unauthorized",
+			wantErr:      true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runCalendarFeedTest(t, tc.opts, tc.serverStatus, tc.responseBody, tc.wantQuery, tc.wantErr)
+		})
+	}
+}
+
+// TestGetCalendarFeed_QueryOptions tests calendar feed query parameter formatting.
+func TestGetCalendarFeed_QueryOptions(t *testing.T) {
+	t.Parallel()
+
+	zero := 0
+	past := 7
+	future := 28
+
+	tests := []struct {
+		name      string
+		opts      *sonarr.CalendarFeedOptions
+		wantQuery url.Values
+	}{
+		{
+			name: "all options populated",
+			opts: &sonarr.CalendarFeedOptions{
+				PastDays:      &past,
+				FutureDays:    &future,
+				Tags:          []string{"anime", "action"},
+				Unmonitored:   true,
+				PremieresOnly: true,
+				AsAllDay:      true,
+			},
+			wantQuery: url.Values{
+				"pastDays":      []string{"7"},
+				"futureDays":    []string{"28"},
+				"tags":          []string{"anime,action"},
+				"unmonitored":   []string{"true"},
+				"premieresOnly": []string{"true"},
+				"asAllDay":      []string{"true"},
+			},
+		},
+		{
+			name:      "boundary zero past days",
+			opts:      &sonarr.CalendarFeedOptions{PastDays: &zero},
+			wantQuery: url.Values{"pastDays": []string{"0"}},
+		},
+		{
+			name:      "boundary zero future days",
+			opts:      &sonarr.CalendarFeedOptions{FutureDays: &zero},
+			wantQuery: url.Values{"futureDays": []string{"0"}},
+		},
+		{
+			name:      "single tag",
+			opts:      &sonarr.CalendarFeedOptions{Tags: []string{"tv"}},
+			wantQuery: url.Values{"tags": []string{"tv"}},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runCalendarFeedTest(t, tc.opts, http.StatusOK, "BEGIN:VCALENDAR\nEND:VCALENDAR", tc.wantQuery, false)
+		})
+	}
+}
+
 func TestGetHealth(t *testing.T) {
 	t.Parallel()
 
@@ -1155,21 +1342,75 @@ func TestGetQualityProfileSchema(t *testing.T) {
 	}
 }
 
-func TestUpdateRootFolder(t *testing.T) {
-	t.Parallel()
-
-	want := arr.RootFolder{ID: 1, Path: "/tv"}
-
-	srv := newTestServer(t, http.MethodPut, "/api/v3/rootfolder/1", want)
+// runUpdateRootFolderTest executes a test against the deprecated UpdateRootFolder endpoint.
+func runUpdateRootFolderTest(t *testing.T, status int, body string, wantErr bool) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("method = %s, want PUT", r.Method)
+		}
+		if r.Header.Get("X-Api-Key") != "test-key" {
+			t.Errorf("X-Api-Key = %q, want test-key", r.Header.Get("X-Api-Key"))
+		}
+		if r.URL.Path != "/api/v3/rootfolder/1" || r.URL.RawQuery != "" {
+			t.Errorf("URI = %q, want /api/v3/rootfolder/1", r.URL.RequestURI())
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+			t.Errorf("runUpdateRootFolderTest: write fixture: %v", err)
+		}
+	}))
 	defer srv.Close()
 
 	c, _ := sonarr.New(srv.URL, "test-key")
 	got, err := c.UpdateRootFolder(context.Background(), &arr.RootFolder{ID: 1, Path: "/tv"})
+	if wantErr {
+		checkAPIError(t, err, status)
+		return
+	}
 	if err != nil {
 		t.Fatalf("UpdateRootFolder: %v", err)
 	}
 	if got.Path != "/tv" {
 		t.Errorf("Path = %q, want /tv", got.Path)
+	}
+}
+
+// TestUpdateRootFolder tests updating a root folder across various HTTP responses.
+func TestUpdateRootFolder(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		wantErr bool
+	}{
+		{
+			name:   "success",
+			status: http.StatusOK,
+			body:   `{"id":1,"path":"/tv"}`,
+		},
+		{
+			name:    "not found 404",
+			status:  http.StatusNotFound,
+			body:    `{"message":"Not Found"}`,
+			wantErr: true,
+		},
+		{
+			name:    "method not allowed 405",
+			status:  http.StatusMethodNotAllowed,
+			body:    `{"message":"Method Not Allowed"}`,
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runUpdateRootFolderTest(t, tc.status, tc.body, tc.wantErr)
+		})
 	}
 }
 
@@ -1620,33 +1861,81 @@ func TestHeadPing(t *testing.T) {
 	}
 }
 
-func TestUploadBackup(t *testing.T) {
-	t.Parallel()
+// verifyUploadBackupRequest checks the structure of the multipart upload request.
+func verifyUploadBackupRequest(t *testing.T, r *http.Request) {
+	t.Helper()
+	if r.Method != http.MethodPost {
+		t.Errorf("method = %s, want POST", r.Method)
+	}
+	if r.Header.Get("X-Api-Key") != "test-key" {
+		t.Errorf("X-Api-Key = %q, want test-key", r.Header.Get("X-Api-Key"))
+	}
+	if r.URL.Path != "/api/v3/system/backup/restore/upload" {
+		t.Errorf("path = %q, want /api/v3/system/backup/restore/upload", r.URL.Path)
+	}
+	if !strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+		t.Errorf("Content-Type = %q, want multipart/form-data", r.Header.Get("Content-Type"))
+	}
+	f, fh, err := r.FormFile("file")
+	if err != nil {
+		t.Fatalf("FormFile: %v", err)
+	}
+	defer f.Close()
+	if fh.Filename != "backup.zip" {
+		t.Errorf("filename = %q, want %q", fh.Filename, "backup.zip")
+	}
+}
+
+// runUploadBackupTest runs a test case for backup archive upload.
+func runUploadBackupTest(t *testing.T, status int, body string, wantErr bool) {
+	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("method = %s, want POST", r.Method)
+		verifyUploadBackupRequest(t, r)
+		w.WriteHeader(status)
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+			t.Errorf("runUploadBackupTest: write fixture: %v", err)
 		}
-		if r.Header.Get("X-Api-Key") == "" {
-			t.Error("missing X-Api-Key header")
-		}
-		ct := r.Header.Get("Content-Type")
-		if !strings.HasPrefix(ct, "multipart/form-data") {
-			t.Errorf("Content-Type = %q, want multipart/form-data", ct)
-		}
-		f, fh, err := r.FormFile("file")
-		if err != nil {
-			t.Fatalf("FormFile: %v", err)
-		}
-		defer f.Close()
-		if fh.Filename != "backup.zip" {
-			t.Errorf("filename = %q, want %q", fh.Filename, "backup.zip")
-		}
-		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
+
 	c, _ := sonarr.New(srv.URL, "test-key")
-	if err := c.UploadBackup(context.Background(), "backup.zip", strings.NewReader("fake-backup-data")); err != nil {
+	err := c.UploadBackup(context.Background(), "backup.zip", strings.NewReader("fake-backup-data"))
+	if wantErr {
+		checkAPIError(t, err, status)
+		return
+	}
+	if err != nil {
 		t.Fatalf("UploadBackup: %v", err)
+	}
+}
+
+// TestUploadBackup tests uploading a backup archive.
+func TestUploadBackup(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		wantErr bool
+	}{
+		{
+			name:   "success",
+			status: http.StatusOK,
+		},
+		{
+			name:    "error 400",
+			status:  http.StatusBadRequest,
+			body:    `{"message":"invalid zip"}`,
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runUploadBackupTest(t, tc.status, tc.body, tc.wantErr)
+		})
 	}
 }
 
@@ -3620,5 +3909,151 @@ func TestGetUpdateLogFiles(t *testing.T) {
 	}
 	if len(got) != 1 {
 		t.Errorf("len = %d, want 1", len(got))
+	}
+}
+
+// verifyMediaCoverRequest validates the HTTP method, auth, and path for media cover requests.
+func verifyMediaCoverRequest(t *testing.T, r *http.Request, wantPath string) {
+	t.Helper()
+	if r.Method != http.MethodGet {
+		t.Errorf("method = %s, want GET", r.Method)
+	}
+	if r.Header.Get("X-Api-Key") != "test-key" {
+		t.Errorf("X-Api-Key = %q, want test-key", r.Header.Get("X-Api-Key"))
+	}
+	if r.URL.RequestURI() != wantPath {
+		t.Errorf("path = %q, want %q", r.URL.RequestURI(), wantPath)
+	}
+}
+
+// runMediaCoverRequest executes a test against the media cover endpoint.
+func runMediaCoverRequest(t *testing.T, seriesID int, filename, wantPath string, status int, resp []byte, wantErr error, wantAPI bool) {
+	t.Helper()
+	var requests int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		verifyMediaCoverRequest(t, r, wantPath)
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.WriteHeader(status)
+		if _, err := io.Copy(w, bytes.NewReader(resp)); err != nil {
+			t.Errorf("runMediaCoverRequest: write fixture: %v", err)
+		}
+	}))
+	defer srv.Close()
+
+	c, _ := sonarr.New(srv.URL, "test-key")
+	got, err := c.GetMediaCover(context.Background(), seriesID, filename)
+
+	if wantErr != nil {
+		if requests != 0 {
+			t.Errorf("requests = %d, want 0", requests)
+		}
+		if !errors.Is(err, wantErr) {
+			t.Fatalf("err = %v, want %v", err, wantErr)
+		}
+		return
+	}
+
+	if wantAPI {
+		checkAPIError(t, err, status)
+		return
+	}
+
+	if err != nil {
+		t.Fatalf("GetMediaCover: %v", err)
+	}
+	if string(got) != string(resp) {
+		t.Errorf("got %q, want %q", string(got), string(resp))
+	}
+}
+
+// TestGetMediaCover tests downloading media cover images.
+func TestGetMediaCover(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		seriesID int
+		filename string
+		status   int
+		resp     []byte
+		wantPath string
+		wantAPI  bool
+	}{
+		{
+			name:     "success simple filename",
+			seriesID: 10,
+			filename: "poster.jpg",
+			status:   http.StatusOK,
+			resp:     []byte("jpeg-data"),
+			wantPath: "/api/v3/mediacover/10/poster.jpg",
+		},
+		{
+			name:     "success escaped filename",
+			seriesID: 42,
+			filename: "season 01.png",
+			status:   http.StatusOK,
+			resp:     []byte("png-data"),
+			wantPath: "/api/v3/mediacover/42/season%2001.png",
+		},
+		{
+			name:     "error 404 not found",
+			seriesID: 10,
+			filename: "missing.jpg",
+			status:   http.StatusNotFound,
+			wantPath: "/api/v3/mediacover/10/missing.jpg",
+			wantAPI:  true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runMediaCoverRequest(t, tc.seriesID, tc.filename, tc.wantPath, tc.status, tc.resp, nil, tc.wantAPI)
+		})
+	}
+}
+
+// TestGetMediaCover_Validation tests client-side input validation for media covers.
+func TestGetMediaCover_Validation(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		seriesID int
+		filename string
+		wantErr  error
+	}{
+		{
+			name:     "boundary seriesID zero",
+			seriesID: 0,
+			filename: "poster.jpg",
+			wantErr:  sonarr.ErrInvalidSeriesID,
+		},
+		{
+			name:     "negative seriesID",
+			seriesID: -1,
+			filename: "poster.jpg",
+			wantErr:  sonarr.ErrInvalidSeriesID,
+		},
+		{
+			name:     "boundary empty filename",
+			seriesID: 10,
+			filename: "",
+			wantErr:  sonarr.ErrEmptyFileName,
+		},
+		{
+			name:     "boundary zero seriesID and empty filename",
+			seriesID: 0,
+			filename: "",
+			wantErr:  sonarr.ErrInvalidSeriesID,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runMediaCoverRequest(t, tc.seriesID, tc.filename, "", 0, nil, tc.wantErr, false)
+		})
 	}
 }
