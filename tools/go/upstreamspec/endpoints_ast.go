@@ -160,11 +160,18 @@ func funcName(fn *ast.FuncDecl) string {
 	return fn.Name.Name
 }
 
-// collectSingleAssigns records identifiers assigned exactly once within a function body.
-func collectSingleAssigns(body *ast.BlockStmt) map[string]ast.Expr {
+// collectSingleAssigns records identifiers assigned exactly once within a function declaration.
+func collectSingleAssigns(fn *ast.FuncDecl) map[string]ast.Expr {
+	if fn == nil || fn.Body == nil {
+		return nil
+	}
 	assignCounts := make(map[string]int)
 	assignExprs := make(map[string]ast.Expr)
-	ast.Inspect(body, func(n ast.Node) bool {
+	seedParamCounts(fn.Recv, assignCounts)
+	if fn.Type != nil {
+		seedParamCounts(fn.Type.Params, assignCounts)
+	}
+	ast.Inspect(fn.Body, func(n ast.Node) bool {
 		switch stmt := n.(type) {
 		case *ast.AssignStmt:
 			recordAssignStmt(stmt, assignCounts, assignExprs)
@@ -175,11 +182,25 @@ func collectSingleAssigns(body *ast.BlockStmt) map[string]ast.Expr {
 	})
 	single := make(map[string]ast.Expr)
 	for name, count := range assignCounts {
-		if count == 1 {
+		if count == 1 && assignExprs[name] != nil {
 			single[name] = assignExprs[name]
 		}
 	}
 	return single
+}
+
+// seedParamCounts records parameter and receiver names with an initial count of 1.
+func seedParamCounts(fields *ast.FieldList, counts map[string]int) {
+	if fields == nil {
+		return
+	}
+	for _, field := range fields.List {
+		for _, name := range field.Names {
+			if name != nil && name.Name != "" && name.Name != "_" {
+				counts[name.Name] = 1
+			}
+		}
+	}
 }
 
 // recordAssignStmt records assignments from short and standard assign statements.
@@ -187,9 +208,15 @@ func recordAssignStmt(stmt *ast.AssignStmt, counts map[string]int, exprs map[str
 	if isQuerySuffix(stmt) {
 		return
 	}
+	isCompound := stmt.Tok != token.ASSIGN && stmt.Tok != token.DEFINE
 	for i, lhs := range stmt.Lhs {
 		id, ok := lhs.(*ast.Ident)
 		if !ok {
+			continue
+		}
+		if isCompound {
+			// Why: compound assign depends on prior value, so ident cannot be single-assigned.
+			counts[id.Name] += 2
 			continue
 		}
 		counts[id.Name]++
@@ -246,7 +273,7 @@ func recordDeclStmt(stmt *ast.DeclStmt, counts map[string]int, exprs map[string]
 // parseFunc extracts endpoint operations from a single function or method.
 func parseFunc(fset *token.FileSet, relFile string, fn *ast.FuncDecl, fileConsts map[string]string) []codeOp {
 	name := funcName(fn)
-	singleAssigns := collectSingleAssigns(fn.Body)
+	singleAssigns := collectSingleAssigns(fn)
 	var ops []codeOp
 	ast.Inspect(fn.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
@@ -523,24 +550,20 @@ func isIgnoredCall(call *ast.CallExpr) bool {
 	return false
 }
 
-// verbForSelector maps a selector method or function name to an HTTP verb.
+// verbForSelector maps an exact helper method or function name to an HTTP verb.
 func verbForSelector(name string) string {
 	switch name {
-	case "Upload", "SendManualImport":
-		return "POST"
-	}
-	switch {
-	case strings.HasPrefix(name, "Get"):
+	case "Get", "GetRaw", "GetText", "GetOne", "GetList", "GetValue", "GetQueuePage":
 		return "GET"
-	case strings.HasPrefix(name, "Post"):
+	case "Post", "Upload", "SendManualImport", "PostOne", "PostList":
 		return "POST"
-	case strings.HasPrefix(name, "Put"):
+	case "Put", "PutOne", "PutList":
 		return "PUT"
-	case strings.HasPrefix(name, "Delete"):
+	case "Delete":
 		return "DELETE"
-	case strings.HasPrefix(name, "Patch"):
+	case "Patch":
 		return "PATCH"
-	case strings.HasPrefix(name, "Head"):
+	case "Head":
 		return "HEAD"
 	default:
 		return ""

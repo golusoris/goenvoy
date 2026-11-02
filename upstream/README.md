@@ -29,8 +29,9 @@ does not read every pin), and then checks every pin against the live file. The C
 `make upstream-specs` verifies that client request paths and HTTP verbs in modules with a
 `module:` entry in `specs.yaml` match the pinned upstream OpenAPI spec. Operations absent from
 the spec are refused unless listed under `allow:` in `upstream/endpoints-allow.yaml` with
-`module`, `func`, `method`, `path`, `reason`, and a future `expires` date (YYYY-MM-DD). Expired entries are
-refused, and any entry that matches no off-spec call must be removed.
+`module`, `func`, `method`, `path`, `reason`, and an `expires` date (YYYY-MM-DD); an entry
+stays valid through that day. Expired entries are refused, and any entry that matches no
+off-spec call must be removed.
 
 ## Renewing a pin
 

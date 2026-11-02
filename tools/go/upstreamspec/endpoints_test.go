@@ -158,7 +158,20 @@ func runEndpointCase(t *testing.T, tt endpointCase, serverURL string) {
 }
 
 func positiveCases(specSha string) []endpointCase {
-	return append(positiveBasicCases(specSha), positivePlantedCases(specSha)...)
+	return append(append(positiveBasicCases(specSha), positivePlantedCases(specSha)...), positiveWrapperCases(specSha)...)
+}
+
+func positiveWrapperCases(specSha string) []endpointCase {
+	return []endpointCase{
+		{
+			name:        "(6) wrapper method with Get prefix is not treated as request",
+			code:        "func (c *Client) GetStrikes(ctx context.Context, page int) error { return nil }\nfunc (c *Client) W(ctx context.Context, page int) error { return c.GetStrikes(ctx, page) }\n",
+			module:      "testmod",
+			sha:         specSha,
+			wantCodeOps: 0,
+			wantInSpec:  0,
+		},
+	}
 }
 
 func positiveBasicCases(specSha string) []endpointCase {
@@ -393,7 +406,26 @@ func negativeAllowMatchingCases(specSha string) []endpointCase {
 }
 
 func negativeCases(specSha string) []endpointCase {
-	return append(negativeBasicCases(specSha), negativeAllowCases(specSha)...)
+	return append(append(negativeBasicCases(specSha), negativeParamCases(specSha)...), negativeAllowCases(specSha)...)
+}
+
+func negativeParamCases(specSha string) []endpointCase {
+	return []endpointCase{
+		{
+			name:     "(2c) param compound assign fails unresolved",
+			code:     "func (c *Client) A(ctx context.Context, p string) error { p += \"/more\"; return c.Get(ctx, p) }\n",
+			module:   "testmod",
+			sha:      specSha,
+			wantPart: "path unresolved",
+		},
+		{
+			name:     "(2d) param conditional reassign fails unresolved",
+			code:     "func (c *Client) B(ctx context.Context, p string) error { if p == \"\" { p = \"/default\" }; return c.Get(ctx, p) }\n",
+			module:   "testmod",
+			sha:      specSha,
+			wantPart: "path unresolved",
+		},
+	}
 }
 
 func endpointTestCases(specSha string) []endpointCase {
