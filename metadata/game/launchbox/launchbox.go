@@ -52,7 +52,7 @@ func New(opts ...metadata.Option) *Client {
 
 // Download fetches the LaunchBox Metadata.zip and parses the XML contents.
 // This must be called before using any lookup methods.
-// Download fetches and parses the LaunchBox metadata archive, surfacing response body close errors.
+// A failure to close the response body is returned joined with any other error.
 func (c *Client) Download(ctx context.Context) (err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL(), http.NoBody)
 	if err != nil {

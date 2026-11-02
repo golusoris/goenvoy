@@ -58,6 +58,7 @@ func New(clientID string, opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc, clientID: clientID, pollSleep: time.Sleep}
 }
 
+// sleep pauses execution for the given duration.
 func (c *Client) sleep(d time.Duration) {
 	if c.pollSleep != nil {
 		c.pollSleep(d)
@@ -1919,9 +1920,6 @@ func (c *Client) GetDeviceCode(ctx context.Context) (*DeviceCode, error) {
 	})
 }
 
-// PollDeviceToken polls for the device token after the user has authorized the app.
-// It blocks until the token is obtained, the code expires, or the context is canceled.
-// The interval between polls is taken from the DeviceCode response.
 // handlePollError translates OAuth2 device token poll error statuses.
 func (c *Client) handlePollError(err error, interval int) (bool, error) {
 	var apiErr *APIError
@@ -1934,7 +1932,7 @@ func (c *Client) handlePollError(err error, interval int) (bool, error) {
 	case http.StatusNotFound:
 		return false, errors.New("trakt: invalid device code")
 	case http.StatusGone:
-		return false, errors.New("trakt: device code expired")
+		return false, errCodeExpired
 	case http.StatusTeapot:
 		return false, errors.New("trakt: user denied authorization")
 	case http.StatusTooManyRequests:
@@ -1963,7 +1961,7 @@ func (c *Client) pollTokenOnce(ctx context.Context, body map[string]string, inte
 // checkPollTick checks expiration and performs one poll attempt.
 func (c *Client) checkPollTick(ctx context.Context, body map[string]string, interval int, deadline time.Time) (*Token, bool, error) {
 	if time.Now().After(deadline) {
-		return nil, false, errors.New("trakt: device code expired")
+		return nil, false, errCodeExpired
 	}
 	return c.pollTokenOnce(ctx, body, interval)
 }
@@ -1976,34 +1974,48 @@ func pollInterval(interval int) time.Duration {
 	return time.Duration(interval) * time.Second
 }
 
+var errCodeExpired = errors.New("trakt: device code expired")
+
 // pollCtxErr translates context cancellation or deadline expiration to polling errors.
-func pollCtxErr(err error) error {
-	if errors.Is(err, context.DeadlineExceeded) {
-		return errors.New("trakt: device code expired")
+func pollCtxErr(ctx context.Context) error {
+	if errors.Is(context.Cause(ctx), errCodeExpired) {
+		return errCodeExpired
 	}
-	return fmt.Errorf("trakt: device poll: %w", err)
+	return fmt.Errorf("trakt: device poll: %w", ctx.Err())
+}
+
+// pollTick awaits the next tick and executes one poll attempt.
+func pollTick(ctx context.Context, tick <-chan time.Time, poll func(context.Context) (*Token, bool, error)) (*Token, bool, error) {
+	if ctx.Err() != nil {
+		return nil, false, pollCtxErr(ctx)
+	}
+	select {
+	case <-ctx.Done():
+		return nil, false, pollCtxErr(ctx)
+	case <-tick:
+		token, done, err := poll(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, false, pollCtxErr(ctx)
+			}
+			return nil, false, err
+		}
+		return token, done, nil
+	}
 }
 
 // pollLoop executes the polling loop until success, expiration, or context cancellation.
 func pollLoop(ctx context.Context, tick <-chan time.Time, maxPolls int, poll func(context.Context) (*Token, bool, error)) (*Token, error) {
 	for range maxPolls {
-		if ctx.Err() != nil {
-			return nil, pollCtxErr(ctx.Err())
+		token, done, err := pollTick(ctx, tick, poll)
+		if err != nil {
+			return nil, err
 		}
-		select {
-		case <-ctx.Done():
-			return nil, pollCtxErr(ctx.Err())
-		case <-tick:
-			token, done, err := poll(ctx)
-			if err != nil {
-				return nil, err
-			}
-			if done {
-				return token, nil
-			}
+		if done {
+			return token, nil
 		}
 	}
-	return nil, errors.New("trakt: device code expired")
+	return nil, errCodeExpired
 }
 
 // PollDeviceToken polls for the device token after the user has authorized the app.
@@ -2015,7 +2027,7 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (*Token,
 	defer ticker.Stop()
 
 	deadline := time.Now().Add(time.Duration(code.ExpiresIn) * time.Second)
-	pollCtx, cancel := context.WithDeadline(ctx, deadline)
+	pollCtx, cancel := context.WithDeadlineCause(ctx, deadline, errCodeExpired)
 	defer cancel()
 
 	body := map[string]string{
