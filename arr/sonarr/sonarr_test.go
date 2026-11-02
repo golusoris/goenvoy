@@ -1,6 +1,7 @@
 package sonarr_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -700,6 +701,7 @@ func TestGetCalendar(t *testing.T) {
 	}
 }
 
+// checkAPIError asserts that err is an arr.APIError with the expected status code.
 func checkAPIError(t *testing.T, err error, wantStatus int) {
 	t.Helper()
 	if err == nil {
@@ -714,6 +716,7 @@ func checkAPIError(t *testing.T, err error, wantStatus int) {
 	}
 }
 
+// checkFeedQuery verifies that the request query parameters match expected values.
 func checkFeedQuery(t *testing.T, reqQuery, wantQuery url.Values) {
 	t.Helper()
 	if len(reqQuery) != len(wantQuery) {
@@ -726,24 +729,45 @@ func checkFeedQuery(t *testing.T, reqQuery, wantQuery url.Values) {
 	}
 }
 
+// checkFeedNoQuery asserts that the request URI carries no query string or delimiter.
+func checkFeedNoQuery(t *testing.T, r *http.Request) {
+	t.Helper()
+	if r.URL.RawQuery != "" {
+		t.Errorf("RawQuery = %q, want empty", r.URL.RawQuery)
+	}
+	if strings.Contains(r.RequestURI, "?") {
+		t.Errorf("RequestURI %q contains '?'", r.RequestURI)
+	}
+}
+
+// verifyCalendarFeedRequest verifies the HTTP method, auth, path, and query parameters.
+func verifyCalendarFeedRequest(t *testing.T, r *http.Request, wantQuery url.Values) {
+	t.Helper()
+	if r.Method != http.MethodGet {
+		t.Errorf("method = %s, want GET", r.Method)
+	}
+	if r.Header.Get("X-Api-Key") != "test-key" {
+		t.Errorf("X-Api-Key = %q, want test-key", r.Header.Get("X-Api-Key"))
+	}
+	if r.URL.Path != "/feed/v3/calendar/sonarr.ics" {
+		t.Errorf("path = %q, want /feed/v3/calendar/sonarr.ics", r.URL.Path)
+	}
+	if wantQuery != nil {
+		checkFeedQuery(t, r.URL.Query(), wantQuery)
+	}
+	if wantQuery != nil && len(wantQuery) == 0 {
+		checkFeedNoQuery(t, r)
+	}
+}
+
+// runCalendarFeedTest executes a test against the calendar feed endpoint.
 func runCalendarFeedTest(t *testing.T, opts *sonarr.CalendarFeedOptions, status int, resp string, wantQuery url.Values, wantErr bool) {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			t.Errorf("method = %s, want GET", r.Method)
-		}
-		if r.Header.Get("X-Api-Key") != "test-key" {
-			t.Errorf("X-Api-Key = %q, want test-key", r.Header.Get("X-Api-Key"))
-		}
-		if r.URL.Path != "/feed/v3/calendar/sonarr.ics" {
-			t.Errorf("path = %q, want /feed/v3/calendar/sonarr.ics", r.URL.Path)
-		}
-		if wantQuery != nil {
-			checkFeedQuery(t, r.URL.Query(), wantQuery)
-		}
+		verifyCalendarFeedRequest(t, r, wantQuery)
 		w.Header().Set("Content-Type", "text/calendar")
 		w.WriteHeader(status)
-		io.WriteString(w, resp)
+		_, _ = io.Copy(w, strings.NewReader(resp))
 	}))
 	defer srv.Close()
 
@@ -762,6 +786,7 @@ func runCalendarFeedTest(t *testing.T, opts *sonarr.CalendarFeedOptions, status 
 	}
 }
 
+// TestGetCalendarFeed tests retrieving the iCalendar feed.
 func TestGetCalendarFeed(t *testing.T) {
 	t.Parallel()
 
@@ -777,12 +802,14 @@ func TestGetCalendarFeed(t *testing.T) {
 			name:         "nil options",
 			serverStatus: http.StatusOK,
 			responseBody: "BEGIN:VCALENDAR\nEND:VCALENDAR",
+			wantQuery:    url.Values{},
 		},
 		{
 			name:         "empty options struct",
 			opts:         &sonarr.CalendarFeedOptions{},
 			serverStatus: http.StatusOK,
 			responseBody: "BEGIN:VCALENDAR\nEND:VCALENDAR",
+			wantQuery:    url.Values{},
 		},
 		{
 			name:         "error 401 unauthorized",
@@ -800,6 +827,7 @@ func TestGetCalendarFeed(t *testing.T) {
 	}
 }
 
+// TestGetCalendarFeed_QueryOptions tests calendar feed query parameter formatting.
 func TestGetCalendarFeed_QueryOptions(t *testing.T) {
 	t.Parallel()
 
@@ -1312,6 +1340,7 @@ func TestGetQualityProfileSchema(t *testing.T) {
 	}
 }
 
+// runUpdateRootFolderTest executes a test against the deprecated UpdateRootFolder endpoint.
 func runUpdateRootFolderTest(t *testing.T, status int, body string, wantErr bool) {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1326,7 +1355,7 @@ func runUpdateRootFolderTest(t *testing.T, status int, body string, wantErr bool
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(status)
-		io.WriteString(w, body)
+		_, _ = io.Copy(w, strings.NewReader(body))
 	}))
 	defer srv.Close()
 
@@ -1344,6 +1373,7 @@ func runUpdateRootFolderTest(t *testing.T, status int, body string, wantErr bool
 	}
 }
 
+// TestUpdateRootFolder tests updating a root folder across various HTTP responses.
 func TestUpdateRootFolder(t *testing.T) {
 	t.Parallel()
 
@@ -1827,6 +1857,7 @@ func TestHeadPing(t *testing.T) {
 	}
 }
 
+// verifyUploadBackupRequest checks the structure of the multipart upload request.
 func verifyUploadBackupRequest(t *testing.T, r *http.Request) {
 	t.Helper()
 	if r.Method != http.MethodPost {
@@ -1851,12 +1882,13 @@ func verifyUploadBackupRequest(t *testing.T, r *http.Request) {
 	}
 }
 
+// runUploadBackupTest runs a test case for backup archive upload.
 func runUploadBackupTest(t *testing.T, status int, body string, wantErr bool) {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		verifyUploadBackupRequest(t, r)
 		w.WriteHeader(status)
-		io.WriteString(w, body)
+		_, _ = io.Copy(w, strings.NewReader(body))
 	}))
 	defer srv.Close()
 
@@ -1871,6 +1903,7 @@ func runUploadBackupTest(t *testing.T, status int, body string, wantErr bool) {
 	}
 }
 
+// TestUploadBackup tests uploading a backup archive.
 func TestUploadBackup(t *testing.T) {
 	t.Parallel()
 
@@ -3873,6 +3906,7 @@ func TestGetUpdateLogFiles(t *testing.T) {
 	}
 }
 
+// verifyMediaCoverRequest validates the HTTP method, auth, and path for media cover requests.
 func verifyMediaCoverRequest(t *testing.T, r *http.Request, wantPath string) {
 	t.Helper()
 	if r.Method != http.MethodGet {
@@ -3886,6 +3920,7 @@ func verifyMediaCoverRequest(t *testing.T, r *http.Request, wantPath string) {
 	}
 }
 
+// runMediaCoverRequest executes a test against the media cover endpoint.
 func runMediaCoverRequest(t *testing.T, seriesID int, filename, wantPath string, status int, resp []byte, wantErr error, wantAPI bool) {
 	t.Helper()
 	var requests int
@@ -3894,7 +3929,7 @@ func runMediaCoverRequest(t *testing.T, seriesID int, filename, wantPath string,
 		verifyMediaCoverRequest(t, r, wantPath)
 		w.Header().Set("Content-Type", "image/jpeg")
 		w.WriteHeader(status)
-		_, _ = w.Write(resp)
+		_, _ = io.Copy(w, bytes.NewReader(resp))
 	}))
 	defer srv.Close()
 
@@ -3924,6 +3959,7 @@ func runMediaCoverRequest(t *testing.T, seriesID int, filename, wantPath string,
 	}
 }
 
+// TestGetMediaCover tests downloading media cover images.
 func TestGetMediaCover(t *testing.T) {
 	t.Parallel()
 
@@ -3970,6 +4006,7 @@ func TestGetMediaCover(t *testing.T) {
 	}
 }
 
+// TestGetMediaCover_Validation tests client-side input validation for media covers.
 func TestGetMediaCover_Validation(t *testing.T) {
 	t.Parallel()
 

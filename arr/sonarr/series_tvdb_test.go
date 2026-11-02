@@ -11,6 +11,7 @@ import (
 	"github.com/golusoris/goenvoy/arr/sonarr"
 )
 
+// TestGetSeriesByTVDBID tests looking up series by TVDB ID.
 func TestGetSeriesByTVDBID(t *testing.T) {
 	t.Parallel()
 
@@ -30,6 +31,7 @@ func TestGetSeriesByTVDBID(t *testing.T) {
 	}
 }
 
+// checkSeriesByTVDBID verifies that GetSeriesByTVDBID returns expected series.
 func checkSeriesByTVDBID(t *testing.T, body []sonarr.Series, want int) {
 	t.Helper()
 	srv := newTestServer(t, http.MethodGet, "/api/v3/series?tvdbId=81189", body)
@@ -51,6 +53,7 @@ func checkSeriesByTVDBID(t *testing.T, body []sonarr.Series, want int) {
 	}
 }
 
+// TestGetSeriesByTVDBIDRejectsInvalidID verifies non-positive TVDB IDs are rejected.
 func TestGetSeriesByTVDBIDRejectsInvalidID(t *testing.T) {
 	t.Parallel()
 
@@ -75,6 +78,7 @@ func TestGetSeriesByTVDBIDRejectsInvalidID(t *testing.T) {
 	}
 }
 
+// TestGetSeriesByTVDBIDAPIError tests handling of API error responses.
 func TestGetSeriesByTVDBIDAPIError(t *testing.T) {
 	t.Parallel()
 

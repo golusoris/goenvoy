@@ -12,14 +12,22 @@ import (
 
 // CalendarFeedOptions configures optional query parameters for [Client.GetCalendarFeed].
 type CalendarFeedOptions struct {
-	PastDays      *int
-	FutureDays    *int
-	Tags          []string
-	Unmonitored   bool
+	// PastDays specifies the number of days in the past to include in the feed.
+	PastDays *int
+	// FutureDays specifies the number of days in the future to include in the feed.
+	FutureDays *int
+	// Tags limits the feed to series carrying any of these tags; each entry is a tag ID
+	// or a tag label (Sonarr resolves both, TagService.GetTag).
+	Tags []string
+	// Unmonitored includes unmonitored episodes in the feed when true.
+	Unmonitored bool
+	// PremieresOnly limits the feed to season and series premieres when true.
 	PremieresOnly bool
-	AsAllDay      bool
+	// AsAllDay emits calendar events as all-day events when true.
+	AsAllDay bool
 }
 
+// values converts feed options into URL query values.
 func (opts *CalendarFeedOptions) values() url.Values {
 	if opts == nil {
 		return nil

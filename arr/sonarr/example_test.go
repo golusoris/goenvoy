@@ -124,6 +124,7 @@ func ExampleClient_SendManualImport() {
 	fmt.Printf("command %d queued\n", cmd.ID)
 }
 
+// ExampleClient_GetMediaCover demonstrates retrieving a series media cover image.
 func ExampleClient_GetMediaCover() {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "image/jpeg")
@@ -146,6 +147,7 @@ func ExampleClient_GetMediaCover() {
 	// Cover bytes: 16
 }
 
+// ExampleClient_GetCalendarFeed demonstrates fetching the iCalendar feed.
 func ExampleClient_GetCalendarFeed() {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/calendar")
@@ -170,6 +172,7 @@ func ExampleClient_GetCalendarFeed() {
 	// BEGIN:VCALENDAR
 }
 
+// ExampleClient_GetSeriesByTVDBID demonstrates looking up series by TVDB ID.
 func ExampleClient_GetSeriesByTVDBID() {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
