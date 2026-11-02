@@ -296,13 +296,12 @@ func inspectCall(fset *token.FileSet, relFile, fnName string, call *ast.CallExpr
 	}
 	cName := callName(call)
 	verb := verbForSelector(cName)
+	if verb != "" && len(call.Args) < 2 {
+		// Why: request helpers always take ctx plus path (>= 2 args); one-arg Get/Delete/Head are header or query accessors.
+		return codeOp{}, false
+	}
 	pathArg := extractPathArg(call)
 	if pathArg == nil {
-		if verb != "" {
-			// Why: request call with recognized verb but no path argument fails closed.
-			line := fset.Position(call.Pos()).Line
-			return codeOp{funcName: fnName, file: relFile, line: line, verb: verb, unresolved: true}, true
-		}
 		return codeOp{}, false
 	}
 

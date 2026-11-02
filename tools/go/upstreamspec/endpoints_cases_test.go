@@ -16,6 +16,14 @@ func positiveWrapperCases(specSha string) []endpointCase {
 			wantCodeOps: 0,
 			wantInSpec:  0,
 		},
+		{
+			name:        "(7) accessor Get with single string argument is not treated as request",
+			code:        "func (c *Client) H(ctx context.Context, h interface{ Get(string) string }) error { _ = h.Get(\"X-Pagination-Page\"); return nil }\n",
+			module:      "testmod",
+			sha:         specSha,
+			wantCodeOps: 0,
+			wantInSpec:  0,
+		},
 	}
 }
 
