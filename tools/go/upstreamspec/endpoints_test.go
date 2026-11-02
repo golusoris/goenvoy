@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -54,6 +55,15 @@ paths:
     get: {}
 `
 
+// mkdirOwner creates dir, whose parent must exist, readable only by the owner.
+// Why: t.TempDir creates owner-only (0o700) directories; renaming keeps that mode.
+func mkdirOwner(t *testing.T, dir string) {
+	t.Helper()
+	if err := os.Rename(t.TempDir(), dir); err != nil {
+		t.Fatalf("mkdirOwner %s: rename: %v", dir, err)
+	}
+}
+
 func serveSpec(t *testing.T, body []byte, contentType string) *httptest.Server {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +76,9 @@ func serveSpec(t *testing.T, body []byte, contentType string) *httptest.Server {
 			ct = "application/json"
 		}
 		w.Header().Set("Content-Type", ct)
-		_, _ = w.Write(body)
+		if _, err := io.Copy(w, bytes.NewReader(body)); err != nil {
+			t.Errorf("serveSpec: write fixture: %v", err)
+		}
 	}))
 	t.Cleanup(server.Close)
 	return server
@@ -76,9 +88,7 @@ func setupTestRoot(t *testing.T, code, allowContent string) string {
 	t.Helper()
 	root := t.TempDir()
 	modDir := filepath.Join(root, "testmod")
-	if err := os.MkdirAll(modDir, 0o700); err != nil {
-		t.Fatalf("mkdir mod: %v", err)
-	}
+	mkdirOwner(t, modDir)
 	if code != "" {
 		src := "package testmod\n\nimport (\n\t\"context\"\n\t\"fmt\"\n)\n\ntype Client struct{}\n\n" +
 			"func (c *Client) Get(ctx context.Context, p string) error { return nil }\n" +
@@ -91,9 +101,7 @@ func setupTestRoot(t *testing.T, code, allowContent string) string {
 	}
 	if allowContent != "" {
 		upDir := filepath.Join(root, "upstream")
-		if err := os.MkdirAll(upDir, 0o700); err != nil {
-			t.Fatalf("mkdir upstream: %v", err)
-		}
+		mkdirOwner(t, upDir)
 		if err := os.WriteFile(filepath.Join(upDir, "endpoints-allow.yaml"), []byte(allowContent), 0o600); err != nil {
 			t.Fatalf("write allow.yaml: %v", err)
 		}
@@ -412,9 +420,7 @@ func TestEndpointsNestedPackages(t *testing.T) {
 
 	root := setupTestRoot(t, "", "")
 	subDir := filepath.Join(root, "testmod", "sub")
-	if err := os.MkdirAll(subDir, 0o700); err != nil {
-		t.Fatalf("mkdir sub: %v", err)
-	}
+	mkdirOwner(t, subDir)
 	src := "package sub\n\nimport \"context\"\n\ntype Client struct{}\n" +
 		"func (c *Client) Sub(ctx context.Context) error { return c.Get(ctx, \"/items\") }\n" +
 		"func (c *Client) Get(ctx context.Context, p string) error { return nil }\n"
