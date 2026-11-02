@@ -27,7 +27,7 @@ type allowDoc struct {
 
 // readAllowList loads and validates the allow list file.
 func readAllowList(path string) ([]allowEntry, error) {
-	// Why: #nosec G304 -- allow-list path is constructed below repository root.
+	// #nosec G304 -- allow-list path is built below the repository root
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {

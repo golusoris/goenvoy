@@ -83,7 +83,7 @@ func shouldSkipDir(rootDir, path, name string) bool {
 
 // parseFile parses a single Go file and extracts all endpoint operations.
 func parseFile(fset *token.FileSet, moduleDir, filePath string) ([]codeOp, error) {
-	// Why: #nosec G304 -- filePath is traversed within validated module directory.
+	// #nosec G304 -- filePath comes from the walk of the validated module directory
 	f, err := parser.ParseFile(fset, filePath, nil, 0)
 	if err != nil {
 		return nil, fmt.Errorf("parse %s: %w", filePath, err)
