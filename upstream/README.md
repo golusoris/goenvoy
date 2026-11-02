@@ -24,6 +24,15 @@ commit or path that does not serve the file, an oversized reply, a Renovate conf
 does not read every pin), and then checks every pin against the live file. The CI job
 `Upstream spec pins` runs the same target on every pull request.
 
+## Endpoint check
+
+`make upstream-specs` verifies that client request paths and HTTP verbs in modules with a
+`module:` entry in `specs.yaml` match the pinned upstream OpenAPI spec. Operations absent from
+the spec are refused unless listed under `allow:` in `upstream/endpoints-allow.yaml` with
+`module`, `func`, `method`, `path`, `reason`, and an `expires` date (YYYY-MM-DD); an entry
+stays valid through that day. Expired entries are refused, and any entry that matches no
+off-spec call must be removed.
+
 ## Renewing a pin
 
 Renovate reads repository, tag and commit of each entry (the two `customManagers` for

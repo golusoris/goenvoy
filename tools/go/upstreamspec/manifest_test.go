@@ -27,8 +27,10 @@ func entry(change map[string]string) string {
 	}
 	var out strings.Builder
 	out.WriteString("specs:\n")
+	handled := map[string]bool{}
 	for i, line := range lines {
 		key, _, _ := strings.Cut(line, ":")
+		handled[key] = true
 		if replaced, ok := change[key]; ok {
 			line = replaced
 		}
@@ -40,6 +42,11 @@ func entry(change map[string]string) string {
 			lead = "  - "
 		}
 		out.WriteString(lead + line + "\n")
+	}
+	for key, line := range change {
+		if !handled[key] && line != "" {
+			out.WriteString("    " + line + "\n")
+		}
 	}
 	return out.String()
 }
@@ -85,6 +92,7 @@ func TestReadManifest(t *testing.T) {
 		{"a checksum one digit short", with("sha256", "sha256: "+someSHA256[1:]), "sha256 must be 64"},
 		{"no license", with("license", ""), "license must be the SPDX id"},
 		{"a prefix without a slash", with("prefix", "prefix: api/v1"), "prefix must be empty or a path"},
+		{"a module leaving the repository", with("module", "module: ../arr"), "one clean path"},
 		{"a name used twice", entry(nil) + strings.TrimPrefix(entry(nil), "specs:\n"), "specs[1] (sample): repeats the name"},
 		{"one commit under two repositories", entry(nil) + strings.TrimPrefix(entry(otherProject), "specs:\n"), "specs[1] (other): repeats the commit of Owner/Project"},
 	}

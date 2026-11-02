@@ -15,6 +15,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -26,26 +27,37 @@ const (
 )
 
 // errUsage is returned for a command line the tool does not understand.
-var errUsage = errors.New("usage: upstreamspec check [-manifest <specs.yaml>]")
+var errUsage = errors.New("usage: upstreamspec check [-manifest <specs.yaml>] | endpoints [-manifest <specs.yaml>] [-root <dir>]")
 
 func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), deadline)
 	err := run(ctx, os.Args[1:], os.Stdout, rawBase)
 	cancel()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "upstreamspec:", err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
 func run(ctx context.Context, args []string, out io.Writer, base string) error {
-	if len(args) == 0 || args[0] != "check" {
+	if len(args) == 0 {
 		return errUsage
 	}
-	flags := flag.NewFlagSet("upstreamspec", flag.ContinueOnError)
+	switch args[0] {
+	case "check":
+		return runCheck(ctx, args[1:], out, base)
+	case "endpoints":
+		return runEndpoints(ctx, args[1:], out, base)
+	default:
+		return errUsage
+	}
+}
+
+func runCheck(ctx context.Context, args []string, out io.Writer, base string) error {
+	flags := flag.NewFlagSet("check", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	manifest := flags.String("manifest", "upstream/specs.yaml", "manifest of pinned specs")
-	if err := flags.Parse(args[1:]); err != nil {
+	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("%w; %w", err, errUsage)
 	}
 	if flags.NArg() != 0 {
@@ -56,4 +68,30 @@ func run(ctx context.Context, args []string, out io.Writer, base string) error {
 		return err
 	}
 	return checker{client: &http.Client{Timeout: deadline, Transport: sharedTransport}, base: base, out: out}.all(ctx, pins)
+}
+
+func runEndpoints(ctx context.Context, args []string, out io.Writer, base string) error {
+	flags := flag.NewFlagSet("endpoints", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	manifest := flags.String("manifest", "upstream/specs.yaml", "manifest of pinned specs")
+	root := flags.String("root", ".", "repository root directory")
+	if err := flags.Parse(args); err != nil {
+		return fmt.Errorf("%w; %w", err, errUsage)
+	}
+	if flags.NArg() != 0 {
+		return errUsage
+	}
+	pins, err := readManifest(*manifest)
+	if err != nil {
+		return err
+	}
+	allowList, err := readAllowList(filepath.Join(*root, "upstream", "endpoints-allow.yaml"))
+	if err != nil {
+		return err
+	}
+	chk := endpointsChecker{
+		checker: checker{client: &http.Client{Timeout: deadline, Transport: sharedTransport}, base: base, out: out},
+		root:    *root,
+	}
+	return chk.all(ctx, pins, allowList)
 }

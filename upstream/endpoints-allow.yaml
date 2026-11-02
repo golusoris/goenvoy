@@ -1,0 +1,7 @@
+allow:
+  - module: arr/sonarr
+    func: Client.UpdateRootFolder
+    method: PUT
+    path: /api/v3/rootfolder/{}
+    reason: "Deprecated wrapper kept for API compatibility; Sonarr v4.0.20 RootFolderController serves no PUT. Exception category D (120 days); remove at next major."
+    expires: 2027-03-02

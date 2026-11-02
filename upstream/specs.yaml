@@ -20,6 +20,7 @@ specs:
     path: src/Sonarr.Api.V3/openapi.json
     sha256: 03108f7f6b20300b84af879392ac44947cd3d3c19c073184e5fbf94e127165f9
     license: GPL-3.0
+    module: arr/sonarr
   - name: radarr
     repository: Radarr/Radarr
     tag: v6.4.4.10685
