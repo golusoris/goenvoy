@@ -1932,7 +1932,7 @@ func (c *Client) handlePollError(err error, interval int) (bool, error) {
 	case http.StatusNotFound:
 		return false, errors.New("trakt: invalid device code")
 	case http.StatusGone:
-		return false, errCodeExpired
+		return false, ErrCodeExpired
 	case http.StatusTeapot:
 		return false, errors.New("trakt: user denied authorization")
 	case http.StatusTooManyRequests:
@@ -1961,7 +1961,7 @@ func (c *Client) pollTokenOnce(ctx context.Context, body map[string]string, inte
 // checkPollTick checks expiration and performs one poll attempt.
 func (c *Client) checkPollTick(ctx context.Context, body map[string]string, interval int, deadline time.Time) (*Token, bool, error) {
 	if time.Now().After(deadline) {
-		return nil, false, errCodeExpired
+		return nil, false, ErrCodeExpired
 	}
 	return c.pollTokenOnce(ctx, body, interval)
 }
@@ -1974,12 +1974,13 @@ func pollInterval(interval int) time.Duration {
 	return time.Duration(interval) * time.Second
 }
 
-var errCodeExpired = errors.New("trakt: device code expired")
+// ErrCodeExpired is returned by PollDeviceToken when the device code expires before the user authorizes the app.
+var ErrCodeExpired = errors.New("trakt: device code expired")
 
 // pollCtxErr translates context cancellation or deadline expiration to polling errors.
 func pollCtxErr(ctx context.Context) error {
-	if errors.Is(context.Cause(ctx), errCodeExpired) {
-		return errCodeExpired
+	if errors.Is(context.Cause(ctx), ErrCodeExpired) {
+		return ErrCodeExpired
 	}
 	return fmt.Errorf("trakt: device poll: %w", ctx.Err())
 }
@@ -2015,7 +2016,7 @@ func pollLoop(ctx context.Context, tick <-chan time.Time, maxPolls int, poll fun
 			return token, nil
 		}
 	}
-	return nil, errCodeExpired
+	return nil, ErrCodeExpired
 }
 
 // PollDeviceToken polls for the device token after the user has authorized the app.
@@ -2027,7 +2028,7 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (*Token,
 	defer ticker.Stop()
 
 	deadline := time.Now().Add(time.Duration(code.ExpiresIn) * time.Second)
-	pollCtx, cancel := context.WithDeadlineCause(ctx, deadline, errCodeExpired)
+	pollCtx, cancel := context.WithDeadlineCause(ctx, deadline, ErrCodeExpired)
 	defer cancel()
 
 	body := map[string]string{

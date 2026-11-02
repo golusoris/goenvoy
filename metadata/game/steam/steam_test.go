@@ -466,8 +466,8 @@ func runCloseTest(t *testing.T, statusCode int, response string) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-		if _, err := io.WriteString(w, response); err != nil {
-			t.Error(err)
+		if err := json.NewEncoder(w).Encode(json.RawMessage(response)); err != nil {
+			t.Errorf("encode response: %v", err)
 		}
 	}))
 	t.Cleanup(srv.Close)

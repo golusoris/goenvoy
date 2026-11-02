@@ -1352,7 +1352,7 @@ func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
 	<-done
 }
 
-func runExpiryTest(t *testing.T, code *simkl.DeviceCode, cancelCtx bool, wantErr string) {
+func runExpiryTest(t *testing.T, code *simkl.DeviceCode, cancelCtx bool, wantErr string) error {
 	t.Helper()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -1381,6 +1381,7 @@ func runExpiryTest(t *testing.T, code *simkl.DeviceCode, cancelCtx bool, wantErr
 	if err.Error() != wantErr {
 		t.Fatalf("err = %q, want %q", err.Error(), wantErr)
 	}
+	return err
 }
 
 func TestPollDeviceTokenExpiry(t *testing.T) {
@@ -1388,16 +1389,19 @@ func TestPollDeviceTokenExpiry(t *testing.T) {
 
 	t.Run("expired", func(t *testing.T) {
 		t.Parallel()
-		runExpiryTest(t, &simkl.DeviceCode{
+		err := runExpiryTest(t, &simkl.DeviceCode{
 			UserCode:  "test-user-code",
 			Interval:  0,
 			ExpiresIn: 0,
 		}, false, "simkl: device code expired")
+		if !errors.Is(err, simkl.ErrCodeExpired) {
+			t.Fatalf("errors.Is(err, simkl.ErrCodeExpired) = false; err: %v", err)
+		}
 	})
 
 	t.Run("ctx_canceled", func(t *testing.T) {
 		t.Parallel()
-		runExpiryTest(t, &simkl.DeviceCode{
+		_ = runExpiryTest(t, &simkl.DeviceCode{
 			UserCode:  "test-user-code",
 			Interval:  5,
 			ExpiresIn: 60,

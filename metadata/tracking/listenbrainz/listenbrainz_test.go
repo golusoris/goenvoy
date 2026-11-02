@@ -501,8 +501,8 @@ func runCloseTest(t *testing.T, statusCode int, response string) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-		if _, err := io.WriteString(w, response); err != nil {
-			t.Error(err)
+		if err := json.NewEncoder(w).Encode(json.RawMessage(response)); err != nil {
+			t.Errorf("encode response: %v", err)
 		}
 	}))
 	t.Cleanup(srv.Close)
@@ -522,10 +522,10 @@ func runCloseTest(t *testing.T, statusCode int, response string) {
 	if !errors.Is(err, errBoom) {
 		t.Fatalf("errors.Is(err, errBoom) = false; err: %v", err)
 	}
-	if !errors.Is(err, listenbrainz.ErrCloseBody) {
-		t.Fatalf("errors.Is(err, ErrCloseBody) = false; err: %v", err)
-	}
 	if statusCode == http.StatusOK {
+		if !errors.Is(err, listenbrainz.ErrCloseBody) {
+			t.Fatalf("errors.Is(err, ErrCloseBody) = false; err: %v", err)
+		}
 		if !strings.Contains(err.Error(), "listenbrainz: close response body") {
 			t.Fatalf("error %q does not contain close response body", err.Error())
 		}
@@ -534,6 +534,9 @@ func runCloseTest(t *testing.T, statusCode int, response string) {
 	var apiErr *listenbrainz.APIError
 	if !errors.As(err, &apiErr) {
 		t.Fatalf("errors.As(err, &apiErr) = false; err: %v", err)
+	}
+	if errors.Is(err, listenbrainz.ErrCloseBody) {
+		t.Fatalf("errors.Is(err, ErrCloseBody) = true on 500; want false; err: %v", err)
 	}
 }
 

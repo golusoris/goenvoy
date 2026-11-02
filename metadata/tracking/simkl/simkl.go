@@ -533,17 +533,18 @@ func (c *Client) pollDeviceTokenOnce(ctx context.Context, userCode string) (stri
 // checkPollTick checks expiration and performs one poll attempt.
 func (c *Client) checkPollTick(ctx context.Context, userCode string, deadline time.Time) (string, bool, error) {
 	if time.Now().After(deadline) {
-		return "", false, errCodeExpired
+		return "", false, ErrCodeExpired
 	}
 	return c.pollDeviceTokenOnce(ctx, userCode)
 }
 
-var errCodeExpired = errors.New("simkl: device code expired")
+// ErrCodeExpired is returned by PollDeviceToken when the device code expires before the user authorizes the app.
+var ErrCodeExpired = errors.New("simkl: device code expired")
 
 // pollCtxErr translates context cancellation or deadline expiration to polling errors.
 func pollCtxErr(ctx context.Context) error {
-	if errors.Is(context.Cause(ctx), errCodeExpired) {
-		return errCodeExpired
+	if errors.Is(context.Cause(ctx), ErrCodeExpired) {
+		return ErrCodeExpired
 	}
 	return fmt.Errorf("simkl: device poll: %w", ctx.Err())
 }
@@ -579,7 +580,7 @@ func pollLoop(ctx context.Context, tick <-chan time.Time, maxPolls int, poll fun
 			return token, nil
 		}
 	}
-	return "", errCodeExpired
+	return "", ErrCodeExpired
 }
 
 // PollDeviceToken polls for the PIN/device token after the user has authorized the app.
@@ -590,7 +591,7 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (string,
 	defer ticker.Stop()
 
 	deadline := time.Now().Add(time.Duration(code.ExpiresIn) * time.Second)
-	pollCtx, cancel := context.WithDeadlineCause(ctx, deadline, errCodeExpired)
+	pollCtx, cancel := context.WithDeadlineCause(ctx, deadline, ErrCodeExpired)
 	defer cancel()
 
 	maxPolls := code.ExpiresIn/interval + 1

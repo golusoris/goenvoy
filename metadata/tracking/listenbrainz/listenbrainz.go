@@ -96,7 +96,11 @@ func (c *Client) do(req *http.Request, v any) (err error) {
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
-			err = errors.Join(err, fmt.Errorf("%w: %w", ErrCloseBody, cerr))
+			closeErr := fmt.Errorf("listenbrainz: close response body: %w", cerr)
+			if err == nil {
+				closeErr = fmt.Errorf("%w: %w", ErrCloseBody, cerr)
+			}
+			err = errors.Join(err, closeErr)
 		}
 	}()
 

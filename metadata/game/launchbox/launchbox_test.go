@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/golusoris/goenvoy/metadata"
 	"github.com/golusoris/goenvoy/metadata/game/launchbox"
@@ -271,11 +272,12 @@ func (b *closeErrBody) Close() error {
 func runCloseTest(t *testing.T, statusCode int, response []byte) {
 	t.Helper()
 	errBoom := errors.New("close boom")
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(statusCode)
-		if _, err := w.Write(response); err != nil {
-			t.Error(err)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if statusCode >= 400 {
+			http.Error(w, string(response), statusCode)
+			return
 		}
+		http.ServeContent(w, r, "Metadata.zip", time.Time{}, bytes.NewReader(response))
 	}))
 	t.Cleanup(srv.Close)
 
