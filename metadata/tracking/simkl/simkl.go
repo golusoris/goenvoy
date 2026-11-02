@@ -500,10 +500,10 @@ func (c *Client) GetDeviceCode(ctx context.Context) (*DeviceCode, error) {
 	})
 }
 
-// pollInterval calculates the polling ticker duration with a 1-second minimum.
+// pollInterval calculates the polling ticker duration with a 5-second minimum.
 func pollInterval(interval int) time.Duration {
-	if interval < 1 {
-		interval = 1
+	if interval < 5 {
+		interval = 5
 	}
 	return time.Duration(interval) * time.Second
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/golusoris/goenvoy/metadata"
 	"github.com/golusoris/goenvoy/metadata/tracking/simkl"
@@ -1363,8 +1364,8 @@ func TestPollDeviceTokenExpiry(t *testing.T) {
 			name: "expired",
 			code: &simkl.DeviceCode{
 				UserCode:  "test-user-code",
-				Interval:  1,
-				ExpiresIn: 2,
+				Interval:  0,
+				ExpiresIn: 0,
 			},
 			wantErr: "simkl: device code expired",
 		},
@@ -1373,6 +1374,9 @@ func TestPollDeviceTokenExpiry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
 
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
@@ -1384,7 +1388,7 @@ func TestPollDeviceTokenExpiry(t *testing.T) {
 			t.Cleanup(srv.Close)
 
 			c := simkl.New("test-client", metadata.WithBaseURL(srv.URL))
-			token, err := c.PollDeviceToken(context.Background(), tt.code)
+			token, err := c.PollDeviceToken(ctx, tt.code)
 			if token != "" {
 				t.Fatalf("expected empty token, got %q", token)
 			}
