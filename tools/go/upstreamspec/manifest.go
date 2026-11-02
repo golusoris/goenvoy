@@ -27,6 +27,7 @@ type pin struct {
 	SHA256     string `yaml:"sha256"`
 	License    string `yaml:"license"`
 	Prefix     string `yaml:"prefix"`
+	Module     string `yaml:"module"`
 }
 
 var (
@@ -103,6 +104,7 @@ func (p pin) problem() string {
 		{sha256Hex.MatchString(p.SHA256), "sha256 must be 64 lower-case hex digits"},
 		{licenseID.MatchString(p.License), "license must be the SPDX id of the upstream repository"},
 		{prefixPath.MatchString(p.Prefix), "prefix must be empty or a path like /api/v1"},
+		{p.Module == "" || cleanRelative(p.Module), "module must be empty or one clean path inside the repository"},
 	}
 	for _, check := range checks {
 		if !check.ok {

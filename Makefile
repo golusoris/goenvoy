@@ -113,6 +113,7 @@ tools-install: ## Install pinned local tools used by CI and release checks
 upstream-specs: ## Upstream OpenAPI spec pins: planted cases, then every pinned file against its sha256
 	cd tools/go && go vet ./upstreamspec/ && go test -count=1 ./upstreamspec/
 	cd tools/go && go run ./upstreamspec check -manifest ../../upstream/specs.yaml
+	cd tools/go && go run ./upstreamspec endpoints -manifest ../../upstream/specs.yaml -root ../..
 
 lint-exceptions: ## Dated complexity exceptions in .golangci.yml: planted cases, then the repository config
 	cd tools/go && go vet ./lintexceptions/ && go test -count=1 ./lintexceptions/

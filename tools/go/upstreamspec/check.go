@@ -38,27 +38,33 @@ func (c checker) all(ctx context.Context, pins []pin) error {
 
 // one reads the pinned file and fails unless it has the pinned checksum.
 func (c checker) one(ctx context.Context, p pin) error {
+	_, err := c.fetch(ctx, p)
+	return err
+}
+
+// fetch downloads the pinned file, limits its size and verifies its checksum.
+func (c checker) fetch(ctx context.Context, p pin) ([]byte, error) {
 	source := p.source(c.base)
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, source, http.NoBody)
 	if err != nil {
-		return fmt.Errorf("request %s: %w", source, err)
+		return nil, fmt.Errorf("request %s: %w", source, err)
 	}
 	// #nosec G107 G704 -- the address is the fixed base plus manifest fields matched against patterns
 	reply, err := c.client.Do(request)
 	if err != nil {
-		return fmt.Errorf("get %s: %w", source, err)
+		return nil, fmt.Errorf("get %s: %w", source, err)
 	}
 	data, err := body(reply)
 	if err != nil {
-		return fmt.Errorf("get %s: %w", source, err)
+		return nil, fmt.Errorf("get %s: %w", source, err)
 	}
 	if len(data) > maxSpecBytes {
-		return fmt.Errorf("%s is larger than %d bytes", source, maxSpecBytes)
+		return nil, fmt.Errorf("%s is larger than %d bytes", source, maxSpecBytes)
 	}
 	if got := digest(data); got != p.SHA256 {
-		return fmt.Errorf("%s at commit %s has sha256 %s, the manifest pins %s", p.Path, p.Commit, got, p.SHA256)
+		return nil, fmt.Errorf("%s at commit %s has sha256 %s, the manifest pins %s", p.Path, p.Commit, got, p.SHA256)
 	}
-	return nil
+	return data, nil
 }
 
 // body closes the reply and returns what a 200 reply carried, at most one byte above the size bound.
