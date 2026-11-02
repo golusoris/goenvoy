@@ -3,6 +3,7 @@ package igdb
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,8 +44,8 @@ func New(clientID, accessToken string, opts ...metadata.Option) *Client {
 	return c
 }
 
-// query sends a POST request to the given endpoint with an APICalypse query body.
-func (c *Client) query(ctx context.Context, endpoint, body string, v any) error {
+// query sends a POST request to the given endpoint with an APICalypse query body, decodes into v, and surfaces close errors.
+func (c *Client) query(ctx context.Context, endpoint, body string, v any) (err error) {
 	u := c.BaseURL() + "/" + endpoint
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, strings.NewReader(body))
@@ -60,7 +61,11 @@ func (c *Client) query(ctx context.Context, endpoint, body string, v any) error 
 	if err != nil {
 		return fmt.Errorf("igdb: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("igdb: close response body: %w", cerr))
+		}
+	}()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {

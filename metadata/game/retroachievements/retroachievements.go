@@ -3,6 +3,7 @@ package retroachievements
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,7 +38,8 @@ func New(apiKey string, opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc, apiKey: apiKey}
 }
 
-func (c *Client) get(ctx context.Context, endpoint string, params url.Values, v any) error {
+// get executes a GET request, decodes JSON into v, and surfaces response body close errors.
+func (c *Client) get(ctx context.Context, endpoint string, params url.Values, v any) (err error) {
 	if params == nil {
 		params = url.Values{}
 	}
@@ -54,7 +56,11 @@ func (c *Client) get(ctx context.Context, endpoint string, params url.Values, v 
 	if err != nil {
 		return fmt.Errorf("retroachievements: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("retroachievements: close response body: %w", cerr))
+		}
+	}()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {

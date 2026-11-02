@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/golusoris/goenvoy/metadata"
@@ -534,4 +535,84 @@ func TestWithHTTPClient(t *testing.T) {
 	if c == nil {
 		t.Fatal("expected non-nil client")
 	}
+}
+
+type closeErrTransport struct {
+	base http.RoundTripper
+	err  error
+}
+
+func (t closeErrTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := t.base.RoundTrip(req)
+	if err != nil {
+		return nil, err
+	}
+	resp.Body = &closeErrBody{rc: resp.Body, err: t.err}
+	return resp, nil
+}
+
+type closeErrBody struct {
+	rc  io.ReadCloser
+	err error
+}
+
+func (b *closeErrBody) Read(p []byte) (int, error) {
+	return b.rc.Read(p)
+}
+
+func (b *closeErrBody) Close() error {
+	cerr := b.rc.Close()
+	return errors.Join(cerr, b.err)
+}
+
+func runCloseTest(t *testing.T, statusCode int, response string) {
+	t.Helper()
+	errBoom := errors.New("close boom")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
+		if err := json.NewEncoder(w).Encode(json.RawMessage(response)); err != nil {
+			t.Errorf("encode response: %v", err)
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	client := &http.Client{
+		Transport: closeErrTransport{
+			base: srv.Client().Transport,
+			err:  errBoom,
+		},
+	}
+	c := igdb.New("id", "token", metadata.WithHTTPClient(client), metadata.WithBaseURL(srv.URL))
+
+	_, err := c.SearchGames(context.Background(), "test", 10)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, errBoom) {
+		t.Fatalf("errors.Is(err, errBoom) = false; err: %v", err)
+	}
+	if statusCode == http.StatusOK {
+		if !strings.Contains(err.Error(), "igdb: close response body") {
+			t.Fatalf("error %q does not contain close response body", err.Error())
+		}
+		return
+	}
+	var apiErr *igdb.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("errors.As(err, &apiErr) = false; err: %v", err)
+	}
+}
+
+func TestCloseResponseBodyError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("status_200", func(t *testing.T) {
+		t.Parallel()
+		runCloseTest(t, http.StatusOK, `[]`)
+	})
+	t.Run("status_500", func(t *testing.T) {
+		t.Parallel()
+		runCloseTest(t, http.StatusInternalServerError, `{"error":"internal error"}`)
+	})
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -31,6 +32,11 @@ type APIError struct {
 func (e *APIError) Error() string {
 	return fmt.Sprintf("listenbrainz: %s: %s", e.Status, e.Body)
 }
+
+// ErrCloseBody indicates that the HTTP request reached the server and the response
+// was already read, but closing the response body failed. Callers of non-idempotent
+// operations (such as SubmitListens) must not retry the request on this error.
+var ErrCloseBody = errors.New("listenbrainz: close response body")
 
 // New creates a ListenBrainz [Client]. A token is only required for write
 // operations and can be set via [NewWithToken].
@@ -82,12 +88,21 @@ func (c *Client) post(ctx context.Context, path string, body, v any) error {
 	return c.do(req, v)
 }
 
-func (c *Client) do(req *http.Request, v any) error {
+// do executes an HTTP request, decodes JSON into v, and surfaces response body close errors.
+func (c *Client) do(req *http.Request, v any) (err error) {
 	resp, err := c.HTTPClient().Do(req)
 	if err != nil {
 		return fmt.Errorf("listenbrainz: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			closeErr := fmt.Errorf("listenbrainz: close response body: %w", cerr)
+			if err == nil {
+				closeErr = fmt.Errorf("%w: %w", ErrCloseBody, cerr)
+			}
+			err = errors.Join(err, closeErr)
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -110,6 +125,8 @@ func (c *Client) do(req *http.Request, v any) error {
 
 // SubmitListens submits one or more listens to ListenBrainz. listenType must
 // be "single", "playing_now", or "import". A token must be set via [WithToken].
+// If the response body cannot be closed after a successful submission, it returns
+// an error wrapping [ErrCloseBody]; callers must not retry the submission in that case.
 func (c *Client) SubmitListens(ctx context.Context, listenType string, listens []Listen) error {
 	payload := make([]listenSubmit, len(listens))
 	for i, l := range listens {

@@ -3,6 +3,7 @@ package steam
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -77,7 +78,8 @@ func (c *Client) getWebAPIURL() string {
 	return c.webAPIURL
 }
 
-func (c *Client) get(ctx context.Context, u string, v any) error {
+// get executes a GET request, decodes JSON into v, and surfaces response body close errors.
+func (c *Client) get(ctx context.Context, u string, v any) (err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("steam: create request: %w", err)
@@ -87,7 +89,11 @@ func (c *Client) get(ctx context.Context, u string, v any) error {
 	if err != nil {
 		return fmt.Errorf("steam: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("steam: close response body: %w", cerr))
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

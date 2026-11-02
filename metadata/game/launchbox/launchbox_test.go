@@ -5,9 +5,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/golusoris/goenvoy/metadata"
 	"github.com/golusoris/goenvoy/metadata/game/launchbox"
@@ -236,4 +239,84 @@ func TestDownloadError(t *testing.T) {
 	if apiErr.StatusCode != http.StatusInternalServerError {
 		t.Errorf("StatusCode = %d, want 500", apiErr.StatusCode)
 	}
+}
+
+type closeErrTransport struct {
+	base http.RoundTripper
+	err  error
+}
+
+func (t closeErrTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := t.base.RoundTrip(req)
+	if err != nil {
+		return nil, err
+	}
+	resp.Body = &closeErrBody{rc: resp.Body, err: t.err}
+	return resp, nil
+}
+
+type closeErrBody struct {
+	rc  io.ReadCloser
+	err error
+}
+
+func (b *closeErrBody) Read(p []byte) (int, error) {
+	return b.rc.Read(p)
+}
+
+func (b *closeErrBody) Close() error {
+	cerr := b.rc.Close()
+	return errors.Join(cerr, b.err)
+}
+
+func runCloseTest(t *testing.T, statusCode int, response []byte) {
+	t.Helper()
+	errBoom := errors.New("close boom")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if statusCode >= 400 {
+			http.Error(w, string(response), statusCode)
+			return
+		}
+		http.ServeContent(w, r, "Metadata.zip", time.Time{}, bytes.NewReader(response))
+	}))
+	t.Cleanup(srv.Close)
+
+	client := &http.Client{
+		Transport: closeErrTransport{
+			base: srv.Client().Transport,
+			err:  errBoom,
+		},
+	}
+	c := launchbox.New(metadata.WithHTTPClient(client), metadata.WithBaseURL(srv.URL))
+
+	err := c.Download(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, errBoom) {
+		t.Fatalf("errors.Is(err, errBoom) = false; err: %v", err)
+	}
+	if statusCode == http.StatusOK {
+		if !strings.Contains(err.Error(), "launchbox: close response body") {
+			t.Fatalf("error %q does not contain close response body", err.Error())
+		}
+		return
+	}
+	var apiErr *launchbox.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("errors.As(err, &apiErr) = false; err: %v", err)
+	}
+}
+
+func TestCloseResponseBodyError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("status_200", func(t *testing.T) {
+		t.Parallel()
+		runCloseTest(t, http.StatusOK, makeTestZip(t))
+	})
+	t.Run("status_500", func(t *testing.T) {
+		t.Parallel()
+		runCloseTest(t, http.StatusInternalServerError, []byte("internal error"))
+	})
 }

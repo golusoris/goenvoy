@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/golusoris/goenvoy/metadata"
 	"github.com/golusoris/goenvoy/metadata/tracking/trakt"
@@ -3581,4 +3582,110 @@ func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
 		_, _ = c.GetMovie(context.Background(), "the-matrix")
 	}
 	<-done
+}
+
+func runExpiryTest(t *testing.T, code *trakt.DeviceCode, cancelCtx bool, wantErr string) error {
+	t.Helper()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"authorization_pending"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	c := trakt.New("test-client", metadata.WithBaseURL(srv.URL))
+	ctx := context.Background()
+	if cancelCtx {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithCancel(ctx)
+		cancel()
+	}
+	token, err := c.PollDeviceToken(ctx, code)
+	if token != nil {
+		t.Fatalf("expected nil token, got %v", token)
+	}
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if err.Error() != wantErr {
+		t.Fatalf("err = %q, want %q", err.Error(), wantErr)
+	}
+	return err
+}
+
+func TestPollDeviceTokenExpiry(t *testing.T) {
+	t.Parallel()
+
+	t.Run("expired", func(t *testing.T) {
+		t.Parallel()
+		err := runExpiryTest(t, &trakt.DeviceCode{
+			DeviceCode: "test-device-code",
+			Interval:   1,
+			ExpiresIn:  2,
+		}, false, "trakt: device code expired")
+		if !errors.Is(err, trakt.ErrCodeExpired) {
+			t.Fatalf("errors.Is(err, trakt.ErrCodeExpired) = false; err: %v", err)
+		}
+	})
+
+	t.Run("zero_interval_guard", func(t *testing.T) {
+		t.Parallel()
+		_ = runExpiryTest(t, &trakt.DeviceCode{
+			DeviceCode: "test-device-code",
+			Interval:   0,
+			ExpiresIn:  2,
+		}, false, "trakt: device code expired")
+	})
+
+	t.Run("ctx_canceled", func(t *testing.T) {
+		t.Parallel()
+		_ = runExpiryTest(t, &trakt.DeviceCode{
+			DeviceCode: "test-device-code",
+			Interval:   1,
+			ExpiresIn:  60,
+		}, true, "trakt: device poll: context canceled")
+	})
+}
+
+func TestPollDeviceToken_Success(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"access_token":  "stored-trakt-access",
+			"token_type":    "bearer",
+			"expires_in":    7200,
+			"refresh_token": "stored-trakt-refresh",
+			"scope":         "public",
+			"created_at":    1000,
+		})
+	}))
+	t.Cleanup(srv.Close)
+
+	var storedToken trakt.Token
+	c := trakt.New("test-client", metadata.WithBaseURL(srv.URL))
+	c.SetTokenCallback(func(tok trakt.Token) {
+		storedToken = tok
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	code := &trakt.DeviceCode{
+		DeviceCode: "test-device-code",
+		Interval:   1,
+		ExpiresIn:  60,
+	}
+
+	token, err := c.PollDeviceToken(ctx, code)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token == nil || token.AccessToken != "stored-trakt-access" {
+		t.Fatalf("token = %v, want AccessToken %q", token, "stored-trakt-access")
+	}
+	if storedToken.AccessToken != "stored-trakt-access" {
+		t.Fatalf("storedToken = %v, want AccessToken %q", storedToken, "stored-trakt-access")
+	}
 }

@@ -3,6 +3,7 @@ package screenscraper
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -99,7 +100,8 @@ func (c *Client) authParams() url.Values {
 	return params
 }
 
-func (c *Client) get(ctx context.Context, endpoint string, params url.Values, v any) error {
+// get executes a GET request, decodes JSON into v, and surfaces response body close errors.
+func (c *Client) get(ctx context.Context, endpoint string, params url.Values, v any) (err error) {
 	auth := c.authParams()
 	for k, vs := range params {
 		for _, val := range vs {
@@ -118,7 +120,11 @@ func (c *Client) get(ctx context.Context, endpoint string, params url.Values, v 
 	if err != nil {
 		return fmt.Errorf("screenscraper: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("screenscraper: close response body: %w", cerr))
+		}
+	}()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
