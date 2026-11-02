@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/golusoris/goenvoy/metadata"
@@ -463,5 +464,65 @@ func TestSubmitListensNoBody(t *testing.T) {
 	err := c.SubmitListens(context.Background(), "import", []listenbrainz.Listen{})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+type errorCloseBody struct {
+	io.Reader
+	closeErr error
+}
+
+func (b *errorCloseBody) Close() error {
+	return b.closeErr
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func TestCloseResponseBodyError(t *testing.T) {
+	t.Parallel()
+
+	errBoom := errors.New("close boom")
+	client := &http.Client{
+		Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       &errorCloseBody{Reader: strings.NewReader(`{"payload":{"count":0,"listens":[]}}`), closeErr: errBoom},
+				Header:     make(http.Header),
+			}, nil
+		}),
+	}
+	c := listenbrainz.New(metadata.WithHTTPClient(client))
+
+	tests := []struct {
+		name string
+		call func() error
+	}{
+		{
+			name: "do",
+			call: func() error {
+				_, err := c.GetUserListens(context.Background(), "user", 10)
+				return err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.call()
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !errors.Is(err, errBoom) {
+				t.Fatalf("errors.Is(err, errBoom) = false; err: %v", err)
+			}
+			if !strings.Contains(err.Error(), "listenbrainz: close response body") {
+				t.Fatalf("error %q does not contain %q", err.Error(), "listenbrainz: close response body")
+			}
+		})
 	}
 }

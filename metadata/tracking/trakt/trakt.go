@@ -1959,11 +1959,20 @@ func (c *Client) checkPollTick(ctx context.Context, body map[string]string, inte
 	return c.pollTokenOnce(ctx, body, interval)
 }
 
+// pollInterval calculates the polling ticker duration with a 1-second minimum.
+func pollInterval(interval int) time.Duration {
+	if interval < 1 {
+		interval = 1
+	}
+	return time.Duration(interval) * time.Second
+}
+
 // PollDeviceToken polls for the device token after the user has authorized the app.
 // It blocks until the token is obtained, the code expires, or the context is canceled.
 // The interval between polls is taken from the DeviceCode response.
 func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (*Token, error) {
-	ticker := time.NewTicker(time.Duration(code.Interval) * time.Second)
+	interval := int(pollInterval(code.Interval) / time.Second)
+	ticker := time.NewTicker(pollInterval(code.Interval))
 	defer ticker.Stop()
 
 	deadline := time.Now().Add(time.Duration(code.ExpiresIn) * time.Second)
@@ -1973,7 +1982,9 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (*Token,
 		"client_secret": c.oauth.ClientSecret(),
 	}
 
-	for {
+	maxPolls := code.ExpiresIn/interval + 1
+
+	for range maxPolls {
 		select {
 		case <-ctx.Done():
 			return nil, fmt.Errorf("trakt: device poll: %w", ctx.Err())
@@ -1987,6 +1998,7 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (*Token,
 			}
 		}
 	}
+	return nil, errors.New("trakt: device code expired")
 }
 
 // ExchangeCode exchanges an authorization code for access and refresh tokens.

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,7 +38,7 @@ func New(opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc}
 }
 
-func (c *Client) get(ctx context.Context, path string, params url.Values, v any) error {
+func (c *Client) get(ctx context.Context, path string, params url.Values, v any) (err error) {
 	u := c.BaseURL() + "/" + path
 	if len(params) > 0 {
 		u += "?" + params.Encode()
@@ -52,7 +53,11 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, v any)
 	if err != nil {
 		return fmt.Errorf("hasheous: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("hasheous: close response body: %w", cerr))
+		}
+	}()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -69,7 +74,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, v any)
 	return nil
 }
 
-func (c *Client) post(ctx context.Context, path string, params url.Values, body, v any) error {
+func (c *Client) post(ctx context.Context, path string, params url.Values, body, v any) (err error) {
 	u := c.BaseURL() + "/" + path
 	if len(params) > 0 {
 		u += "?" + params.Encode()
@@ -90,7 +95,11 @@ func (c *Client) post(ctx context.Context, path string, params url.Values, body,
 	if err != nil {
 		return fmt.Errorf("hasheous: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("hasheous: close response body: %w", cerr))
+		}
+	}()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {

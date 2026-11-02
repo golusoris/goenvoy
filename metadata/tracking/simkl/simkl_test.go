@@ -1350,3 +1350,50 @@ func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
 	}
 	<-done
 }
+
+func TestPollDeviceTokenExpiry(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		code    *simkl.DeviceCode
+		wantErr string
+	}{
+		{
+			name: "expired",
+			code: &simkl.DeviceCode{
+				UserCode:  "test-user-code",
+				Interval:  1,
+				ExpiresIn: 2,
+			},
+			wantErr: "simkl: device code expired",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"result":  "KO",
+					"message": "waiting",
+				})
+			}))
+			t.Cleanup(srv.Close)
+
+			c := simkl.New("test-client", metadata.WithBaseURL(srv.URL))
+			token, err := c.PollDeviceToken(context.Background(), tt.code)
+			if token != "" {
+				t.Fatalf("expected empty token, got %q", token)
+			}
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if err.Error() != tt.wantErr {
+				t.Fatalf("err = %q, want %q", err.Error(), tt.wantErr)
+			}
+		})
+	}
+}

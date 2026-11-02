@@ -3,6 +3,7 @@ package deezer
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -74,7 +75,7 @@ func decodeResponse(resp *http.Response, body []byte, v any) error {
 	return nil
 }
 
-func (c *Client) get(ctx context.Context, path string, v any) error {
+func (c *Client) get(ctx context.Context, path string, v any) (err error) {
 	u := c.BaseURL() + path
 
 	// Append access token if set.
@@ -95,7 +96,11 @@ func (c *Client) get(ctx context.Context, path string, v any) error {
 	if err != nil {
 		return fmt.Errorf("deezer: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("deezer: close response body: %w", cerr))
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

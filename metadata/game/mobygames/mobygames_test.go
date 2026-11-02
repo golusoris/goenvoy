@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/golusoris/goenvoy/metadata"
@@ -262,5 +264,65 @@ func TestAPIError(t *testing.T) {
 	}
 	if apiErr.StatusCode != http.StatusUnauthorized {
 		t.Errorf("StatusCode = %d, want 401", apiErr.StatusCode)
+	}
+}
+
+type errorCloseBody struct {
+	io.Reader
+	closeErr error
+}
+
+func (b *errorCloseBody) Close() error {
+	return b.closeErr
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func TestCloseResponseBodyError(t *testing.T) {
+	t.Parallel()
+
+	errBoom := errors.New("close boom")
+	client := &http.Client{
+		Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       &errorCloseBody{Reader: strings.NewReader(`[]`), closeErr: errBoom},
+				Header:     make(http.Header),
+			}, nil
+		}),
+	}
+	c := mobygames.New("key", metadata.WithHTTPClient(client))
+
+	tests := []struct {
+		name string
+		call func() error
+	}{
+		{
+			name: "get",
+			call: func() error {
+				_, err := c.GetGenres(context.Background())
+				return err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.call()
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !errors.Is(err, errBoom) {
+				t.Fatalf("errors.Is(err, errBoom) = false; err: %v", err)
+			}
+			if !strings.Contains(err.Error(), "mobygames: close response body") {
+				t.Fatalf("error %q does not contain %q", err.Error(), "mobygames: close response body")
+			}
+		})
 	}
 }

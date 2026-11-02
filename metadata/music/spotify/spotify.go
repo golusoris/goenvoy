@@ -3,6 +3,7 @@ package spotify
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -42,7 +43,7 @@ func New(accessToken string, opts ...metadata.Option) *Client {
 	return c
 }
 
-func (c *Client) get(ctx context.Context, path string, v any) error {
+func (c *Client) get(ctx context.Context, path string, v any) (err error) {
 	u := c.BaseURL() + path
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
@@ -56,7 +57,11 @@ func (c *Client) get(ctx context.Context, path string, v any) error {
 	if err != nil {
 		return fmt.Errorf("spotify: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("spotify: close response body: %w", cerr))
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

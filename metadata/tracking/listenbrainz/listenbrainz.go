@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -82,12 +83,16 @@ func (c *Client) post(ctx context.Context, path string, body, v any) error {
 	return c.do(req, v)
 }
 
-func (c *Client) do(req *http.Request, v any) error {
+func (c *Client) do(req *http.Request, v any) (err error) {
 	resp, err := c.HTTPClient().Do(req)
 	if err != nil {
 		return fmt.Errorf("listenbrainz: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("listenbrainz: close response body: %w", cerr))
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -51,7 +52,7 @@ func New(opts ...metadata.Option) *Client {
 
 // Download fetches the LaunchBox Metadata.zip and parses the XML contents.
 // This must be called before using any lookup methods.
-func (c *Client) Download(ctx context.Context) error {
+func (c *Client) Download(ctx context.Context) (err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("launchbox: create request: %w", err)
@@ -61,7 +62,11 @@ func (c *Client) Download(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("launchbox: request: %w", err)
 	}
-	defer func() { _ = resp.Body.Close() }()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("launchbox: close response body: %w", cerr))
+		}
+	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		body, _ := io.ReadAll(resp.Body)
@@ -107,12 +112,16 @@ func (c *Client) parseZip(data []byte) error {
 	return nil
 }
 
-func (c *Client) parseMetadata(f *zip.File) error {
+func (c *Client) parseMetadata(f *zip.File) (err error) {
 	rc, err := f.Open()
 	if err != nil {
 		return fmt.Errorf("launchbox: open Metadata.xml: %w", err)
 	}
-	defer func() { _ = rc.Close() }()
+	defer func() {
+		if cerr := rc.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("launchbox: close Metadata.xml: %w", cerr))
+		}
+	}()
 
 	var md metadataXML
 	if err := xml.NewDecoder(rc).Decode(&md); err != nil {
@@ -125,12 +134,16 @@ func (c *Client) parseMetadata(f *zip.File) error {
 	return nil
 }
 
-func (c *Client) parsePlatforms(f *zip.File) error {
+func (c *Client) parsePlatforms(f *zip.File) (err error) {
 	rc, err := f.Open()
 	if err != nil {
 		return fmt.Errorf("launchbox: open Platforms.xml: %w", err)
 	}
-	defer func() { _ = rc.Close() }()
+	defer func() {
+		if cerr := rc.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("launchbox: close Platforms.xml: %w", cerr))
+		}
+	}()
 
 	var pd platformsXML
 	if err := xml.NewDecoder(rc).Decode(&pd); err != nil {

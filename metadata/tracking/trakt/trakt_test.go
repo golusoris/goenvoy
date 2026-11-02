@@ -3582,3 +3582,56 @@ func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
 	}
 	<-done
 }
+
+func TestPollDeviceTokenExpiry(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		code    *trakt.DeviceCode
+		wantErr string
+	}{
+		{
+			name: "expired",
+			code: &trakt.DeviceCode{
+				DeviceCode: "test-device-code",
+				Interval:   1,
+				ExpiresIn:  2,
+			},
+			wantErr: "trakt: device code expired",
+		},
+		{
+			name: "zero_interval_guard",
+			code: &trakt.DeviceCode{
+				DeviceCode: "test-device-code",
+				Interval:   0,
+				ExpiresIn:  2,
+			},
+			wantErr: "trakt: device code expired",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(`{"error":"authorization_pending"}`))
+			}))
+			t.Cleanup(srv.Close)
+
+			c := trakt.New("test-client", metadata.WithBaseURL(srv.URL))
+			token, err := c.PollDeviceToken(context.Background(), tt.code)
+			if token != nil {
+				t.Fatalf("expected nil token, got %v", token)
+			}
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if err.Error() != tt.wantErr {
+				t.Fatalf("err = %q, want %q", err.Error(), tt.wantErr)
+			}
+		})
+	}
+}

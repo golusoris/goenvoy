@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/golusoris/goenvoy/metadata"
@@ -235,5 +237,64 @@ func TestDownloadError(t *testing.T) {
 	}
 	if apiErr.StatusCode != http.StatusInternalServerError {
 		t.Errorf("StatusCode = %d, want 500", apiErr.StatusCode)
+	}
+}
+
+type errorCloseBody struct {
+	io.Reader
+	closeErr error
+}
+
+func (b *errorCloseBody) Close() error {
+	return b.closeErr
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func TestCloseResponseBodyError(t *testing.T) {
+	t.Parallel()
+
+	errBoom := errors.New("close boom")
+	client := &http.Client{
+		Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       &errorCloseBody{Reader: bytes.NewReader(makeTestZip(t)), closeErr: errBoom},
+				Header:     make(http.Header),
+			}, nil
+		}),
+	}
+	c := launchbox.New(metadata.WithHTTPClient(client))
+
+	tests := []struct {
+		name string
+		call func() error
+	}{
+		{
+			name: "download",
+			call: func() error {
+				return c.Download(context.Background())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.call()
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			if !errors.Is(err, errBoom) {
+				t.Fatalf("errors.Is(err, errBoom) = false; err: %v", err)
+			}
+			if !strings.Contains(err.Error(), "launchbox: close response body") {
+				t.Fatalf("error %q does not contain %q", err.Error(), "launchbox: close response body")
+			}
+		})
 	}
 }
