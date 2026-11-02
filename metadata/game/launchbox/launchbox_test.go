@@ -240,61 +240,81 @@ func TestDownloadError(t *testing.T) {
 	}
 }
 
-type errorCloseBody struct {
-	io.Reader
-	closeErr error
+type closeErrTransport struct {
+	base http.RoundTripper
+	err  error
 }
 
-func (b *errorCloseBody) Close() error {
-	return b.closeErr
+func (t closeErrTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := t.base.RoundTrip(req)
+	if err != nil {
+		return nil, err
+	}
+	resp.Body = &closeErrBody{rc: resp.Body, err: t.err}
+	return resp, nil
 }
 
-type roundTripFunc func(*http.Request) (*http.Response, error)
+type closeErrBody struct {
+	rc  io.ReadCloser
+	err error
+}
 
-func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return f(req)
+func (b *closeErrBody) Read(p []byte) (int, error) {
+	return b.rc.Read(p)
+}
+
+func (b *closeErrBody) Close() error {
+	cerr := b.rc.Close()
+	return errors.Join(cerr, b.err)
+}
+
+func runCloseTest(t *testing.T, statusCode int, response []byte) {
+	t.Helper()
+	errBoom := errors.New("close boom")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(statusCode)
+		if _, err := w.Write(response); err != nil {
+			t.Error(err)
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	client := &http.Client{
+		Transport: closeErrTransport{
+			base: srv.Client().Transport,
+			err:  errBoom,
+		},
+	}
+	c := launchbox.New(metadata.WithHTTPClient(client), metadata.WithBaseURL(srv.URL))
+
+	err := c.Download(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !errors.Is(err, errBoom) {
+		t.Fatalf("errors.Is(err, errBoom) = false; err: %v", err)
+	}
+	if statusCode == http.StatusOK {
+		if !strings.Contains(err.Error(), "launchbox: close response body") {
+			t.Fatalf("error %q does not contain close response body", err.Error())
+		}
+		return
+	}
+	var apiErr *launchbox.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("errors.As(err, &apiErr) = false; err: %v", err)
+	}
 }
 
 func TestCloseResponseBodyError(t *testing.T) {
 	t.Parallel()
 
-	errBoom := errors.New("close boom")
-	client := &http.Client{
-		Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       &errorCloseBody{Reader: bytes.NewReader(makeTestZip(t)), closeErr: errBoom},
-				Header:     make(http.Header),
-			}, nil
-		}),
-	}
-	c := launchbox.New(metadata.WithHTTPClient(client))
-
-	tests := []struct {
-		name string
-		call func() error
-	}{
-		{
-			name: "download",
-			call: func() error {
-				return c.Download(context.Background())
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			err := tt.call()
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			if !errors.Is(err, errBoom) {
-				t.Fatalf("errors.Is(err, errBoom) = false; err: %v", err)
-			}
-			if !strings.Contains(err.Error(), "launchbox: close response body") {
-				t.Fatalf("error %q does not contain %q", err.Error(), "launchbox: close response body")
-			}
-		})
-	}
+	t.Run("status_200", func(t *testing.T) {
+		t.Parallel()
+		runCloseTest(t, http.StatusOK, makeTestZip(t))
+	})
+	t.Run("status_500", func(t *testing.T) {
+		t.Parallel()
+		runCloseTest(t, http.StatusInternalServerError, []byte("internal error"))
+	})
 }

@@ -44,7 +44,7 @@ func New(clientID, accessToken string, opts ...metadata.Option) *Client {
 	return c
 }
 
-// query sends a POST request to the given endpoint with an APICalypse query body.
+// query sends a POST request to the given endpoint with an APICalypse query body, decodes into v, and surfaces close errors.
 func (c *Client) query(ctx context.Context, endpoint, body string, v any) (err error) {
 	u := c.BaseURL() + "/" + endpoint
 

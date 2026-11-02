@@ -38,6 +38,7 @@ func New(apiKey string, opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc, apiKey: apiKey}
 }
 
+// get executes a GET request, decodes JSON into v, and surfaces response body close errors.
 func (c *Client) get(ctx context.Context, endpoint string, params url.Values, v any) (err error) {
 	if params == nil {
 		params = url.Values{}

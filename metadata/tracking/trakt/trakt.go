@@ -23,8 +23,9 @@ const (
 // Client is a Trakt API v2 client.
 type Client struct {
 	*metadata.BaseClient
-	clientID string
-	oauth    metadata.OAuthState[TokenCallback]
+	clientID  string
+	oauth     metadata.OAuthState[TokenCallback]
+	pollSleep func(time.Duration)
 }
 
 // SetClientSecret sets the client secret needed for OAuth2 flows.
@@ -54,7 +55,15 @@ func (c *Client) SetTokenCallback(cb TokenCallback) {
 // New creates a Trakt [Client] using the given client ID (API key).
 func New(clientID string, opts ...metadata.Option) *Client {
 	bc := metadata.NewBaseClient(defaultBaseURL, "trakt", opts...)
-	return &Client{BaseClient: bc, clientID: clientID}
+	return &Client{BaseClient: bc, clientID: clientID, pollSleep: time.Sleep}
+}
+
+func (c *Client) sleep(d time.Duration) {
+	if c.pollSleep != nil {
+		c.pollSleep(d)
+		return
+	}
+	time.Sleep(d)
 }
 
 // APIError is returned when the API responds with a non-2xx status.
@@ -1914,7 +1923,7 @@ func (c *Client) GetDeviceCode(ctx context.Context) (*DeviceCode, error) {
 // It blocks until the token is obtained, the code expires, or the context is canceled.
 // The interval between polls is taken from the DeviceCode response.
 // handlePollError translates OAuth2 device token poll error statuses.
-func handlePollError(err error, interval int) (bool, error) {
+func (c *Client) handlePollError(err error, interval int) (bool, error) {
 	var apiErr *APIError
 	if !errorAs(err, &apiErr) {
 		return false, err
@@ -1929,7 +1938,7 @@ func handlePollError(err error, interval int) (bool, error) {
 	case http.StatusTeapot:
 		return false, errors.New("trakt: user denied authorization")
 	case http.StatusTooManyRequests:
-		time.Sleep(time.Duration(interval) * time.Second)
+		c.sleep(time.Duration(interval) * time.Second)
 		return true, nil
 	default:
 		return false, err
@@ -1944,7 +1953,7 @@ func (c *Client) pollTokenOnce(ctx context.Context, body map[string]string, inte
 		c.storeToken(&token)
 		return &token, false, nil
 	}
-	retry, fatalErr := handlePollError(err, interval)
+	retry, fatalErr := c.handlePollError(err, interval)
 	if fatalErr != nil {
 		return nil, false, fatalErr
 	}
@@ -1967,6 +1976,36 @@ func pollInterval(interval int) time.Duration {
 	return time.Duration(interval) * time.Second
 }
 
+// pollCtxErr translates context cancellation or deadline expiration to polling errors.
+func pollCtxErr(err error) error {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return errors.New("trakt: device code expired")
+	}
+	return fmt.Errorf("trakt: device poll: %w", err)
+}
+
+// pollLoop executes the polling loop until success, expiration, or context cancellation.
+func pollLoop(ctx context.Context, tick <-chan time.Time, maxPolls int, poll func(context.Context) (*Token, bool, error)) (*Token, error) {
+	for range maxPolls {
+		if ctx.Err() != nil {
+			return nil, pollCtxErr(ctx.Err())
+		}
+		select {
+		case <-ctx.Done():
+			return nil, pollCtxErr(ctx.Err())
+		case <-tick:
+			token, done, err := poll(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if done {
+				return token, nil
+			}
+		}
+	}
+	return nil, errors.New("trakt: device code expired")
+}
+
 // PollDeviceToken polls for the device token after the user has authorized the app.
 // It blocks until the token is obtained, the code expires, or the context is canceled.
 // The interval between polls is taken from the DeviceCode response.
@@ -1976,6 +2015,9 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (*Token,
 	defer ticker.Stop()
 
 	deadline := time.Now().Add(time.Duration(code.ExpiresIn) * time.Second)
+	pollCtx, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
+
 	body := map[string]string{
 		"code":          code.DeviceCode,
 		"client_id":     c.clientID,
@@ -1984,21 +2026,16 @@ func (c *Client) PollDeviceToken(ctx context.Context, code *DeviceCode) (*Token,
 
 	maxPolls := code.ExpiresIn/interval + 1
 
-	for range maxPolls {
-		select {
-		case <-ctx.Done():
-			return nil, fmt.Errorf("trakt: device poll: %w", ctx.Err())
-		case <-ticker.C:
-			token, retry, err := c.checkPollTick(ctx, body, code.Interval, deadline)
-			if err != nil {
-				return nil, err
-			}
-			if !retry {
-				return token, nil
-			}
+	return pollLoop(pollCtx, ticker.C, maxPolls, func(pCtx context.Context) (*Token, bool, error) {
+		token, retry, err := c.checkPollTick(pCtx, body, interval, deadline)
+		if err != nil {
+			return nil, false, err
 		}
-	}
-	return nil, errors.New("trakt: device code expired")
+		if !retry {
+			return token, true, nil
+		}
+		return nil, false, nil
+	})
 }
 
 // ExchangeCode exchanges an authorization code for access and refresh tokens.

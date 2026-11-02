@@ -33,6 +33,11 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("listenbrainz: %s: %s", e.Status, e.Body)
 }
 
+// ErrCloseBody indicates that the HTTP request reached the server and the response
+// was already read, but closing the response body failed. Callers of non-idempotent
+// operations (such as SubmitListens) must not retry the request on this error.
+var ErrCloseBody = errors.New("listenbrainz: close response body")
+
 // New creates a ListenBrainz [Client]. A token is only required for write
 // operations and can be set via [NewWithToken].
 func New(opts ...metadata.Option) *Client {
@@ -83,6 +88,7 @@ func (c *Client) post(ctx context.Context, path string, body, v any) error {
 	return c.do(req, v)
 }
 
+// do executes an HTTP request, decodes JSON into v, and surfaces response body close errors.
 func (c *Client) do(req *http.Request, v any) (err error) {
 	resp, err := c.HTTPClient().Do(req)
 	if err != nil {
@@ -90,7 +96,7 @@ func (c *Client) do(req *http.Request, v any) (err error) {
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
-			err = errors.Join(err, fmt.Errorf("listenbrainz: close response body: %w", cerr))
+			err = errors.Join(err, fmt.Errorf("%w: %w", ErrCloseBody, cerr))
 		}
 	}()
 
@@ -115,6 +121,8 @@ func (c *Client) do(req *http.Request, v any) (err error) {
 
 // SubmitListens submits one or more listens to ListenBrainz. listenType must
 // be "single", "playing_now", or "import". A token must be set via [WithToken].
+// If the response body cannot be closed after a successful submission, it returns
+// an error wrapping [ErrCloseBody]; callers must not retry the submission in that case.
 func (c *Client) SubmitListens(ctx context.Context, listenType string, listens []Listen) error {
 	payload := make([]listenSubmit, len(listens))
 	for i, l := range listens {

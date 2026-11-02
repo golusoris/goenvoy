@@ -75,6 +75,7 @@ func decodeResponse(resp *http.Response, body []byte, v any) error {
 	return nil
 }
 
+// get executes a GET request, decodes JSON into v, and surfaces response body close errors.
 func (c *Client) get(ctx context.Context, path string, v any) (err error) {
 	u := c.BaseURL() + path
 

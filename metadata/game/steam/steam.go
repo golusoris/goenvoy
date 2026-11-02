@@ -78,6 +78,7 @@ func (c *Client) getWebAPIURL() string {
 	return c.webAPIURL
 }
 
+// get executes a GET request, decodes JSON into v, and surfaces response body close errors.
 func (c *Client) get(ctx context.Context, u string, v any) (err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {

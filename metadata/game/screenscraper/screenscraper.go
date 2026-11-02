@@ -100,6 +100,7 @@ func (c *Client) authParams() url.Values {
 	return params
 }
 
+// get executes a GET request, decodes JSON into v, and surfaces response body close errors.
 func (c *Client) get(ctx context.Context, endpoint string, params url.Values, v any) (err error) {
 	auth := c.authParams()
 	for k, vs := range params {

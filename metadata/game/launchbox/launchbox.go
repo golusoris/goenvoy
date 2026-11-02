@@ -52,6 +52,7 @@ func New(opts ...metadata.Option) *Client {
 
 // Download fetches the LaunchBox Metadata.zip and parses the XML contents.
 // This must be called before using any lookup methods.
+// Download fetches and parses the LaunchBox metadata archive, surfacing response body close errors.
 func (c *Client) Download(ctx context.Context) (err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL(), http.NoBody)
 	if err != nil {
@@ -81,27 +82,63 @@ func (c *Client) Download(ctx context.Context) (err error) {
 	return c.parseZip(data)
 }
 
+// decodeEntry opens an archive entry, decodes XML into v, closes the reader, and joins any close error.
+func decodeEntry(open func() (io.ReadCloser, error), name string, v any) (err error) {
+	rc, err := open()
+	if err != nil {
+		return fmt.Errorf("launchbox: open %s: %w", name, err)
+	}
+	defer func() {
+		if cerr := rc.Close(); cerr != nil {
+			err = errors.Join(err, fmt.Errorf("launchbox: close %s: %w", name, cerr))
+		}
+	}()
+
+	if err := xml.NewDecoder(rc).Decode(v); err != nil {
+		return fmt.Errorf("launchbox: parse %s: %w", name, err)
+	}
+	return nil
+}
+
+// parseEntries decodes recognized XML files from the archive into md and pd.
+func parseEntries(files []*zip.File, md *metadataXML, pd *platformsXML) error {
+	for _, f := range files {
+		switch f.Name {
+		case "Metadata.xml":
+			if err := decodeEntry(f.Open, "Metadata.xml", md); err != nil {
+				return err
+			}
+		case "Platforms.xml":
+			if err := decodeEntry(f.Open, "Platforms.xml", pd); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// parseZip reads and decodes archive entries into local buffers before atomically publishing them.
 func (c *Client) parseZip(data []byte) error {
 	r, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		return fmt.Errorf("launchbox: open zip: %w", err)
 	}
 
+	var (
+		md metadataXML
+		pd platformsXML
+	)
+	if err := parseEntries(r.File, &md, &pd); err != nil {
+		return err
+	}
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	for _, f := range r.File {
-		switch f.Name {
-		case "Metadata.xml":
-			if err := c.parseMetadata(f); err != nil {
-				return err
-			}
-		case "Platforms.xml":
-			if err := c.parsePlatforms(f); err != nil {
-				return err
-			}
-		}
-	}
+	c.games = md.Games
+	c.alternateNames = md.AlternateNames
+	c.images = md.Images
+	c.platforms = pd.Platforms
 
 	// Build index.
 	c.gamesByID = make(map[int]*Game, len(c.games))
@@ -109,48 +146,6 @@ func (c *Client) parseZip(data []byte) error {
 		c.gamesByID[c.games[i].DatabaseID] = &c.games[i]
 	}
 
-	return nil
-}
-
-func (c *Client) parseMetadata(f *zip.File) (err error) {
-	rc, err := f.Open()
-	if err != nil {
-		return fmt.Errorf("launchbox: open Metadata.xml: %w", err)
-	}
-	defer func() {
-		if cerr := rc.Close(); cerr != nil {
-			err = errors.Join(err, fmt.Errorf("launchbox: close Metadata.xml: %w", cerr))
-		}
-	}()
-
-	var md metadataXML
-	if err := xml.NewDecoder(rc).Decode(&md); err != nil {
-		return fmt.Errorf("launchbox: parse Metadata.xml: %w", err)
-	}
-
-	c.games = md.Games
-	c.alternateNames = md.AlternateNames
-	c.images = md.Images
-	return nil
-}
-
-func (c *Client) parsePlatforms(f *zip.File) (err error) {
-	rc, err := f.Open()
-	if err != nil {
-		return fmt.Errorf("launchbox: open Platforms.xml: %w", err)
-	}
-	defer func() {
-		if cerr := rc.Close(); cerr != nil {
-			err = errors.Join(err, fmt.Errorf("launchbox: close Platforms.xml: %w", cerr))
-		}
-	}()
-
-	var pd platformsXML
-	if err := xml.NewDecoder(rc).Decode(&pd); err != nil {
-		return fmt.Errorf("launchbox: parse Platforms.xml: %w", err)
-	}
-
-	c.platforms = pd.Platforms
 	return nil
 }
 

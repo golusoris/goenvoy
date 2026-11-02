@@ -38,6 +38,7 @@ func New(opts ...metadata.Option) *Client {
 	return &Client{BaseClient: bc}
 }
 
+// get executes a GET request, decodes JSON into v, and surfaces response body close errors.
 func (c *Client) get(ctx context.Context, path string, params url.Values, v any) (err error) {
 	u := c.BaseURL() + "/" + path
 	if len(params) > 0 {
@@ -74,6 +75,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, v any)
 	return nil
 }
 
+// post executes a POST request, decodes JSON into v, and surfaces response body close errors.
 func (c *Client) post(ctx context.Context, path string, params url.Values, body, v any) (err error) {
 	u := c.BaseURL() + "/" + path
 	if len(params) > 0 {

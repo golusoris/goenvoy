@@ -43,6 +43,7 @@ func New(accessToken string, opts ...metadata.Option) *Client {
 	return c
 }
 
+// get executes a GET request, decodes JSON into v, and surfaces response body close errors.
 func (c *Client) get(ctx context.Context, path string, v any) (err error) {
 	u := c.BaseURL() + path
 

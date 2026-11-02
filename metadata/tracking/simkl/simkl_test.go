@@ -1352,52 +1352,94 @@ func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
 	<-done
 }
 
+func runExpiryTest(t *testing.T, code *simkl.DeviceCode, cancelCtx bool, wantErr string) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	if cancelCtx {
+		cancel()
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"result":  "KO",
+			"message": "waiting",
+		})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := simkl.New("test-client", metadata.WithBaseURL(srv.URL))
+	token, err := c.PollDeviceToken(ctx, code)
+	if token != "" {
+		t.Fatalf("expected empty token, got %q", token)
+	}
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if err.Error() != wantErr {
+		t.Fatalf("err = %q, want %q", err.Error(), wantErr)
+	}
+}
+
 func TestPollDeviceTokenExpiry(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name    string
-		code    *simkl.DeviceCode
-		wantErr string
-	}{
-		{
-			name: "expired",
-			code: &simkl.DeviceCode{
-				UserCode:  "test-user-code",
-				Interval:  0,
-				ExpiresIn: 0,
-			},
-			wantErr: "simkl: device code expired",
-		},
+	t.Run("expired", func(t *testing.T) {
+		t.Parallel()
+		runExpiryTest(t, &simkl.DeviceCode{
+			UserCode:  "test-user-code",
+			Interval:  0,
+			ExpiresIn: 0,
+		}, false, "simkl: device code expired")
+	})
+
+	t.Run("ctx_canceled", func(t *testing.T) {
+		t.Parallel()
+		runExpiryTest(t, &simkl.DeviceCode{
+			UserCode:  "test-user-code",
+			Interval:  5,
+			ExpiresIn: 60,
+		}, true, "simkl: device poll: context canceled")
+	})
+}
+
+func TestPollDeviceToken_Success(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"result":       "OK",
+			"access_token": "stored-token-123",
+		})
+	}))
+	t.Cleanup(srv.Close)
+
+	var storedToken string
+	c := simkl.New("test-client", metadata.WithBaseURL(srv.URL))
+	c.SetTokenCallback(func(tok string) {
+		storedToken = tok
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 7*time.Second)
+	defer cancel()
+
+	code := &simkl.DeviceCode{
+		UserCode:  "user-code",
+		Interval:  5,
+		ExpiresIn: 60,
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-			defer cancel()
-
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				_ = json.NewEncoder(w).Encode(map[string]any{
-					"result":  "KO",
-					"message": "waiting",
-				})
-			}))
-			t.Cleanup(srv.Close)
-
-			c := simkl.New("test-client", metadata.WithBaseURL(srv.URL))
-			token, err := c.PollDeviceToken(ctx, tt.code)
-			if token != "" {
-				t.Fatalf("expected empty token, got %q", token)
-			}
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			if err.Error() != tt.wantErr {
-				t.Fatalf("err = %q, want %q", err.Error(), tt.wantErr)
-			}
-		})
+	token, err := c.PollDeviceToken(ctx, code)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token != "stored-token-123" {
+		t.Fatalf("token = %q, want %q", token, "stored-token-123")
+	}
+	if storedToken != "stored-token-123" {
+		t.Fatalf("storedToken = %q, want %q", storedToken, "stored-token-123")
 	}
 }
