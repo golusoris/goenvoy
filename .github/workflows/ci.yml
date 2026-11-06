@@ -31,6 +31,7 @@ jobs:
     # ruleset can require it: a job a condition skips reports success. A
     # manual run has no pull request title and passes in the step instead.
     runs-on: ubuntu-26.04
+    timeout-minutes: 5  # hosted runner setup + checkout jitter floor
     steps:
       - name: Check PR title
         env:
@@ -147,6 +148,7 @@ jobs:
   discover:
     name: Discover modules
     runs-on: ubuntu-26.04
+    timeout-minutes: 5  # hosted runner setup + checkout jitter floor
     outputs:
       modules: ${{ steps.find.outputs.modules }}
     steps:
@@ -260,6 +262,7 @@ jobs:
     # An empty matrix is a job failure, so a change outside every module skips.
     if: needs.discover.outputs.modules != '[]'
     runs-on: ubuntu-26.04
+    timeout-minutes: 5  # hosted runner setup + checkout jitter floor
     strategy:
       fail-fast: false
       matrix:
@@ -356,6 +359,7 @@ jobs:
     if: always()
     needs: [workflow-check, workflows, upstream-specs, lint-exceptions, secret-scan, discover, ci, apidiff]
     runs-on: ubuntu-26.04
+    timeout-minutes: 5  # hosted runner setup + checkout jitter floor
     steps:
       - name: Check results
         run: |

@@ -26,6 +26,7 @@ jobs:
   fan-out:
     name: Validate every module
     runs-on: ubuntu-26.04
+    timeout-minutes: 20  # 69 modules sequential build+vet+test; no CI run data (workflow_dispatch only), bound from local 367s measurement
     permissions:
       contents: read
     steps:
