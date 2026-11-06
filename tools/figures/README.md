@@ -4,9 +4,12 @@ This directory holds the figure engine for this repository's documentation. A
 figure is a TypeScript spec under `docs/figures/`. The engine renders it into
 committed SVG and JSON files under `docs/assets/figures/`. On an MkDocs or Astro
 Starlight site each figure plays its scenario tabs with moving packets,
-narration, pause and speed control. A README, a wiki page or a browser without
-JavaScript shows the same figure as an SVG with a caption and a text
-description.
+narration, pause and speed control when the player is available (`player/` in
+the engine, or the release archive `player.lock.json` names in an adopted
+repository). While `player.lock.json` pins an unreleased engine (`"release":
+""`), or anywhere without JavaScript such as a README or a wiki page, the same
+figure renders as a static SVG with a caption and a text description, without
+interactivity.
 
 `praetorctl adopt` writes the files in this directory. `praetorctl audit` fails
 when one of them differs from the copy the binary carries, and
@@ -113,9 +116,11 @@ exclude_docs: |
 ```
 
 The hook replaces each `figure` fence with the figure markup and publishes
-`figures.css` and the player files in `player/`, so the site needs no `extra_css`
-or `extra_javascript` entry. A fence that names a figure without a JSON file
-logs a warning, which fails `mkdocs build --strict`.
+`figures.css` and the player (`player/` in the engine, or the release archive
+`player.lock.json` names; an empty `"release"` renders static SVGs without
+interactivity), so the site needs no `extra_css` or `extra_javascript` entry. A
+fence that names a figure without a JSON file logs a warning, which fails
+`mkdocs build --strict`.
 
 **Astro Starlight.** Add the integration and the stylesheet to
 `astro.config.mjs`:
@@ -132,10 +137,12 @@ export default defineConfig({
 ```
 
 The integration renders each `figure` code block in `.md` and `.mdx` pages,
-loads the player on every page, and serves and copies the figure and player
-files. A block that names a figure without a JSON file fails the build of an
-`.mdx` page; on an `.md` page Astro logs the error and builds the page without
-its content, so keep `make docs-figures` in the gate.
+loads and publishes the player when `player/` exists or `player.lock.json` names
+a release (an empty `"release"` leaves figures as static SVGs without
+interactivity), and serves and copies the figure files. A block that names a
+figure without a JSON file fails the build of an `.mdx` page; on an `.md` page
+Astro logs the error and builds the page without its content, so keep
+`make docs-figures` in the gate.
 
 ## Outside the site
 

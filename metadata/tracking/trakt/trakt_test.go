@@ -3610,7 +3610,7 @@ func runExpiryTest(t *testing.T, code *trakt.DeviceCode, cancelCtx bool, wantErr
 	if err.Error() != wantErr {
 		t.Fatalf("err = %q, want %q", err.Error(), wantErr)
 	}
-	if wantErrIs != nil && !errors.Is(err, wantErrIs) {
+	if !errors.Is(err, wantErrIs) {
 		t.Fatalf("errors.Is(err, %v) = false; err: %v", wantErrIs, err)
 	}
 }
@@ -3645,7 +3645,7 @@ func TestPollDeviceTokenExpiry(t *testing.T) {
 			},
 			cancelCtx: false,
 			wantErr:   "trakt: device code expired",
-			wantErrIs: nil,
+			wantErrIs: trakt.ErrCodeExpired,
 		},
 		{
 			name: "ctx_canceled",

@@ -900,12 +900,7 @@ function specErrors(page, output, built, figures) {
   return errors;
 }
 
-/**
- * Whether the site renders its figures as SVG by design (ADR-0021): its repository carries no
- * player of its own (tools/figures/player/, the engine) and its tools/figures/player.lock.json
- * names no engine release, so the figures hook publishes no player. A lock that names a release
- * still requires the loader: the hook fetches the player then.
- */
+// An unreleased player.lock.json without a local player directory renders static SVGs by design (ADR-0021).
 function svgOnlySite(config) {
   const root = dirname(config);
   if (isDirectory(join(root, 'tools/figures/player'))) return false;

@@ -42,6 +42,13 @@
     },
     {
       "parameters": {
+        "review_draft_pull_requests": true,
+        "review_on_push": true
+      },
+      "type": "copilot_code_review"
+    },
+    {
+      "parameters": {
         "required_status_checks": [
           {
             "context": "Discover modules"

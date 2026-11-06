@@ -1381,7 +1381,7 @@ func runExpiryTest(t *testing.T, code *simkl.DeviceCode, cancelCtx bool, wantErr
 	if err.Error() != wantErr {
 		t.Fatalf("err = %q, want %q", err.Error(), wantErr)
 	}
-	if wantErrIs != nil && !errors.Is(err, wantErrIs) {
+	if !errors.Is(err, wantErrIs) {
 		t.Fatalf("errors.Is(err, %v) = false; err: %v", wantErrIs, err)
 	}
 }
