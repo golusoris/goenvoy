@@ -47,6 +47,21 @@
         "- name: (?<depName>\\S+)\\n +repository: (?<packageName>\\S+)\\n +branch: (?<currentValue>\\S+)\\n +commit: (?<currentDigest>[0-9a-f]{40})\\n"
       ],
       "datasourceTemplate": "github-digest"
+    },
+    {
+      "currentValueTemplate": "HEAD",
+      "customType": "regex",
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "praetor-workflow-engine-pin",
+      "description": "praetor workflow engine commit pin: track the engine default branch",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/[^/]+\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "(?m)^[\\t ]*(PRAETOR_COMMIT)[\\t ]*[:=][\\t ]*[\"']?(?<currentDigest>[0-9a-f]{40})[\"']?[\\t ]*(#[^\\r\\n]*)?\\r?$",
+        "(?m)^[\\t ]*(PRAETOR_REF)[\\t ]*[:=][\\t ]*[\"']?(?<currentDigest>[0-9a-fA-F]{7,40})[\"']?[\\t ]*(#[^\\r\\n]*)?\\r?$"
+      ],
+      "packageNameTemplate": "https://github.com/cordanaLLM/praetor"
     }
   ],
   "gomod": {

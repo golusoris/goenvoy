@@ -2306,9 +2306,7 @@ function changedSinceMode(ref) {
   return { name: CHANGED_SINCE_MODE, files: [], ref };
 }
 
-// gateMode reads the command line: no argument runs the gate, --self-test replays its fixtures,
-// --changed-since <ref> lints Markdown changed since <ref> (Order:
-// engine-hiss18-emitted-templates-20261027), and --only <file>... lints the named files alone.
+// Reject unknown flag combinations before creating a temporary workspace.
 function gateMode(args) {
   if (args.length === 0 || (args.length === 1 && args[0] === "--self-test")) {
     return { name: args[0] ?? "gate", files: [] };
@@ -2335,19 +2333,20 @@ function runGate(root, temporary, settings) {
   return scratchStatus === 0 && lintStatus === 0 ? 0 : scratchStatus > 1 || lintStatus > 1 ? 2 : 1;
 }
 
+// isDocumentationToolPath reports whether relative belongs to the documentation gate tooling.
 function isDocumentationToolPath(relative) {
-  const normalized = relative.replaceAll("\\", "/");
-  return normalized.startsWith("tools/markdownlint/") || TOOL_FILES.includes(normalized);
+  return relative.startsWith("tools/markdownlint/") || TOOL_FILES.includes(relative);
 }
 
+// changedTreeFallback checks whether changed paths trigger a full tree lint fallback.
 function changedTreeFallback(paths, ref) {
   for (let index = 0; index < paths.length && index < MAX_TRACKED_ENTRIES; index += 1) {
-    const normalized = paths[index].replaceAll("\\", "/");
-    if (normalized === MANIFEST_FILE) {
+    const relative = paths[index];
+    if (relative === MANIFEST_FILE) {
       return `${MANIFEST_FILE} changed since ${ref}; linting whole tree`;
     }
-    if (isDocumentationToolPath(normalized)) {
-      return `documentation gate tool path ${normalized} changed since ${ref}; linting whole tree`;
+    if (isDocumentationToolPath(relative)) {
+      return `documentation gate tool path ${relative} changed since ${ref}; linting whole tree`;
     }
   }
   return null;
@@ -2355,7 +2354,7 @@ function changedTreeFallback(paths, ref) {
 
 // Order: engine-hiss18-emitted-templates-20261027.
 function changedPathsSince(root, ref) {
-  const result = command("git", ["diff", "--name-only", "--diff-filter=d", `${ref}...HEAD`], {
+  const result = command("git", ["diff", "--no-renames", "-z", "--name-only", `${ref}...HEAD`], {
     cwd: root,
     allowFailure: true,
     maxBuffer: MAX_GIT_OUTPUT_BYTES,
@@ -2363,7 +2362,7 @@ function changedPathsSince(root, ref) {
   if (result.status !== 0) {
     return { fallback: `ref ${ref} is unknown to git (shallow or missing base); linting whole tree`, paths: [] };
   }
-  const paths = result.stdout.split(/\r?\n/u).filter(Boolean);
+  const paths = result.stdout.split("\0").filter(Boolean);
   if (paths.length > MAX_TRACKED_ENTRIES) {
     fail(`changed inventory has ${paths.length} entries; maximum is ${MAX_TRACKED_ENTRIES}`);
   }
@@ -2397,7 +2396,7 @@ function runChangedSince(root, temporary, settings, ref) {
     return runGate(root, temporary, settings);
   }
   const allFiles = inventory(root, settings);
-  const changedSet = new Set(changed.paths.map((entry) => entry.replaceAll("\\", "/")));
+  const changedSet = new Set(changed.paths);
   const scratchFiles = allFiles.filter((file) => changedSet.has(file));
   if (scratchFiles.length === 0) {
     process.stdout.write(`markdown-governance: ${CHANGED_SINCE_MODE} ${ref}: 0 changed Markdown files; pass\n`);
@@ -2422,9 +2421,7 @@ function runOnly(root, temporary, settings, named) {
   return status;
 }
 
-// fixtureGitEnv is the configuration a fixture commit runs under: an empty global configuration and
-// no system one, so no operator setting (signing, hooks, templates) reaches the throwaway repository,
-// and a fixed test identity.
+// Isolate fixture commits from operator git signing, hooks, and templates.
 function fixtureGitEnv(root) {
   const emptyConfig = path.join(root, ".git", "fixture-empty-gitconfig");
   fs.writeFileSync(emptyConfig, "");
@@ -2443,9 +2440,7 @@ function commitFixtureFiles(root, files, message) {
   return command("git", ["rev-parse", "HEAD"], { cwd: root, env }).stdout.trim();
 }
 
-// dropInheritedGitEnv removes every GIT_* variable the self-test inherited: a run from inside a git
-// hook carries GIT_DIR, GIT_INDEX_FILE or GIT_CONFIG_* pairs, which would point the fixture
-// repositories' git calls at the enclosing repository.
+// Prevent inherited hook GIT_* variables from redirecting fixture git commands to the host repo.
 function dropInheritedGitEnv() {
   const names = Object.keys(process.env);
   for (let index = 0; index < names.length && index < MAX_TRACKED_ENTRIES; index += 1) {
@@ -2477,6 +2472,74 @@ function captureChangedSince(root, temporary, settings, ref) {
   }
 }
 
+// removeFixtureFiles removes tracked fixture files via git rm and returns the commit SHA.
+function removeFixtureFiles(root, files, message) {
+  const env = fixtureGitEnv(root);
+  command("git", ["rm", "--quiet", "--", ...files], { cwd: root, env });
+  command("git", ["commit", "--quiet", "-m", message], { cwd: root, env });
+  return command("git", ["rev-parse", "HEAD"], { cwd: root, env }).stdout.trim();
+}
+
+// renameFixtureFile moves a tracked fixture file via git mv and returns the commit SHA.
+function renameFixtureFile(root, source, destination, message) {
+  const env = fixtureGitEnv(root);
+  command("git", ["mv", "--", source, destination], { cwd: root, env });
+  command("git", ["commit", "--quiet", "-m", message], { cwd: root, env });
+  return command("git", ["rev-parse", "HEAD"], { cwd: root, env }).stdout.trim();
+}
+
+// changedSincePathEncodingSelfTest verifies diff handling for non-ASCII, quoted, and backslash paths.
+function changedSincePathEncodingSelfTest(root, temporary, base) {
+  const nonAscii = commitFixtureFiles(root, { "docs/\u00e9.md": "#Bad non-ASCII heading\n" }, "non-ascii");
+  assert.equal(captureChangedSince(root, temporary, DEFAULT_SETTINGS, base).status, 1);
+  let head = commitFixtureFiles(root, { "docs/\u00e9.md": "# Non-ASCII heading\n" }, "fix-non-ascii");
+  assert.equal(captureChangedSince(root, temporary, DEFAULT_SETTINGS, nonAscii).status, 0);
+  if (process.platform !== "win32") {
+    const quotedCommit = commitFixtureFiles(root, {
+      "docs/\"quoted\".md": "#Bad quoted heading\n",
+    }, "quoted-paths");
+    assert.equal(captureChangedSince(root, temporary, DEFAULT_SETTINGS, head).status, 1);
+    const fixedQuoted = commitFixtureFiles(root, { "docs/\"quoted\".md": "# Quoted\n" }, "fix-quoted");
+    assert.equal(captureChangedSince(root, temporary, DEFAULT_SETTINGS, quotedCommit).status, 0);
+    const backslashCommit = commitFixtureFiles(root, { "docs/a\\b.md": "#Bad backslash heading\n" }, "backslash");
+    assert.equal(captureChangedSince(root, temporary, DEFAULT_SETTINGS, fixedQuoted).status, 1);
+    head = commitFixtureFiles(root, { "docs/a\\b.md": "# Backslash heading\n" }, "fix-backslash");
+    assert.equal(captureChangedSince(root, temporary, DEFAULT_SETTINGS, backslashCommit).status, 0);
+  }
+  return head;
+}
+
+// changedSinceFallbackSelfTest verifies full-tree fallback when tool paths or manifests change.
+function changedSinceFallbackSelfTest(root, temporary, base) {
+  const toolCommit = commitFixtureFiles(root, {
+    "tools/markdownlint/markdownlint-cli2.yaml": "config:\n  default: true\n",
+  }, "tool");
+  const toolChanged = captureChangedSince(root, temporary, DEFAULT_SETTINGS, base);
+  assert.equal(toolChanged.status, 1);
+  assert.match(toolChanged.stdout,
+    /documentation gate tool path tools\/markdownlint\/markdownlint-cli2\.yaml changed since [0-9a-f]+; linting whole tree/u);
+  const toolDeletedCommit = removeFixtureFiles(root, ["tools/markdownlint/markdownlint-cli2.yaml"], "rm-tool");
+  const toolDeleted = captureChangedSince(root, temporary, DEFAULT_SETTINGS, toolCommit);
+  assert.equal(toolDeleted.status, 1);
+  assert.match(toolDeleted.stdout,
+    /documentation gate tool path tools\/markdownlint\/markdownlint-cli2\.yaml changed since [0-9a-f]+; linting whole tree/u);
+  const manifestCommit = commitFixtureFiles(root, { ".standards.yaml": "documentation:\n  max_files: 64\n" }, "manifest");
+  const manifestChanged = captureChangedSince(root, temporary, DEFAULT_SETTINGS, toolDeletedCommit);
+  assert.equal(manifestChanged.status, 1);
+  assert.match(manifestChanged.stdout, /\.standards\.yaml changed since [0-9a-f]+; linting whole tree/u);
+  const manifestRenamedCommit = renameFixtureFile(root, ".standards.yaml", "archived-standards.yaml", "mv-manifest");
+  const manifestRenamed = captureChangedSince(root, temporary, DEFAULT_SETTINGS, manifestCommit);
+  assert.equal(manifestRenamed.status, 1);
+  assert.match(manifestRenamed.stdout, /\.standards\.yaml changed since [0-9a-f]+; linting whole tree/u);
+  const manifestRestoredCommit = renameFixtureFile(root, "archived-standards.yaml", ".standards.yaml", "restore-manifest");
+  removeFixtureFiles(root, [".standards.yaml"], "rm-manifest");
+  const manifestDeleted = captureChangedSince(root, temporary, DEFAULT_SETTINGS, manifestRestoredCommit);
+  assert.equal(manifestDeleted.status, 1);
+  assert.match(manifestDeleted.stdout, /\.standards\.yaml changed since [0-9a-f]+; linting whole tree/u);
+  removeFixtureFiles(root, ["src/index.js"], "cleanup-code");
+  assert.ok(manifestRenamedCommit);
+}
+
 // Order: engine-hiss18-emitted-templates-20261027.
 function changedSinceSelfTest(temporary) {
   const fixture = path.join(temporary, "changed-since-fixture");
@@ -2496,21 +2559,12 @@ function changedSinceSelfTest(temporary) {
   commitFixtureFiles(root, { "docs/guide.md": "#Bad changed heading\n" }, "bad-docs");
   assert.equal(captureChangedSince(root, temporary, DEFAULT_SETTINGS, changedDoc).status, 1);
   const restored = commitFixtureFiles(root, { "docs/guide.md": "# Guide\n\nRestored paragraph.\n" }, "restore");
+  const encoded = changedSincePathEncodingSelfTest(root, temporary, restored);
   const codeOnly = commitFixtureFiles(root, { "src/index.js": "export const value = 1;\n" }, "code");
-  const noMarkdown = captureChangedSince(root, temporary, DEFAULT_SETTINGS, restored);
+  const noMarkdown = captureChangedSince(root, temporary, DEFAULT_SETTINGS, encoded);
   assert.equal(noMarkdown.status, 0);
-  assert.equal(noMarkdown.stdout, `markdown-governance: --changed-since ${restored}: 0 changed Markdown files; pass\n`);
-  const toolCommit = commitFixtureFiles(root, {
-    "tools/markdownlint/markdownlint-cli2.yaml": "config:\n  default: true\n",
-  }, "tool");
-  const toolChanged = captureChangedSince(root, temporary, DEFAULT_SETTINGS, codeOnly);
-  assert.equal(toolChanged.status, 1);
-  assert.match(toolChanged.stdout,
-    /documentation gate tool path tools\/markdownlint\/markdownlint-cli2\.yaml changed since [0-9a-f]+; linting whole tree/u);
-  commitFixtureFiles(root, { ".standards.yaml": "documentation:\n  max_files: 64\n" }, "manifest");
-  const manifestChanged = captureChangedSince(root, temporary, DEFAULT_SETTINGS, toolCommit);
-  assert.equal(manifestChanged.status, 1);
-  assert.match(manifestChanged.stdout, /\.standards\.yaml changed since [0-9a-f]+; linting whole tree/u);
+  assert.equal(noMarkdown.stdout, `markdown-governance: --changed-since ${encoded}: 0 changed Markdown files; pass\n`);
+  changedSinceFallbackSelfTest(root, temporary, codeOnly);
   const unknownRef = captureChangedSince(root, temporary, DEFAULT_SETTINGS, "deadbeef".repeat(5));
   assert.equal(unknownRef.status, 1);
   assert.match(unknownRef.stdout,

@@ -3584,7 +3584,7 @@ func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
 	<-done
 }
 
-func runExpiryTest(t *testing.T, code *trakt.DeviceCode, cancelCtx bool, wantErr string) error {
+func runExpiryTest(t *testing.T, code *trakt.DeviceCode, cancelCtx bool, wantErr string, wantErrIs error) {
 	t.Helper()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -3610,41 +3610,62 @@ func runExpiryTest(t *testing.T, code *trakt.DeviceCode, cancelCtx bool, wantErr
 	if err.Error() != wantErr {
 		t.Fatalf("err = %q, want %q", err.Error(), wantErr)
 	}
-	return err
+	if !errors.Is(err, wantErrIs) {
+		t.Fatalf("errors.Is(err, %v) = false; err: %v", wantErrIs, err)
+	}
 }
 
 func TestPollDeviceTokenExpiry(t *testing.T) {
 	t.Parallel()
 
-	t.Run("expired", func(t *testing.T) {
-		t.Parallel()
-		err := runExpiryTest(t, &trakt.DeviceCode{
-			DeviceCode: "test-device-code",
-			Interval:   1,
-			ExpiresIn:  2,
-		}, false, "trakt: device code expired")
-		if !errors.Is(err, trakt.ErrCodeExpired) {
-			t.Fatalf("errors.Is(err, trakt.ErrCodeExpired) = false; err: %v", err)
-		}
-	})
+	tests := []struct {
+		name      string
+		code      *trakt.DeviceCode
+		cancelCtx bool
+		wantErr   string
+		wantErrIs error
+	}{
+		{
+			name: "expired",
+			code: &trakt.DeviceCode{
+				DeviceCode: "test-device-code",
+				Interval:   1,
+				ExpiresIn:  2,
+			},
+			cancelCtx: false,
+			wantErr:   "trakt: device code expired",
+			wantErrIs: trakt.ErrCodeExpired,
+		},
+		{
+			name: "zero_interval_guard",
+			code: &trakt.DeviceCode{
+				DeviceCode: "test-device-code",
+				Interval:   0,
+				ExpiresIn:  2,
+			},
+			cancelCtx: false,
+			wantErr:   "trakt: device code expired",
+			wantErrIs: trakt.ErrCodeExpired,
+		},
+		{
+			name: "ctx_canceled",
+			code: &trakt.DeviceCode{
+				DeviceCode: "test-device-code",
+				Interval:   1,
+				ExpiresIn:  60,
+			},
+			cancelCtx: true,
+			wantErr:   "trakt: device poll: context canceled",
+			wantErrIs: context.Canceled,
+		},
+	}
 
-	t.Run("zero_interval_guard", func(t *testing.T) {
-		t.Parallel()
-		_ = runExpiryTest(t, &trakt.DeviceCode{
-			DeviceCode: "test-device-code",
-			Interval:   0,
-			ExpiresIn:  2,
-		}, false, "trakt: device code expired")
-	})
-
-	t.Run("ctx_canceled", func(t *testing.T) {
-		t.Parallel()
-		_ = runExpiryTest(t, &trakt.DeviceCode{
-			DeviceCode: "test-device-code",
-			Interval:   1,
-			ExpiresIn:  60,
-		}, true, "trakt: device poll: context canceled")
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			runExpiryTest(t, tt.code, tt.cancelCtx, tt.wantErr, tt.wantErrIs)
+		})
+	}
 }
 
 func TestPollDeviceToken_Success(t *testing.T) {
