@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://sonarr.tv/docs/api/>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-06
 - Details: [docs/upstream/arr-sonarr.md](../../docs/upstream/arr-sonarr.md)
 
 ## Auth model
