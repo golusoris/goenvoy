@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.5](https://github.com/golusoris/goenvoy/compare/downloadclient/queue/v1.1.4...downloadclient/queue/v1.1.5) (2026-11-07)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/qbit/v2 to v2.1.0 ([#235](https://github.com/golusoris/goenvoy/issues/235)) ([2166a12](https://github.com/golusoris/goenvoy/commit/2166a1293f5fce9ebeb29539d3f2cdd479ce979d))
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/sabnzbd/v2 to v2.1.0 ([#236](https://github.com/golusoris/goenvoy/issues/236)) ([dff07ca](https://github.com/golusoris/goenvoy/commit/dff07caa52466488e546bfda1e075e83dd78b0e1))
+
 ## [1.1.4](https://github.com/golusoris/goenvoy/compare/downloadclient/queue/v1.1.3...downloadclient/queue/v1.1.4) (2026-11-01)
 
 
