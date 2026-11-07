@@ -113,6 +113,44 @@ on:
 EOF
 expect_pass "case_g: .yaml workflow with ready_for_review" "$WORK/case_g"
 
+# Why: case h: block-list event form (- pull_request) must be refused.
+mkdir -p "$WORK/case_h/.github/workflows"
+cat <<'EOF' > "$WORK/case_h/.github/workflows/ci.yml"
+name: CI
+on:
+  - push
+  - pull_request
+EOF
+expect_refusal "case_h: block-list event pull_request" "pull_request trigger lacks ready_for_review" "$WORK/case_h"
+
+# Why: case i: nested list containing pull_request (e.g. branch name) must not
+# cause a false positive.
+mkdir -p "$WORK/case_i/.github/workflows"
+cat <<'EOF' > "$WORK/case_i/.github/workflows/ci.yml"
+name: CI
+on:
+  push:
+    branches:
+      - pull_request
+      - main
+EOF
+expect_pass "case_i: nested pull_request branch name" "$WORK/case_i"
+
+# Why: case j: CRLF line endings with block-list pull_request must be refused.
+mkdir -p "$WORK/case_j/.github/workflows"
+printf 'name: CI\r\non:\r\n  - push\r\n  - pull_request\r\n' > "$WORK/case_j/.github/workflows/ci.yml"
+expect_refusal "case_j: CRLF block-list event" "pull_request trigger lacks ready_for_review" "$WORK/case_j"
+
+# Why: case k: bare-dash multiline block-sequence item must be refused.
+mkdir -p "$WORK/case_k/.github/workflows"
+printf 'name: CI\non:\n  -\n    pull_request\n' > "$WORK/case_k/.github/workflows/ci.yml"
+expect_refusal "case_k: bare-dash multiline block-sequence" "pull_request trigger lacks ready_for_review" "$WORK/case_k"
+
+# Why: case l: folded scalar block-sequence item must be refused.
+mkdir -p "$WORK/case_l/.github/workflows"
+printf 'name: CI\non:\n  - >-\n    pull_request\n' > "$WORK/case_l/.github/workflows/ci.yml"
+expect_refusal "case_l: folded scalar block-sequence" "pull_request trigger lacks ready_for_review" "$WORK/case_l"
+
 # Why: verify the real repository passes.
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 expect_pass "repo: real check" "$REPO_ROOT"
