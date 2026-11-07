@@ -1352,6 +1352,7 @@ func TestConcurrentSetAccessTokenAndRead(t *testing.T) {
 	<-done
 }
 
+// runExpiryTest exercises PollDeviceToken with an expired or canceled context.
 func runExpiryTest(t *testing.T, code *simkl.DeviceCode, cancelCtx bool, wantErr string, wantErrIs error) {
 	t.Helper()
 
@@ -1386,6 +1387,7 @@ func runExpiryTest(t *testing.T, code *simkl.DeviceCode, cancelCtx bool, wantErr
 	}
 }
 
+// TestPollDeviceTokenExpiry verifies that PollDeviceToken returns the expected error for expired and canceled device codes.
 func TestPollDeviceTokenExpiry(t *testing.T) {
 	t.Parallel()
 
