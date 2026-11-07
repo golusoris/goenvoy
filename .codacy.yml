@@ -1,0 +1,9 @@
+---
+exclude_paths:
+  # Governance engine assets managed by praetorctl adopt; changes go through
+  # the engine, not through individual PRs.
+  - "tools/apicompat/gate/main.go"
+  - "tools/figures/astro.mjs"
+  - "tools/figures/checks.mjs"
+  - "tools/figures/mkdocs_hook.py"
+  - "tools/markdownlint/verify.mjs"
