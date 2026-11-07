@@ -1,10 +1,19 @@
 {
   "version": 1,
-  "generated_at": "2026-10-26T08:04:17Z",
+  "generated_at": "2026-11-07T14:01:26Z",
   "repository": "golusoris/goenvoy",
   "commit_sha": "7e434fab2687355e2e973b4cf3bfaf6a147b6c24",
-  "total_infractions": 4,
+  "total_infractions": 5,
+  "increase_rationale": "adoption baseline",
   "infractions": [
+    {
+      "rule_id": "RELEASE-TEST-LEVEL",
+      "file_path": ".standards.yaml",
+      "line_number": 1,
+      "message": "missing release test level integration for profile library-client: no tracked file matches paths [**/*_integration_test.go **/integration/** **/tests/integration/** **/test/integration/** **/*.integration.ts **/*.integration.js **/test_*_integration.py]",
+      "anchor": "level:library-client:integration",
+      "fingerprint": ".standards.yaml:RELEASE-TEST-LEVEL:level:library-client:integration#1"
+    },
     {
       "rule_id": "HISS-07",
       "file_path": "tools/gen-release-please.sh",

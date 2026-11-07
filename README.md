@@ -10,8 +10,9 @@
   <!-- README-STANDARD badge block: one group, fixed order (docs/README-STANDARD.md) -->
   <!-- 1 release/version -->
   [![Release](https://img.shields.io/badge/Release-Releases-3b82f6?style=for-the-badge&labelColor=111a35)](https://github.com/golusoris/goenvoy/releases)
+  [![Go](https://img.shields.io/badge/Go-1.26+-06b6d4?style=for-the-badge&logo=go&logoColor=white&labelColor=111a35)](https://go.dev)
   <!-- 2 CI/build -->
-  [![CI](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml)
+  [![CI](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml)
   <!-- 3 security/scorecard -->
   [![Security](https://github.com/golusoris/goenvoy/actions/workflows/security-scan.yml/badge.svg?branch=main&event=push)](https://github.com/golusoris/goenvoy/actions/workflows/security-scan.yml)
   [![OpenSSF Scorecard](https://img.shields.io/badge/OpenSSF-Scorecard-06b6d4?style=for-the-badge&labelColor=111a35)](https://scorecard.dev/viewer/?uri=github.com/golusoris/goenvoy)
@@ -22,7 +23,6 @@
   [![HISS-21](https://img.shields.io/badge/Standards-HISS--21-06b6d4?style=for-the-badge&logo=nasa&labelColor=111a35)](AGENTS.md)
   [![Power of 10](https://img.shields.io/badge/NASA_JPL-Power_of_10-3b82f6?style=for-the-badge&logo=nasa&labelColor=111a35)](docs/principles.md)
   [![Conventional Commits](https://img.shields.io/badge/Commits-Conventional-8b5cf6?style=for-the-badge&logo=conventionalcommits&logoColor=white&labelColor=111a35)](CONTRIBUTING.md)
-  [![Go](https://img.shields.io/badge/Go-1.26+-06b6d4?style=for-the-badge&logo=go&logoColor=white&labelColor=111a35)](https://go.dev)
   <!-- 5 licence -->
   [![License](https://img.shields.io/badge/License-MIT-3b82f6?style=for-the-badge&labelColor=111a35)](LICENSE)
   <!-- 6 support -->
@@ -111,9 +111,6 @@ Each service module follows the same pattern: `New(baseURL, apiKey) → typed me
 ## At a glance
 
 ### Categories
-
-[![Go Version](https://img.shields.io/badge/Go-1.26+-3b82f6?style=flat-square&logo=go&logoColor=white)](https://go.dev)
-[![Go Reference](https://pkg.go.dev/badge/github.com/golusoris/goenvoy/arr/v2.svg)](https://pkg.go.dev/github.com/golusoris/goenvoy/arr/v2)
 
 | Category | Module | Services |
 | --- | --- | --- |
@@ -246,7 +243,7 @@ generated agent context against `AGENTS.md`.
 private scratch-link policy.
 
 **Debt Baseline**: `.standards-baseline.json` anchors the debt ratchet at
-4 recorded infractions; audit forbids growth.
+5 recorded infractions; audit forbids growth.
 
 [praetor-docs-badge]: https://github.com/golusoris/goenvoy/actions/workflows/praetor-docs.yml/badge.svg
 [praetor-docs-runs]: https://github.com/golusoris/goenvoy/actions/workflows/praetor-docs.yml

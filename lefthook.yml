@@ -9,18 +9,6 @@
 # gets no receipt: the job names the languages it could not verify and
 # admits the push; a root with either fails when its stages did not run.
 ---
-agent-checkpoint-tool:
-  commands:
-    checkpoint:
-      run: >-
-        sh .config/lefthook/python.sh -B .config/lefthook/scripts/checkpoint.py
-        --event tool --json --marker
-agent-checkpoint-stop:
-  commands:
-    checkpoint:
-      run: >-
-        sh .config/lefthook/python.sh -B .config/lefthook/scripts/checkpoint.py
-        --event stop --json --marker
 pre-commit:
   parallel: true
   commands:
@@ -68,6 +56,18 @@ pre-push:
         .config/lefthook/engine.sh security secrets; else echo gitleaks is not
         installed, install it with go install
         github.com/zricethezav/gitleaks/v8@v8.30.1 >&2; exit 1; fi
+    docstrings:
+      use_stdin: true
+      run: sh .config/lefthook/engine.sh docstrings check --pre-push
+    merge-check:
+      use_stdin: true
+      run: >-
+        count=0; ran=0; while read -r _ loid _ roid; do count=$((count + 1)); if
+        [ $count -gt 64 ]; then echo merge-check: pushed refs exceed limit 64
+        >&2; exit 1; fi; if [ x$(echo $loid | tr -d 0) != x ] && [ x$(echo $roid
+        | tr -d 0) != x ]; then ran=1; sh .config/lefthook/engine.sh merge-check
+        --range=$roid..$loid || exit $?; fi; done; if [ $ran = 0 ]; then echo no
+        pushed commit range on stdin, skipping merge-check >&2; fi
     flavor-audit:
       run: sh .config/lefthook/engine.sh flavor audit .
     audit:
