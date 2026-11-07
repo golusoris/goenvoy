@@ -56,6 +56,7 @@ for f in "${files[@]}"; do
   num_lines=${#lines[@]}
 
   in_on=0
+  on_indent=-1
   in_pr=0
   pr_indent=0
   pr_has_ready=0
@@ -63,10 +64,13 @@ for f in "${files[@]}"; do
   types_indent=0
   file_miss=0
   file_prs=0
+  pending_dash_indent=-1
 
   # Why: bounded loop over lines of the workflow file.
   for ((lnum = 0; lnum < num_lines; lnum++)); do
     line="${lines[lnum]}"
+    # Why: CRLF workflows leave \r after readarray -t; strip it.
+    line="${line%$'\r'}"
 
     # Why: strip leading spaces to measure indent and find trimmed content.
     trimmed="${line#"${line%%[! ]*}"}"
@@ -100,6 +104,7 @@ for f in "${files[@]}"; do
 
         if [ "$clean_key" = "on" ]; then
           in_on=1
+          on_indent=-1
           inline_clean="${rest%%#*}"
           inline_clean="${inline_clean%"${inline_clean##*[! ]}"}"
           if [ -n "$inline_clean" ]; then
@@ -114,6 +119,25 @@ for f in "${files[@]}"; do
 
     # Why: only inspect lines located inside the on: mapping.
     if [ "$in_on" -eq 1 ]; then
+      # Why: record the indent of on:'s direct children on first sight.
+      if [ "$on_indent" -eq -1 ]; then
+        on_indent="$indent"
+      fi
+
+      # Why: resolve a pending bare-dash whose scalar appears on this line.
+      if [ "$pending_dash_indent" -ge 0 ]; then
+        if [ "$indent" -gt "$pending_dash_indent" ]; then
+          item="${trimmed%%#*}"
+          item="${item%"${item##*[! ]}"}"
+          item="${item#[\'\"]}"
+          item="${item%[\'\"]}"
+          if [ "$item" = "pull_request" ]; then
+            file_miss=1
+          fi
+        fi
+        pending_dash_indent=-1
+      fi
+
       # Why: check if line exits current pull_request mapping.
       if [ "$in_pr" -eq 1 ]; then
         if [ "$indent" -le "$pr_indent" ]; then
@@ -145,15 +169,27 @@ for f in "${files[@]}"; do
         # Why: detect pull_request as a block-list item (- pull_request) under on:.
         # Block-list events have no mapping body, so types: cannot be specified;
         # ready_for_review is always missing.
-        if [[ "$trimmed" == -* ]]; then
+        # Only match at on:'s direct child indent to avoid false positives on
+        # nested lists (e.g. branches: [- pull_request]).
+        if [[ "$trimmed" == -* ]] && [ "$indent" -eq "$on_indent" ]; then
           item="${trimmed#-}"
           item="${item#"${item%%[! ]*}"}"
           item="${item%%#*}"
           item="${item%"${item##*[! ]}"}"
+          # Why: strip YAML block scalar indicators (>-, >, |, |-).
+          item="${item#>-}"
+          item="${item#>}"
+          item="${item#\|-}"
+          item="${item#\|}"
+          item="${item#"${item%%[! ]*}"}"
           item="${item#[\'\"]}"
           item="${item%[\'\"]}"
           if [ "$item" = "pull_request" ]; then
             file_miss=1
+          elif [ -z "$item" ]; then
+            # Why: bare dash or block scalar indicator with no inline value;
+            # the scalar appears on the next indented line.
+            pending_dash_indent="$indent"
           fi
         fi
       fi
