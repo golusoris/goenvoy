@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.6](https://github.com/golusoris/goenvoy/compare/metadata/game/retroachievements/v1.0.5...metadata/game/retroachievements/v1.0.6) (2026-11-07)
+
+
+### Bug Fixes
+
+* **metadata:** surface body close errors and bound device-token polls ([#245](https://github.com/golusoris/goenvoy/issues/245)) ([b5bf66e](https://github.com/golusoris/goenvoy/commit/b5bf66ed74122274c163836ba60242909e085f11))
+
 ## [1.0.5](https://github.com/golusoris/goenvoy/compare/metadata/game/retroachievements/v1.0.4...metadata/game/retroachievements/v1.0.5) (2026-10-27)
 
 
