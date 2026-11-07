@@ -113,6 +113,16 @@ on:
 EOF
 expect_pass "case_g: .yaml workflow with ready_for_review" "$WORK/case_g"
 
+# Why: case h: block-list event form (- pull_request) must be refused.
+mkdir -p "$WORK/case_h/.github/workflows"
+cat <<'EOF' > "$WORK/case_h/.github/workflows/ci.yml"
+name: CI
+on:
+  - push
+  - pull_request
+EOF
+expect_refusal "case_h: block-list event pull_request" "pull_request trigger lacks ready_for_review" "$WORK/case_h"
+
 # Why: verify the real repository passes.
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 expect_pass "repo: real check" "$REPO_ROOT"

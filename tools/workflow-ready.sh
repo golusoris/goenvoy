@@ -142,6 +142,20 @@ for f in "${files[@]}"; do
             continue
           fi
         fi
+        # Why: detect pull_request as a block-list item (- pull_request) under on:.
+        # Block-list events have no mapping body, so types: cannot be specified;
+        # ready_for_review is always missing.
+        if [[ "$trimmed" == -* ]]; then
+          item="${trimmed#-}"
+          item="${item#"${item%%[! ]*}"}"
+          item="${item%%#*}"
+          item="${item%"${item##*[! ]}"}"
+          item="${item#[\'\"]}"
+          item="${item%[\'\"]}"
+          if [ "$item" = "pull_request" ]; then
+            file_miss=1
+          fi
+        fi
       fi
 
       # Why: handle keys and list items inside the pull_request block.
