@@ -552,10 +552,6 @@ linters:
         linters:
           - funlen
         text: Function 'TestV3RemainingEndpointWrappers'
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - cyclop
       # baseline #141
       - path: ^downloadclient/queue/queue_test\.go$
         linters:
