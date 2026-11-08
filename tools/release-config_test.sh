@@ -8,37 +8,11 @@ if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
 fi
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=tools/testlib.sh
+. "$HERE/testlib.sh"
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
-
-# Why: assert command fails and error message contains needle.
-expect_refusal() {
-  local name="$1" needle="$2" out
-  shift 2
-  if out="$("$@" 2>&1)"; then
-    printf 'FAIL %s: accepted\n%s\n' "$name" "$out" >&2
-    exit 1
-  fi
-  case "$out" in
-    *"$needle"*) echo "ok   $name: refused ($needle)" ;;
-    *)
-      printf 'FAIL %s: refused without "%s"\n%s\n' "$name" "$needle" "$out" >&2
-      exit 1
-      ;;
-  esac
-}
-
-# Why: assert command succeeds.
-expect_pass() {
-  local name="$1" out
-  shift 1
-  if ! out="$("$@" 2>&1)"; then
-    printf 'FAIL %s: command failed\n%s\n' "$name" "$out" >&2
-    exit 1
-  fi
-  echo "ok   $name: $out"
-}
 
 # Why: stage tracked go.mod files and generator into an isolated temporary git repo.
 setup_generator_dir() {
