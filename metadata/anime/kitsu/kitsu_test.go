@@ -433,6 +433,7 @@ func TestWithUserAgent(t *testing.T) {
 
 // OAuth2 tests.
 
+// TestAuthenticate tests password grant authentication and token callback handling.
 func TestAuthenticate(t *testing.T) {
 	t.Parallel()
 
@@ -489,6 +490,7 @@ func TestAuthenticate(t *testing.T) {
 	}
 }
 
+// TestRefreshToken tests refreshing an OAuth2 token using a refresh token.
 func TestRefreshToken(t *testing.T) {
 	t.Parallel()
 

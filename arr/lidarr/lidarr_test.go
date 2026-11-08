@@ -125,6 +125,7 @@ func TestGetArtist(t *testing.T) {
 	}
 }
 
+// TestAddArtist tests adding an artist via POST /api/v1/artist.
 func TestAddArtist(t *testing.T) {
 	t.Parallel()
 
@@ -368,6 +369,7 @@ func TestDeleteTrackFile(t *testing.T) {
 	}
 }
 
+// TestSendCommand tests dispatching an administrative command via POST /api/v1/command.
 func TestSendCommand(t *testing.T) {
 	t.Parallel()
 
@@ -542,6 +544,7 @@ func TestGetTags(t *testing.T) {
 	}
 }
 
+// TestCreateTag tests creating a new tag via POST /api/v1/tag.
 func TestCreateTag(t *testing.T) {
 	t.Parallel()
 
@@ -3556,6 +3559,7 @@ func TestHeadPing(t *testing.T) {
 	}
 }
 
+// TestUploadBackup tests uploading a backup zip archive via POST /api/v1/system/backup/upload.
 func TestUploadBackup(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

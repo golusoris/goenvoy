@@ -127,6 +127,7 @@ func TestGetSeries(t *testing.T) {
 	}
 }
 
+// TestAddSeries tests adding a new series via POST /api/v3/series.
 func TestAddSeries(t *testing.T) {
 	t.Parallel()
 
@@ -263,6 +264,7 @@ func TestGetEpisodeFiles(t *testing.T) {
 	}
 }
 
+// TestSendCommand tests dispatching an administrative command via POST /api/v3/command.
 func TestSendCommand(t *testing.T) {
 	t.Parallel()
 
@@ -409,6 +411,7 @@ func TestGetTags(t *testing.T) {
 	}
 }
 
+// TestCreateTag tests creating a new tag via POST /api/v3/tag.
 func TestCreateTag(t *testing.T) {
 	t.Parallel()
 

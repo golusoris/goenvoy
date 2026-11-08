@@ -128,6 +128,7 @@ func checkSeriesProfileBody(t *testing.T, r *http.Request) {
 	}
 }
 
+// TestRunSeriesAction tests running a batch action on series via PATCH /api/series.
 func TestRunSeriesAction(t *testing.T) {
 	t.Parallel()
 
@@ -322,6 +323,7 @@ func TestGetMovies(t *testing.T) {
 	}
 }
 
+// TestSetMovieProfile tests updating movie subtitle profile assignments via POST /api/movies.
 func TestSetMovieProfile(t *testing.T) {
 	t.Parallel()
 
@@ -436,6 +438,7 @@ func TestGetMovieHistory(t *testing.T) {
 	}
 }
 
+// TestDownloadMovieSubtitle tests downloading movie subtitles via PATCH /api/movies/subtitles.
 func TestDownloadMovieSubtitle(t *testing.T) {
 	t.Parallel()
 
@@ -688,6 +691,7 @@ func TestGetLanguageProfiles(t *testing.T) {
 	}
 }
 
+// TestSystemAction tests triggering system administrative actions via POST /api/system.
 func TestSystemAction(t *testing.T) {
 	t.Parallel()
 

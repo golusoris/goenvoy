@@ -19,6 +19,7 @@ func setup(t *testing.T, handler http.HandlerFunc) *omdb.Client {
 	return omdb.New("test-key", metadata.WithBaseURL(srv.URL))
 }
 
+// respond encodes a value as JSON into the response writer.
 func respond(t *testing.T, w http.ResponseWriter, v any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")
@@ -43,6 +44,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
+// TestGetByIMDbID tests fetching title details by IMDb ID.
 func TestGetByIMDbID(t *testing.T) {
 	t.Parallel()
 
@@ -81,6 +83,7 @@ func TestGetByIMDbID(t *testing.T) {
 	}
 }
 
+// TestGetByIMDbIDWithPlot tests fetching title details by IMDb ID with full plot.
 func TestGetByIMDbIDWithPlot(t *testing.T) {
 	t.Parallel()
 
@@ -103,6 +106,7 @@ func TestGetByIMDbIDWithPlot(t *testing.T) {
 	}
 }
 
+// TestGetByTitle tests fetching title details by exact title string.
 func TestGetByTitle(t *testing.T) {
 	t.Parallel()
 
@@ -127,6 +131,7 @@ func TestGetByTitle(t *testing.T) {
 	}
 }
 
+// TestGetByTitleWithFilters tests fetching title details filtered by year and media type.
 func TestGetByTitleWithFilters(t *testing.T) {
 	t.Parallel()
 
@@ -152,6 +157,7 @@ func TestGetByTitleWithFilters(t *testing.T) {
 	}
 }
 
+// TestSearch tests searching for titles matching a query string.
 func TestSearch(t *testing.T) {
 	t.Parallel()
 
@@ -180,6 +186,7 @@ func TestSearch(t *testing.T) {
 	}
 }
 
+// TestSearchWithFilters tests searching for titles filtered by year, type, and page.
 func TestSearchWithFilters(t *testing.T) {
 	t.Parallel()
 
@@ -210,6 +217,7 @@ func TestSearchWithFilters(t *testing.T) {
 	}
 }
 
+// TestGetSeason tests fetching season details and episodes by IMDb ID and season number.
 func TestGetSeason(t *testing.T) {
 	t.Parallel()
 
@@ -250,6 +258,7 @@ func TestGetSeason(t *testing.T) {
 	}
 }
 
+// TestGetEpisode tests fetching episode details by season and episode number.
 func TestGetEpisode(t *testing.T) {
 	t.Parallel()
 

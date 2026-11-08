@@ -175,6 +175,7 @@ func TestGetRequests(t *testing.T) {
 	}
 }
 
+// TestCreateRequest tests submitting a new media request via POST /api/v1/request.
 func TestCreateRequest(t *testing.T) {
 	t.Parallel()
 
@@ -452,6 +453,7 @@ func TestGetIssues(t *testing.T) {
 	}
 }
 
+// TestCreateIssue tests creating a new issue report via POST /api/v1/issue.
 func TestCreateIssue(t *testing.T) {
 	t.Parallel()
 

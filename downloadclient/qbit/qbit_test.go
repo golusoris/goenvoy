@@ -24,6 +24,7 @@ func newTestServer(t *testing.T, wantPath string, response any) *httptest.Server
 	}))
 }
 
+// newLoginServer starts a mock qBittorrent server handling login and logout endpoints.
 func newLoginServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

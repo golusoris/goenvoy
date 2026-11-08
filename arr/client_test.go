@@ -88,6 +88,7 @@ func TestBaseClient_Get(t *testing.T) {
 	}
 }
 
+// TestBaseClient_Post tests executing a POST request with JSON payload via BaseClient.
 func TestBaseClient_Post(t *testing.T) {
 	t.Parallel()
 
@@ -212,6 +213,7 @@ func TestWithTimeout(t *testing.T) {
 	}
 }
 
+// TestBaseClient_Put tests executing a PUT request with JSON payload via BaseClient.
 func TestBaseClient_Put(t *testing.T) {
 	t.Parallel()
 
@@ -262,6 +264,7 @@ func TestBaseClient_Put(t *testing.T) {
 	}
 }
 
+// TestBaseClient_Patch tests executing a PATCH request with JSON payload via BaseClient.
 func TestBaseClient_Patch(t *testing.T) {
 	t.Parallel()
 
@@ -394,6 +397,7 @@ func TestBaseClient_GetRaw(t *testing.T) {
 	}
 }
 
+// TestBaseClient_Upload tests executing a multipart file upload via BaseClient.
 func TestBaseClient_Upload(t *testing.T) {
 	t.Parallel()
 

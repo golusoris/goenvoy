@@ -18,6 +18,7 @@ type rpcRequest struct {
 	ID      int             `json:"id"`
 }
 
+// newRPCServer starts a mock NZBGet JSON-RPC server verifying credentials and method.
 func newRPCServer(t *testing.T, wantMethod string, result any) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -269,6 +270,7 @@ func TestGetLog(t *testing.T) {
 	}
 }
 
+// TestAPIError tests handling a JSON-RPC error response from NZBGet.
 func TestAPIError(t *testing.T) {
 	t.Parallel()
 

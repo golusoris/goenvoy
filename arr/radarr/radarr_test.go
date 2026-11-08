@@ -125,6 +125,7 @@ func TestGetMovie(t *testing.T) {
 	}
 }
 
+// TestAddMovie tests adding a movie via POST /api/v3/movie.
 func TestAddMovie(t *testing.T) {
 	t.Parallel()
 
@@ -309,6 +310,7 @@ func TestGetCredits(t *testing.T) {
 	}
 }
 
+// TestSendCommand tests dispatching an administrative command via POST /api/v3/command.
 func TestSendCommand(t *testing.T) {
 	t.Parallel()
 
@@ -454,6 +456,7 @@ func TestGetTags(t *testing.T) {
 	}
 }
 
+// TestCreateTag tests creating a new tag via POST /api/v3/tag.
 func TestCreateTag(t *testing.T) {
 	t.Parallel()
 
@@ -1761,6 +1764,7 @@ func TestHeadPing(t *testing.T) {
 	}
 }
 
+// TestUploadBackup tests uploading a backup zip archive via POST /api/v3/system/backup/upload.
 func TestUploadBackup(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

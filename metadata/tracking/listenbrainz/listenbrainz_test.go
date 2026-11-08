@@ -390,6 +390,7 @@ func TestGetLatestImport(t *testing.T) {
 	}
 }
 
+// TestSubmitListens tests submitting listen records to ListenBrainz via POST /1/submit-listens.
 func TestSubmitListens(t *testing.T) {
 	t.Parallel()
 

@@ -21,6 +21,7 @@ func setup(t *testing.T, handler http.HandlerFunc) *fanart.Client {
 	)
 }
 
+// respond encodes a value as JSON into the response writer.
 func respond(t *testing.T, w http.ResponseWriter, v any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")
@@ -45,6 +46,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
+// TestGetMovieImages tests retrieving movie artwork by TMDb ID.
 func TestGetMovieImages(t *testing.T) {
 	t.Parallel()
 
@@ -112,6 +114,7 @@ func TestGetMovieImagesWithDisc(t *testing.T) {
 	}
 }
 
+// TestGetShowImages tests retrieving TV show artwork by TheTVDB ID.
 func TestGetShowImages(t *testing.T) {
 	t.Parallel()
 
@@ -154,6 +157,7 @@ func TestGetShowImages(t *testing.T) {
 	}
 }
 
+// TestGetArtistImages tests retrieving music artist artwork by MusicBrainz ID.
 func TestGetArtistImages(t *testing.T) {
 	t.Parallel()
 
@@ -204,6 +208,7 @@ func TestGetArtistImages(t *testing.T) {
 	}
 }
 
+// TestGetAlbumImages tests retrieving album artwork by MusicBrainz release group ID.
 func TestGetAlbumImages(t *testing.T) {
 	t.Parallel()
 
@@ -239,6 +244,7 @@ func TestGetAlbumImages(t *testing.T) {
 	}
 }
 
+// TestGetLabelImages tests retrieving record label artwork by MusicBrainz label ID.
 func TestGetLabelImages(t *testing.T) {
 	t.Parallel()
 
@@ -270,6 +276,7 @@ func TestGetLabelImages(t *testing.T) {
 	}
 }
 
+// TestGetLatestMovies tests retrieving recently updated movie artwork entries.
 func TestGetLatestMovies(t *testing.T) {
 	t.Parallel()
 
@@ -294,6 +301,7 @@ func TestGetLatestMovies(t *testing.T) {
 	}
 }
 
+// TestGetLatestMoviesWithDate tests retrieving recently updated movie artwork filtered by timestamp.
 func TestGetLatestMoviesWithDate(t *testing.T) {
 	t.Parallel()
 
@@ -312,6 +320,7 @@ func TestGetLatestMoviesWithDate(t *testing.T) {
 	}
 }
 
+// TestGetLatestShows tests retrieving recently updated TV show artwork entries.
 func TestGetLatestShows(t *testing.T) {
 	t.Parallel()
 
@@ -335,6 +344,7 @@ func TestGetLatestShows(t *testing.T) {
 	}
 }
 
+// TestGetLatestArtists tests retrieving recently updated music artist artwork entries.
 func TestGetLatestArtists(t *testing.T) {
 	t.Parallel()
 

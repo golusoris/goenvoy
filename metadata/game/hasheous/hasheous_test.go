@@ -21,6 +21,7 @@ func setup(t *testing.T, handler http.HandlerFunc) *hasheous.Client {
 	return hasheous.New(metadata.WithBaseURL(srv.URL))
 }
 
+// TestLookupByHash tests querying game metadata by file hash via POST /Lookup/ByHash.
 func TestLookupByHash(t *testing.T) {
 	t.Parallel()
 

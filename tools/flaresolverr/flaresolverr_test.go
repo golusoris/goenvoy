@@ -12,6 +12,7 @@ import (
 	"github.com/golusoris/goenvoy/tools/flaresolverr/v2"
 )
 
+// newTestServer starts an httptest server asserting FlareSolverr commands.
 func newTestServer(t *testing.T, wantCmd string, response any) *flaresolverr.Client {
 	t.Helper()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -172,6 +173,7 @@ func TestCreateSession(t *testing.T) {
 	}
 }
 
+// TestCreateSessionWithProxy tests creating a FlareSolverr session configured with an HTTP proxy.
 func TestCreateSessionWithProxy(t *testing.T) {
 	t.Parallel()
 

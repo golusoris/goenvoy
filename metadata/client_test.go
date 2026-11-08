@@ -349,6 +349,7 @@ func TestGet_NonOK(t *testing.T) {
 	}
 }
 
+// TestDoJSON tests executing an HTTP request with JSON encoding and decoding.
 func TestDoJSON(t *testing.T) {
 	t.Parallel()
 

@@ -19,6 +19,7 @@ func setup(t *testing.T, handler http.HandlerFunc) *anilist.Client {
 	return anilist.New(metadata.WithBaseURL(srv.URL))
 }
 
+// respondGraphQL writes a GraphQL JSON response containing the provided data.
 func respondGraphQL(t *testing.T, w http.ResponseWriter, data any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")
@@ -53,6 +54,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
+// TestQuery tests executing a raw GraphQL query and decoding the response.
 func TestQuery(t *testing.T) {
 	t.Parallel()
 
@@ -85,6 +87,7 @@ func TestQuery(t *testing.T) {
 	}
 }
 
+// TestGetMedia tests fetching media details by AniList ID via GraphQL.
 func TestGetMedia(t *testing.T) {
 	t.Parallel()
 
@@ -121,6 +124,7 @@ func TestGetMedia(t *testing.T) {
 	}
 }
 
+// TestGetMediaByMalID tests fetching media details by MyAnimeList ID via GraphQL.
 func TestGetMediaByMalID(t *testing.T) {
 	t.Parallel()
 
@@ -151,6 +155,7 @@ func TestGetMediaByMalID(t *testing.T) {
 	}
 }
 
+// TestSearchMedia tests searching for media by title and media type.
 func TestSearchMedia(t *testing.T) {
 	t.Parallel()
 
@@ -196,6 +201,7 @@ func TestSearchMedia(t *testing.T) {
 	}
 }
 
+// TestGetCharacter tests fetching character details by ID via GraphQL.
 func TestGetCharacter(t *testing.T) {
 	t.Parallel()
 
@@ -292,6 +298,7 @@ func TestSearchStaff(t *testing.T) {
 	}
 }
 
+// TestGetUser tests fetching user details by ID via GraphQL.
 func TestGetUser(t *testing.T) {
 	t.Parallel()
 
@@ -317,6 +324,7 @@ func TestGetUser(t *testing.T) {
 	}
 }
 
+// TestGetUserByName tests fetching user details by username via GraphQL.
 func TestGetUserByName(t *testing.T) {
 	t.Parallel()
 
@@ -382,6 +390,7 @@ func TestGetTags(t *testing.T) {
 	}
 }
 
+// TestGraphQLError tests parsing and returning GraphQL error responses.
 func TestGraphQLError(t *testing.T) {
 	t.Parallel()
 

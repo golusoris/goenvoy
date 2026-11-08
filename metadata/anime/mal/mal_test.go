@@ -748,6 +748,7 @@ func TestAuthorizationURL(t *testing.T) {
 	}
 }
 
+// TestExchangeCode tests exchanging an authorization code with PKCE verification.
 func TestExchangeCode(t *testing.T) {
 	t.Parallel()
 	authSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -795,6 +796,7 @@ func TestExchangeCode(t *testing.T) {
 	}
 }
 
+// TestRefreshToken tests refreshing an OAuth2 token using a refresh token.
 func TestRefreshToken(t *testing.T) {
 	t.Parallel()
 	authSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

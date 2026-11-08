@@ -18,6 +18,7 @@ type rpcRequest struct {
 	Params json.RawMessage `json:"params"`
 }
 
+// newRPCServer starts a mock Deluge JSON-RPC server expecting a given method.
 func newRPCServer(t *testing.T, wantMethod string, result any) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -46,6 +47,7 @@ func newRPCServer(t *testing.T, wantMethod string, result any) *httptest.Server 
 	}))
 }
 
+// loginServer starts a mock Deluge server that returns success for login requests.
 func loginServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -75,6 +77,7 @@ func TestLogin(t *testing.T) {
 	}
 }
 
+// TestLoginFailed tests handling an unsuccessful Deluge authentication response.
 func TestLoginFailed(t *testing.T) {
 	t.Parallel()
 
@@ -461,6 +464,7 @@ func TestGetFreeSpace(t *testing.T) {
 	}
 }
 
+// TestAPIError tests decoding and returning Deluge JSON-RPC error responses.
 func TestAPIError(t *testing.T) {
 	t.Parallel()
 

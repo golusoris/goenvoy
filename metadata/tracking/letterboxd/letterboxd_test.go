@@ -63,6 +63,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
+// TestNewWithClientCredentials tests OAuth2 client credentials authentication and the token callback.
 func TestNewWithClientCredentials(t *testing.T) {
 	t.Parallel()
 

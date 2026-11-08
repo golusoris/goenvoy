@@ -17,6 +17,7 @@ type rpcRequest struct {
 	Arguments json.RawMessage `json:"arguments"`
 }
 
+// newRPCServer starts a mock Transmission RPC server expecting a given method.
 func newRPCServer(t *testing.T, wantMethod string, response any) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -219,6 +220,7 @@ func TestMoveTorrents(t *testing.T) {
 	}
 }
 
+// TestSetTorrentSpeedLimits tests configuring bandwidth throttling via torrent-set.
 func TestSetTorrentSpeedLimits(t *testing.T) {
 	t.Parallel()
 

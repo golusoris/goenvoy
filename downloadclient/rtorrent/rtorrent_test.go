@@ -115,6 +115,7 @@ func xmlMulticallResponse() string {
 </data></array></value></param></params></methodResponse>`
 }
 
+// newXMLRPCServer starts a mock rTorrent XML-RPC server expecting a given method.
 func newXMLRPCServer(t *testing.T, wantMethod, response string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
