@@ -82,9 +82,9 @@ for f in "${files[@]}"; do
 
     indent=$(( ${#line} - ${#trimmed} ))
 
-    # Why: a column-zero dash under on: is an indentless sequence item (YAML allows it), not a top-level key.
+    # Why: an indentless sequence item under on: is '-' or starts with '- ' or a dash and a tab.
     indentless_on_item=0
-    if [ "$in_on" -eq 1 ] && [[ "$trimmed" == -* ]] && [ "$on_indent" -le 0 ]; then
+    if [ "$in_on" -eq 1 ] && { [ "$trimmed" = "-" ] || [[ "$trimmed" == "- "* ]] || [[ "$trimmed" == -$'\t'* ]]; } && [ "$on_indent" -le 0 ]; then
       indentless_on_item=1
     fi
 

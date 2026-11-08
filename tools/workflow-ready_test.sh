@@ -171,10 +171,20 @@ mkdir -p "$WORK/case_p/.github/workflows"
 printf 'name: CI\non:\n-\n  pull_request\n' > "$WORK/case_p/.github/workflows/ci.yml"
 expect_refusal "case_p: indentless bare-dash multiline item" "pull_request trigger lacks ready_for_review" "$WORK/case_p"
 
-# Why: case q: indentless on closed at jobs must not match pull_request in steps.
+# Why: case q: indentless on closed at jobs must not treat job ID as pull_request trigger.
 mkdir -p "$WORK/case_q/.github/workflows"
-printf 'name: CI\non:\n- push\njobs:\n  build:\n    steps:\n      - pull_request\n' > "$WORK/case_q/.github/workflows/ci.yml"
+printf 'name: CI\non:\n- push\njobs:\n  pull_request:\n    runs-on: ubuntu-latest\n' > "$WORK/case_q/.github/workflows/ci.yml"
 expect_pass "case_q: indentless on closed at jobs" "$WORK/case_q"
+
+# Why: case r: top-level key starting with dash must close on and not leak nested pull_request.
+mkdir -p "$WORK/case_r/.github/workflows"
+printf 'name: CI\non:\n- push\n-custom:\n  pull_request:\n    branches: [main]\n' > "$WORK/case_r/.github/workflows/ci.yml"
+expect_pass "case_r: top-level dash key does not keep on open" "$WORK/case_r"
+
+# Why: case s: indentless bare-dash push item must pass.
+mkdir -p "$WORK/case_s/.github/workflows"
+printf 'name: CI\non:\n-\n  push\n' > "$WORK/case_s/.github/workflows/ci.yml"
+expect_pass "case_s: indentless bare-dash push" "$WORK/case_s"
 
 # Why: verify the real repository passes.
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
