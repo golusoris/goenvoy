@@ -132,6 +132,11 @@ badges-check: ## README workflow badges point at existing workflows: planted cas
 workflow-ready-check: ## Workflows with pull_request trigger have ready_for_review: planted cases, then the repository
 	bash tools/workflow-ready_test.sh
 
+.PHONY: semgrep-local
+semgrep-local: ## Repository Semgrep rules: planted fixtures, then the tree (registry packs run in CI)
+	semgrep --test --metrics=off tools/semgrep/
+	semgrep scan --config tools/semgrep/ --exclude tools/semgrep --error --metrics=off --disable-version-check .
+
 doc: ## Local godoc server at :6060
 	@echo "Starting godoc server at http://localhost:6060"
 	@godoc -http=:6060
@@ -147,6 +152,7 @@ verify-all:
 	@$(MAKE) --no-print-directory hooks-test
 	@$(MAKE) --no-print-directory badges-check
 	@$(MAKE) --no-print-directory workflow-ready-check
+	@$(MAKE) --no-print-directory semgrep-local
 	@$(MAKE) --no-print-directory ci-all
 
 compile-context:

@@ -639,7 +639,7 @@ func TestCreateCollection_EmptyName(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("request sent unexpectedly")
+		t.Error("request sent unexpectedly")
 	}))
 	defer ts.Close()
 
@@ -660,7 +660,7 @@ func TestCreateCollection_BlankItemID(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("request sent unexpectedly")
+		t.Error("request sent unexpectedly")
 	}))
 	defer ts.Close()
 
@@ -782,7 +782,7 @@ func TestAddToCollection_EmptyCollectionID(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("request sent unexpectedly")
+		t.Error("request sent unexpectedly")
 	}))
 	defer ts.Close()
 
@@ -803,7 +803,7 @@ func TestAddToCollection_EmptyItemIDs(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("request sent unexpectedly")
+		t.Error("request sent unexpectedly")
 	}))
 	defer ts.Close()
 
@@ -897,7 +897,7 @@ func TestRemoveFromCollection_EmptyCollectionID(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("request sent unexpectedly")
+		t.Error("request sent unexpectedly")
 	}))
 	defer ts.Close()
 
@@ -918,7 +918,7 @@ func TestRemoveFromCollection_EmptyItemIDs(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("request sent unexpectedly")
+		t.Error("request sent unexpectedly")
 	}))
 	defer ts.Close()
 

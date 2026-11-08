@@ -36,7 +36,8 @@ func newGQLServer(t *testing.T, wantKey, dataField string, response any) *httpte
 		}
 		var req gqlRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode request: %v", err)
+			t.Errorf("decode request: %v", err)
+			return
 		}
 		data, _ := json.Marshal(response)
 		w.Header().Set("Content-Type", "application/json")

@@ -406,14 +406,16 @@ func TestSubmitListens(t *testing.T) {
 		body, _ := io.ReadAll(r.Body)
 		var payload map[string]any
 		if err := json.Unmarshal(body, &payload); err != nil {
-			t.Fatalf("unmarshal body: %v", err)
+			t.Errorf("unmarshal body: %v", err)
+			return
 		}
 		if payload["listen_type"] != "single" {
 			t.Errorf("listen_type = %v, want single", payload["listen_type"])
 		}
 		items, ok := payload["payload"].([]any)
 		if !ok || len(items) != 1 {
-			t.Fatalf("payload length = %d, want 1", len(items))
+			t.Errorf("payload length = %d, want 1", len(items))
+			return
 		}
 		w.WriteHeader(http.StatusOK)
 	})

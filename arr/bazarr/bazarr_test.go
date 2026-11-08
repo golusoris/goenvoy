@@ -137,7 +137,8 @@ func TestRunSeriesAction(t *testing.T) {
 		}
 		var body map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if body["action"] != "scan-disk" {
 			t.Errorf("action = %v, want scan-disk", body["action"])
@@ -336,7 +337,8 @@ func TestSetMovieProfile(t *testing.T) {
 			ProfileID []string `json:"profileid"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if len(body.RadarrID) != 1 || body.RadarrID[0] != 5 {
 			t.Errorf("radarrid = %#v, want [5]", body.RadarrID)
@@ -446,7 +448,8 @@ func TestDownloadMovieSubtitle(t *testing.T) {
 		}
 		var body map[string]any
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if body["radarrid"] != float64(5) {
 			t.Errorf("radarrid = %v, want 5", body["radarrid"])
@@ -697,7 +700,8 @@ func TestSystemAction(t *testing.T) {
 		}
 		var body map[string]string
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if body["action"] != "restart" {
 			t.Errorf("action = %q, want restart", body["action"])

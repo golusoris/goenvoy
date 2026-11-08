@@ -29,7 +29,8 @@ func newRPCServer(t *testing.T, wantMethod string, result any) *httptest.Server 
 		}
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode request: %v", err)
+			t.Errorf("decode request: %v", err)
+			return
 		}
 		if req.Method != wantMethod {
 			t.Errorf("RPC method = %q, want %q", req.Method, wantMethod)
@@ -50,7 +51,8 @@ func loginServer(t *testing.T) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]any{"id": req.ID, "result": true, "error": nil}
@@ -79,7 +81,8 @@ func TestLoginFailed(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]any{"id": req.ID, "result": false, "error": nil}
@@ -464,7 +467,8 @@ func TestAPIError(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]any{

@@ -50,10 +50,12 @@ func TestSearchShows(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/search/shows" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("q") != "girls" {
-			t.Fatalf("unexpected query: %s", r.URL.Query().Get("q"))
+			t.Errorf("unexpected query: %s", r.URL.Query().Get("q"))
+			return
 		}
 		respond(t, w, []tvmaze.SearchShowResult{
 			{Score: 0.9, Show: tvmaze.Show{ID: 139, Name: "Girls"}},
@@ -75,7 +77,8 @@ func TestSearchShowSingle(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/singlesearch/shows" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, tvmaze.Show{ID: 139, Name: "Girls"})
 	})
@@ -92,10 +95,12 @@ func TestLookupShowByTheTVDB(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/lookup/shows" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("thetvdb") != "264492" {
-			t.Fatalf("unexpected thetvdb: %s", r.URL.Query().Get("thetvdb"))
+			t.Errorf("unexpected thetvdb: %s", r.URL.Query().Get("thetvdb"))
+			return
 		}
 		respond(t, w, tvmaze.Show{ID: 1, Name: "Under the Dome"})
 	})
@@ -112,7 +117,8 @@ func TestLookupShowByIMDB(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("imdb") != "tt1553656" {
-			t.Fatalf("unexpected imdb: %s", r.URL.Query().Get("imdb"))
+			t.Errorf("unexpected imdb: %s", r.URL.Query().Get("imdb"))
+			return
 		}
 		respond(t, w, tvmaze.Show{ID: 1, Name: "Under the Dome"})
 	})
@@ -129,7 +135,8 @@ func TestLookupShowByTVRage(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("tvrage") != "25988" {
-			t.Fatalf("unexpected tvrage: %s", r.URL.Query().Get("tvrage"))
+			t.Errorf("unexpected tvrage: %s", r.URL.Query().Get("tvrage"))
+			return
 		}
 		respond(t, w, tvmaze.Show{ID: 1, Name: "Under the Dome"})
 	})
@@ -146,7 +153,8 @@ func TestSearchPeople(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/search/people" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.SearchPersonResult{
 			{Score: 0.8, Person: tvmaze.Person{ID: 1, Name: "Mike Vogel"}},
@@ -168,7 +176,8 @@ func TestGetShow(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, tvmaze.Show{
 			ID:     1,
@@ -193,7 +202,8 @@ func TestGetShowEpisodes(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/episodes" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.Episode{
 			{ID: 1, Name: "Pilot", Season: 1, Number: intPtr(1)},
@@ -216,10 +226,12 @@ func TestGetEpisodeByNumber(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/episodebynumber" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("season") != "1" || r.URL.Query().Get("number") != "1" {
-			t.Fatal("missing season/number params")
+			t.Error("missing season/number params")
+			return
 		}
 		respond(t, w, tvmaze.Episode{ID: 1, Name: "Pilot", Season: 1, Number: intPtr(1)})
 	})
@@ -236,10 +248,12 @@ func TestGetEpisodesByDate(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/episodesbydate" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("date") != "2013-06-24" {
-			t.Fatalf("unexpected date: %s", r.URL.Query().Get("date"))
+			t.Errorf("unexpected date: %s", r.URL.Query().Get("date"))
+			return
 		}
 		respond(t, w, []tvmaze.Episode{
 			{ID: 1, Name: "Pilot"},
@@ -258,7 +272,8 @@ func TestGetShowSeasons(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/seasons" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.Season{
 			{ID: 1, Number: 1, EpisodeOrder: intPtr(13)},
@@ -278,7 +293,8 @@ func TestGetSeasonEpisodes(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/seasons/1/episodes" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.Episode{
 			{ID: 1, Name: "Pilot"},
@@ -297,7 +313,8 @@ func TestGetShowCast(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/cast" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.CastMember{
 			{
@@ -325,7 +342,8 @@ func TestGetShowCrew(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/crew" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.CrewMember{
 			{Type: "Creator", Person: tvmaze.Person{ID: 15, Name: "Stephen King"}},
@@ -347,7 +365,8 @@ func TestGetShowAKAs(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/akas" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.AKA{
 			{Name: "Unter der Kuppel", Country: &tvmaze.Country{Name: "Germany", Code: "DE"}},
@@ -369,7 +388,8 @@ func TestGetShowImages(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/images" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.ShowImage{
 			{
@@ -401,10 +421,12 @@ func TestGetShowIndex(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("page") != "0" {
-			t.Fatalf("unexpected page: %s", r.URL.Query().Get("page"))
+			t.Errorf("unexpected page: %s", r.URL.Query().Get("page"))
+			return
 		}
 		respond(t, w, []tvmaze.Show{
 			{ID: 1, Name: "Under the Dome"},
@@ -423,7 +445,8 @@ func TestGetEpisode(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/episodes/1" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, tvmaze.Episode{ID: 1, Name: "Pilot", Season: 1, Number: intPtr(1)})
 	})
@@ -440,7 +463,8 @@ func TestGetPerson(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/people/1" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, tvmaze.Person{
 			ID:       1,
@@ -465,7 +489,8 @@ func TestGetPersonCastCredits(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/people/1/castcredits" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.CastCredit{
 			{
@@ -494,7 +519,8 @@ func TestGetPersonCrewCredits(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/people/15/crewcredits" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.CrewCredit{
 			{
@@ -521,13 +547,16 @@ func TestGetSchedule(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/schedule" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("country") != "US" {
-			t.Fatalf("unexpected country: %s", r.URL.Query().Get("country"))
+			t.Errorf("unexpected country: %s", r.URL.Query().Get("country"))
+			return
 		}
 		if r.URL.Query().Get("date") != "2024-01-01" {
-			t.Fatalf("unexpected date: %s", r.URL.Query().Get("date"))
+			t.Errorf("unexpected date: %s", r.URL.Query().Get("date"))
+			return
 		}
 		respond(t, w, []tvmaze.ScheduleItem{
 			{
@@ -552,10 +581,12 @@ func TestGetScheduleNoParams(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/schedule" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("country") != "" || r.URL.Query().Get("date") != "" {
-			t.Fatal("unexpected query params")
+			t.Error("unexpected query params")
+			return
 		}
 		respond(t, w, []tvmaze.ScheduleItem{})
 	})
@@ -572,7 +603,8 @@ func TestGetWebSchedule(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/schedule/web" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.ScheduleItem{
 			{
@@ -594,10 +626,12 @@ func TestGetShowUpdates(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/updates/shows" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("since") != "day" {
-			t.Fatalf("unexpected since: %s", r.URL.Query().Get("since"))
+			t.Errorf("unexpected since: %s", r.URL.Query().Get("since"))
+			return
 		}
 		respond(t, w, map[string]int64{"1": 1704067200, "2": 1704153600})
 	})

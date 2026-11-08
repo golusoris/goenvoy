@@ -138,7 +138,8 @@ func TestAddSeries(t *testing.T) {
 		}
 		var body sonarr.Series
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if body.Title != "New Show" {
 			t.Errorf("Title = %q, want %q", body.Title, "New Show")
@@ -273,7 +274,8 @@ func TestSendCommand(t *testing.T) {
 		}
 		var cmd arr.CommandRequest
 		if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if cmd.Name != "RefreshSeries" {
 			t.Errorf("Name = %q, want RefreshSeries", cmd.Name)
@@ -418,7 +420,8 @@ func TestCreateTag(t *testing.T) {
 		}
 		var tag arr.Tag
 		if err := json.NewDecoder(r.Body).Decode(&tag); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if tag.Label != "new-tag" {
 			t.Errorf("Label = %q, want %q", tag.Label, "new-tag")

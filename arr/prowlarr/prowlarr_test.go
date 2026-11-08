@@ -136,7 +136,8 @@ func TestAddIndexer(t *testing.T) {
 		}
 		var body prowlarr.Indexer
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if body.Name != "Jackett" {
 			t.Errorf("Name = %q, want %q", body.Name, "Jackett")
@@ -541,7 +542,8 @@ func TestSendCommand(t *testing.T) {
 		}
 		var cmd arr.CommandRequest
 		if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if cmd.Name != "ApplicationIndexerSync" {
 			t.Errorf("Name = %q, want ApplicationIndexerSync", cmd.Name)
@@ -693,7 +695,8 @@ func TestCreateTag(t *testing.T) {
 		}
 		var body arr.Tag
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if body.Label != "usenet" {
 			t.Errorf("Label = %q, want usenet", body.Label)
@@ -2093,7 +2096,8 @@ func TestUploadBackup(t *testing.T) {
 		}
 		f, fh, err := r.FormFile("file")
 		if err != nil {
-			t.Fatalf("FormFile: %v", err)
+			t.Errorf("FormFile: %v", err)
+			return
 		}
 		defer f.Close()
 		if fh.Filename != "backup.zip" {

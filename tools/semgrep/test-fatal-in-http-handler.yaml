@@ -1,0 +1,28 @@
+rules:
+  - id: test-fatal-in-http-handler
+    message: >-
+      Handler runs on the server goroutine; report with t.Errorf (or t.Error /
+      t.Fail) and return.
+    severity: ERROR
+    languages: [go]
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              func($W http.ResponseWriter, $R *http.Request) {
+                ...
+              }
+          - pattern-inside: |
+              func $F($W http.ResponseWriter, $R *http.Request) {
+                ...
+              }
+          - pattern-inside: |
+              func ($S $RT) $F($W http.ResponseWriter, $R *http.Request) {
+                ...
+              }
+      - pattern-either:
+          - pattern: $T.Fatal(...)
+          - pattern: $T.Fatalf(...)
+          - pattern: $T.FailNow()
+          - pattern: $T.Skip(...)
+          - pattern: $T.Skipf(...)
+          - pattern: $T.SkipNow()

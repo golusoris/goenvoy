@@ -371,7 +371,8 @@ func TestDoJSON(t *testing.T) {
 
 		var req reqBody
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode request: %v", err)
+			t.Errorf("decode request: %v", err)
+			return
 		}
 
 		if req.Value != "hello" {

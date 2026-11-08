@@ -58,10 +58,12 @@ func TestQuery(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			t.Fatalf("expected POST, got %s", r.Method)
+			t.Errorf("expected POST, got %s", r.Method)
+			return
 		}
 		if r.Header.Get("Content-Type") != "application/json" {
-			t.Fatalf("unexpected content-type: %s", r.Header.Get("Content-Type"))
+			t.Errorf("unexpected content-type: %s", r.Header.Get("Content-Type"))
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"Media": map[string]any{"id": float64(1), "title": map[string]any{"romaji": "Test"}},
@@ -90,7 +92,8 @@ func TestGetMedia(t *testing.T) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
 		if vars["id"] != float64(1) {
-			t.Fatalf("unexpected id: %v", vars["id"])
+			t.Errorf("unexpected id: %v", vars["id"])
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"Media": map[string]any{
@@ -125,10 +128,12 @@ func TestGetMediaByMalID(t *testing.T) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
 		if vars["idMal"] != float64(1) {
-			t.Fatalf("unexpected idMal: %v", vars["idMal"])
+			t.Errorf("unexpected idMal: %v", vars["idMal"])
+			return
 		}
 		if vars["type"] != "ANIME" {
-			t.Fatalf("unexpected type: %v", vars["type"])
+			t.Errorf("unexpected type: %v", vars["type"])
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"Media": map[string]any{
@@ -153,10 +158,12 @@ func TestSearchMedia(t *testing.T) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
 		if vars["search"] != "cowboy" {
-			t.Fatalf("unexpected search: %v", vars["search"])
+			t.Errorf("unexpected search: %v", vars["search"])
+			return
 		}
 		if vars["type"] != "ANIME" {
-			t.Fatalf("unexpected type: %v", vars["type"])
+			t.Errorf("unexpected type: %v", vars["type"])
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"Page": map[string]any{
@@ -196,7 +203,8 @@ func TestGetCharacter(t *testing.T) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
 		if vars["id"] != float64(1) {
-			t.Fatalf("unexpected id: %v", vars["id"])
+			t.Errorf("unexpected id: %v", vars["id"])
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"Character": map[string]any{
@@ -291,7 +299,8 @@ func TestGetUser(t *testing.T) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
 		if vars["id"] != float64(1) {
-			t.Fatalf("unexpected id: %v", vars["id"])
+			t.Errorf("unexpected id: %v", vars["id"])
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"User": map[string]any{
@@ -315,7 +324,8 @@ func TestGetUserByName(t *testing.T) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
 		if vars["name"] != "TestUser" {
-			t.Fatalf("unexpected name: %v", vars["name"])
+			t.Errorf("unexpected name: %v", vars["name"])
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"User": map[string]any{
@@ -381,7 +391,7 @@ func TestGraphQLError(t *testing.T) {
 			"data":   nil,
 			"errors": []map[string]any{{"message": "Not Found.", "status": float64(404)}},
 		}); err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 	})
 

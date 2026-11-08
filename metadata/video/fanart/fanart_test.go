@@ -50,13 +50,16 @@ func TestGetMovieImages(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/movies/120" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.Header.Get("Api-Key") != "test-api-key" {
-			t.Fatal("missing api-key header")
+			t.Error("missing api-key header")
+			return
 		}
 		if r.Header.Get("Client-Key") != "test-client-key" {
-			t.Fatal("missing client-key header")
+			t.Error("missing client-key header")
+			return
 		}
 		respond(t, w, fanart.MovieImages{
 			Name:   "The Fellowship of the Ring",
@@ -114,7 +117,8 @@ func TestGetShowImages(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/tv/75682" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, fanart.ShowImages{
 			Name:      "Bones",
@@ -155,7 +159,8 @@ func TestGetArtistImages(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/music/f4a31f0a-51dd-4fa7-986d-3095c40c5ed9" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, fanart.ArtistImages{
 			Name: "Evanescence",
@@ -204,7 +209,8 @@ func TestGetAlbumImages(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/music/albums/9ba659df-5814-32f6-b95f-02b738698e7c" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, fanart.AlbumImagesResponse{
 			Name: "Evanescence",
@@ -238,7 +244,8 @@ func TestGetLabelImages(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/music/labels/e832b688-546b-45e3-83e5-9f8db5dcde1d" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, fanart.LabelImages{
 			Name: "Profile Records",
@@ -268,7 +275,8 @@ func TestGetLatestMovies(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/movies/latest" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []fanart.LatestMovie{
 			{TMDbID: "17610", IMDbID: "tt1045778", Name: "Year One", NewImages: "1", TotalImages: "7"},
@@ -291,7 +299,8 @@ func TestGetLatestMoviesWithDate(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("date") != "1609459200" {
-			t.Fatalf("unexpected date param: %s", r.URL.Query().Get("date"))
+			t.Errorf("unexpected date param: %s", r.URL.Query().Get("date"))
+			return
 		}
 		respond(t, w, []fanart.LatestMovie{})
 	})
@@ -308,7 +317,8 @@ func TestGetLatestShows(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/tv/latest" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []fanart.LatestShow{
 			{ID: "79473", Name: "Witchblade", NewImages: "2", TotalImages: "7"},
@@ -330,7 +340,8 @@ func TestGetLatestArtists(t *testing.T) {
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/music/latest" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []fanart.LatestArtist{
 			{ID: "932cb13f-677c-4e63-beb1-fca45574d280", Name: "Zazie", NewImages: "1", TotalImages: "23"},

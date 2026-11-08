@@ -445,7 +445,8 @@ func TestAuthenticate(t *testing.T) {
 			t.Errorf("Content-Type = %q, want application/x-www-form-urlencoded", ct)
 		}
 		if err := r.ParseForm(); err != nil {
-			t.Fatal(err)
+			t.Error(err)
+			return
 		}
 		if r.PostForm.Get("grant_type") != "password" {
 			t.Errorf("grant_type = %q, want password", r.PostForm.Get("grant_type"))
@@ -493,7 +494,8 @@ func TestRefreshToken(t *testing.T) {
 
 	authSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
-			t.Fatal(err)
+			t.Error(err)
+			return
 		}
 		if r.PostForm.Get("grant_type") != "refresh_token" {
 			t.Errorf("grant_type = %q, want refresh_token", r.PostForm.Get("grant_type"))

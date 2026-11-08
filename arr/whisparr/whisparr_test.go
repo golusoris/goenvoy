@@ -4551,7 +4551,8 @@ func TestV2UploadBackup(t *testing.T) {
 		}
 		f, fh, err := r.FormFile("file")
 		if err != nil {
-			t.Fatalf("FormFile: %v", err)
+			t.Errorf("FormFile: %v", err)
+			return
 		}
 		defer f.Close()
 		if fh.Filename != "backup.zip" {
@@ -4633,7 +4634,8 @@ func TestV3UploadBackup(t *testing.T) {
 		}
 		f, fh, err := r.FormFile("file")
 		if err != nil {
-			t.Fatalf("FormFile: %v", err)
+			t.Errorf("FormFile: %v", err)
+			return
 		}
 		defer f.Close()
 		if fh.Filename != "backup.zip" {

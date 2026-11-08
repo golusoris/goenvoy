@@ -106,7 +106,8 @@ func TestBaseClient_Post(t *testing.T) {
 
 		var cmd arr.CommandRequest
 		if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
-			t.Fatalf("decode request body: %v", err)
+			t.Errorf("decode request body: %v", err)
+			return
 		}
 		if cmd.Name != "RefreshSeries" {
 			t.Errorf("command name = %q, want RefreshSeries", cmd.Name)
@@ -231,7 +232,8 @@ func TestBaseClient_Put(t *testing.T) {
 
 		var got item
 		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
-			t.Fatalf("decode request body: %v", err)
+			t.Errorf("decode request body: %v", err)
+			return
 		}
 		if got.Name != "updated" {
 			t.Errorf("Name = %q, want %q", got.Name, "updated")
@@ -279,7 +281,8 @@ func TestBaseClient_Patch(t *testing.T) {
 
 		var got patch
 		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
-			t.Fatalf("decode request body: %v", err)
+			t.Errorf("decode request body: %v", err)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -405,7 +408,8 @@ func TestBaseClient_Upload(t *testing.T) {
 
 		file, header, err := r.FormFile("file")
 		if err != nil {
-			t.Fatalf("FormFile failed: %v", err)
+			t.Errorf("FormFile failed: %v", err)
+			return
 		}
 		defer file.Close()
 
