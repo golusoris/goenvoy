@@ -138,6 +138,10 @@ semgrep-local: ## Repository Semgrep rules: planted fixtures, then the tree (reg
 	semgrep --test --metrics=off tools/semgrep/
 	semgrep scan --config tools/semgrep/ --exclude tools/semgrep --error --metrics=off --disable-version-check .
 
+.PHONY: release-config-check
+release-config-check: ## Release-please config matches its generator and carries the PR template headings: planted cases, then the repository
+	bash tools/release-config_test.sh
+
 doc: ## Local godoc server at :6060
 	@echo "Starting godoc server at http://localhost:6060"
 	@godoc -http=:6060
@@ -154,6 +158,7 @@ verify-all:
 	@$(MAKE) --no-print-directory badges-check
 	@$(MAKE) --no-print-directory workflow-ready-check
 	@$(MAKE) --no-print-directory semgrep-local
+	@$(MAKE) --no-print-directory release-config-check
 	@$(MAKE) --no-print-directory ci-all
 
 compile-context:

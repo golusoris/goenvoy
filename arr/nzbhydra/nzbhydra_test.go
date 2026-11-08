@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -128,32 +129,80 @@ func newJSONGetServer(t *testing.T, wantPath string, response any) *nzbhydra.Cli
 	return c
 }
 
-func TestSearch(t *testing.T) {
-	t.Parallel()
-
+// Why: shares server setup and validates path and query parameters across search tests.
+func newQueryValidatingServer(t *testing.T, wantPath string, wantQuery map[string]string) *nzbhydra.Client {
+	t.Helper()
+	const maxWantQuery = 16
+	if len(wantQuery) > maxWantQuery {
+		t.Fatalf("len(wantQuery) = %d, want <= %d", len(wantQuery), maxWantQuery)
+	}
+	wantQuery["apikey"] = "test-key"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != wantPath {
+			t.Errorf("path = %q, want %q", r.URL.Path, wantPath)
+		}
 		q := r.URL.Query()
-		if got := q.Get("t"); got != "search" {
-			t.Errorf("t = %q, want search", got)
-		}
-		if got := q.Get("q"); got != "ubuntu" {
-			t.Errorf("q = %q, want ubuntu", got)
-		}
-		if got := q.Get("cat"); got != "2000,5000" {
-			t.Errorf("cat = %q, want 2000,5000", got)
-		}
-		if r.URL.Path != "/api" {
-			t.Errorf("path = %q, want /api", r.URL.Path)
+		for k, want := range wantQuery {
+			if got := q.Get(k); got != want {
+				t.Errorf("%s = %q, want %q", k, got, want)
+			}
 		}
 		w.Header().Set("Content-Type", "application/xml")
-		_, _ = w.Write([]byte(newznabXML))
+		if _, err := w.Write([]byte(newznabXML)); err != nil {
+			t.Errorf("write response: %v", err)
+		}
 	}))
-	defer ts.Close()
-
+	t.Cleanup(ts.Close)
 	c, err := nzbhydra.New(ts.URL, "test-key")
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	return c
+}
+
+// Why: shares server setup and request validation across stats tests.
+func newStatsServer(t *testing.T, stats any) *nzbhydra.Client {
+	t.Helper()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %q, want POST", r.Method)
+		}
+		if r.URL.Path != "/api/stats" {
+			t.Errorf("path = %q, want /api/stats", r.URL.Path)
+		}
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Errorf("read body: %v", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+		var req map[string]any
+		if err := json.Unmarshal(body, &req); err != nil {
+			t.Errorf("invalid request body: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(stats); err != nil {
+			t.Errorf("encode stats: %v", err)
+		}
+	}))
+	t.Cleanup(ts.Close)
+	c, err := nzbhydra.New(ts.URL, "test-key")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	return c
+}
+
+// TestSearch tests searching for releases with query parameters and category filters.
+func TestSearch(t *testing.T) {
+	t.Parallel()
+
+	c := newQueryValidatingServer(t, "/api", map[string]string{
+		"t":   "search",
+		"q":   "ubuntu",
+		"cat": "2000,5000",
+	})
+
 	results, err := c.Search(context.Background(), "ubuntu", []int{2000, 5000})
 	if err != nil {
 		t.Fatal(err)
@@ -161,21 +210,19 @@ func TestSearch(t *testing.T) {
 	if len(results) != 2 {
 		t.Fatalf("len(results) = %d, want 2", len(results))
 	}
-	r := results[0]
-	if r.Title != "Test.NZB.Release-GRP" {
-		t.Errorf("Title = %q, want Test.NZB.Release-GRP", r.Title)
+	wantFirst := nzbhydra.SearchResult{
+		Title:       "Test.NZB.Release-GRP",
+		GUID:        "https://example.com/details/abc",
+		Link:        "https://example.com/getnzb/abc",
+		Comments:    "https://example.com/details/abc#comments",
+		PubDate:     "Mon, 01 Jan 2025 00:00:00 +0000",
+		Size:        1073741824,
+		Category:    "2000",
+		Description: "A test release",
+		Indexer:     "NZBgeek",
 	}
-	if r.Size != 1073741824 {
-		t.Errorf("Size = %d, want 1073741824", r.Size)
-	}
-	if r.Category != "2000" {
-		t.Errorf("Category = %q, want 2000", r.Category)
-	}
-	if r.Indexer != "NZBgeek" {
-		t.Errorf("Indexer = %q, want NZBgeek", r.Indexer)
-	}
-	if r.Description != "A test release" {
-		t.Errorf("Description = %q, want A test release", r.Description)
+	if results[0] != wantFirst {
+		t.Errorf("results[0] = %+v, want %+v", results[0], wantFirst)
 	}
 }
 
@@ -192,44 +239,21 @@ func TestSearchNilCategories(t *testing.T) {
 	}
 }
 
+// TestTVSearch tests searching for TV releases with query parameters and metadata IDs.
 func TestTVSearch(t *testing.T) {
 	t.Parallel()
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		q := r.URL.Query()
-		if got := q.Get("t"); got != "tvsearch" {
-			t.Errorf("t = %q, want tvsearch", got)
-		}
-		if got := q.Get("season"); got != "3" {
-			t.Errorf("season = %q, want 3", got)
-		}
-		if got := q.Get("ep"); got != "5" {
-			t.Errorf("ep = %q, want 5", got)
-		}
-		if got := q.Get("tvdbid"); got != "12345" {
-			t.Errorf("tvdbid = %q, want 12345", got)
-		}
-		if got := q.Get("imdbid"); got != "tt0903747" {
-			t.Errorf("imdbid = %q, want tt0903747", got)
-		}
-		if got := q.Get("tmdbid"); got != "1396" {
-			t.Errorf("tmdbid = %q, want 1396", got)
-		}
-		if got := q.Get("tvmazeid"); got != "169" {
-			t.Errorf("tvmazeid = %q, want 169", got)
-		}
-		if got := q.Get("rid"); got != "999" {
-			t.Errorf("rid = %q, want 999", got)
-		}
-		w.Header().Set("Content-Type", "application/xml")
-		_, _ = w.Write([]byte(newznabXML))
-	}))
-	defer ts.Close()
+	c := newQueryValidatingServer(t, "/api", map[string]string{
+		"t":        "tvsearch",
+		"season":   "3",
+		"ep":       "5",
+		"tvdbid":   "12345",
+		"imdbid":   "tt0903747",
+		"tmdbid":   "1396",
+		"tvmazeid": "169",
+		"rid":      "999",
+	})
 
-	c, err := nzbhydra.New(ts.URL, "test-key")
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
 	results, err := c.TVSearch(context.Background(), "breaking bad", &nzbhydra.TVSearchOptions{
 		Season:   3,
 		Episode:  5,
@@ -331,6 +355,7 @@ func TestBookSearch(t *testing.T) {
 	}
 }
 
+// TestGetCapabilities tests retrieving and parsing server capabilities from XML.
 func TestGetCapabilities(t *testing.T) {
 	t.Parallel()
 
@@ -339,38 +364,35 @@ func TestGetCapabilities(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if caps.Server.Title != "NZBHydra2" {
-		t.Errorf("Server.Title = %q, want NZBHydra2", caps.Server.Title)
+	want := &nzbhydra.Capabilities{
+		Server: nzbhydra.ServerInfo{Title: "NZBHydra2", Image: "https://example.com/logo.png"},
+		Limits: nzbhydra.Limits{Max: 100, Default: 50},
+		Searching: nzbhydra.Searching{
+			SearchAvailable:      true,
+			TVSearchAvailable:    true,
+			MovieSearchAvailable: true,
+			BookSearchAvailable:  false,
+		},
+		Categories: []nzbhydra.Category{
+			{
+				ID:   2000,
+				Name: "Movies",
+				SubCategories: []nzbhydra.SubCategory{
+					{ID: 2010, Name: "Movies/Foreign"},
+				},
+			},
+			{
+				ID:   5000,
+				Name: "TV",
+			},
+		},
 	}
-	if caps.Limits.Max != 100 {
-		t.Errorf("Limits.Max = %d, want 100", caps.Limits.Max)
-	}
-	if !caps.Searching.SearchAvailable {
-		t.Error("SearchAvailable = false, want true")
-	}
-	if !caps.Searching.TVSearchAvailable {
-		t.Error("TVSearchAvailable = false, want true")
-	}
-	if !caps.Searching.MovieSearchAvailable {
-		t.Error("MovieSearchAvailable = false, want true")
-	}
-	if caps.Searching.BookSearchAvailable {
-		t.Error("BookSearchAvailable = true, want false")
-	}
-	if len(caps.Categories) != 2 {
-		t.Fatalf("len(Categories) = %d, want 2", len(caps.Categories))
-	}
-	if caps.Categories[0].ID != 2000 {
-		t.Errorf("Categories[0].ID = %d, want 2000", caps.Categories[0].ID)
-	}
-	if len(caps.Categories[0].SubCategories) != 1 {
-		t.Fatalf("len(SubCategories) = %d, want 1", len(caps.Categories[0].SubCategories))
-	}
-	if caps.Categories[0].SubCategories[0].Name != "Movies/Foreign" {
-		t.Errorf("SubCategories[0].Name = %q, want Movies/Foreign", caps.Categories[0].SubCategories[0].Name)
+	if !reflect.DeepEqual(caps, want) {
+		t.Errorf("GetCapabilities() = %+v, want %+v", caps, want)
 	}
 }
 
+// TestGetStats tests retrieving server statistics from the JSON endpoint.
 func TestGetStats(t *testing.T) {
 	t.Parallel()
 
@@ -380,54 +402,26 @@ func TestGetStats(t *testing.T) {
 		"searchesPerDayOfWeek":  map[string]any{"Monday": 10, "Tuesday": 15},
 		"downloadsPerDayOfWeek": map[string]any{"Monday": 5},
 	}
+	c := newStatsServer(t, stats)
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("method = %q, want POST", r.Method)
-		}
-		if r.URL.Path != "/api/stats" {
-			t.Errorf("path = %q, want /api/stats", r.URL.Path)
-		}
-
-		// Verify request body is valid JSON.
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var req map[string]any
-		if err := json.Unmarshal(body, &req); err != nil {
-			t.Errorf("invalid request body: %v", err)
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(stats)
-	}))
-	defer ts.Close()
-
-	c, err := nzbhydra.New(ts.URL, "test-key")
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
 	result, err := c.GetStats(context.Background(), nzbhydra.StatsRequest{
 		IncludeAverageResponseTimes: true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(result.AvgResponseTimes) != 1 {
-		t.Fatalf("len(AvgResponseTimes) = %d, want 1", len(result.AvgResponseTimes))
+	want := &nzbhydra.StatsResponse{
+		AvgResponseTimes: []nzbhydra.AvgResponseTime{
+			{Indexer: "NZBgeek", Avg: 200},
+		},
+		IndexerAPIAccessStats: []nzbhydra.IndexerAPIStat{
+			{Indexer: "NZBgeek", Successful: 100, Unsuccessful: 5},
+		},
+		SearchesPerDayOfWeek:  map[string]int{"Monday": 10, "Tuesday": 15},
+		DownloadsPerDayOfWeek: map[string]int{"Monday": 5},
 	}
-	if result.AvgResponseTimes[0].Indexer != "NZBgeek" {
-		t.Errorf("Indexer = %q, want NZBgeek", result.AvgResponseTimes[0].Indexer)
-	}
-	if result.AvgResponseTimes[0].Avg != 200 {
-		t.Errorf("Avg = %d, want 200", result.AvgResponseTimes[0].Avg)
-	}
-	if len(result.IndexerAPIAccessStats) != 1 {
-		t.Fatalf("len(IndexerAPIAccessStats) = %d, want 1", len(result.IndexerAPIAccessStats))
-	}
-	if result.IndexerAPIAccessStats[0].Successful != 100 {
-		t.Errorf("Successful = %d, want 100", result.IndexerAPIAccessStats[0].Successful)
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("GetStats() = %+v, want %+v", result, want)
 	}
 }
 
