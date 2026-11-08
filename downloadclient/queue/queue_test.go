@@ -58,6 +58,32 @@ func rpcMethod(t *testing.T, r *http.Request) string {
 	return body.Method
 }
 
+// Why: asserts that the taken snapshot matches the expected snapshot.
+func assertSnapshot(t *testing.T, got, want queue.Snapshot) {
+	t.Helper()
+	if got != want {
+		t.Errorf("Take() = %+v, want %+v", got, want)
+	}
+}
+
+// Why: asserts that err is non-nil and starts with the expected prefix.
+func assertErrorPrefix(t *testing.T, err error, prefix string) {
+	t.Helper()
+	if err == nil {
+		t.Fatalf("expected error with prefix %q, got nil", prefix)
+	}
+	if !strings.HasPrefix(err.Error(), prefix) {
+		t.Errorf("err = %q, want prefix %q", err.Error(), prefix)
+	}
+}
+
+// Why: validates basic authentication credentials on an incoming request.
+func checkBasicAuth(r *http.Request, wantUser, wantPass string) bool {
+	u, p, ok := r.BasicAuth()
+	return ok && u == wantUser && p == wantPass
+}
+
+// TestTake_QBittorrent verifies taking a queue snapshot from qBittorrent and handling bad credentials.
 func TestTake_QBittorrent(t *testing.T) {
 	t.Parallel()
 
@@ -98,27 +124,14 @@ func TestTake_QBittorrent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Take error: %v", err)
 	}
-	if snap.Kind != queue.KindQBittorrent {
-		t.Errorf("Kind = %v, want %v", snap.Kind, queue.KindQBittorrent)
-	}
-	if snap.Active != 6 {
-		t.Errorf("Active = %d, want 6", snap.Active)
-	}
-	if snap.Queued != 1 {
-		t.Errorf("Queued = %d, want 1", snap.Queued)
-	}
-	if snap.DownloadRate != 1850 {
-		t.Errorf("DownloadRate = %d, want 1850", snap.DownloadRate)
-	}
-	if snap.UploadRate != 185 {
-		t.Errorf("UploadRate = %d, want 185", snap.UploadRate)
-	}
-	if snap.Version != "v5.0.1" {
-		t.Errorf("Version = %q, want %q", snap.Version, "v5.0.1")
-	}
-	if snap.Paused {
-		t.Errorf("Paused = true, want false")
-	}
+	assertSnapshot(t, snap, queue.Snapshot{
+		Kind:         queue.KindQBittorrent,
+		Active:       6,
+		Queued:       1,
+		DownloadRate: 1850,
+		UploadRate:   185,
+		Version:      "v5.0.1",
+	})
 
 	// Bad credentials test
 	_, errBad := queue.Take(context.Background(), queue.Target{
@@ -127,20 +140,16 @@ func TestTake_QBittorrent(t *testing.T) {
 		Username: "admin",
 		Secret:   "wrong",
 	})
-	if errBad == nil {
-		t.Fatalf("Take with bad credentials succeeded, want error")
-	}
-	if !strings.HasPrefix(errBad.Error(), "queue: qbittorrent: login:") {
-		t.Errorf("errBad = %q, want prefix 'queue: qbittorrent: login:'", errBad.Error())
-	}
+	assertErrorPrefix(t, errBad, "queue: qbittorrent: login:")
 }
 
+// TestTake_Transmission verifies taking a queue snapshot from Transmission.
 func TestTake_Transmission(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /transmission/rpc", func(w http.ResponseWriter, r *http.Request) {
-		if u, p, ok := r.BasicAuth(); !ok || u != "user" || p != "pass" {
+		if !checkBasicAuth(r, "user", "pass") {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -175,27 +184,14 @@ func TestTake_Transmission(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Take error: %v", err)
 	}
-	if snap.Kind != queue.KindTransmission {
-		t.Errorf("Kind = %v, want %v", snap.Kind, queue.KindTransmission)
-	}
-	if snap.Active != 1 {
-		t.Errorf("Active = %d, want 1", snap.Active)
-	}
-	if snap.Queued != 1 {
-		t.Errorf("Queued = %d, want 1", snap.Queued)
-	}
-	if snap.DownloadRate != 2000 {
-		t.Errorf("DownloadRate = %d, want 2000", snap.DownloadRate)
-	}
-	if snap.UploadRate != 250 {
-		t.Errorf("UploadRate = %d, want 250", snap.UploadRate)
-	}
-	if snap.Version != "4.0.5" {
-		t.Errorf("Version = %q, want %q", snap.Version, "4.0.5")
-	}
-	if snap.Paused {
-		t.Errorf("Paused = true, want false")
-	}
+	assertSnapshot(t, snap, queue.Snapshot{
+		Kind:         queue.KindTransmission,
+		Active:       1,
+		Queued:       1,
+		DownloadRate: 2000,
+		UploadRate:   250,
+		Version:      "4.0.5",
+	})
 }
 
 func TestTake_TransmissionURLVariants(t *testing.T) {
@@ -252,6 +248,7 @@ func TestTake_TransmissionURLVariants(t *testing.T) {
 	}
 }
 
+// TestTake_Deluge verifies taking a queue snapshot from Deluge.
 func TestTake_Deluge(t *testing.T) {
 	t.Parallel()
 
@@ -295,27 +292,14 @@ func TestTake_Deluge(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Take error: %v", err)
 	}
-	if snap.Kind != queue.KindDeluge {
-		t.Errorf("Kind = %v, want %v", snap.Kind, queue.KindDeluge)
-	}
-	if snap.Active != 1 {
-		t.Errorf("Active = %d, want 1", snap.Active)
-	}
-	if snap.Queued != 1 {
-		t.Errorf("Queued = %d, want 1", snap.Queued)
-	}
-	if snap.DownloadRate != 3000 {
-		t.Errorf("DownloadRate = %d, want 3000", snap.DownloadRate)
-	}
-	if snap.UploadRate != 350 {
-		t.Errorf("UploadRate = %d, want 350", snap.UploadRate)
-	}
-	if snap.Version != "2.1.1" {
-		t.Errorf("Version = %q, want %q", snap.Version, "2.1.1")
-	}
-	if snap.Paused {
-		t.Errorf("Paused = true, want false")
-	}
+	assertSnapshot(t, snap, queue.Snapshot{
+		Kind:         queue.KindDeluge,
+		Active:       1,
+		Queued:       1,
+		DownloadRate: 3000,
+		UploadRate:   350,
+		Version:      "2.1.1",
+	})
 }
 
 type rtTorrentFixture struct {
@@ -351,11 +335,30 @@ func rtListing(downloads ...rtTorrentFixture) string {
 	return "<params><param><value><array><data>" + strings.Join(rows, "") + "</data></array></value></param></params>"
 }
 
+// Why: maps an rTorrent XML-RPC method name to its mock XML response.
+func rtXMLResponse(method, listing string) (string, bool) {
+	switch method {
+	case "system.client_version":
+		return "<params><param>" + rtString("0.16.25") + "</param></params>", true
+	case "system.library_version":
+		return "<params><param>" + rtString("0.16.25-lib") + "</param></params>", true
+	case "system.hostname":
+		return "<params><param>" + rtString("seedbox") + "</param></params>", true
+	case "system.pid":
+		return "<params><param>" + rtNumber(1234) + "</param></params>", true
+	case "d.multicall2":
+		return listing, true
+	default:
+		return "", false
+	}
+}
+
+// TestTake_RTorrent verifies taking a queue snapshot from rTorrent.
 func TestTake_RTorrent(t *testing.T) {
 	t.Parallel()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if u, p, ok := r.BasicAuth(); !ok || u != "rtuser" || p != "rtpass" {
+		if !checkBasicAuth(r, "rtuser", "rtpass") {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -365,24 +368,13 @@ func TestTake_RTorrent(t *testing.T) {
 		if err := xml.NewDecoder(r.Body).Decode(&call); err != nil {
 			t.Errorf("decode call: %v", err)
 		}
-		var result string
-		switch call.Method {
-		case "system.client_version":
-			result = "<params><param>" + rtString("0.16.25") + "</param></params>"
-		case "system.library_version":
-			result = "<params><param>" + rtString("0.16.25-lib") + "</param></params>"
-		case "system.hostname":
-			result = "<params><param>" + rtString("seedbox") + "</param></params>"
-		case "system.pid":
-			result = "<params><param>" + rtNumber(1234) + "</param></params>"
-		case "d.multicall2":
-			result = rtListing(
-				rtTorrentFixture{downRate: 4000, upRate: 400, open: true, active: true, complete: false}, // active
-				rtTorrentFixture{downRate: 0, upRate: 100, open: true, active: true, complete: true},     // seeding (unmapped)
-				rtTorrentFixture{downRate: 0, upRate: 0, open: true, active: false, complete: false},     // stopped (unmapped)
-				rtTorrentFixture{downRate: 0, upRate: 0, open: false, active: false, complete: false},    // closed (unmapped)
-			)
-		default:
+		result, ok := rtXMLResponse(call.Method, rtListing(
+			rtTorrentFixture{downRate: 4000, upRate: 400, open: true, active: true, complete: false}, // active
+			rtTorrentFixture{downRate: 0, upRate: 100, open: true, active: true, complete: true},     // seeding (unmapped)
+			rtTorrentFixture{downRate: 0, upRate: 0, open: true, active: false, complete: false},     // stopped (unmapped)
+			rtTorrentFixture{downRate: 0, upRate: 0, open: false, active: false, complete: false},    // closed (unmapped)
+		))
+		if !ok {
 			t.Errorf("unexpected xmlrpc method %q", call.Method)
 		}
 		w.Header().Set("Content-Type", "text/xml")
@@ -399,29 +391,17 @@ func TestTake_RTorrent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Take error: %v", err)
 	}
-	if snap.Kind != queue.KindRTorrent {
-		t.Errorf("Kind = %v, want %v", snap.Kind, queue.KindRTorrent)
-	}
-	if snap.Active != 1 {
-		t.Errorf("Active = %d, want 1", snap.Active)
-	}
-	if snap.Queued != 0 {
-		t.Errorf("Queued = %d, want 0", snap.Queued)
-	}
-	if snap.DownloadRate != 4000 {
-		t.Errorf("DownloadRate = %d, want 4000", snap.DownloadRate)
-	}
-	if snap.UploadRate != 500 {
-		t.Errorf("UploadRate = %d, want 500", snap.UploadRate)
-	}
-	if snap.Version != "0.16.25" {
-		t.Errorf("Version = %q, want %q", snap.Version, "0.16.25")
-	}
-	if snap.Paused {
-		t.Errorf("Paused = true, want false")
-	}
+	assertSnapshot(t, snap, queue.Snapshot{
+		Kind:         queue.KindRTorrent,
+		Active:       1,
+		Queued:       0,
+		DownloadRate: 4000,
+		UploadRate:   500,
+		Version:      "0.16.25",
+	})
 }
 
+// TestTake_SABnzbd verifies taking a queue snapshot from SABnzbd.
 func TestTake_SABnzbd(t *testing.T) {
 	t.Parallel()
 
@@ -460,35 +440,24 @@ func TestTake_SABnzbd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Take error: %v", err)
 	}
-	if snap.Kind != queue.KindSABnzbd {
-		t.Errorf("Kind = %v, want %v", snap.Kind, queue.KindSABnzbd)
-	}
-	if snap.Active != 1 {
-		t.Errorf("Active = %d, want 1", snap.Active)
-	}
-	if snap.Queued != 2 {
-		t.Errorf("Queued = %d, want 2", snap.Queued)
-	}
-	if snap.DownloadRate != 2_621_440 {
-		t.Errorf("DownloadRate = %d, want 2621440", snap.DownloadRate)
-	}
-	if snap.UploadRate != 0 {
-		t.Errorf("UploadRate = %d, want 0", snap.UploadRate)
-	}
-	if snap.Version != "4.3.2" {
-		t.Errorf("Version = %q, want %q", snap.Version, "4.3.2")
-	}
-	if !snap.Paused {
-		t.Errorf("Paused = false, want true")
-	}
+	assertSnapshot(t, snap, queue.Snapshot{
+		Kind:         queue.KindSABnzbd,
+		Active:       1,
+		Queued:       2,
+		DownloadRate: 2_621_440,
+		UploadRate:   0,
+		Version:      "4.3.2",
+		Paused:       true,
+	})
 }
 
+// TestTake_NZBGet verifies taking a queue snapshot from NZBGet.
 func TestTake_NZBGet(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /jsonrpc", func(w http.ResponseWriter, r *http.Request) {
-		if u, p, ok := r.BasicAuth(); !ok || u != "nzbuser" || p != "nzbpass" {
+		if !checkBasicAuth(r, "nzbuser", "nzbpass") {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -522,27 +491,15 @@ func TestTake_NZBGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Take error: %v", err)
 	}
-	if snap.Kind != queue.KindNZBGet {
-		t.Errorf("Kind = %v, want %v", snap.Kind, queue.KindNZBGet)
-	}
-	if snap.Active != 2 {
-		t.Errorf("Active = %d, want 2", snap.Active)
-	}
-	if snap.Queued != 1 {
-		t.Errorf("Queued = %d, want 1", snap.Queued)
-	}
-	if snap.DownloadRate != 8192 {
-		t.Errorf("DownloadRate = %d, want 8192", snap.DownloadRate)
-	}
-	if snap.UploadRate != 0 {
-		t.Errorf("UploadRate = %d, want 0", snap.UploadRate)
-	}
-	if snap.Version != "24.3" {
-		t.Errorf("Version = %q, want %q", snap.Version, "24.3")
-	}
-	if !snap.Paused {
-		t.Errorf("Paused = false, want true")
-	}
+	assertSnapshot(t, snap, queue.Snapshot{
+		Kind:         queue.KindNZBGet,
+		Active:       2,
+		Queued:       1,
+		DownloadRate: 8192,
+		UploadRate:   0,
+		Version:      "24.3",
+		Paused:       true,
+	})
 }
 
 func TestTake_Unreachable(t *testing.T) {
@@ -598,198 +555,274 @@ func TestTake_UnknownKind(t *testing.T) {
 	}
 }
 
+// Why: writes an XML-RPC method response and reports write errors.
+func writeXMLResponse(t *testing.T, w io.Writer, result string) {
+	t.Helper()
+	if _, err := io.WriteString(w, xml.Header+"<methodResponse>"+result+"</methodResponse>"); err != nil {
+		t.Errorf("write XML response: %v", err)
+	}
+}
+
+// Why: asserts that action contains none of the blocked write operations.
+func checkNoWrite(t *testing.T, service, action string, blocked []string) bool {
+	t.Helper()
+	lowerAction := strings.ToLower(action)
+	for _, b := range blocked {
+		if strings.Contains(lowerAction, strings.ToLower(b)) {
+			t.Errorf("%s write violation: executed write operation %q", service, action)
+			return false
+		}
+	}
+	return true
+}
+
+// Why: verifies that Take makes no write requests to qBittorrent.
+func testNeverWritesQBittorrent(t *testing.T) {
+	t.Helper()
+	var listed atomic.Bool
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if !checkNoWrite(t, "qbittorrent", r.URL.Path, []string{"/pause", "/resume", "/delete", "/add"}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		switch r.URL.Path {
+		case "/api/v2/app/version":
+			if _, err := io.WriteString(w, "5.0.0"); err != nil {
+				t.Errorf("write version: %v", err)
+			}
+		case "/api/v2/torrents/info":
+			listed.Store(true)
+			writeJSON(t, w, []map[string]any{})
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindQBittorrent, BaseURL: srv.URL})
+	if err != nil {
+		t.Fatalf("Take error: %v", err)
+	}
+	if !listed.Load() {
+		t.Errorf("qbittorrent: Take sent no /api/v2/torrents/info request")
+	}
+}
+
+// Why: verifies that Take makes no write requests to Transmission.
+func testNeverWritesTransmission(t *testing.T) {
+	t.Helper()
+	var listed atomic.Bool
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /transmission/rpc", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Transmission-Session-Id") == "" {
+			w.Header().Set("X-Transmission-Session-Id", "sess")
+			w.WriteHeader(http.StatusConflict)
+			return
+		}
+		method := rpcMethod(t, r)
+		if !checkNoWrite(t, "transmission", method, []string{"torrent-start", "torrent-stop", "torrent-remove", "torrent-add"}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		switch method {
+		case "session-get":
+			writeJSON(t, w, map[string]any{"result": "success", "arguments": map[string]any{"version": "4.0.0"}})
+		case "torrent-get":
+			listed.Store(true)
+			writeJSON(t, w, map[string]any{"result": "success", "arguments": map[string]any{"torrents": []map[string]any{}}})
+		default:
+			writeJSON(t, w, map[string]any{"result": "unknown method"})
+		}
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindTransmission, BaseURL: srv.URL})
+	if err != nil {
+		t.Fatalf("Take error: %v", err)
+	}
+	if !listed.Load() {
+		t.Errorf("transmission: Take sent no torrent-get request")
+	}
+}
+
+// Why: verifies that Take makes no write requests to Deluge.
+func testNeverWritesDeluge(t *testing.T) {
+	t.Helper()
+	var listed atomic.Bool
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /json", func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Method string `json:"method"`
+			ID     int    `json:"id"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Errorf("decode deluge body: %v", err)
+		}
+		if !checkNoWrite(t, "deluge", body.Method, []string{
+			"core.pause", "core.resume", "core.remove", "core.add",
+		}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		switch body.Method {
+		case "auth.login":
+			writeJSON(t, w, map[string]any{"result": true, "error": nil, "id": body.ID})
+		case "daemon.get_version", "daemon.info":
+			writeJSON(t, w, map[string]any{"result": "2.1.0", "error": nil, "id": body.ID})
+		case "core.get_torrents_status":
+			listed.Store(true)
+			writeJSON(t, w, map[string]any{"result": map[string]any{}, "error": nil, "id": body.ID})
+		default:
+			writeJSON(t, w, map[string]any{"result": nil, "error": map[string]any{"code": 1, "message": "unknown"}, "id": body.ID})
+		}
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindDeluge, BaseURL: srv.URL, Secret: "p"})
+	if err != nil {
+		t.Fatalf("Take error: %v", err)
+	}
+	if !listed.Load() {
+		t.Errorf("deluge: Take sent no core.get_torrents_status request")
+	}
+}
+
+// Why: verifies that Take makes no write requests to rTorrent.
+func testNeverWritesRTorrent(t *testing.T) {
+	t.Helper()
+	var listed atomic.Bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var call struct {
+			Method string `xml:"methodName"`
+		}
+		if err := xml.NewDecoder(r.Body).Decode(&call); err != nil {
+			t.Errorf("decode call: %v", err)
+		}
+		if !checkNoWrite(t, "rtorrent", call.Method, []string{"d.stop", "d.start", "d.erase", "d.load"}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		if call.Method == "d.multicall2" {
+			listed.Store(true)
+		}
+		result, ok := rtXMLResponse(call.Method, rtListing())
+		if !ok {
+			t.Errorf("unexpected xmlrpc call %q", call.Method)
+		}
+		w.Header().Set("Content-Type", "text/xml")
+		writeXMLResponse(t, w, result)
+	}))
+	t.Cleanup(srv.Close)
+
+	_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindRTorrent, BaseURL: srv.URL})
+	if err != nil {
+		t.Fatalf("Take error: %v", err)
+	}
+	if !listed.Load() {
+		t.Errorf("rtorrent: Take sent no d.multicall2 request")
+	}
+}
+
+// Why: verifies that Take makes no write requests to SABnzbd.
+func testNeverWritesSABnzbd(t *testing.T) {
+	t.Helper()
+	var listed atomic.Bool
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		mode := q.Get("mode")
+		name := q.Get("name")
+		if !checkNoWrite(t, "sabnzbd", "mode="+mode, []string{"mode=pause", "mode=resume"}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		if !checkNoWrite(t, "sabnzbd", "name="+name, []string{"name=delete", "name=addurl", "name=addfile"}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		switch mode {
+		case "version":
+			writeJSON(t, w, map[string]any{"version": "4.3.0"})
+		case "queue":
+			listed.Store(true)
+			writeJSON(t, w, map[string]any{"queue": map[string]any{"paused": false, "speed": "0", "slots": []map[string]any{}}})
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindSABnzbd, BaseURL: srv.URL, Secret: "key"})
+	if err != nil {
+		t.Fatalf("Take error: %v", err)
+	}
+	if !listed.Load() {
+		t.Errorf("sabnzbd: Take sent no mode=queue request")
+	}
+}
+
+// Why: verifies that Take makes no write requests to NZBGet.
+func testNeverWritesNZBGet(t *testing.T) {
+	t.Helper()
+	var listed atomic.Bool
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /jsonrpc", func(w http.ResponseWriter, r *http.Request) {
+		method := rpcMethod(t, r)
+		if !checkNoWrite(t, "nzbget", method, []string{"pausedownload", "resumedownload", "editqueue", "append"}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		switch method {
+		case "version":
+			writeJSON(t, w, map[string]any{"result": "24.0"})
+		case "status":
+			writeJSON(t, w, map[string]any{"result": map[string]any{"DownloadPaused": false, "DownloadRate": 0}})
+		case "listgroups":
+			listed.Store(true)
+			writeJSON(t, w, map[string]any{"result": []map[string]any{}})
+		default:
+			writeJSON(t, w, map[string]any{"result": "unknown"})
+		}
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindNZBGet, BaseURL: srv.URL})
+	if err != nil {
+		t.Fatalf("Take error: %v", err)
+	}
+	if !listed.Load() {
+		t.Errorf("nzbget: Take sent no listgroups request")
+	}
+}
+
+// TestNeverWrites verifies that Take makes no write requests across all supported download clients.
 func TestNeverWrites(t *testing.T) {
 	t.Parallel()
 
-	checkNoWrite := func(t *testing.T, service, action string, blocked []string) {
-		t.Helper()
-		for _, b := range blocked {
-			if strings.Contains(strings.ToLower(action), strings.ToLower(b)) {
-				t.Fatalf("%s write violation: executed write operation %q", service, action)
-			}
-		}
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{name: "qbittorrent", fn: testNeverWritesQBittorrent},
+		{name: "transmission", fn: testNeverWritesTransmission},
+		{name: "deluge", fn: testNeverWritesDeluge},
+		{name: "rtorrent", fn: testNeverWritesRTorrent},
+		{name: "sabnzbd", fn: testNeverWritesSABnzbd},
+		{name: "nzbget", fn: testNeverWritesNZBGet},
 	}
 
-	// 1. qBittorrent: fails on /pause,/resume,/delete,/add
-	t.Run("qbittorrent", func(t *testing.T) {
-		t.Parallel()
-		mux := http.NewServeMux()
-		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			checkNoWrite(t, "qbittorrent", r.URL.Path, []string{"/pause", "/resume", "/delete", "/add"})
-			switch r.URL.Path {
-			case "/api/v2/app/version":
-				_, _ = io.WriteString(w, "5.0.0")
-			case "/api/v2/torrents/info":
-				writeJSON(t, w, []map[string]any{})
-			default:
-				http.NotFound(w, r)
-			}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tc.fn(t)
 		})
-		srv := httptest.NewServer(mux)
-		t.Cleanup(srv.Close)
-
-		_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindQBittorrent, BaseURL: srv.URL})
-		if err != nil {
-			t.Fatalf("Take error: %v", err)
-		}
-	})
-
-	// 2. Transmission: fails on torrent-start/stop/remove/add
-	t.Run("transmission", func(t *testing.T) {
-		t.Parallel()
-		mux := http.NewServeMux()
-		mux.HandleFunc("POST /transmission/rpc", func(w http.ResponseWriter, r *http.Request) {
-			if r.Header.Get("X-Transmission-Session-Id") == "" {
-				w.Header().Set("X-Transmission-Session-Id", "sess")
-				w.WriteHeader(http.StatusConflict)
-				return
-			}
-			method := rpcMethod(t, r)
-			checkNoWrite(t, "transmission", method, []string{"torrent-start", "torrent-stop", "torrent-remove", "torrent-add"})
-			switch method {
-			case "session-get":
-				writeJSON(t, w, map[string]any{"result": "success", "arguments": map[string]any{"version": "4.0.0"}})
-			case "torrent-get":
-				writeJSON(t, w, map[string]any{"result": "success", "arguments": map[string]any{"torrents": []map[string]any{}}})
-			default:
-				writeJSON(t, w, map[string]any{"result": "unknown method"})
-			}
-		})
-		srv := httptest.NewServer(mux)
-		t.Cleanup(srv.Close)
-
-		_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindTransmission, BaseURL: srv.URL})
-		if err != nil {
-			t.Fatalf("Take error: %v", err)
-		}
-	})
-
-	// 3. Deluge: fails on core.pause/resume/remove/add
-	t.Run("deluge", func(t *testing.T) {
-		t.Parallel()
-		mux := http.NewServeMux()
-		mux.HandleFunc("POST /json", func(w http.ResponseWriter, r *http.Request) {
-			var body struct {
-				Method string `json:"method"`
-				ID     int    `json:"id"`
-			}
-			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-				t.Errorf("decode deluge body: %v", err)
-			}
-			checkNoWrite(t, "deluge", body.Method, []string{
-				"core.pause", "core.resume", "core.remove", "core.add",
-			})
-			switch body.Method {
-			case "auth.login":
-				writeJSON(t, w, map[string]any{"result": true, "error": nil, "id": body.ID})
-			case "daemon.get_version", "daemon.info":
-				writeJSON(t, w, map[string]any{"result": "2.1.0", "error": nil, "id": body.ID})
-			case "core.get_torrents_status":
-				writeJSON(t, w, map[string]any{"result": map[string]any{}, "error": nil, "id": body.ID})
-			default:
-				writeJSON(t, w, map[string]any{"result": nil, "error": map[string]any{"code": 1, "message": "unknown"}, "id": body.ID})
-			}
-		})
-		srv := httptest.NewServer(mux)
-		t.Cleanup(srv.Close)
-
-		_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindDeluge, BaseURL: srv.URL, Secret: "p"})
-		if err != nil {
-			t.Fatalf("Take error: %v", err)
-		}
-	})
-
-	// 4. rTorrent: fails on d.stop/start/erase/load
-	t.Run("rtorrent", func(t *testing.T) {
-		t.Parallel()
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var call struct {
-				Method string `xml:"methodName"`
-			}
-			if err := xml.NewDecoder(r.Body).Decode(&call); err != nil {
-				t.Errorf("decode call: %v", err)
-			}
-			checkNoWrite(t, "rtorrent", call.Method, []string{"d.stop", "d.start", "d.erase", "d.load"})
-			var result string
-			switch call.Method {
-			case "system.client_version":
-				result = "<params><param>" + rtString("0.16.25") + "</param></params>"
-			case "system.library_version":
-				result = "<params><param>" + rtString("0.16.25-lib") + "</param></params>"
-			case "system.hostname":
-				result = "<params><param>" + rtString("host") + "</param></params>"
-			case "system.pid":
-				result = "<params><param>" + rtNumber(100) + "</param></params>"
-			case "d.multicall2":
-				result = rtListing()
-			default:
-				t.Errorf("unexpected xmlrpc call %q", call.Method)
-			}
-			w.Header().Set("Content-Type", "text/xml")
-			_, _ = io.WriteString(w, xml.Header+"<methodResponse>"+result+"</methodResponse>")
-		}))
-		t.Cleanup(srv.Close)
-
-		_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindRTorrent, BaseURL: srv.URL})
-		if err != nil {
-			t.Fatalf("Take error: %v", err)
-		}
-	})
-
-	// 5. SABnzbd: fails on mode=pause/resume/queue&name=delete/addurl
-	t.Run("sabnzbd", func(t *testing.T) {
-		t.Parallel()
-		mux := http.NewServeMux()
-		mux.HandleFunc("GET /api", func(w http.ResponseWriter, r *http.Request) {
-			q := r.URL.Query()
-			mode := q.Get("mode")
-			name := q.Get("name")
-			checkNoWrite(t, "sabnzbd", "mode="+mode, []string{"mode=pause", "mode=resume"})
-			checkNoWrite(t, "sabnzbd", "name="+name, []string{"name=delete", "name=addurl", "name=addfile"})
-			switch mode {
-			case "version":
-				writeJSON(t, w, map[string]any{"version": "4.3.0"})
-			case "queue":
-				writeJSON(t, w, map[string]any{"queue": map[string]any{"paused": false, "speed": "0", "slots": []map[string]any{}}})
-			default:
-				http.NotFound(w, r)
-			}
-		})
-		srv := httptest.NewServer(mux)
-		t.Cleanup(srv.Close)
-
-		_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindSABnzbd, BaseURL: srv.URL, Secret: "key"})
-		if err != nil {
-			t.Fatalf("Take error: %v", err)
-		}
-	})
-
-	// 6. NZBGet: fails on pausedownload/resumedownload/editqueue/append
-	t.Run("nzbget", func(t *testing.T) {
-		t.Parallel()
-		mux := http.NewServeMux()
-		mux.HandleFunc("POST /jsonrpc", func(w http.ResponseWriter, r *http.Request) {
-			method := rpcMethod(t, r)
-			checkNoWrite(t, "nzbget", method, []string{"pausedownload", "resumedownload", "editqueue", "append"})
-			switch method {
-			case "version":
-				writeJSON(t, w, map[string]any{"result": "24.0"})
-			case "status":
-				writeJSON(t, w, map[string]any{"result": map[string]any{"DownloadPaused": false, "DownloadRate": 0}})
-			case "listgroups":
-				writeJSON(t, w, map[string]any{"result": []map[string]any{}})
-			default:
-				writeJSON(t, w, map[string]any{"result": "unknown"})
-			}
-		})
-		srv := httptest.NewServer(mux)
-		t.Cleanup(srv.Close)
-
-		_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindNZBGet, BaseURL: srv.URL})
-		if err != nil {
-			t.Fatalf("Take error: %v", err)
-		}
-	})
+	}
 }
 
 func TestParseSABSpeed(t *testing.T) {
