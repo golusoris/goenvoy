@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -17,7 +18,7 @@ import (
 	"github.com/golusoris/goenvoy/arr/cleanuparr"
 )
 
-// newMockServer starts an httptest.Server registered for cleanup on test completion.
+// Why: starts an httptest.Server registered for cleanup on test completion.
 func newMockServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	t.Helper()
 	server := httptest.NewServer(handler)
@@ -25,7 +26,7 @@ func newMockServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	return server
 }
 
-// jsonOK encodes data as JSON into w with an HTTP 200 status code.
+// Why: encodes fixture data as JSON into w with an HTTP 200 status code.
 func jsonOK(t *testing.T, w http.ResponseWriter, data any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")
@@ -36,10 +37,30 @@ func jsonOK(t *testing.T, w http.ResponseWriter, data any) {
 	}
 }
 
-// readOnlyHandler serves a minimal valid body for every read endpoint and
-// fails the test on any non-GET request or unknown path.
-func readOnlyHandler(t *testing.T) http.HandlerFunc {
+// Why: records hit counts per request path under concurrency.
+type pathHits struct {
+	mu     sync.Mutex
+	counts map[string]int
+}
+
+// Why: increments the hit count for path.
+func (p *pathHits) add(path string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.counts[path]++
+}
+
+// Why: returns the hit count recorded for path.
+func (p *pathHits) count(path string) int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.counts[path]
+}
+
+// Why: serves valid bodies for read endpoints and records hit counts for verified GET requests.
+func readOnlyHandler(t *testing.T) (http.HandlerFunc, *pathHits) {
 	t.Helper()
+	hits := &pathHits{counts: make(map[string]int)}
 	bodies := map[string]string{
 		"/api/status":                `{"application":{"version":"2.10.11","startTime":"2026-09-20T08:00:00Z"},"mediaManagers":{}}`,
 		"/api/strikes/recent":        `[]`,
@@ -60,16 +81,17 @@ func readOnlyHandler(t *testing.T) http.HandlerFunc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+		hits.add(r.URL.Path)
 		jsonOK(t, w, json.RawMessage(body))
-	}
+	}, hits
 }
 
-// TestClientNeverWrites verifies the read-only contract: every exported client
-// method MUST execute only HTTP GET requests. Any non-GET method causes a test failure.
+// TestClientNeverWrites verifies that every exported client method executes only HTTP GET requests.
 func TestClientNeverWrites(t *testing.T) {
 	t.Parallel()
 
-	server := newMockServer(t, readOnlyHandler(t))
+	handler, hits := readOnlyHandler(t)
+	server := newMockServer(t, handler)
 
 	client, err := cleanuparr.New(server.URL, "test-api-key")
 	if err != nil {
@@ -78,15 +100,16 @@ func TestClientNeverWrites(t *testing.T) {
 
 	calls := []struct {
 		name string
+		path string
 		call func(context.Context) error
 	}{
-		{"GetStatus", func(ctx context.Context) error { _, err := client.GetStatus(ctx); return err }},
-		{"GetRecentStrikes", func(ctx context.Context) error { _, err := client.GetRecentStrikes(ctx, 10); return err }},
-		{"GetStrikes", func(ctx context.Context) error { _, err := client.GetStrikes(ctx, 1, 50); return err }},
-		{"SummarizeStrikes", func(ctx context.Context) error { _, err := client.SummarizeStrikes(ctx); return err }},
-		{"GetSeekerConfig", func(ctx context.Context) error { _, err := client.GetSeekerConfig(ctx); return err }},
-		{"GetGeneralConfig", func(ctx context.Context) error { _, err := client.GetGeneralConfig(ctx); return err }},
-		{"GetArrConfig", func(ctx context.Context) error {
+		{"GetStatus", "/api/status", func(ctx context.Context) error { _, err := client.GetStatus(ctx); return err }},
+		{"GetRecentStrikes", "/api/strikes/recent", func(ctx context.Context) error { _, err := client.GetRecentStrikes(ctx, 10); return err }},
+		{"GetStrikes", "/api/strikes", func(ctx context.Context) error { _, err := client.GetStrikes(ctx, 1, 50); return err }},
+		{"SummarizeStrikes", "/api/strikes", func(ctx context.Context) error { _, err := client.SummarizeStrikes(ctx); return err }},
+		{"GetSeekerConfig", "/api/configuration/seeker", func(ctx context.Context) error { _, err := client.GetSeekerConfig(ctx); return err }},
+		{"GetGeneralConfig", "/api/configuration/general", func(ctx context.Context) error { _, err := client.GetGeneralConfig(ctx); return err }},
+		{"GetArrConfig", "/api/configuration/sonarr", func(ctx context.Context) error {
 			_, err := client.GetArrConfig(ctx, cleanuparr.ArrKindSonarr)
 			return err
 		}},
@@ -94,8 +117,12 @@ func TestClientNeverWrites(t *testing.T) {
 
 	ctx := context.Background()
 	for _, c := range calls {
+		before := hits.count(c.path)
 		if err := c.call(ctx); err != nil {
 			t.Errorf("%s failed: %v", c.name, err)
+		}
+		if hits.count(c.path) <= before {
+			t.Errorf("%s sent no GET to %s", c.name, c.path)
 		}
 	}
 }
@@ -156,7 +183,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-// statusHandler serves an authenticated /api/status fixture.
+// Why: serves an authenticated /api/status fixture.
 func statusHandler(t *testing.T) http.HandlerFunc {
 	t.Helper()
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -238,7 +265,7 @@ func TestGetStatus_InvalidTime(t *testing.T) {
 	}
 }
 
-// startTimeCase is one StartTimeParsed input and its expected outcome.
+// Why: holds one StartTimeParsed input and its expected outcome.
 type startTimeCase struct {
 	name      string
 	startTime string
@@ -246,7 +273,7 @@ type startTimeCase struct {
 	checkUTC  bool
 }
 
-// assertStartTimeParsed checks StartTimeParsed against one startTimeCase.
+// Why: asserts StartTimeParsed matches the expected outcome for a test case.
 func assertStartTimeParsed(t *testing.T, tc startTimeCase) {
 	t.Helper()
 	parsed, err := cleanuparr.ApplicationStatus{StartTime: tc.startTime}.StartTimeParsed()
@@ -287,7 +314,7 @@ func TestApplicationStatus_StartTimeParsed(t *testing.T) {
 	}
 }
 
-// recentStrikesHandler serves two recent strikes and checks the count query.
+// Why: serves two recent strikes and checks the count query.
 func recentStrikesHandler(t *testing.T) http.HandlerFunc {
 	t.Helper()
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -414,7 +441,7 @@ func TestGetRecentStrikes_ClampBoundaries(t *testing.T) {
 	}
 }
 
-// strikesPageHandler serves one strikes page and checks the paging query.
+// Why: serves one strikes page and checks the paging query.
 func strikesPageHandler(t *testing.T) http.HandlerFunc {
 	t.Helper()
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -570,7 +597,7 @@ func TestGetStrikes_Clamping(t *testing.T) {
 	}
 }
 
-// summaryPagesHandler serves a two-page strike listing for SummarizeStrikes.
+// Why: serves a two-page strike listing for SummarizeStrikes.
 func summaryPagesHandler(t *testing.T) http.HandlerFunc {
 	t.Helper()
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -741,7 +768,7 @@ func TestSummarizeStrikes_EmptyItems(t *testing.T) {
 	}
 }
 
-// assertAPIError500 checks err is a 500 *cleanuparr.APIError whose message starts with prefix.
+// Why: asserts err is an HTTP 500 APIError with the expected prefix.
 func assertAPIError500(t *testing.T, err error, prefix string) {
 	t.Helper()
 	var apiErr *cleanuparr.APIError
@@ -791,7 +818,9 @@ func TestNegative_MalformedJSON(t *testing.T) {
 
 	server := newMockServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, `{"invalid-json-content:`)
+		if _, err := io.WriteString(w, `{"invalid-json-content:`); err != nil {
+			t.Errorf("write mock response: %v", err)
+		}
 	})
 
 	client, err := cleanuparr.New(server.URL, "key")
@@ -859,7 +888,7 @@ func TestNegative_NoApiKeyLeakInErrors(t *testing.T) {
 	}
 }
 
-// configHandler serves body at path to GET requests that carry the clean-secret API key.
+// Why: serves body at path to GET requests carrying the clean-secret API key.
 func configHandler(t *testing.T, path, body string) http.HandlerFunc {
 	t.Helper()
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -1136,7 +1165,7 @@ func TestGetArrConfig_Success(t *testing.T) {
 				t.Errorf("arr config mismatch:\n got %+v\nwant %+v", cfg, want)
 			}
 
-			// Security: apiKey must not decode into struct anywhere
+			// Why: apiKey must not decode into struct anywhere.
 			marshaled, err := json.Marshal(cfg)
 			if err != nil {
 				t.Fatalf("json.Marshal failed: %v", err)
