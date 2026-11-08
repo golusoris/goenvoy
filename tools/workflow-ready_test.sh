@@ -221,6 +221,16 @@ mkdir -p "$WORK/case_z/.github/workflows"
 printf 'name: CI\non:\n  pull_request:\n    types:\n      - ready_for_review\t# note\n' > "$WORK/case_z/.github/workflows/ci.yml"
 expect_pass "case_z: trailing tab before comment on ready_for_review in types" "$WORK/case_z"
 
+# Why: case aa: separation tab after space indent on multiline bare-dash pull_request must be refused.
+mkdir -p "$WORK/case_aa/.github/workflows"
+printf 'name: CI\non:\n-\n \tpull_request\n' > "$WORK/case_aa/.github/workflows/ci.yml"
+expect_refusal "case_aa: multiline bare-dash pull_request with separation tab" "pull_request trigger lacks ready_for_review" "$WORK/case_aa"
+
+# Why: case ab: tab starting block scalar content is preserved so value is not pull_request.
+mkdir -p "$WORK/case_ab/.github/workflows"
+printf 'name: CI\non:\n- >-\n  \tpull_request\n' > "$WORK/case_ab/.github/workflows/ci.yml"
+expect_pass "case_ab: tab starting block scalar content is not pull_request" "$WORK/case_ab"
+
 # Why: verify the real repository passes.
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 expect_pass "repo: real check" "$REPO_ROOT"
