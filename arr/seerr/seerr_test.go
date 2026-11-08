@@ -186,7 +186,8 @@ func TestCreateRequest(t *testing.T) {
 		}
 		var body seerr.CreateRequestBody
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if body.MediaType != "movie" {
 			t.Errorf("MediaType = %q, want %q", body.MediaType, "movie")
@@ -462,7 +463,8 @@ func TestCreateIssue(t *testing.T) {
 		}
 		var body seerr.CreateIssueBody
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if body.IssueType != 2 {
 			t.Errorf("IssueType = %d, want 2", body.IssueType)
