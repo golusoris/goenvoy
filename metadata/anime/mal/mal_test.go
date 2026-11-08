@@ -748,6 +748,7 @@ func TestAuthorizationURL(t *testing.T) {
 	}
 }
 
+// TestExchangeCode tests exchanging an authorization code with PKCE verification.
 func TestExchangeCode(t *testing.T) {
 	t.Parallel()
 	authSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -755,7 +756,8 @@ func TestExchangeCode(t *testing.T) {
 			t.Errorf("path = %q, want /token", r.URL.Path)
 		}
 		if err := r.ParseForm(); err != nil {
-			t.Fatal(err)
+			t.Error(err)
+			return
 		}
 		if r.PostForm.Get("grant_type") != "authorization_code" {
 			t.Errorf("grant_type = %q", r.PostForm.Get("grant_type"))
@@ -794,11 +796,13 @@ func TestExchangeCode(t *testing.T) {
 	}
 }
 
+// TestRefreshToken tests refreshing an OAuth2 token using a refresh token.
 func TestRefreshToken(t *testing.T) {
 	t.Parallel()
 	authSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
-			t.Fatal(err)
+			t.Error(err)
+			return
 		}
 		if r.PostForm.Get("grant_type") != "refresh_token" {
 			t.Errorf("grant_type = %q, want refresh_token", r.PostForm.Get("grant_type"))

@@ -125,6 +125,7 @@ func TestGetArtist(t *testing.T) {
 	}
 }
 
+// TestAddArtist tests adding an artist via POST /api/v1/artist.
 func TestAddArtist(t *testing.T) {
 	t.Parallel()
 
@@ -136,7 +137,8 @@ func TestAddArtist(t *testing.T) {
 		}
 		var body lidarr.Artist
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if body.ArtistName != "New Artist" {
 			t.Errorf("ArtistName = %q, want %q", body.ArtistName, "New Artist")
@@ -367,6 +369,7 @@ func TestDeleteTrackFile(t *testing.T) {
 	}
 }
 
+// TestSendCommand tests dispatching an administrative command via POST /api/v1/command.
 func TestSendCommand(t *testing.T) {
 	t.Parallel()
 
@@ -378,7 +381,8 @@ func TestSendCommand(t *testing.T) {
 		}
 		var cmd arr.CommandRequest
 		if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if cmd.Name != "RefreshArtist" {
 			t.Errorf("Name = %q, want RefreshArtist", cmd.Name)
@@ -540,6 +544,7 @@ func TestGetTags(t *testing.T) {
 	}
 }
 
+// TestCreateTag tests creating a new tag via POST /api/v1/tag.
 func TestCreateTag(t *testing.T) {
 	t.Parallel()
 
@@ -551,7 +556,8 @@ func TestCreateTag(t *testing.T) {
 		}
 		var tag arr.Tag
 		if err := json.NewDecoder(r.Body).Decode(&tag); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		if tag.Label != "new-tag" {
 			t.Errorf("Label = %q, want %q", tag.Label, "new-tag")
@@ -3553,6 +3559,7 @@ func TestHeadPing(t *testing.T) {
 	}
 }
 
+// TestUploadBackup tests uploading a backup zip archive via POST /api/v1/system/backup/upload.
 func TestUploadBackup(t *testing.T) {
 	t.Parallel()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -3568,7 +3575,8 @@ func TestUploadBackup(t *testing.T) {
 		}
 		f, fh, err := r.FormFile("file")
 		if err != nil {
-			t.Fatalf("FormFile: %v", err)
+			t.Errorf("FormFile: %v", err)
+			return
 		}
 		defer f.Close()
 		if fh.Filename != "backup.zip" {

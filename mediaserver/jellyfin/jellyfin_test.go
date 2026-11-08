@@ -635,11 +635,12 @@ func TestCreateCollection_Boundary(t *testing.T) {
 	}
 }
 
+// TestCreateCollection_EmptyName checks that CreateCollection validates against empty collection names.
 func TestCreateCollection_EmptyName(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("request sent unexpectedly")
+		t.Error("request sent unexpectedly")
 	}))
 	defer ts.Close()
 
@@ -656,11 +657,12 @@ func TestCreateCollection_EmptyName(t *testing.T) {
 	}
 }
 
+// TestCreateCollection_BlankItemID checks that CreateCollection rejects blank item identifiers.
 func TestCreateCollection_BlankItemID(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("request sent unexpectedly")
+		t.Error("request sent unexpectedly")
 	}))
 	defer ts.Close()
 
@@ -778,11 +780,12 @@ func TestAddToCollection_BoundarySingleID(t *testing.T) {
 	}
 }
 
+// TestAddToCollection_EmptyCollectionID checks that AddToCollection validates against empty collection IDs.
 func TestAddToCollection_EmptyCollectionID(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("request sent unexpectedly")
+		t.Error("request sent unexpectedly")
 	}))
 	defer ts.Close()
 
@@ -799,11 +802,12 @@ func TestAddToCollection_EmptyCollectionID(t *testing.T) {
 	}
 }
 
+// TestAddToCollection_EmptyItemIDs checks that AddToCollection rejects empty or blank item IDs.
 func TestAddToCollection_EmptyItemIDs(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("request sent unexpectedly")
+		t.Error("request sent unexpectedly")
 	}))
 	defer ts.Close()
 
@@ -893,11 +897,12 @@ func TestRemoveFromCollection_BoundarySingleID(t *testing.T) {
 	}
 }
 
+// TestRemoveFromCollection_EmptyCollectionID checks that RemoveFromCollection rejects empty collection IDs.
 func TestRemoveFromCollection_EmptyCollectionID(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("request sent unexpectedly")
+		t.Error("request sent unexpectedly")
 	}))
 	defer ts.Close()
 
@@ -914,11 +919,12 @@ func TestRemoveFromCollection_EmptyCollectionID(t *testing.T) {
 	}
 }
 
+// TestRemoveFromCollection_EmptyItemIDs checks that RemoveFromCollection rejects empty item identifier lists.
 func TestRemoveFromCollection_EmptyItemIDs(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-		t.Fatal("request sent unexpectedly")
+		t.Error("request sent unexpectedly")
 	}))
 	defer ts.Close()
 

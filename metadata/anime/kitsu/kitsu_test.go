@@ -433,6 +433,7 @@ func TestWithUserAgent(t *testing.T) {
 
 // OAuth2 tests.
 
+// TestAuthenticate tests password grant authentication and token callback handling.
 func TestAuthenticate(t *testing.T) {
 	t.Parallel()
 
@@ -445,7 +446,8 @@ func TestAuthenticate(t *testing.T) {
 			t.Errorf("Content-Type = %q, want application/x-www-form-urlencoded", ct)
 		}
 		if err := r.ParseForm(); err != nil {
-			t.Fatal(err)
+			t.Error(err)
+			return
 		}
 		if r.PostForm.Get("grant_type") != "password" {
 			t.Errorf("grant_type = %q, want password", r.PostForm.Get("grant_type"))
@@ -488,12 +490,14 @@ func TestAuthenticate(t *testing.T) {
 	}
 }
 
+// TestRefreshToken tests refreshing an OAuth2 token using a refresh token.
 func TestRefreshToken(t *testing.T) {
 	t.Parallel()
 
 	authSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
-			t.Fatal(err)
+			t.Error(err)
+			return
 		}
 		if r.PostForm.Get("grant_type") != "refresh_token" {
 			t.Errorf("grant_type = %q, want refresh_token", r.PostForm.Get("grant_type"))

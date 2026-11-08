@@ -20,6 +20,7 @@ type rpcRequest struct {
 	Params json.RawMessage `json:"params"`
 }
 
+// newRPCServer starts a mock Deluge JSON-RPC server expecting a given method.
 func newRPCServer(t *testing.T, wantMethod string, result any) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +32,8 @@ func newRPCServer(t *testing.T, wantMethod string, result any) *httptest.Server 
 		}
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode request: %v", err)
+			t.Errorf("decode request: %v", err)
+			return
 		}
 		if req.Method != wantMethod {
 			t.Errorf("RPC method = %q, want %q", req.Method, wantMethod)
@@ -47,12 +49,14 @@ func newRPCServer(t *testing.T, wantMethod string, result any) *httptest.Server 
 	}))
 }
 
+// loginServer starts a mock Deluge server that returns success for login requests.
 func loginServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]any{"id": req.ID, "result": true, "error": nil}
@@ -75,13 +79,15 @@ func TestLogin(t *testing.T) {
 	}
 }
 
+// TestLoginFailed tests handling an unsuccessful Deluge authentication response.
 func TestLoginFailed(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]any{"id": req.ID, "result": false, "error": nil}
@@ -460,13 +466,15 @@ func TestGetFreeSpace(t *testing.T) {
 	}
 }
 
+// TestAPIError tests decoding and returning Deluge JSON-RPC error responses.
 func TestAPIError(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode: %v", err)
+			t.Errorf("decode: %v", err)
+			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		resp := map[string]any{

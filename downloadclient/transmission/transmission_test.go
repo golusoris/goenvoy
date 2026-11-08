@@ -17,6 +17,7 @@ type rpcRequest struct {
 	Arguments json.RawMessage `json:"arguments"`
 }
 
+// newRPCServer starts a mock Transmission RPC server expecting a given method.
 func newRPCServer(t *testing.T, wantMethod string, response any) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +26,8 @@ func newRPCServer(t *testing.T, wantMethod string, response any) *httptest.Serve
 		}
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode request: %v", err)
+			t.Errorf("decode request: %v", err)
+			return
 		}
 		if req.Method != wantMethod {
 			t.Errorf("RPC method = %q, want %q", req.Method, wantMethod)
@@ -218,6 +220,7 @@ func TestMoveTorrents(t *testing.T) {
 	}
 }
 
+// TestSetTorrentSpeedLimits tests configuring bandwidth throttling via torrent-set.
 func TestSetTorrentSpeedLimits(t *testing.T) {
 	t.Parallel()
 
@@ -227,14 +230,16 @@ func TestSetTorrentSpeedLimits(t *testing.T) {
 		}
 		var req rpcRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode request: %v", err)
+			t.Errorf("decode request: %v", err)
+			return
 		}
 		if req.Method != "torrent-set" {
 			t.Errorf("RPC method = %q, want torrent-set", req.Method)
 		}
 		var args map[string]any
 		if err := json.Unmarshal(req.Arguments, &args); err != nil {
-			t.Fatalf("decode arguments: %v", err)
+			t.Errorf("decode arguments: %v", err)
+			return
 		}
 		if args["downloadLimited"] != false {
 			t.Errorf("downloadLimited = %v, want false", args["downloadLimited"])

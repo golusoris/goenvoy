@@ -19,12 +19,13 @@ func setup(t *testing.T, handler http.HandlerFunc) *anilist.Client {
 	return anilist.New(metadata.WithBaseURL(srv.URL))
 }
 
+// respondGraphQL writes a GraphQL JSON response containing the provided data.
 func respondGraphQL(t *testing.T, w http.ResponseWriter, data any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")
 	resp := map[string]any{"data": data}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }
 
@@ -53,15 +54,18 @@ func TestNew(t *testing.T) {
 	}
 }
 
+// TestQuery tests executing a raw GraphQL query and decoding the response.
 func TestQuery(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			t.Fatalf("expected POST, got %s", r.Method)
+			t.Errorf("expected POST, got %s", r.Method)
+			return
 		}
 		if r.Header.Get("Content-Type") != "application/json" {
-			t.Fatalf("unexpected content-type: %s", r.Header.Get("Content-Type"))
+			t.Errorf("unexpected content-type: %s", r.Header.Get("Content-Type"))
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"Media": map[string]any{"id": float64(1), "title": map[string]any{"romaji": "Test"}},
@@ -83,6 +87,7 @@ func TestQuery(t *testing.T) {
 	}
 }
 
+// TestGetMedia tests fetching media details by AniList ID via GraphQL.
 func TestGetMedia(t *testing.T) {
 	t.Parallel()
 
@@ -90,7 +95,8 @@ func TestGetMedia(t *testing.T) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
 		if vars["id"] != float64(1) {
-			t.Fatalf("unexpected id: %v", vars["id"])
+			t.Errorf("unexpected id: %v", vars["id"])
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"Media": map[string]any{
@@ -118,6 +124,7 @@ func TestGetMedia(t *testing.T) {
 	}
 }
 
+// TestGetMediaByMalID tests fetching media details by MyAnimeList ID via GraphQL.
 func TestGetMediaByMalID(t *testing.T) {
 	t.Parallel()
 
@@ -125,10 +132,12 @@ func TestGetMediaByMalID(t *testing.T) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
 		if vars["idMal"] != float64(1) {
-			t.Fatalf("unexpected idMal: %v", vars["idMal"])
+			t.Errorf("unexpected idMal: %v", vars["idMal"])
+			return
 		}
 		if vars["type"] != "ANIME" {
-			t.Fatalf("unexpected type: %v", vars["type"])
+			t.Errorf("unexpected type: %v", vars["type"])
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"Media": map[string]any{
@@ -146,6 +155,7 @@ func TestGetMediaByMalID(t *testing.T) {
 	}
 }
 
+// TestSearchMedia tests searching for media by title and media type.
 func TestSearchMedia(t *testing.T) {
 	t.Parallel()
 
@@ -153,10 +163,12 @@ func TestSearchMedia(t *testing.T) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
 		if vars["search"] != "cowboy" {
-			t.Fatalf("unexpected search: %v", vars["search"])
+			t.Errorf("unexpected search: %v", vars["search"])
+			return
 		}
 		if vars["type"] != "ANIME" {
-			t.Fatalf("unexpected type: %v", vars["type"])
+			t.Errorf("unexpected type: %v", vars["type"])
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"Page": map[string]any{
@@ -189,6 +201,7 @@ func TestSearchMedia(t *testing.T) {
 	}
 }
 
+// TestGetCharacter tests fetching character details by ID via GraphQL.
 func TestGetCharacter(t *testing.T) {
 	t.Parallel()
 
@@ -196,7 +209,8 @@ func TestGetCharacter(t *testing.T) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
 		if vars["id"] != float64(1) {
-			t.Fatalf("unexpected id: %v", vars["id"])
+			t.Errorf("unexpected id: %v", vars["id"])
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"Character": map[string]any{
@@ -284,6 +298,7 @@ func TestSearchStaff(t *testing.T) {
 	}
 }
 
+// TestGetUser tests fetching user details by ID via GraphQL.
 func TestGetUser(t *testing.T) {
 	t.Parallel()
 
@@ -291,7 +306,8 @@ func TestGetUser(t *testing.T) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
 		if vars["id"] != float64(1) {
-			t.Fatalf("unexpected id: %v", vars["id"])
+			t.Errorf("unexpected id: %v", vars["id"])
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"User": map[string]any{
@@ -308,6 +324,7 @@ func TestGetUser(t *testing.T) {
 	}
 }
 
+// TestGetUserByName tests fetching user details by username via GraphQL.
 func TestGetUserByName(t *testing.T) {
 	t.Parallel()
 
@@ -315,7 +332,8 @@ func TestGetUserByName(t *testing.T) {
 		req := decodeRequest(t, r)
 		vars, _ := req["variables"].(map[string]any)
 		if vars["name"] != "TestUser" {
-			t.Fatalf("unexpected name: %v", vars["name"])
+			t.Errorf("unexpected name: %v", vars["name"])
+			return
 		}
 		respondGraphQL(t, w, map[string]any{
 			"User": map[string]any{
@@ -372,6 +390,7 @@ func TestGetTags(t *testing.T) {
 	}
 }
 
+// TestGraphQLError tests parsing and returning GraphQL error responses.
 func TestGraphQLError(t *testing.T) {
 	t.Parallel()
 
@@ -381,7 +400,7 @@ func TestGraphQLError(t *testing.T) {
 			"data":   nil,
 			"errors": []map[string]any{{"message": "Not Found.", "status": float64(404)}},
 		}); err != nil {
-			t.Fatal(err)
+			t.Error(err)
 		}
 	})
 

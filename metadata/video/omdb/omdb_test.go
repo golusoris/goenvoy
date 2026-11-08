@@ -19,11 +19,12 @@ func setup(t *testing.T, handler http.HandlerFunc) *omdb.Client {
 	return omdb.New("test-key", metadata.WithBaseURL(srv.URL))
 }
 
+// respond encodes a value as JSON into the response writer.
 func respond(t *testing.T, w http.ResponseWriter, v any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(v); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }
 
@@ -43,15 +44,18 @@ func TestNew(t *testing.T) {
 	}
 }
 
+// TestGetByIMDbID tests fetching title details by IMDb ID.
 func TestGetByIMDbID(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("i") != "tt0111161" {
-			t.Fatalf("unexpected i param: %s", r.URL.Query().Get("i"))
+			t.Errorf("unexpected i param: %s", r.URL.Query().Get("i"))
+			return
 		}
 		if r.URL.Query().Get("apikey") != "test-key" {
-			t.Fatal("missing apikey param")
+			t.Error("missing apikey param")
+			return
 		}
 		respond(t, w, omdb.Title{
 			Title:      "The Shawshank Redemption",
@@ -79,12 +83,14 @@ func TestGetByIMDbID(t *testing.T) {
 	}
 }
 
+// TestGetByIMDbIDWithPlot tests fetching title details by IMDb ID with full plot.
 func TestGetByIMDbIDWithPlot(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("plot") != "full" {
-			t.Fatalf("unexpected plot param: %s", r.URL.Query().Get("plot"))
+			t.Errorf("unexpected plot param: %s", r.URL.Query().Get("plot"))
+			return
 		}
 		respond(t, w, omdb.Title{
 			Title:    "Test",
@@ -100,12 +106,14 @@ func TestGetByIMDbIDWithPlot(t *testing.T) {
 	}
 }
 
+// TestGetByTitle tests fetching title details by exact title string.
 func TestGetByTitle(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("t") != "Inception" {
-			t.Fatalf("unexpected t param: %s", r.URL.Query().Get("t"))
+			t.Errorf("unexpected t param: %s", r.URL.Query().Get("t"))
+			return
 		}
 		respond(t, w, omdb.Title{
 			Title:    "Inception",
@@ -123,15 +131,18 @@ func TestGetByTitle(t *testing.T) {
 	}
 }
 
+// TestGetByTitleWithFilters tests fetching title details filtered by year and media type.
 func TestGetByTitleWithFilters(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("y") != "2010" {
-			t.Fatalf("unexpected y param: %s", r.URL.Query().Get("y"))
+			t.Errorf("unexpected y param: %s", r.URL.Query().Get("y"))
+			return
 		}
 		if r.URL.Query().Get("type") != "movie" {
-			t.Fatalf("unexpected type param: %s", r.URL.Query().Get("type"))
+			t.Errorf("unexpected type param: %s", r.URL.Query().Get("type"))
+			return
 		}
 		respond(t, w, omdb.Title{
 			Title:    "Inception",
@@ -146,12 +157,14 @@ func TestGetByTitleWithFilters(t *testing.T) {
 	}
 }
 
+// TestSearch tests searching for titles matching a query string.
 func TestSearch(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("s") != "Batman" {
-			t.Fatalf("unexpected s param: %s", r.URL.Query().Get("s"))
+			t.Errorf("unexpected s param: %s", r.URL.Query().Get("s"))
+			return
 		}
 		respond(t, w, omdb.SearchResponse{
 			Search: []omdb.SearchResult{
@@ -173,18 +186,22 @@ func TestSearch(t *testing.T) {
 	}
 }
 
+// TestSearchWithFilters tests searching for titles filtered by year, type, and page.
 func TestSearchWithFilters(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("y") != "2005" {
-			t.Fatalf("unexpected y param: %s", r.URL.Query().Get("y"))
+			t.Errorf("unexpected y param: %s", r.URL.Query().Get("y"))
+			return
 		}
 		if r.URL.Query().Get("type") != "series" {
-			t.Fatalf("unexpected type param: %s", r.URL.Query().Get("type"))
+			t.Errorf("unexpected type param: %s", r.URL.Query().Get("type"))
+			return
 		}
 		if r.URL.Query().Get("page") != "2" {
-			t.Fatalf("unexpected page param: %s", r.URL.Query().Get("page"))
+			t.Errorf("unexpected page param: %s", r.URL.Query().Get("page"))
+			return
 		}
 		respond(t, w, omdb.SearchResponse{
 			Search:       []omdb.SearchResult{},
@@ -200,15 +217,18 @@ func TestSearchWithFilters(t *testing.T) {
 	}
 }
 
+// TestGetSeason tests fetching season details and episodes by IMDb ID and season number.
 func TestGetSeason(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("i") != "tt0944947" {
-			t.Fatalf("unexpected i param: %s", r.URL.Query().Get("i"))
+			t.Errorf("unexpected i param: %s", r.URL.Query().Get("i"))
+			return
 		}
 		if r.URL.Query().Get("Season") != "1" {
-			t.Fatalf("unexpected Season param: %s", r.URL.Query().Get("Season"))
+			t.Errorf("unexpected Season param: %s", r.URL.Query().Get("Season"))
+			return
 		}
 		respond(t, w, omdb.SeasonResponse{
 			Title:        "Game of Thrones",
@@ -238,15 +258,18 @@ func TestGetSeason(t *testing.T) {
 	}
 }
 
+// TestGetEpisode tests fetching episode details by season and episode number.
 func TestGetEpisode(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("Season") != "1" {
-			t.Fatalf("unexpected Season param: %s", r.URL.Query().Get("Season"))
+			t.Errorf("unexpected Season param: %s", r.URL.Query().Get("Season"))
+			return
 		}
 		if r.URL.Query().Get("Episode") != "1" {
-			t.Fatalf("unexpected Episode param: %s", r.URL.Query().Get("Episode"))
+			t.Errorf("unexpected Episode param: %s", r.URL.Query().Get("Episode"))
+			return
 		}
 		respond(t, w, omdb.Title{
 			Title:    "Winter Is Coming",
