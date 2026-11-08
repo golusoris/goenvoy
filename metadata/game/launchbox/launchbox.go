@@ -70,7 +70,10 @@ func (c *Client) Download(ctx context.Context) (err error) {
 	}()
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("launchbox: HTTP %d: read body: %w", resp.StatusCode, err)
+		}
 		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(body)}
 	}
 

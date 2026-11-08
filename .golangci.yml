@@ -93,6 +93,9 @@ linters:
       excludes:
         - G104  # errors handled via wrapcheck/errcheck instead
 
+    errcheck:
+      check-blank: true
+
     govet:
       enable-all: true
       disable:

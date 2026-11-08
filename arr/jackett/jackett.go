@@ -153,10 +153,20 @@ func (c *Client) torznabSearch(ctx context.Context, indexer string, params url.V
 func applyNumericAttr(r *SearchResult, name, val string) bool {
 	switch name {
 	case "seeders":
-		r.Seeders, _ = strconv.Atoi(val)
+		n, err := strconv.Atoi(val)
+		if err != nil {
+			// Why: malformed indexer attr defaults to zero.
+			n = 0
+		}
+		r.Seeders = n
 		return true
 	case "peers":
-		r.Peers, _ = strconv.Atoi(val)
+		n, err := strconv.Atoi(val)
+		if err != nil {
+			// Why: malformed indexer attr defaults to zero.
+			n = 0
+		}
+		r.Peers = n
 		return true
 	default:
 		return false

@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -570,6 +572,74 @@ func TestNew_invalidURL(t *testing.T) {
 			if c != nil {
 				t.Fatal("expected nil client")
 			}
+		})
+	}
+}
+
+// runCallHTTPErrorTest verifies that Login returns the expected error when the server responds with an HTTP error.
+func runCallHTTPErrorTest(t *testing.T, handler http.HandlerFunc, wantErrIs error, wantErrStr string) {
+	t.Helper()
+	ts := httptest.NewServer(handler)
+	t.Cleanup(ts.Close)
+
+	c, err := deluge.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	err = c.Login(context.Background(), "deluge")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if wantErrIs != nil && !errors.Is(err, wantErrIs) {
+		t.Fatalf("errors.Is(err, %v) = false; err: %v", wantErrIs, err)
+	}
+	if wantErrStr != "" && !strings.Contains(err.Error(), wantErrStr) {
+		t.Fatalf("err = %q, want containing %q", err.Error(), wantErrStr)
+	}
+}
+
+// TestCall_HTTPError verifies error handling for HTTP failures and non-2xx status codes during RPC calls.
+func TestCall_HTTPError(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name       string
+		handler    func(t *testing.T) http.HandlerFunc
+		wantErrIs  error
+		wantErrStr string
+	}{
+		{
+			name: "read body error",
+			handler: func(t *testing.T) http.HandlerFunc {
+				t.Helper()
+				return func(w http.ResponseWriter, _ *http.Request) {
+					w.Header().Set("Content-Length", "100")
+					w.WriteHeader(http.StatusInternalServerError)
+					if _, err := w.Write([]byte("short")); err != nil {
+						t.Errorf("write body: %v", err)
+					}
+				}
+			},
+			wantErrIs:  io.ErrUnexpectedEOF,
+			wantErrStr: "deluge: HTTP 500: read body:",
+		},
+		{
+			name: "non-2xx with body",
+			handler: func(t *testing.T) http.HandlerFunc {
+				t.Helper()
+				return func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusBadGateway)
+					if _, err := w.Write([]byte("bad gateway response")); err != nil {
+						t.Errorf("write body: %v", err)
+					}
+				}
+			},
+			wantErrStr: "deluge: HTTP 502: bad gateway response",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runCallHTTPErrorTest(t, tc.handler(t), tc.wantErrIs, tc.wantErrStr)
 		})
 	}
 }
