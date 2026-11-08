@@ -34,7 +34,8 @@ func (c *Client) DeleteBackup(ctx context.Context, id int) error {
 	return c.base.Delete(ctx, fmt.Sprintf("/api/v3/system/backup/%d", id), nil, nil)
 }
 
-// RestoreBackup triggers a restore from a backup by ID.
+// RestoreBackup stages a restore from the backup with the given ID.
+// Sonarr applies the staged restore on its next start and does not restart itself; call Restart afterwards.
 func (c *Client) RestoreBackup(ctx context.Context, id int) error {
 	return c.base.Post(ctx, fmt.Sprintf("/api/v3/system/backup/restore/%d", id), nil, nil)
 }
@@ -108,11 +109,11 @@ func (c *Client) HeadPing(ctx context.Context) error {
 
 // ---------- Backup Upload ----------.
 
-// UploadBackup uploads and restores a backup archive via multipart form POST.
-// Sonarr stores the upload and immediately restores it, triggering an application restart; no upload-only endpoint exists.
-// Authorize callers for restore-and-restart, not archive storage. A failed or canceled call can leave the
-// remote outcome unknown: before retrying, check the restored data itself (series, settings), not only that
-// Sonarr is up again, since a retry restores the archive a second time.
+// UploadBackup uploads a backup archive via multipart form POST and stages it for restore.
+// Sonarr writes config.xml at once and applies the staged database on its next start; it does not restart
+// itself, so call Restart afterwards. No upload-only endpoint exists: authorize callers for restore, not
+// archive storage. A failed or canceled call can leave the remote outcome unknown; retrying with the same
+// archive stages it again, and Restart applies the archive staged last.
 func (c *Client) UploadBackup(ctx context.Context, fileName string, data io.Reader) error {
 	return c.base.Upload(ctx, "/api/v3/system/backup/restore/upload", "file", fileName, data)
 }
