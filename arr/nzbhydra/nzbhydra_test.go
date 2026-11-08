@@ -129,15 +129,17 @@ func newJSONGetServer(t *testing.T, wantPath string, response any) *nzbhydra.Cli
 	return c
 }
 
-// newQueryValidatingServer returns a client backed by an XML server verifying path and query parameters.
+// Why: shares server setup and validates path and query parameters across search tests.
 func newQueryValidatingServer(t *testing.T, wantPath string, wantQuery map[string]string) *nzbhydra.Client {
 	t.Helper()
+	const maxWantQuery = 16
+	if len(wantQuery) > maxWantQuery {
+		t.Fatalf("len(wantQuery) = %d, want <= %d", len(wantQuery), maxWantQuery)
+	}
+	wantQuery["apikey"] = "test-key"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != wantPath {
 			t.Errorf("path = %q, want %q", r.URL.Path, wantPath)
-		}
-		if got := r.URL.Query().Get("apikey"); got != "test-key" {
-			t.Errorf("apikey = %q, want test-key", got)
 		}
 		q := r.URL.Query()
 		for k, want := range wantQuery {
@@ -146,7 +148,9 @@ func newQueryValidatingServer(t *testing.T, wantPath string, wantQuery map[strin
 			}
 		}
 		w.Header().Set("Content-Type", "application/xml")
-		_, _ = w.Write([]byte(newznabXML))
+		if _, err := w.Write([]byte(newznabXML)); err != nil {
+			t.Errorf("write response: %v", err)
+		}
 	}))
 	t.Cleanup(ts.Close)
 	c, err := nzbhydra.New(ts.URL, "test-key")
@@ -156,7 +160,7 @@ func newQueryValidatingServer(t *testing.T, wantPath string, wantQuery map[strin
 	return c
 }
 
-// newStatsServer returns a client backed by a server validating the stats request and returning mock stats.
+// Why: shares server setup and request validation across stats tests.
 func newStatsServer(t *testing.T, stats any) *nzbhydra.Client {
 	t.Helper()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -168,14 +172,18 @@ func newStatsServer(t *testing.T, stats any) *nzbhydra.Client {
 		}
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			t.Fatal(err)
+			t.Errorf("read body: %v", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
 		}
 		var req map[string]any
 		if err := json.Unmarshal(body, &req); err != nil {
 			t.Errorf("invalid request body: %v", err)
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(stats)
+		if err := json.NewEncoder(w).Encode(stats); err != nil {
+			t.Errorf("encode stats: %v", err)
+		}
 	}))
 	t.Cleanup(ts.Close)
 	c, err := nzbhydra.New(ts.URL, "test-key")
