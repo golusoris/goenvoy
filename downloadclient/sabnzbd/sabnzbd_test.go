@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -436,6 +438,58 @@ func TestSetPriority_ServerErrors(t *testing.T) {
 			if !tc.check(err) || pos != -1 {
 				t.Fatalf("SetPriority = %d, %v; want -1 and the expected error", pos, err)
 			}
+		})
+	}
+}
+
+// runGetHTTPErrorTest verifies that GetQueue returns the expected error when the server responds with an HTTP error.
+func runGetHTTPErrorTest(t *testing.T, handler http.HandlerFunc, wantErrIs error, wantErrStr string) {
+	t.Helper()
+	c := newClient(t, handler)
+	_, err := c.GetQueue(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if wantErrIs != nil && !errors.Is(err, wantErrIs) {
+		t.Fatalf("errors.Is(err, %v) = false; err: %v", wantErrIs, err)
+	}
+	if wantErrStr != "" && !strings.Contains(err.Error(), wantErrStr) {
+		t.Fatalf("err = %q, want containing %q", err.Error(), wantErrStr)
+	}
+}
+
+// TestGet_HTTPError verifies error handling for HTTP failures and non-2xx status codes during API requests.
+func TestGet_HTTPError(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name       string
+		handler    http.HandlerFunc
+		wantErrIs  error
+		wantErrStr string
+	}{
+		{
+			name: "read body error",
+			handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Length", "100")
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte("short"))
+			},
+			wantErrIs:  io.ErrUnexpectedEOF,
+			wantErrStr: "sabnzbd: HTTP 500: read body:",
+		},
+		{
+			name: "non-2xx with body",
+			handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusBadGateway)
+				_, _ = w.Write([]byte("bad gateway"))
+			},
+			wantErrStr: "sabnzbd: HTTP 502: bad gateway",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runGetHTTPErrorTest(t, tc.handler, tc.wantErrIs, tc.wantErrStr)
 		})
 	}
 }

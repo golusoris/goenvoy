@@ -57,7 +57,10 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 		return nil, fmt.Errorf("qbit: invalid base URL %q: must be http(s) with a host", baseURL)
 	}
 
-	jar, _ := cookiejar.New(nil)
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return nil, fmt.Errorf("qbit: cookie jar: %w", err)
+	}
 	c := &Client{
 		baseURL:    baseURL,
 		httpClient: &http.Client{Timeout: defaultTimeout, Transport: sharedTransport, Jar: jar},

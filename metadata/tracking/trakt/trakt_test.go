@@ -3712,3 +3712,125 @@ func TestPollDeviceToken_Success(t *testing.T) {
 		t.Fatalf("storedToken = %v, want AccessToken %q", storedToken, "stored-trakt-access")
 	}
 }
+
+type paginationTestCase struct {
+	name    string
+	headers map[string]string
+	want    trakt.PaginationHeaders
+}
+
+// runPaginationHeaderCase executes a request against a mock server returning the given headers and asserts the parsed pagination.
+func runPaginationHeaderCase(t *testing.T, headers map[string]string, want trakt.PaginationHeaders) {
+	t.Helper()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		for k, v := range headers {
+			w.Header().Set(k, v)
+		}
+		_ = json.NewEncoder(w).Encode([]trakt.TrendingMovie{})
+	}))
+	t.Cleanup(ts.Close)
+
+	c := trakt.New("key", metadata.WithBaseURL(ts.URL))
+	_, pg, err := c.TrendingMovies(context.Background(), 1, 10)
+	if err != nil {
+		t.Fatalf("TrendingMovies: %v", err)
+	}
+	if pg == nil {
+		t.Fatal("pg = nil, want PaginationHeaders")
+	}
+	if *pg != want {
+		t.Errorf("pg = %+v, want %+v", *pg, want)
+	}
+}
+
+// TestParsePaginationHeaders_DefaultZero verifies that malformed, empty, or absent pagination headers default to zero.
+func TestParsePaginationHeaders_DefaultZero(t *testing.T) {
+	t.Parallel()
+	cases := []paginationTestCase{
+		{
+			name: "malformed value yields 0",
+			headers: map[string]string{
+				"X-Pagination-Page":       "x",
+				"X-Pagination-Limit":      "invalid",
+				"X-Pagination-Page-Count": "abc",
+				"X-Pagination-Item-Count": "xyz",
+			},
+			want: trakt.PaginationHeaders{Page: 0, Limit: 0, PageCount: 0, ItemCount: 0},
+		},
+		{
+			name: "empty value yields 0",
+			headers: map[string]string{
+				"X-Pagination-Page":       "",
+				"X-Pagination-Limit":      "",
+				"X-Pagination-Page-Count": "",
+				"X-Pagination-Item-Count": "",
+			},
+			want: trakt.PaginationHeaders{Page: 0, Limit: 0, PageCount: 0, ItemCount: 0},
+		},
+		{
+			name:    "absent headers yield 0",
+			headers: nil,
+			want:    trakt.PaginationHeaders{Page: 0, Limit: 0, PageCount: 0, ItemCount: 0},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runPaginationHeaderCase(t, tc.headers, tc.want)
+		})
+	}
+}
+
+// TestParsePaginationHeaders_ValidAndBoundary verifies parsing of valid, negative, zero, and boundary pagination headers.
+func TestParsePaginationHeaders_ValidAndBoundary(t *testing.T) {
+	t.Parallel()
+	cases := []paginationTestCase{
+		{
+			name: "valid positive values",
+			headers: map[string]string{
+				"X-Pagination-Page":       "2",
+				"X-Pagination-Limit":      "25",
+				"X-Pagination-Page-Count": "10",
+				"X-Pagination-Item-Count": "250",
+			},
+			want: trakt.PaginationHeaders{Page: 2, Limit: 25, PageCount: 10, ItemCount: 250},
+		},
+		{
+			name: "negative input parses",
+			headers: map[string]string{
+				"X-Pagination-Page":       "-1",
+				"X-Pagination-Limit":      "-5",
+				"X-Pagination-Page-Count": "-10",
+				"X-Pagination-Item-Count": "-50",
+			},
+			want: trakt.PaginationHeaders{Page: -1, Limit: -5, PageCount: -10, ItemCount: -50},
+		},
+		{
+			name: "boundary zero",
+			headers: map[string]string{
+				"X-Pagination-Page":       "0",
+				"X-Pagination-Limit":      "0",
+				"X-Pagination-Page-Count": "0",
+				"X-Pagination-Item-Count": "0",
+			},
+			want: trakt.PaginationHeaders{Page: 0, Limit: 0, PageCount: 0, ItemCount: 0},
+		},
+		{
+			name: "boundary max int",
+			headers: map[string]string{
+				"X-Pagination-Page":       "2147483647",
+				"X-Pagination-Limit":      "2147483647",
+				"X-Pagination-Page-Count": "2147483647",
+				"X-Pagination-Item-Count": "2147483647",
+			},
+			want: trakt.PaginationHeaders{Page: 2147483647, Limit: 2147483647, PageCount: 2147483647, ItemCount: 2147483647},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runPaginationHeaderCase(t, tc.headers, tc.want)
+		})
+	}
+}

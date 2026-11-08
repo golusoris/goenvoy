@@ -104,6 +104,7 @@ func decodeResponse(body []byte, dst any) error {
 	return nil
 }
 
+// get executes an HTTP GET request against the SABnzbd API and decodes the JSON response.
 func (c *Client) get(ctx context.Context, mode string, params url.Values, dst any) error {
 	if params == nil {
 		params = url.Values{}
@@ -126,7 +127,10 @@ func (c *Client) get(ctx context.Context, mode string, params url.Values, dst an
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("sabnzbd: HTTP %d: read body: %w", resp.StatusCode, err)
+		}
 		return fmt.Errorf("sabnzbd: HTTP %d: %s", resp.StatusCode, string(body))
 	}
 

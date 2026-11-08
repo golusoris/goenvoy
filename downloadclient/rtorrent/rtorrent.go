@@ -175,7 +175,8 @@ func buildCall(method string, args ...string) xmlMethodCall {
 	return call
 }
 
-func (c *Client) do(ctx context.Context, call xmlMethodCall) (*xmlMethodResponse, error) {
+// newRequest constructs an HTTP POST request containing the XML-RPC method call payload.
+func (c *Client) newRequest(ctx context.Context, call xmlMethodCall) (*http.Request, error) {
 	buf, err := xml.Marshal(call)
 	if err != nil {
 		return nil, fmt.Errorf("rtorrent: marshal request: %w", err)
@@ -192,6 +193,15 @@ func (c *Client) do(ctx context.Context, call xmlMethodCall) (*xmlMethodResponse
 	if c.username != "" {
 		req.SetBasicAuth(c.username, c.password)
 	}
+	return req, nil
+}
+
+// do executes an XML-RPC call and returns the parsed method response.
+func (c *Client) do(ctx context.Context, call xmlMethodCall) (*xmlMethodResponse, error) {
+	req, err := c.newRequest(ctx, call)
+	if err != nil {
+		return nil, err
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -200,7 +210,10 @@ func (c *Client) do(ctx context.Context, call xmlMethodCall) (*xmlMethodResponse
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("rtorrent: HTTP %d: read body: %w", resp.StatusCode, err)
+		}
 		return nil, fmt.Errorf("rtorrent: HTTP %d: %s", resp.StatusCode, string(body))
 	}
 

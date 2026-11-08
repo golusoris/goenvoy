@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/golusoris/goenvoy/downloadclient/nzbget/v2"
@@ -429,6 +431,64 @@ func TestNew_invalidURL(t *testing.T) {
 			if c != nil {
 				t.Fatal("expected nil client")
 			}
+		})
+	}
+}
+
+// runCallHTTPErrorTest verifies that ListGroups returns the expected error when the server responds with an HTTP error.
+func runCallHTTPErrorTest(t *testing.T, handler http.HandlerFunc, wantErrIs error, wantErrStr string) {
+	t.Helper()
+	ts := httptest.NewServer(handler)
+	t.Cleanup(ts.Close)
+
+	c, err := nzbget.New(ts.URL, "nzbget", "pass123")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.ListGroups(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if wantErrIs != nil && !errors.Is(err, wantErrIs) {
+		t.Fatalf("errors.Is(err, %v) = false; err: %v", wantErrIs, err)
+	}
+	if wantErrStr != "" && !strings.Contains(err.Error(), wantErrStr) {
+		t.Fatalf("err = %q, want containing %q", err.Error(), wantErrStr)
+	}
+}
+
+// TestCall_HTTPError verifies error handling for HTTP failures and non-2xx status codes during RPC calls.
+func TestCall_HTTPError(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name       string
+		handler    http.HandlerFunc
+		wantErrIs  error
+		wantErrStr string
+	}{
+		{
+			name: "read body error",
+			handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Length", "100")
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte("short"))
+			},
+			wantErrIs:  io.ErrUnexpectedEOF,
+			wantErrStr: "nzbget: HTTP 500: read body:",
+		},
+		{
+			name: "non-2xx with body",
+			handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusBadGateway)
+				_, _ = w.Write([]byte("bad gateway"))
+			},
+			wantErrStr: "nzbget: HTTP 502: bad gateway",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runCallHTTPErrorTest(t, tc.handler, tc.wantErrIs, tc.wantErrStr)
 		})
 	}
 }

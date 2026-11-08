@@ -593,3 +593,130 @@ func TestNew_invalidURL(t *testing.T) {
 		})
 	}
 }
+
+// runNumericAttrCase executes a search against a mock XML server and asserts the parsed seeders and peers counts.
+func runNumericAttrCase(t *testing.T, xmlBody string, wantSeeders, wantPeers int) {
+	t.Helper()
+	c := newXMLServer(t, "", xmlBody)
+	results, err := c.Search(context.Background(), "test", nil)
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("len(results) = %d, want 1", len(results))
+	}
+	if results[0].Seeders != wantSeeders {
+		t.Errorf("Seeders = %d, want %d", results[0].Seeders, wantSeeders)
+	}
+	if results[0].Peers != wantPeers {
+		t.Errorf("Peers = %d, want %d", results[0].Peers, wantPeers)
+	}
+}
+
+type numericAttrTestCase struct {
+	name        string
+	xml         string
+	wantSeeders int
+	wantPeers   int
+}
+
+// TestApplyNumericAttr_DefaultZero verifies that malformed, empty, or absent attributes default to zero.
+func TestApplyNumericAttr_DefaultZero(t *testing.T) {
+	t.Parallel()
+	cases := []numericAttrTestCase{
+		{
+			name: "malformed value yields 0",
+			xml: `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item>
+  <title>T</title>
+  <torznab:attr name="seeders" value="x"/>
+  <torznab:attr name="peers" value="invalid"/>
+</item></channel></rss>`,
+			wantSeeders: 0,
+			wantPeers:   0,
+		},
+		{
+			name: "empty value yields 0",
+			xml: `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item>
+  <title>T</title>
+  <torznab:attr name="seeders" value=""/>
+  <torznab:attr name="peers" value=""/>
+</item></channel></rss>`,
+			wantSeeders: 0,
+			wantPeers:   0,
+		},
+		{
+			name: "absent attr yields 0",
+			xml: `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item>
+  <title>T</title>
+</item></channel></rss>`,
+			wantSeeders: 0,
+			wantPeers:   0,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runNumericAttrCase(t, tc.xml, tc.wantSeeders, tc.wantPeers)
+		})
+	}
+}
+
+// TestApplyNumericAttr_ValidAndBoundary verifies parsing of valid, negative, zero, and boundary attribute values.
+func TestApplyNumericAttr_ValidAndBoundary(t *testing.T) {
+	t.Parallel()
+	cases := []numericAttrTestCase{
+		{
+			name: "valid positive values",
+			xml: `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item>
+  <title>T</title>
+  <torznab:attr name="seeders" value="150"/>
+  <torznab:attr name="peers" value="42"/>
+</item></channel></rss>`,
+			wantSeeders: 150,
+			wantPeers:   42,
+		},
+		{
+			name: "negative input parses",
+			xml: `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item>
+  <title>T</title>
+  <torznab:attr name="seeders" value="-1"/>
+  <torznab:attr name="peers" value="-10"/>
+</item></channel></rss>`,
+			wantSeeders: -1,
+			wantPeers:   -10,
+		},
+		{
+			name: "boundary zero",
+			xml: `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item>
+  <title>T</title>
+  <torznab:attr name="seeders" value="0"/>
+  <torznab:attr name="peers" value="0"/>
+</item></channel></rss>`,
+			wantSeeders: 0,
+			wantPeers:   0,
+		},
+		{
+			name: "boundary max int32",
+			xml: `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel><item>
+  <title>T</title>
+  <torznab:attr name="seeders" value="2147483647"/>
+  <torznab:attr name="peers" value="2147483647"/>
+</item></channel></rss>`,
+			wantSeeders: 2147483647,
+			wantPeers:   2147483647,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runNumericAttrCase(t, tc.xml, tc.wantSeeders, tc.wantPeers)
+		})
+	}
+}

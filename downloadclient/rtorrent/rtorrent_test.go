@@ -691,3 +691,61 @@ func TestNew_invalidURL(t *testing.T) {
 		})
 	}
 }
+
+// runPostHTTPErrorTest verifies that GetSystemInfo returns the expected error when the server responds with an HTTP error.
+func runPostHTTPErrorTest(t *testing.T, handler http.HandlerFunc, wantErrIs error, wantErrStr string) {
+	t.Helper()
+	ts := httptest.NewServer(handler)
+	t.Cleanup(ts.Close)
+
+	c, err := rtorrent.New(ts.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	_, err = c.GetSystemInfo(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if wantErrIs != nil && !errors.Is(err, wantErrIs) {
+		t.Fatalf("errors.Is(err, %v) = false; err: %v", wantErrIs, err)
+	}
+	if wantErrStr != "" && !strings.Contains(err.Error(), wantErrStr) {
+		t.Fatalf("err = %q, want containing %q", err.Error(), wantErrStr)
+	}
+}
+
+// TestPost_HTTPError verifies error handling for HTTP failures and non-2xx status codes during XML-RPC posts.
+func TestPost_HTTPError(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name       string
+		handler    http.HandlerFunc
+		wantErrIs  error
+		wantErrStr string
+	}{
+		{
+			name: "read body error",
+			handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Length", "100")
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte("short"))
+			},
+			wantErrIs:  io.ErrUnexpectedEOF,
+			wantErrStr: "rtorrent: HTTP 500: read body:",
+		},
+		{
+			name: "non-2xx with body",
+			handler: func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusBadGateway)
+				_, _ = w.Write([]byte("bad gateway"))
+			},
+			wantErrStr: "rtorrent: HTTP 502: bad gateway",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runPostHTTPErrorTest(t, tc.handler, tc.wantErrIs, tc.wantErrStr)
+		})
+	}
+}
