@@ -151,6 +151,31 @@ mkdir -p "$WORK/case_l/.github/workflows"
 printf 'name: CI\non:\n  - >-\n    pull_request\n' > "$WORK/case_l/.github/workflows/ci.yml"
 expect_refusal "case_l: folded scalar block-sequence" "pull_request trigger lacks ready_for_review" "$WORK/case_l"
 
+# Why: case m: indentless pull_request must be refused.
+mkdir -p "$WORK/case_m/.github/workflows"
+printf 'name: CI\non:\n- pull_request\n' > "$WORK/case_m/.github/workflows/ci.yml"
+expect_refusal "case_m: indentless pull_request" "pull_request trigger lacks ready_for_review" "$WORK/case_m"
+
+# Why: case n: indentless push and workflow_dispatch must pass.
+mkdir -p "$WORK/case_n/.github/workflows"
+printf 'name: CI\non:\n- push\n- workflow_dispatch\n' > "$WORK/case_n/.github/workflows/ci.yml"
+expect_pass "case_n: indentless push and workflow_dispatch" "$WORK/case_n"
+
+# Why: case o: CRLF line endings with indentless pull_request must be refused.
+mkdir -p "$WORK/case_o/.github/workflows"
+printf 'name: CI\r\non:\r\n- pull_request\r\n' > "$WORK/case_o/.github/workflows/ci.yml"
+expect_refusal "case_o: CRLF indentless pull_request" "pull_request trigger lacks ready_for_review" "$WORK/case_o"
+
+# Why: case p: indentless bare-dash multiline item must be refused.
+mkdir -p "$WORK/case_p/.github/workflows"
+printf 'name: CI\non:\n-\n  pull_request\n' > "$WORK/case_p/.github/workflows/ci.yml"
+expect_refusal "case_p: indentless bare-dash multiline item" "pull_request trigger lacks ready_for_review" "$WORK/case_p"
+
+# Why: case q: indentless on closed at jobs must not match pull_request in steps.
+mkdir -p "$WORK/case_q/.github/workflows"
+printf 'name: CI\non:\n- push\njobs:\n  build:\n    steps:\n      - pull_request\n' > "$WORK/case_q/.github/workflows/ci.yml"
+expect_pass "case_q: indentless on closed at jobs" "$WORK/case_q"
+
 # Why: verify the real repository passes.
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 expect_pass "repo: real check" "$REPO_ROOT"

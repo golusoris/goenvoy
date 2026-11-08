@@ -82,8 +82,14 @@ for f in "${files[@]}"; do
 
     indent=$(( ${#line} - ${#trimmed} ))
 
+    # Why: a column-zero dash under on: is an indentless sequence item (YAML allows it), not a top-level key.
+    indentless_on_item=0
+    if [ "$in_on" -eq 1 ] && [[ "$trimmed" == -* ]] && [ "$on_indent" -le 0 ]; then
+      indentless_on_item=1
+    fi
+
     # Why: indentation 0 marks a top-level key that closes any open block.
-    if [ "$indent" -eq 0 ]; then
+    if [ "$indent" -eq 0 ] && [ "$indentless_on_item" -eq 0 ]; then
       if [ "$in_pr" -eq 1 ]; then
         if [ "$pr_has_ready" -eq 0 ]; then
           file_miss=1
@@ -95,6 +101,7 @@ for f in "${files[@]}"; do
         in_types_block=0
       fi
       in_on=0
+      pending_dash_indent=-1
 
       if [[ "$trimmed" != -* ]] && [[ "$trimmed" == *:* ]]; then
         key="${trimmed%%:*}"
