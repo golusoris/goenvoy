@@ -5,10 +5,20 @@
 # Run from repo root: tools/gen-release-please.sh
 set -euo pipefail
 
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+  echo "gen-release-please.sh: needs bash >= 4 (mapfile); macOS: install a current bash" >&2
+  exit 2
+fi
+
 CONFIG=release-please-config.json
 MANIFEST=.release-please-manifest.json
 
-mapfile -t MODS < <(find . -name 'go.mod' -not -path './.workingdir*/*' -not -path './tools/go/*' -exec dirname {} \; | sed 's|^\./||' | sort)
+# Why: sort in byte order so CI and local runs agree.
+mapfile -t MODS < <(git ls-files -- '*go.mod' ':(exclude)tools/go/*' | while IFS= read -r f; do dirname "$f"; done | LC_ALL=C sort)
+
+TMP_CONFIG=$(mktemp .release-please-config.XXXXXX)
+TMP_MANIFEST=$(mktemp .release-please-manifest.XXXXXX)
+trap 'rm -f "$TMP_CONFIG" "$TMP_MANIFEST"' EXIT
 
 # --- config ---
 {
@@ -19,8 +29,9 @@ mapfile -t MODS < <(find . -name 'go.mod' -not -path './.workingdir*/*' -not -pa
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": false,
   "include-v-in-tag": true,
-  "separate-pull-requests": true,
+  "separate-pull-requests": false,
   "tag-separator": "/",
+  "pull-request-header": "## Description\n\nRelease pull request opened by release-please. The release notes below list each module version and the Conventional Commit subjects it ships; release-please wrote the version bumps and changelogs from those subjects.\n\n## Module(s) Affected\n\nThe modules named in the release notes below.\n\n## Type of Change\n\nRelease: version bumps and changelogs only.\n\n## Checklist\n\n- [ ] Required status checks pass (`CI success`, `Go API Compatibility` and the rest of the `main` ruleset); the ruleset blocks the merge until they do.",
   "changelog-sections": [
     { "type": "feat", "section": "Features" },
     { "type": "fix", "section": "Bug Fixes" },
@@ -51,7 +62,7 @@ EOF
   }
 }
 EOF
-} > "$CONFIG"
+} > "$TMP_CONFIG"
 
 # --- manifest (latest tag per module, stripped of leading 'v') ---
 {
@@ -61,7 +72,9 @@ EOF
     mod="${MODS[$i]}"
     sep=","
     [ "$i" -eq "$last" ] && sep=""
-    latest=$(git tag --list "${mod}/v*" --sort=-v:refname | head -1 || true)
+    # Why: avoid pipe to head under pipefail; take first line via parameter expansion.
+    latest=$(git tag --list "${mod}/v[0-9]*" --sort=-v:refname)
+    latest=${latest%%$'\n'*}
     if [ -n "$latest" ]; then
       ver="${latest##*/v}"
     else
@@ -70,6 +83,9 @@ EOF
     printf '  "%s": "%s"%s\n' "$mod" "$ver" "$sep"
   done
   echo '}'
-} > "$MANIFEST"
+} > "$TMP_MANIFEST"
+
+mv "$TMP_CONFIG" "$CONFIG"
+mv "$TMP_MANIFEST" "$MANIFEST"
 
 echo "wrote $CONFIG and $MANIFEST (${#MODS[@]} packages)"
