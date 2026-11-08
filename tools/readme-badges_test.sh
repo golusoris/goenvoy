@@ -8,17 +8,16 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=tools/testlib.sh
 . "$HERE/testlib.sh"
+# Why: callers can override the script path to test copies in other directories.
 SUT=(bash "${SCRIPT_PATH:-$HERE/readme-badges.sh}")
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 # expect_status NAME STATUS NEEDLE ARGS...: the script must exit STATUS and name NEEDLE.
 expect_status() {
-  local name="$1" want_status="$2" needle="$3" script out status=0
+  local name="$1" want_status="$2" needle="$3" out status=0
   shift 3
-  # Why: callers can override the script path to test copies in other directories.
-  script="${SCRIPT_PATH:-$HERE/readme-badges.sh}"
-  if out="$(bash "$script" "$@" 2>&1)"; then
+  if out="$("${SUT[@]}" "$@" 2>&1)"; then
     status=0
   else
     status=$?
@@ -44,7 +43,7 @@ expect_status() {
 expect_pattern() {
   local name="$1" pattern="$2" out
   shift 2
-  if ! out="$(bash "$HERE/readme-badges.sh" "$@")"; then
+  if ! out="$("${SUT[@]}" "$@")"; then
     printf 'FAIL %s: command failed\n' "$name" >&2
     exit 1
   fi
