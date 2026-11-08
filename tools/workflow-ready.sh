@@ -65,6 +65,7 @@ for f in "${files[@]}"; do
   file_miss=0
   file_prs=0
   pending_dash_indent=-1
+  pending_dash_block=0
 
   # Why: bounded loop over lines of the workflow file.
   for ((lnum = 0; lnum < num_lines; lnum++)); do
@@ -82,8 +83,14 @@ for f in "${files[@]}"; do
 
     indent=$(( ${#line} - ${#trimmed} ))
 
+    # Why: an indentless sequence item under on: is '-' or starts with '- ' or a dash and a tab.
+    indentless_on_item=0
+    if [ "$in_on" -eq 1 ] && { [ "$trimmed" = "-" ] || [[ "$trimmed" == "- "* ]] || [[ "$trimmed" == -$'\t'* ]]; } && [ "$on_indent" -le 0 ]; then
+      indentless_on_item=1
+    fi
+
     # Why: indentation 0 marks a top-level key that closes any open block.
-    if [ "$indent" -eq 0 ]; then
+    if [ "$indent" -eq 0 ] && [ "$indentless_on_item" -eq 0 ]; then
       if [ "$in_pr" -eq 1 ]; then
         if [ "$pr_has_ready" -eq 0 ]; then
           file_miss=1
@@ -95,6 +102,8 @@ for f in "${files[@]}"; do
         in_types_block=0
       fi
       in_on=0
+      pending_dash_indent=-1
+      pending_dash_block=0
 
       if [[ "$trimmed" != -* ]] && [[ "$trimmed" == *:* ]]; then
         key="${trimmed%%:*}"
@@ -128,7 +137,11 @@ for f in "${files[@]}"; do
       if [ "$pending_dash_indent" -ge 0 ]; then
         if [ "$indent" -gt "$pending_dash_indent" ]; then
           item="${trimmed%%#*}"
-          item="${item%"${item##*[! ]}"}"
+          item="${item%"${item##*[![:blank:]]}"}"
+          # Why: strip leading separation blanks only for plain scalars.
+          if [ "$pending_dash_block" -eq 0 ]; then
+            item="${item#"${item%%[![:blank:]]*}"}"
+          fi
           item="${item#[\'\"]}"
           item="${item%[\'\"]}"
           if [ "$item" = "pull_request" ]; then
@@ -136,6 +149,7 @@ for f in "${files[@]}"; do
           fi
         fi
         pending_dash_indent=-1
+        pending_dash_block=0
       fi
 
       # Why: check if line exits current pull_request mapping.
@@ -173,15 +187,20 @@ for f in "${files[@]}"; do
         # nested lists (e.g. branches: [- pull_request]).
         if [[ "$trimmed" == -* ]] && [ "$indent" -eq "$on_indent" ]; then
           item="${trimmed#-}"
-          item="${item#"${item%%[! ]*}"}"
+          item="${item#"${item%%[![:blank:]]*}"}"
           item="${item%%#*}"
-          item="${item%"${item##*[! ]}"}"
+          item="${item%"${item##*[![:blank:]]}"}"
+          # Why: record whether list item introduces a block scalar.
+          is_block=0
+          case "$item" in
+            [\|\>]*) is_block=1 ;;
+          esac
           # Why: strip YAML block scalar indicators (>-, >, |, |-).
           item="${item#>-}"
           item="${item#>}"
           item="${item#\|-}"
           item="${item#\|}"
-          item="${item#"${item%%[! ]*}"}"
+          item="${item#"${item%%[![:blank:]]*}"}"
           item="${item#[\'\"]}"
           item="${item%[\'\"]}"
           if [ "$item" = "pull_request" ]; then
@@ -190,6 +209,7 @@ for f in "${files[@]}"; do
             # Why: bare dash or block scalar indicator with no inline value;
             # the scalar appears on the next indented line.
             pending_dash_indent="$indent"
+            pending_dash_block="$is_block"
           fi
         fi
       fi
@@ -202,9 +222,9 @@ for f in "${files[@]}"; do
             in_types_block=0
           else
             item="${trimmed%%#*}"
-            item="${item%"${item##*[! ]}"}"
+            item="${item%"${item##*[![:blank:]]}"}"
             item="${item#-}"
-            item="${item#"${item%%[! ]*}"}"
+            item="${item#"${item%%[![:blank:]]*}"}"
             item="${item#[\'\"]}"
             item="${item%[\'\"]}"
             if [ "$item" = "ready_for_review" ]; then
