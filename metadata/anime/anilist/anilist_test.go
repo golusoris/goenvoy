@@ -24,7 +24,7 @@ func respondGraphQL(t *testing.T, w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	resp := map[string]any{"data": data}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }
 

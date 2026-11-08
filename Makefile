@@ -134,6 +134,7 @@ workflow-ready-check: ## Workflows with pull_request trigger have ready_for_revi
 
 .PHONY: semgrep-local
 semgrep-local: ## Repository Semgrep rules: planted fixtures, then the tree (registry packs run in CI)
+	@command -v semgrep >/dev/null 2>&1 || { echo "semgrep is required for semgrep-local"; exit 1; }
 	semgrep --test --metrics=off tools/semgrep/
 	semgrep scan --config tools/semgrep/ --exclude tools/semgrep --error --metrics=off --disable-version-check .
 

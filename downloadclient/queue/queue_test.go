@@ -93,7 +93,7 @@ func TestTake_QBittorrent(t *testing.T) {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
-		http.SetCookie(w, &http.Cookie{Name: "SID", Value: "session123"})
+		http.SetCookie(w, &http.Cookie{Name: "SID", Value: "session123", HttpOnly: true, Secure: true})
 		_, _ = io.WriteString(w, "Ok.")
 	})
 	mux.HandleFunc("GET /api/v2/app/version", func(w http.ResponseWriter, _ *http.Request) {

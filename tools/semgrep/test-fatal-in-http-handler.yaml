@@ -1,22 +1,20 @@
 rules:
   - id: test-fatal-in-http-handler
-    message: >-
-      Handler runs on the server goroutine; report with t.Errorf (or t.Error /
-      t.Fail) and return.
+    message: "Code holding the http.ResponseWriter runs on the server goroutine; report with t.Errorf (or t.Error / t.Fail) and return."
     severity: ERROR
     languages: [go]
     patterns:
       - pattern-either:
           - pattern-inside: |
-              func($W http.ResponseWriter, $R *http.Request) {
+              func(..., $W http.ResponseWriter, ...) {
                 ...
               }
           - pattern-inside: |
-              func $F($W http.ResponseWriter, $R *http.Request) {
+              func $F(..., $W http.ResponseWriter, ...) {
                 ...
               }
           - pattern-inside: |
-              func ($S $RT) $F($W http.ResponseWriter, $R *http.Request) {
+              func ($S $RT) $F(..., $W http.ResponseWriter, ...) {
                 ...
               }
       - pattern-either:

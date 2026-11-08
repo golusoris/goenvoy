@@ -32,7 +32,7 @@ func newLoginServer(t *testing.T) *httptest.Server {
 			if r.Method != http.MethodPost {
 				t.Errorf("login method = %q, want POST", r.Method)
 			}
-			http.SetCookie(w, &http.Cookie{Name: "SID", Value: "test-session-id", Path: "/"})
+			http.SetCookie(w, &http.Cookie{Name: "SID", Value: "test-session-id", Path: "/", HttpOnly: true, Secure: true})
 			w.WriteHeader(http.StatusOK)
 		case "/api/v2/auth/logout":
 			w.WriteHeader(http.StatusOK)

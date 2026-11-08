@@ -25,7 +25,7 @@ func respond(t *testing.T, w http.ResponseWriter, v any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(v); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }
 
