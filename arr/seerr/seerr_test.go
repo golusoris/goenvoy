@@ -871,19 +871,39 @@ func TestGetSonarrSettings(t *testing.T) {
 			Hostname:          "sonarr.lan",
 			Port:              8989,
 			APIKey:            "sk",
-			UseSSL:            false,
+			UseSSL:            true,
 			BaseURL:           "/sonarr/",
 			Is4k:              true,
 			IsDefault:         true,
 			ActiveProfileID:   1,
 			ActiveProfileName: "Ultra-HD",
 			ActiveDirectory:   "/media/tv4k",
+			ExternalURL:       "https://sonarr.lan:8989",
+			SyncEnabled:       true,
+			PreventSearch:     true,
 		},
 	}
 
 	t.Run("positive decode", func(t *testing.T) {
 		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v1/settings/sonarr", want)
+		fixture := json.RawMessage(`[{
+			"id": 1,
+			"name": "Sonarr 4K",
+			"hostname": "sonarr.lan",
+			"port": 8989,
+			"apiKey": "sk",
+			"useSsl": true,
+			"baseUrl": "/sonarr/",
+			"is4k": true,
+			"isDefault": true,
+			"activeProfileId": 1,
+			"activeProfileName": "Ultra-HD",
+			"activeDirectory": "/media/tv4k",
+			"externalUrl": "https://sonarr.lan:8989",
+			"syncEnabled": true,
+			"preventSearch": true
+		}]`)
+		srv := newTestServer(t, http.MethodGet, "/api/v1/settings/sonarr", fixture)
 		defer srv.Close()
 
 		c := newTestClient(t, srv)
@@ -934,24 +954,45 @@ func TestGetRadarrSettings(t *testing.T) {
 
 	want := []seerr.ServiceSettings{
 		{
+			// Why: Radarr ID 0 exercises the first-instance boundary.
 			ID:                0,
 			Name:              "Radarr",
 			Hostname:          "radarr.lan",
 			Port:              7878,
 			APIKey:            "rk",
 			UseSSL:            true,
-			BaseURL:           "",
-			Is4k:              false,
+			BaseURL:           "/radarr",
+			Is4k:              true,
 			IsDefault:         true,
 			ActiveProfileID:   2,
 			ActiveProfileName: "HD-1080p",
 			ActiveDirectory:   "/media/movies",
+			ExternalURL:       "https://radarr.lan:7878",
+			SyncEnabled:       true,
+			PreventSearch:     true,
 		},
 	}
 
 	t.Run("positive decode", func(t *testing.T) {
 		t.Parallel()
-		srv := newTestServer(t, http.MethodGet, "/api/v1/settings/radarr", want)
+		fixture := json.RawMessage(`[{
+			"id": 0,
+			"name": "Radarr",
+			"hostname": "radarr.lan",
+			"port": 7878,
+			"apiKey": "rk",
+			"useSsl": true,
+			"baseUrl": "/radarr",
+			"is4k": true,
+			"isDefault": true,
+			"activeProfileId": 2,
+			"activeProfileName": "HD-1080p",
+			"activeDirectory": "/media/movies",
+			"externalUrl": "https://radarr.lan:7878",
+			"syncEnabled": true,
+			"preventSearch": true
+		}]`)
+		srv := newTestServer(t, http.MethodGet, "/api/v1/settings/radarr", fixture)
 		defer srv.Close()
 
 		c := newTestClient(t, srv)
