@@ -595,25 +595,35 @@ func TestCall_HTTPError(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name       string
-		handler    http.HandlerFunc
+		handler    func(t *testing.T) http.HandlerFunc
 		wantErrIs  error
 		wantErrStr string
 	}{
 		{
 			name: "read body error",
-			handler: func(w http.ResponseWriter, _ *http.Request) {
-				w.Header().Set("Content-Length", "100")
-				w.WriteHeader(http.StatusInternalServerError)
-				_, _ = w.Write([]byte("short"))
+			handler: func(t *testing.T) http.HandlerFunc {
+				t.Helper()
+				return func(w http.ResponseWriter, _ *http.Request) {
+					w.Header().Set("Content-Length", "100")
+					w.WriteHeader(http.StatusInternalServerError)
+					if _, err := w.Write([]byte("short")); err != nil {
+						t.Errorf("write body: %v", err)
+					}
+				}
 			},
 			wantErrIs:  io.ErrUnexpectedEOF,
 			wantErrStr: "deluge: HTTP 500: read body:",
 		},
 		{
 			name: "non-2xx with body",
-			handler: func(w http.ResponseWriter, _ *http.Request) {
-				w.WriteHeader(http.StatusBadGateway)
-				_, _ = w.Write([]byte("bad gateway response"))
+			handler: func(t *testing.T) http.HandlerFunc {
+				t.Helper()
+				return func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusBadGateway)
+					if _, err := w.Write([]byte("bad gateway response")); err != nil {
+						t.Errorf("write body: %v", err)
+					}
+				}
 			},
 			wantErrStr: "deluge: HTTP 502: bad gateway response",
 		},
@@ -621,7 +631,7 @@ func TestCall_HTTPError(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			runCallHTTPErrorTest(t, tc.handler, tc.wantErrIs, tc.wantErrStr)
+			runCallHTTPErrorTest(t, tc.handler(t), tc.wantErrIs, tc.wantErrStr)
 		})
 	}
 }

@@ -3727,7 +3727,9 @@ func runPaginationHeaderCase(t *testing.T, headers map[string]string, want trakt
 		for k, v := range headers {
 			w.Header().Set(k, v)
 		}
-		_ = json.NewEncoder(w).Encode([]trakt.TrendingMovie{})
+		if err := json.NewEncoder(w).Encode([]trakt.TrendingMovie{}); err != nil {
+			t.Errorf("encode body: %v", err)
+		}
 	}))
 	t.Cleanup(ts.Close)
 

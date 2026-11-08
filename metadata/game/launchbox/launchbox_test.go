@@ -236,21 +236,27 @@ func runDownloadHTTPErrorTest(t *testing.T, handler http.HandlerFunc, wantErrIs 
 	}
 }
 
-// TestDownloadError verifies error handling for HTTP failures and non-2xx status codes during download.
-func TestDownloadError(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		name      string
-		handler   http.HandlerFunc
-		wantErrIs error
-		check     func(*testing.T, error)
-	}{
+type downloadTestCase struct {
+	name      string
+	handler   func(t *testing.T) http.HandlerFunc
+	wantErrIs error
+	check     func(*testing.T, error)
+}
+
+// downloadErrorCases returns test cases for TestDownloadError.
+func downloadErrorCases() []downloadTestCase {
+	return []downloadTestCase{
 		{
 			name: "read body error",
-			handler: func(w http.ResponseWriter, _ *http.Request) {
-				w.Header().Set("Content-Length", "100")
-				w.WriteHeader(http.StatusInternalServerError)
-				_, _ = w.Write([]byte("short"))
+			handler: func(t *testing.T) http.HandlerFunc {
+				t.Helper()
+				return func(w http.ResponseWriter, _ *http.Request) {
+					w.Header().Set("Content-Length", "100")
+					w.WriteHeader(http.StatusInternalServerError)
+					if _, err := w.Write([]byte("short")); err != nil {
+						t.Errorf("write body: %v", err)
+					}
+				}
 			},
 			wantErrIs: io.ErrUnexpectedEOF,
 			check: func(t *testing.T, err error) {
@@ -262,9 +268,14 @@ func TestDownloadError(t *testing.T) {
 		},
 		{
 			name: "non-2xx with body",
-			handler: func(w http.ResponseWriter, _ *http.Request) {
-				w.WriteHeader(http.StatusInternalServerError)
-				_, _ = w.Write([]byte("server error"))
+			handler: func(t *testing.T) http.HandlerFunc {
+				t.Helper()
+				return func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusInternalServerError)
+					if _, err := w.Write([]byte("server error")); err != nil {
+						t.Errorf("write body: %v", err)
+					}
+				}
 			},
 			check: func(t *testing.T, err error) {
 				t.Helper()
@@ -278,10 +289,16 @@ func TestDownloadError(t *testing.T) {
 			},
 		},
 	}
+}
+
+// TestDownloadError verifies error handling for HTTP failures and non-2xx status codes during download.
+func TestDownloadError(t *testing.T) {
+	t.Parallel()
+	cases := downloadErrorCases()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			runDownloadHTTPErrorTest(t, tc.handler, tc.wantErrIs, tc.check)
+			runDownloadHTTPErrorTest(t, tc.handler(t), tc.wantErrIs, tc.check)
 		})
 	}
 }
