@@ -211,6 +211,16 @@ mkdir -p "$WORK/case_x/.github/workflows"
 printf 'name: CI\non:\n  - pull_request\t# note\n' > "$WORK/case_x/.github/workflows/ci.yml"
 expect_refusal "case_x: trailing tab before comment on pull_request item" "pull_request trigger lacks ready_for_review" "$WORK/case_x"
 
+# Why: case y: trailing tab before comment on multiline bare-dash pull_request item must be refused.
+mkdir -p "$WORK/case_y/.github/workflows"
+printf 'name: CI\non:\n-\n  pull_request\t# note\n' > "$WORK/case_y/.github/workflows/ci.yml"
+expect_refusal "case_y: trailing tab before comment on multiline bare-dash pull_request" "pull_request trigger lacks ready_for_review" "$WORK/case_y"
+
+# Why: case z: trailing tab before comment on ready_for_review in types must pass.
+mkdir -p "$WORK/case_z/.github/workflows"
+printf 'name: CI\non:\n  pull_request:\n    types:\n      - ready_for_review\t# note\n' > "$WORK/case_z/.github/workflows/ci.yml"
+expect_pass "case_z: trailing tab before comment on ready_for_review in types" "$WORK/case_z"
+
 # Why: verify the real repository passes.
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 expect_pass "repo: real check" "$REPO_ROOT"
