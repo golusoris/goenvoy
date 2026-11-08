@@ -228,6 +228,10 @@ check_atomic_failure() {
     printf 'FAIL %s: generator unexpectedly succeeded despite failing git tag\n' "case_h" >&2
     return 1
   fi
+  if [ ! -f "$gen_dir/tag.called" ]; then
+    printf 'FAIL %s: failing git tag stub was never called\n' "case_h" >&2
+    return 1
+  fi
   if ! cmp -s "$gen_dir/release-please-config.json" "$gen_dir/config.before"; then
     printf 'FAIL %s: release-please-config.json modified on failure\n' "case_h" >&2
     return 1
@@ -319,6 +323,7 @@ REAL_GIT="$(command -v git)"
 cat <<EOFSTUB > "$CASE_H_DIR/git"
 #!/usr/bin/env bash
 if [ "\${1:-}" = "tag" ]; then
+  touch "$CASE_H_DIR/tag.called"
   exit 1
 fi
 exec "$REAL_GIT" "\$@"
