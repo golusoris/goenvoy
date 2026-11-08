@@ -3,5 +3,7 @@
 reviews:
   auto_review:
     drafts: true
+    # Why: 0 = never pause; release-please PRs take a push per merge.
+    auto_pause_after_reviewed_commits: 0
     base_branches:
       - .*
