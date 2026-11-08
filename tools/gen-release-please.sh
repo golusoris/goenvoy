@@ -5,11 +5,20 @@
 # Run from repo root: tools/gen-release-please.sh
 set -euo pipefail
 
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+  echo "gen-release-please.sh: needs bash >= 4 (mapfile); macOS: install a current bash" >&2
+  exit 2
+fi
+
 CONFIG=release-please-config.json
 MANIFEST=.release-please-manifest.json
 
 # Why: sort in byte order so CI and local runs agree.
-mapfile -t MODS < <(find . -name 'go.mod' -not -path './.workingdir*/*' -not -path './tools/go/*' -exec dirname {} \; | sed 's|^\./||' | LC_ALL=C sort)
+mapfile -t MODS < <(git ls-files -- '*go.mod' ':(exclude)tools/go/*' | while IFS= read -r f; do dirname "$f"; done | LC_ALL=C sort)
+
+TMP_CONFIG=$(mktemp .release-please-config.XXXXXX)
+TMP_MANIFEST=$(mktemp .release-please-manifest.XXXXXX)
+trap 'rm -f "$TMP_CONFIG" "$TMP_MANIFEST"' EXIT
 
 # --- config ---
 {
@@ -53,7 +62,7 @@ EOF
   }
 }
 EOF
-} > "$CONFIG"
+} > "$TMP_CONFIG"
 
 # --- manifest (latest tag per module, stripped of leading 'v') ---
 {
@@ -64,7 +73,7 @@ EOF
     sep=","
     [ "$i" -eq "$last" ] && sep=""
     # Why: avoid pipe to head under pipefail; take first line via parameter expansion.
-    latest=$(git tag --list "${mod}/v*" --sort=-v:refname)
+    latest=$(git tag --list "${mod}/v[0-9]*" --sort=-v:refname)
     latest=${latest%%$'\n'*}
     if [ -n "$latest" ]; then
       ver="${latest##*/v}"
@@ -74,6 +83,9 @@ EOF
     printf '  "%s": "%s"%s\n' "$mod" "$ver" "$sep"
   done
   echo '}'
-} > "$MANIFEST"
+} > "$TMP_MANIFEST"
+
+mv "$TMP_CONFIG" "$CONFIG"
+mv "$TMP_MANIFEST" "$MANIFEST"
 
 echo "wrote $CONFIG and $MANIFEST (${#MODS[@]} packages)"

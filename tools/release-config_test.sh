@@ -2,6 +2,11 @@
 # Why: planted test cases and repository check for release-please configuration.
 set -euo pipefail
 
+if [ "${BASH_VERSINFO[0]}" -lt 4 ]; then
+  echo "release-config_test.sh: needs bash >= 4 (mapfile); macOS: install a current bash" >&2
+  exit 2
+fi
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 WORK="$(mktemp -d)"
@@ -48,6 +53,7 @@ setup_generator_dir() {
     cp "$REPO_ROOT/$f" "$target/$f"
   done
   git -C "$target" init -q
+  git -C "$target" add -A
   (
     cd "$target"
     bash tools/gen-release-please.sh >/dev/null 2>&1
@@ -192,6 +198,47 @@ check_release_config() {
   printf 'release-please config matches generator and PR template\n'
 }
 
+# Why: verify generator does not include untracked modules in config or manifest.
+check_untracked_module() {
+  local gen_dir="$1"
+  local extra_mod="$2"
+  (
+    cd "$gen_dir"
+    bash tools/gen-release-please.sh >/dev/null 2>&1
+  ) || {
+    printf 'FAIL %s: generator failed\n' "case_g" >&2
+    return 1
+  }
+  if grep -q "\"$extra_mod\"" "$gen_dir/release-please-config.json" "$gen_dir/.release-please-manifest.json"; then
+    printf 'FAIL %s: generator output includes untracked module: %s\n' "case_g" "$extra_mod" >&2
+    return 1
+  fi
+  printf 'untracked module %s absent from generator output\n' "$extra_mod"
+}
+
+# Why: verify generator fails atomically without modifying existing files on tag error.
+check_atomic_failure() {
+  local gen_dir="$1"
+  local gen_rc=0
+  (
+    cd "$gen_dir"
+    PATH="$gen_dir:$PATH" bash tools/gen-release-please.sh >/dev/null 2>&1
+  ) || gen_rc=$?
+  if [ "$gen_rc" -eq 0 ]; then
+    printf 'FAIL %s: generator unexpectedly succeeded despite failing git tag\n' "case_h" >&2
+    return 1
+  fi
+  if ! cmp -s "$gen_dir/release-please-config.json" "$gen_dir/config.before"; then
+    printf 'FAIL %s: release-please-config.json modified on failure\n' "case_h" >&2
+    return 1
+  fi
+  if ! cmp -s "$gen_dir/.release-please-manifest.json" "$gen_dir/manifest.before"; then
+    printf 'FAIL %s: .release-please-manifest.json modified on failure\n' "case_h" >&2
+    return 1
+  fi
+  printf 'generator failed atomically (rc=%d), config and manifest unmodified\n' "$gen_rc"
+}
+
 GEN_DIR="$WORK/gen"
 setup_generator_dir "$GEN_DIR"
 BASE_CONFIG="$GEN_DIR/release-please-config.json"
@@ -219,6 +266,33 @@ expect_refusal "case_e: committed config differing from generator output" "tools
 # Why: case f: header containing a ticked box (- [x]) must be refused.
 jq '."pull-request-header" += "\n- [x] ticked checklist item\n"' "$BASE_CONFIG" > "$WORK/case_f.json"
 expect_refusal "case_f: header with a ticked box" "ticked" check_release_config "$WORK/case_f.json"
+
+# Why: case g: untracked go.mod in working tree must not enter generator output.
+CASE_G_DIR="$WORK/case_g"
+setup_generator_dir "$CASE_G_DIR"
+mkdir -p "$CASE_G_DIR/extra/mod"
+touch "$CASE_G_DIR/extra/mod/go.mod"
+expect_pass "case_g: generator ignores untracked module" check_untracked_module "$CASE_G_DIR" "extra/mod"
+
+# Why: case h: failing git tag must fail atomically without touching config or manifest.
+CASE_H_DIR="$WORK/case_h"
+setup_generator_dir "$CASE_H_DIR"
+cp "$REPO_ROOT/release-please-config.json" "$CASE_H_DIR/release-please-config.json"
+cp "$REPO_ROOT/.release-please-manifest.json" "$CASE_H_DIR/.release-please-manifest.json"
+cp "$CASE_H_DIR/release-please-config.json" "$CASE_H_DIR/config.before"
+cp "$CASE_H_DIR/.release-please-manifest.json" "$CASE_H_DIR/manifest.before"
+
+REAL_GIT="$(command -v git)"
+cat <<EOFSTUB > "$CASE_H_DIR/git"
+#!/usr/bin/env bash
+if [ "\${1:-}" = "tag" ]; then
+  exit 1
+fi
+exec "$REAL_GIT" "\$@"
+EOFSTUB
+chmod +x "$CASE_H_DIR/git"
+
+expect_pass "case_h: generator fails atomically on tag error" check_atomic_failure "$CASE_H_DIR"
 
 # Why: positive case: committed repository configuration matches generator and PR template.
 expect_pass "repo: committed config matches generator and PR template" check_release_config "$REPO_ROOT/release-please-config.json" "$GEN_DIR"
