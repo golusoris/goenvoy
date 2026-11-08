@@ -6,6 +6,9 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=tools/testlib.sh
+. "$HERE/testlib.sh"
+SUT=(bash "$HERE/release-manifest.sh")
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
@@ -22,63 +25,34 @@ plant() {
   fi
 }
 
-# expect_refusal NAME NEEDLE ARGS...: the script must fail and name NEEDLE.
-expect_refusal() {
-  local name="$1" needle="$2" out
-  shift 2
-  if out="$(bash "$HERE/release-manifest.sh" "$@" 2>&1)"; then
-    printf 'FAIL %s: accepted\n%s\n' "$name" "$out" >&2
-    exit 1
-  fi
-  case "$out" in
-    *"$needle"*) echo "ok   $name: refused ($needle)" ;;
-    *)
-      printf 'FAIL %s: refused without "%s"\n%s\n' "$name" "$needle" "$out" >&2
-      exit 1
-      ;;
-  esac
-}
-
-# expect_output NAME WANT ARGS...: the script must succeed and print WANT.
-expect_output() {
-  local name="$1" want="$2" out
-  shift 2
-  out="$(bash "$HERE/release-manifest.sh" "$@")"
-  if [ "$out" != "$want" ]; then
-    printf 'FAIL %s: got %s, want %s\n' "$name" "$out" "$want" >&2
-    exit 1
-  fi
-  echo "ok   $name: $out"
-}
-
 plant clean a/one 1.3.2 example.test/a/one
 plant clean b/two 2.0.1 example.test/b/two/v2
-expect_output clean "release manifest: 2 modules, every version matches its module path" check "$WORK/clean"
-expect_output tags '["b/two/v2.0.1","a/one/v1.3.2"]' tags '["b/two","a/one"]' "$WORK/clean"
-expect_output no-release '[]' tags '[]' "$WORK/clean"
+expect_output clean "release manifest: 2 modules, every version matches its module path" "${SUT[@]}" check "$WORK/clean"
+expect_output tags '["b/two/v2.0.1","a/one/v1.3.2"]' "${SUT[@]}" tags '["b/two","a/one"]' "$WORK/clean"
+expect_output no-release '[]' "${SUT[@]}" tags '[]' "$WORK/clean"
 
 plant major-ahead b/two 4.0.0 example.test/b/two/v2
-expect_refusal major-ahead "needs a module path ending in /v4" check "$WORK/major-ahead"
-expect_refusal major-ahead-tags "needs a module path ending in /v4" tags '["b/two"]' "$WORK/major-ahead"
+expect_refusal major-ahead "needs a module path ending in /v4" "${SUT[@]}" check "$WORK/major-ahead"
+expect_refusal major-ahead-tags "needs a module path ending in /v4" "${SUT[@]}" tags '["b/two"]' "$WORK/major-ahead"
 
 plant missing-suffix b/two 2.0.0 example.test/b/two
-expect_refusal missing-suffix "needs a module path ending in /v2" check "$WORK/missing-suffix"
+expect_refusal missing-suffix "needs a module path ending in /v2" "${SUT[@]}" check "$WORK/missing-suffix"
 
 plant stray-suffix b/two 1.4.0 example.test/b/two/v2
-expect_refusal stray-suffix "does not fit the module path" check "$WORK/stray-suffix"
+expect_refusal stray-suffix "does not fit the module path" "${SUT[@]}" check "$WORK/stray-suffix"
 
 plant bad-version a/one 1.3 example.test/a/one
-expect_refusal bad-version "is not X.Y.Z" check "$WORK/bad-version"
+expect_refusal bad-version "is not X.Y.Z" "${SUT[@]}" check "$WORK/bad-version"
 
 plant no-module a/one 1.0.0
-expect_refusal no-module "no go.mod" check "$WORK/no-module"
+expect_refusal no-module "no go.mod" "${SUT[@]}" check "$WORK/no-module"
 
 mkdir -p "$WORK/empty" && echo '{}' > "$WORK/empty/.release-please-manifest.json"
-expect_refusal empty "lists no module" check "$WORK/empty"
+expect_refusal empty "lists no module" "${SUT[@]}" check "$WORK/empty"
 
-expect_refusal unknown-path "not in the release manifest" tags '["c/none"]' "$WORK/clean"
-expect_refusal not-a-list "not a JSON array" tags '"a/one"' "$WORK/clean"
+expect_refusal unknown-path "not in the release manifest" "${SUT[@]}" tags '["c/none"]' "$WORK/clean"
+expect_refusal not-a-list "not a JSON array" "${SUT[@]}" tags '"a/one"' "$WORK/clean"
 mkdir -p "$WORK/none"
-expect_refusal no-manifest "no release manifest" check "$WORK/none"
+expect_refusal no-manifest "no release manifest" "${SUT[@]}" check "$WORK/none"
 
 echo "release manifest check: 3 accepted, 10 refused"
