@@ -116,8 +116,9 @@ func (c *Client) HeadPing(ctx context.Context) error {
 // Config.xml, which overwrites config.xml at once, and sonarr.db or nzbdrone.db, which it stages for its
 // next start. Any of these files left in that folder by a failed restore is applied by the next restore
 // too. An archive without a database, such as a backup of a PostgreSQL instance, stages none of its own,
-// so a database staged by an earlier restore stays pending. A .db or .xml file name skips extraction:
-// Sonarr stages the uploaded file itself as the database, so upload config.xml only inside a .zip archive.
+// so a database staged by an earlier restore stays pending unless a database left in that folder by a
+// failed restore replaces it. A .db or .xml file name skips extraction: Sonarr stages the uploaded file
+// itself as the database, so upload config.xml only inside a .zip archive.
 // Sonarr does not restart itself, so call Restart afterwards. No upload-only endpoint exists: authorize
 // callers for restore, not archive storage. A failed or canceled call can leave the remote outcome unknown
 // and the request still running on Sonarr; every upload shares one temporary path there, so do not retry
