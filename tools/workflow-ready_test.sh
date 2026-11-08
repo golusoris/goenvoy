@@ -151,6 +151,86 @@ mkdir -p "$WORK/case_l/.github/workflows"
 printf 'name: CI\non:\n  - >-\n    pull_request\n' > "$WORK/case_l/.github/workflows/ci.yml"
 expect_refusal "case_l: folded scalar block-sequence" "pull_request trigger lacks ready_for_review" "$WORK/case_l"
 
+# Why: case m: indentless pull_request must be refused.
+mkdir -p "$WORK/case_m/.github/workflows"
+printf 'name: CI\non:\n- pull_request\n' > "$WORK/case_m/.github/workflows/ci.yml"
+expect_refusal "case_m: indentless pull_request" "pull_request trigger lacks ready_for_review" "$WORK/case_m"
+
+# Why: case n: indentless push and workflow_dispatch must pass.
+mkdir -p "$WORK/case_n/.github/workflows"
+printf 'name: CI\non:\n- push\n- workflow_dispatch\n' > "$WORK/case_n/.github/workflows/ci.yml"
+expect_pass "case_n: indentless push and workflow_dispatch" "$WORK/case_n"
+
+# Why: case o: CRLF line endings with indentless pull_request must be refused.
+mkdir -p "$WORK/case_o/.github/workflows"
+printf 'name: CI\r\non:\r\n- pull_request\r\n' > "$WORK/case_o/.github/workflows/ci.yml"
+expect_refusal "case_o: CRLF indentless pull_request" "pull_request trigger lacks ready_for_review" "$WORK/case_o"
+
+# Why: case p: indentless bare-dash multiline item must be refused.
+mkdir -p "$WORK/case_p/.github/workflows"
+printf 'name: CI\non:\n-\n  pull_request\n' > "$WORK/case_p/.github/workflows/ci.yml"
+expect_refusal "case_p: indentless bare-dash multiline item" "pull_request trigger lacks ready_for_review" "$WORK/case_p"
+
+# Why: case q: indentless on closed at jobs must not treat job ID as pull_request trigger.
+mkdir -p "$WORK/case_q/.github/workflows"
+printf 'name: CI\non:\n- push\njobs:\n  pull_request:\n    runs-on: ubuntu-latest\n' > "$WORK/case_q/.github/workflows/ci.yml"
+expect_pass "case_q: indentless on closed at jobs" "$WORK/case_q"
+
+# Why: case r: top-level key starting with dash must close on and not leak nested pull_request.
+mkdir -p "$WORK/case_r/.github/workflows"
+printf 'name: CI\non:\n- push\n-custom:\n  pull_request:\n    branches: [main]\n' > "$WORK/case_r/.github/workflows/ci.yml"
+expect_pass "case_r: top-level dash key does not keep on open" "$WORK/case_r"
+
+# Why: case s: indentless bare-dash push item must pass.
+mkdir -p "$WORK/case_s/.github/workflows"
+printf 'name: CI\non:\n-\n  push\n' > "$WORK/case_s/.github/workflows/ci.yml"
+expect_pass "case_s: indentless bare-dash push" "$WORK/case_s"
+
+# Why: case t: indentless dash-tab pull_request must be refused.
+mkdir -p "$WORK/case_t/.github/workflows"
+printf 'name: CI\non:\n-\tpull_request\n' > "$WORK/case_t/.github/workflows/ci.yml"
+expect_refusal "case_t: indentless dash-tab pull_request" "pull_request trigger lacks ready_for_review" "$WORK/case_t"
+
+# Why: case u: indented dash-tab pull_request must be refused.
+mkdir -p "$WORK/case_u/.github/workflows"
+printf 'name: CI\non:\n  -\tpull_request\n' > "$WORK/case_u/.github/workflows/ci.yml"
+expect_refusal "case_u: indented dash-tab pull_request" "pull_request trigger lacks ready_for_review" "$WORK/case_u"
+
+# Why: case v: indented dash-tab ready_for_review in types must pass.
+mkdir -p "$WORK/case_v/.github/workflows"
+printf 'name: CI\non:\n  pull_request:\n    types:\n      -\tready_for_review\n' > "$WORK/case_v/.github/workflows/ci.yml"
+expect_pass "case_v: indented dash-tab ready_for_review in types" "$WORK/case_v"
+
+# Why: case w: indentless dash-tab push must pass.
+mkdir -p "$WORK/case_w/.github/workflows"
+printf 'name: CI\non:\n-\tpush\n' > "$WORK/case_w/.github/workflows/ci.yml"
+expect_pass "case_w: indentless dash-tab push" "$WORK/case_w"
+
+# Why: case x: trailing tab before comment on pull_request item must be refused.
+mkdir -p "$WORK/case_x/.github/workflows"
+printf 'name: CI\non:\n  - pull_request\t# note\n' > "$WORK/case_x/.github/workflows/ci.yml"
+expect_refusal "case_x: trailing tab before comment on pull_request item" "pull_request trigger lacks ready_for_review" "$WORK/case_x"
+
+# Why: case y: trailing tab before comment on multiline bare-dash pull_request item must be refused.
+mkdir -p "$WORK/case_y/.github/workflows"
+printf 'name: CI\non:\n-\n  pull_request\t# note\n' > "$WORK/case_y/.github/workflows/ci.yml"
+expect_refusal "case_y: trailing tab before comment on multiline bare-dash pull_request" "pull_request trigger lacks ready_for_review" "$WORK/case_y"
+
+# Why: case z: trailing tab before comment on ready_for_review in types must pass.
+mkdir -p "$WORK/case_z/.github/workflows"
+printf 'name: CI\non:\n  pull_request:\n    types:\n      - ready_for_review\t# note\n' > "$WORK/case_z/.github/workflows/ci.yml"
+expect_pass "case_z: trailing tab before comment on ready_for_review in types" "$WORK/case_z"
+
+# Why: case aa: separation tab after space indent on multiline bare-dash pull_request must be refused.
+mkdir -p "$WORK/case_aa/.github/workflows"
+printf 'name: CI\non:\n-\n \tpull_request\n' > "$WORK/case_aa/.github/workflows/ci.yml"
+expect_refusal "case_aa: multiline bare-dash pull_request with separation tab" "pull_request trigger lacks ready_for_review" "$WORK/case_aa"
+
+# Why: case ab: tab starting block scalar content is preserved so value is not pull_request.
+mkdir -p "$WORK/case_ab/.github/workflows"
+printf 'name: CI\non:\n- >-\n  \tpull_request\n' > "$WORK/case_ab/.github/workflows/ci.yml"
+expect_pass "case_ab: tab starting block scalar content is not pull_request" "$WORK/case_ab"
+
 # Why: verify the real repository passes.
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 expect_pass "repo: real check" "$REPO_ROOT"
