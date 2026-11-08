@@ -132,6 +132,10 @@ badges-check: ## README workflow badges point at existing workflows: planted cas
 workflow-ready-check: ## Workflows with pull_request trigger have ready_for_review: planted cases, then the repository
 	bash tools/workflow-ready_test.sh
 
+.PHONY: release-config-check
+release-config-check: ## Release-please config matches its generator and carries the PR template headings: planted cases, then the repository
+	bash tools/release-config_test.sh
+
 doc: ## Local godoc server at :6060
 	@echo "Starting godoc server at http://localhost:6060"
 	@godoc -http=:6060
@@ -147,6 +151,7 @@ verify-all:
 	@$(MAKE) --no-print-directory hooks-test
 	@$(MAKE) --no-print-directory badges-check
 	@$(MAKE) --no-print-directory workflow-ready-check
+	@$(MAKE) --no-print-directory release-config-check
 	@$(MAKE) --no-print-directory ci-all
 
 compile-context:
