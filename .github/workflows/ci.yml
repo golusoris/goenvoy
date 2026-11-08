@@ -91,6 +91,8 @@ jobs:
         run: bash tools/readme-badges_test.sh
       - name: Workflows with pull_request trigger have ready_for_review
         run: bash tools/workflow-ready_test.sh
+      - name: Release-please config matches its generator and the PR template
+        run: bash tools/release-config_test.sh
 
   # The upstream OpenAPI spec pins (upstream/specs.yaml): the checker refuses
   # its planted cases, then every pinned file must still have its sha256.

@@ -8,7 +8,8 @@ set -euo pipefail
 CONFIG=release-please-config.json
 MANIFEST=.release-please-manifest.json
 
-mapfile -t MODS < <(find . -name 'go.mod' -not -path './.workingdir*/*' -not -path './tools/go/*' -exec dirname {} \; | sed 's|^\./||' | sort)
+# Why: sort in byte order so CI and local runs agree.
+mapfile -t MODS < <(find . -name 'go.mod' -not -path './.workingdir*/*' -not -path './tools/go/*' -exec dirname {} \; | sed 's|^\./||' | LC_ALL=C sort)
 
 # --- config ---
 {
@@ -19,8 +20,9 @@ mapfile -t MODS < <(find . -name 'go.mod' -not -path './.workingdir*/*' -not -pa
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": false,
   "include-v-in-tag": true,
-  "separate-pull-requests": true,
+  "separate-pull-requests": false,
   "tag-separator": "/",
+  "pull-request-header": "## Description\n\nRelease pull request opened by release-please. The release notes below list each module version and the Conventional Commit subjects it ships; release-please wrote the version bumps and changelogs from those subjects.\n\n## Module(s) Affected\n\nThe modules named in the release notes below.\n\n## Type of Change\n\nRelease: version bumps and changelogs only.\n\n## Checklist\n\n- [ ] Required status checks pass (`CI success`, `Go API Compatibility` and the rest of the `main` ruleset); the ruleset blocks the merge until they do.",
   "changelog-sections": [
     { "type": "feat", "section": "Features" },
     { "type": "fix", "section": "Bug Fixes" },
@@ -61,7 +63,9 @@ EOF
     mod="${MODS[$i]}"
     sep=","
     [ "$i" -eq "$last" ] && sep=""
-    latest=$(git tag --list "${mod}/v*" --sort=-v:refname | head -1 || true)
+    # Why: avoid pipe to head under pipefail; take first line via parameter expansion.
+    latest=$(git tag --list "${mod}/v*" --sort=-v:refname)
+    latest=${latest%%$'\n'*}
     if [ -n "$latest" ]; then
       ver="${latest##*/v}"
     else
