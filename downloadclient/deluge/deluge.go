@@ -61,7 +61,10 @@ func New(baseURL string, opts ...Option) (*Client, error) {
 		return nil, fmt.Errorf("deluge: invalid base URL %q: must be http(s) with a host", baseURL)
 	}
 
-	jar, _ := cookiejar.New(nil)
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return nil, fmt.Errorf("deluge: cookie jar: %w", err)
+	}
 	c := &Client{
 		baseURL: baseURL,
 		httpClient: &http.Client{
@@ -109,6 +112,7 @@ func decodeRPCResponse(r io.Reader, dst any) error {
 	return nil
 }
 
+// call sends a JSON-RPC POST request to the Deluge API and decodes the response.
 func (c *Client) call(ctx context.Context, method string, params []any, dst any) error {
 	id := int(c.requestID.Add(1))
 	reqBody := rpcRequest{
@@ -135,7 +139,10 @@ func (c *Client) call(ctx context.Context, method string, params []any, dst any)
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("deluge: HTTP %d: read body: %w", resp.StatusCode, err)
+		}
 		return fmt.Errorf("deluge: HTTP %d: %s", resp.StatusCode, string(body))
 	}
 

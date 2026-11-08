@@ -97,9 +97,14 @@ type PaginationHeaders struct {
 	ItemCount int
 }
 
+// parsePaginationHeaders extracts pagination metadata from HTTP response headers.
 func parsePaginationHeaders(h http.Header) PaginationHeaders {
 	atoi := func(s string) int {
-		v, _ := strconv.Atoi(s)
+		v, err := strconv.Atoi(s)
+		if err != nil {
+			// Why: absent or malformed pagination header defaults to zero.
+			return 0
+		}
 		return v
 	}
 	return PaginationHeaders{
