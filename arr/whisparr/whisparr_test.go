@@ -4538,6 +4538,7 @@ func TestV2HeadPing(t *testing.T) {
 	}
 }
 
+// TestV2UploadBackup tests uploading a backup zip archive with the Whisparr v2 client via POST /api/v3/system/backup/upload.
 func TestV2UploadBackup(t *testing.T) {
 	t.Parallel()
 
@@ -4551,7 +4552,8 @@ func TestV2UploadBackup(t *testing.T) {
 		}
 		f, fh, err := r.FormFile("file")
 		if err != nil {
-			t.Fatalf("FormFile: %v", err)
+			t.Errorf("FormFile: %v", err)
+			return
 		}
 		defer f.Close()
 		if fh.Filename != "backup.zip" {
@@ -4620,6 +4622,7 @@ func TestV3HeadPing(t *testing.T) {
 	}
 }
 
+// TestV3UploadBackup tests uploading a backup zip archive with the Whisparr v3 client via POST /api/v3/system/backup/upload.
 func TestV3UploadBackup(t *testing.T) {
 	t.Parallel()
 
@@ -4633,7 +4636,8 @@ func TestV3UploadBackup(t *testing.T) {
 		}
 		f, fh, err := r.FormFile("file")
 		if err != nil {
-			t.Fatalf("FormFile: %v", err)
+			t.Errorf("FormFile: %v", err)
+			return
 		}
 		defer f.Close()
 		if fh.Filename != "backup.zip" {

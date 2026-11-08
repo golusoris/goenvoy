@@ -88,6 +88,7 @@ func TestBaseClient_Get(t *testing.T) {
 	}
 }
 
+// TestBaseClient_Post tests executing a POST request with JSON payload via BaseClient.
 func TestBaseClient_Post(t *testing.T) {
 	t.Parallel()
 
@@ -106,7 +107,8 @@ func TestBaseClient_Post(t *testing.T) {
 
 		var cmd arr.CommandRequest
 		if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
-			t.Fatalf("decode request body: %v", err)
+			t.Errorf("decode request body: %v", err)
+			return
 		}
 		if cmd.Name != "RefreshSeries" {
 			t.Errorf("command name = %q, want RefreshSeries", cmd.Name)
@@ -211,6 +213,7 @@ func TestWithTimeout(t *testing.T) {
 	}
 }
 
+// TestBaseClient_Put tests executing a PUT request with JSON payload via BaseClient.
 func TestBaseClient_Put(t *testing.T) {
 	t.Parallel()
 
@@ -231,7 +234,8 @@ func TestBaseClient_Put(t *testing.T) {
 
 		var got item
 		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
-			t.Fatalf("decode request body: %v", err)
+			t.Errorf("decode request body: %v", err)
+			return
 		}
 		if got.Name != "updated" {
 			t.Errorf("Name = %q, want %q", got.Name, "updated")
@@ -260,6 +264,7 @@ func TestBaseClient_Put(t *testing.T) {
 	}
 }
 
+// TestBaseClient_Patch tests executing a PATCH request with JSON payload via BaseClient.
 func TestBaseClient_Patch(t *testing.T) {
 	t.Parallel()
 
@@ -279,7 +284,8 @@ func TestBaseClient_Patch(t *testing.T) {
 
 		var got patch
 		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
-			t.Fatalf("decode request body: %v", err)
+			t.Errorf("decode request body: %v", err)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -391,6 +397,7 @@ func TestBaseClient_GetRaw(t *testing.T) {
 	}
 }
 
+// TestBaseClient_Upload tests executing a multipart file upload via BaseClient.
 func TestBaseClient_Upload(t *testing.T) {
 	t.Parallel()
 
@@ -405,7 +412,8 @@ func TestBaseClient_Upload(t *testing.T) {
 
 		file, header, err := r.FormFile("file")
 		if err != nil {
-			t.Fatalf("FormFile failed: %v", err)
+			t.Errorf("FormFile failed: %v", err)
+			return
 		}
 		defer file.Close()
 

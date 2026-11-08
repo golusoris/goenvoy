@@ -21,11 +21,12 @@ func setup(t *testing.T, handler http.HandlerFunc) *fanart.Client {
 	)
 }
 
+// respond encodes a value as JSON into the response writer.
 func respond(t *testing.T, w http.ResponseWriter, v any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(v); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }
 
@@ -45,18 +46,22 @@ func TestNew(t *testing.T) {
 	}
 }
 
+// TestGetMovieImages tests retrieving movie artwork by TMDb ID.
 func TestGetMovieImages(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/movies/120" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.Header.Get("Api-Key") != "test-api-key" {
-			t.Fatal("missing api-key header")
+			t.Error("missing api-key header")
+			return
 		}
 		if r.Header.Get("Client-Key") != "test-client-key" {
-			t.Fatal("missing client-key header")
+			t.Error("missing client-key header")
+			return
 		}
 		respond(t, w, fanart.MovieImages{
 			Name:   "The Fellowship of the Ring",
@@ -109,12 +114,14 @@ func TestGetMovieImagesWithDisc(t *testing.T) {
 	}
 }
 
+// TestGetShowImages tests retrieving TV show artwork by TheTVDB ID.
 func TestGetShowImages(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/tv/75682" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, fanart.ShowImages{
 			Name:      "Bones",
@@ -150,12 +157,14 @@ func TestGetShowImages(t *testing.T) {
 	}
 }
 
+// TestGetArtistImages tests retrieving music artist artwork by MusicBrainz ID.
 func TestGetArtistImages(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/music/f4a31f0a-51dd-4fa7-986d-3095c40c5ed9" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, fanart.ArtistImages{
 			Name: "Evanescence",
@@ -199,12 +208,14 @@ func TestGetArtistImages(t *testing.T) {
 	}
 }
 
+// TestGetAlbumImages tests retrieving album artwork by MusicBrainz release group ID.
 func TestGetAlbumImages(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/music/albums/9ba659df-5814-32f6-b95f-02b738698e7c" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, fanart.AlbumImagesResponse{
 			Name: "Evanescence",
@@ -233,12 +244,14 @@ func TestGetAlbumImages(t *testing.T) {
 	}
 }
 
+// TestGetLabelImages tests retrieving record label artwork by MusicBrainz label ID.
 func TestGetLabelImages(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/music/labels/e832b688-546b-45e3-83e5-9f8db5dcde1d" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, fanart.LabelImages{
 			Name: "Profile Records",
@@ -263,12 +276,14 @@ func TestGetLabelImages(t *testing.T) {
 	}
 }
 
+// TestGetLatestMovies tests retrieving recently updated movie artwork entries.
 func TestGetLatestMovies(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/movies/latest" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []fanart.LatestMovie{
 			{TMDbID: "17610", IMDbID: "tt1045778", Name: "Year One", NewImages: "1", TotalImages: "7"},
@@ -286,12 +301,14 @@ func TestGetLatestMovies(t *testing.T) {
 	}
 }
 
+// TestGetLatestMoviesWithDate tests retrieving recently updated movie artwork filtered by timestamp.
 func TestGetLatestMoviesWithDate(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("date") != "1609459200" {
-			t.Fatalf("unexpected date param: %s", r.URL.Query().Get("date"))
+			t.Errorf("unexpected date param: %s", r.URL.Query().Get("date"))
+			return
 		}
 		respond(t, w, []fanart.LatestMovie{})
 	})
@@ -303,12 +320,14 @@ func TestGetLatestMoviesWithDate(t *testing.T) {
 	}
 }
 
+// TestGetLatestShows tests retrieving recently updated TV show artwork entries.
 func TestGetLatestShows(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/tv/latest" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []fanart.LatestShow{
 			{ID: "79473", Name: "Witchblade", NewImages: "2", TotalImages: "7"},
@@ -325,12 +344,14 @@ func TestGetLatestShows(t *testing.T) {
 	}
 }
 
+// TestGetLatestArtists tests retrieving recently updated music artist artwork entries.
 func TestGetLatestArtists(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/music/latest" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []fanart.LatestArtist{
 			{ID: "932cb13f-677c-4e63-beb1-fca45574d280", Name: "Zazie", NewImages: "1", TotalImages: "23"},

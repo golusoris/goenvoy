@@ -115,6 +115,7 @@ func xmlMulticallResponse() string {
 </data></array></value></param></params></methodResponse>`
 }
 
+// newXMLRPCServer starts a mock rTorrent XML-RPC server expecting a given method.
 func newXMLRPCServer(t *testing.T, wantMethod, response string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -123,11 +124,13 @@ func newXMLRPCServer(t *testing.T, wantMethod, response string) *httptest.Server
 		}
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			t.Fatalf("read body: %v", err)
+			t.Errorf("read body: %v", err)
+			return
 		}
 		var call xmlMethodCall
 		if err := xml.Unmarshal(body, &call); err != nil {
-			t.Fatalf("unmarshal: %v", err)
+			t.Errorf("unmarshal: %v", err)
+			return
 		}
 		if call.MethodName != wantMethod {
 			t.Errorf("method = %q, want %q", call.MethodName, wantMethod)

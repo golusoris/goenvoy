@@ -19,11 +19,12 @@ func setup(t *testing.T, handler http.HandlerFunc) *tvmaze.Client {
 	return tvmaze.New(metadata.WithBaseURL(srv.URL))
 }
 
+// respond encodes a value as JSON into the response writer.
 func respond(t *testing.T, w http.ResponseWriter, v any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(v); err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
 }
 
@@ -45,15 +46,18 @@ func TestNew(t *testing.T) {
 	}
 }
 
+// TestSearchShows tests searching for TV shows matching a text query.
 func TestSearchShows(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/search/shows" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("q") != "girls" {
-			t.Fatalf("unexpected query: %s", r.URL.Query().Get("q"))
+			t.Errorf("unexpected query: %s", r.URL.Query().Get("q"))
+			return
 		}
 		respond(t, w, []tvmaze.SearchShowResult{
 			{Score: 0.9, Show: tvmaze.Show{ID: 139, Name: "Girls"}},
@@ -70,12 +74,14 @@ func TestSearchShows(t *testing.T) {
 	}
 }
 
+// TestSearchShowSingle tests searching for a single TV show matching a query.
 func TestSearchShowSingle(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/singlesearch/shows" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, tvmaze.Show{ID: 139, Name: "Girls"})
 	})
@@ -87,15 +93,18 @@ func TestSearchShowSingle(t *testing.T) {
 	}
 }
 
+// TestLookupShowByTheTVDB tests looking up a TV show by TheTVDB ID.
 func TestLookupShowByTheTVDB(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/lookup/shows" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("thetvdb") != "264492" {
-			t.Fatalf("unexpected thetvdb: %s", r.URL.Query().Get("thetvdb"))
+			t.Errorf("unexpected thetvdb: %s", r.URL.Query().Get("thetvdb"))
+			return
 		}
 		respond(t, w, tvmaze.Show{ID: 1, Name: "Under the Dome"})
 	})
@@ -107,12 +116,14 @@ func TestLookupShowByTheTVDB(t *testing.T) {
 	}
 }
 
+// TestLookupShowByIMDB tests looking up a TV show by IMDb ID.
 func TestLookupShowByIMDB(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("imdb") != "tt1553656" {
-			t.Fatalf("unexpected imdb: %s", r.URL.Query().Get("imdb"))
+			t.Errorf("unexpected imdb: %s", r.URL.Query().Get("imdb"))
+			return
 		}
 		respond(t, w, tvmaze.Show{ID: 1, Name: "Under the Dome"})
 	})
@@ -124,12 +135,14 @@ func TestLookupShowByIMDB(t *testing.T) {
 	}
 }
 
+// TestLookupShowByTVRage tests looking up a TV show by TVRage ID.
 func TestLookupShowByTVRage(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("tvrage") != "25988" {
-			t.Fatalf("unexpected tvrage: %s", r.URL.Query().Get("tvrage"))
+			t.Errorf("unexpected tvrage: %s", r.URL.Query().Get("tvrage"))
+			return
 		}
 		respond(t, w, tvmaze.Show{ID: 1, Name: "Under the Dome"})
 	})
@@ -141,12 +154,14 @@ func TestLookupShowByTVRage(t *testing.T) {
 	}
 }
 
+// TestSearchPeople tests searching for people matching a text query.
 func TestSearchPeople(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/search/people" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.SearchPersonResult{
 			{Score: 0.8, Person: tvmaze.Person{ID: 1, Name: "Mike Vogel"}},
@@ -163,12 +178,14 @@ func TestSearchPeople(t *testing.T) {
 	}
 }
 
+// TestGetShow tests retrieving show details by TVmaze show ID.
 func TestGetShow(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, tvmaze.Show{
 			ID:     1,
@@ -188,12 +205,14 @@ func TestGetShow(t *testing.T) {
 	}
 }
 
+// TestGetShowEpisodes tests retrieving all episodes for a given show ID.
 func TestGetShowEpisodes(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/episodes" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.Episode{
 			{ID: 1, Name: "Pilot", Season: 1, Number: intPtr(1)},
@@ -211,15 +230,18 @@ func TestGetShowEpisodes(t *testing.T) {
 	}
 }
 
+// TestGetEpisodeByNumber tests retrieving an episode by season and episode number.
 func TestGetEpisodeByNumber(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/episodebynumber" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("season") != "1" || r.URL.Query().Get("number") != "1" {
-			t.Fatal("missing season/number params")
+			t.Error("missing season/number params")
+			return
 		}
 		respond(t, w, tvmaze.Episode{ID: 1, Name: "Pilot", Season: 1, Number: intPtr(1)})
 	})
@@ -231,15 +253,18 @@ func TestGetEpisodeByNumber(t *testing.T) {
 	}
 }
 
+// TestGetEpisodesByDate tests retrieving episodes for a show aired on a given date.
 func TestGetEpisodesByDate(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/episodesbydate" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("date") != "2013-06-24" {
-			t.Fatalf("unexpected date: %s", r.URL.Query().Get("date"))
+			t.Errorf("unexpected date: %s", r.URL.Query().Get("date"))
+			return
 		}
 		respond(t, w, []tvmaze.Episode{
 			{ID: 1, Name: "Pilot"},
@@ -253,12 +278,14 @@ func TestGetEpisodesByDate(t *testing.T) {
 	}
 }
 
+// TestGetShowSeasons tests retrieving all seasons for a given show ID.
 func TestGetShowSeasons(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/seasons" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.Season{
 			{ID: 1, Number: 1, EpisodeOrder: intPtr(13)},
@@ -273,12 +300,14 @@ func TestGetShowSeasons(t *testing.T) {
 	}
 }
 
+// TestGetSeasonEpisodes tests retrieving all episodes for a given season ID.
 func TestGetSeasonEpisodes(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/seasons/1/episodes" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.Episode{
 			{ID: 1, Name: "Pilot"},
@@ -292,12 +321,14 @@ func TestGetSeasonEpisodes(t *testing.T) {
 	}
 }
 
+// TestGetShowCast tests retrieving cast members for a given show ID.
 func TestGetShowCast(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/cast" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.CastMember{
 			{
@@ -320,12 +351,14 @@ func TestGetShowCast(t *testing.T) {
 	}
 }
 
+// TestGetShowCrew tests retrieving crew members for a given show ID.
 func TestGetShowCrew(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/crew" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.CrewMember{
 			{Type: "Creator", Person: tvmaze.Person{ID: 15, Name: "Stephen King"}},
@@ -342,12 +375,14 @@ func TestGetShowCrew(t *testing.T) {
 	}
 }
 
+// TestGetShowAKAs tests retrieving alias titles for a given show ID.
 func TestGetShowAKAs(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/akas" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.AKA{
 			{Name: "Unter der Kuppel", Country: &tvmaze.Country{Name: "Germany", Code: "DE"}},
@@ -364,12 +399,14 @@ func TestGetShowAKAs(t *testing.T) {
 	}
 }
 
+// TestGetShowImages tests retrieving artwork and media images for a show ID.
 func TestGetShowImages(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows/1/images" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.ShowImage{
 			{
@@ -396,15 +433,18 @@ func TestGetShowImages(t *testing.T) {
 	}
 }
 
+// TestGetShowIndex tests retrieving a paginated list of shows from the index.
 func TestGetShowIndex(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/shows" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("page") != "0" {
-			t.Fatalf("unexpected page: %s", r.URL.Query().Get("page"))
+			t.Errorf("unexpected page: %s", r.URL.Query().Get("page"))
+			return
 		}
 		respond(t, w, []tvmaze.Show{
 			{ID: 1, Name: "Under the Dome"},
@@ -418,12 +458,14 @@ func TestGetShowIndex(t *testing.T) {
 	}
 }
 
+// TestGetEpisode tests retrieving episode details by TVmaze episode ID.
 func TestGetEpisode(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/episodes/1" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, tvmaze.Episode{ID: 1, Name: "Pilot", Season: 1, Number: intPtr(1)})
 	})
@@ -435,12 +477,14 @@ func TestGetEpisode(t *testing.T) {
 	}
 }
 
+// TestGetPerson tests retrieving person details by TVmaze person ID.
 func TestGetPerson(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/people/1" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, tvmaze.Person{
 			ID:       1,
@@ -460,12 +504,14 @@ func TestGetPerson(t *testing.T) {
 	}
 }
 
+// TestGetPersonCastCredits tests retrieving cast credits for a given person ID.
 func TestGetPersonCastCredits(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/people/1/castcredits" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.CastCredit{
 			{
@@ -489,12 +535,14 @@ func TestGetPersonCastCredits(t *testing.T) {
 	}
 }
 
+// TestGetPersonCrewCredits tests retrieving crew credits for a given person ID.
 func TestGetPersonCrewCredits(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/people/15/crewcredits" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.CrewCredit{
 			{
@@ -516,18 +564,22 @@ func TestGetPersonCrewCredits(t *testing.T) {
 	}
 }
 
+// TestGetSchedule tests retrieving broadcast schedule items by country and date.
 func TestGetSchedule(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/schedule" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("country") != "US" {
-			t.Fatalf("unexpected country: %s", r.URL.Query().Get("country"))
+			t.Errorf("unexpected country: %s", r.URL.Query().Get("country"))
+			return
 		}
 		if r.URL.Query().Get("date") != "2024-01-01" {
-			t.Fatalf("unexpected date: %s", r.URL.Query().Get("date"))
+			t.Errorf("unexpected date: %s", r.URL.Query().Get("date"))
+			return
 		}
 		respond(t, w, []tvmaze.ScheduleItem{
 			{
@@ -547,15 +599,18 @@ func TestGetSchedule(t *testing.T) {
 	}
 }
 
+// TestGetScheduleNoParams tests retrieving schedule items without country or date filters.
 func TestGetScheduleNoParams(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/schedule" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("country") != "" || r.URL.Query().Get("date") != "" {
-			t.Fatal("unexpected query params")
+			t.Error("unexpected query params")
+			return
 		}
 		respond(t, w, []tvmaze.ScheduleItem{})
 	})
@@ -567,12 +622,14 @@ func TestGetScheduleNoParams(t *testing.T) {
 	}
 }
 
+// TestGetWebSchedule tests retrieving web broadcast schedule items.
 func TestGetWebSchedule(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/schedule/web" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		respond(t, w, []tvmaze.ScheduleItem{
 			{
@@ -589,15 +646,18 @@ func TestGetWebSchedule(t *testing.T) {
 	}
 }
 
+// TestGetShowUpdates tests retrieving recently updated show timestamps.
 func TestGetShowUpdates(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/updates/shows" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			return
 		}
 		if r.URL.Query().Get("since") != "day" {
-			t.Fatalf("unexpected since: %s", r.URL.Query().Get("since"))
+			t.Errorf("unexpected since: %s", r.URL.Query().Get("since"))
+			return
 		}
 		respond(t, w, map[string]int64{"1": 1704067200, "2": 1704153600})
 	})

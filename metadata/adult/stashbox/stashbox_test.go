@@ -25,6 +25,7 @@ type gqlRequest struct {
 	Variables map[string]any `json:"variables,omitempty"`
 }
 
+// newGQLServer starts a mock Stash-Box GraphQL server validating API keys.
 func newGQLServer(t *testing.T, wantKey, dataField string, response any) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +37,8 @@ func newGQLServer(t *testing.T, wantKey, dataField string, response any) *httpte
 		}
 		var req gqlRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode request: %v", err)
+			t.Errorf("decode request: %v", err)
+			return
 		}
 		data, _ := json.Marshal(response)
 		w.Header().Set("Content-Type", "application/json")
