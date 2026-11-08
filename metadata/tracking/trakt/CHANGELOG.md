@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.7](https://github.com/golusoris/goenvoy/compare/metadata/tracking/trakt/v1.3.6...metadata/tracking/trakt/v1.3.7) (2026-11-08)
+
+
+### Bug Fixes
+
+* handle error returns that were assigned to blank ([#278](https://github.com/golusoris/goenvoy/issues/278)) ([aa1f0dc](https://github.com/golusoris/goenvoy/commit/aa1f0dce6bf56f7fe65dcdcd782e8fa20a6f3e29))
+* **metadata:** surface body close errors and bound device-token polls ([#245](https://github.com/golusoris/goenvoy/issues/245)) ([b5bf66e](https://github.com/golusoris/goenvoy/commit/b5bf66ed74122274c163836ba60242909e085f11))
+
 ## [1.3.6](https://github.com/golusoris/goenvoy/compare/metadata/tracking/trakt/v1.3.5...metadata/tracking/trakt/v1.3.6) (2026-10-27)
 
 

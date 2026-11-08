@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.4](https://github.com/golusoris/goenvoy/compare/arr/jackett/v2.0.3...arr/jackett/v2.0.4) (2026-11-08)
+
+
+### Bug Fixes
+
+* handle error returns that were assigned to blank ([#278](https://github.com/golusoris/goenvoy/issues/278)) ([aa1f0dc](https://github.com/golusoris/goenvoy/commit/aa1f0dce6bf56f7fe65dcdcd782e8fa20a6f3e29))
+
 ## [2.0.3](https://github.com/golusoris/goenvoy/compare/arr/jackett/v2.0.2...arr/jackett/v2.0.3) (2026-10-26)
 
 

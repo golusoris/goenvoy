@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.6](https://github.com/golusoris/goenvoy/compare/metadata/game/igdb/v1.3.5...metadata/game/igdb/v1.3.6) (2026-11-08)
+
+
+### Bug Fixes
+
+* **metadata:** surface body close errors and bound device-token polls ([#245](https://github.com/golusoris/goenvoy/issues/245)) ([b5bf66e](https://github.com/golusoris/goenvoy/commit/b5bf66ed74122274c163836ba60242909e085f11))
+
 ## [1.3.5](https://github.com/golusoris/goenvoy/compare/metadata/game/igdb/v1.3.4...metadata/game/igdb/v1.3.5) (2026-10-27)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/golusoris/goenvoy/compare/arr/sonarr/v1.5.6...arr/sonarr/v1.6.0) (2026-11-08)
+
+
+### Features
+
+* **arr/sonarr:** fix the backup restore route, add covers, feed, TVDB lookup ([#238](https://github.com/golusoris/goenvoy/issues/238)) ([1190703](https://github.com/golusoris/goenvoy/commit/1190703563483b4aa4b7054871738bbbf7a4319a))
+
 ## [1.5.6](https://github.com/golusoris/goenvoy/compare/arr/sonarr/v1.5.5...arr/sonarr/v1.5.6) (2026-10-27)
 
 
