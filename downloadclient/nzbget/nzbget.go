@@ -102,6 +102,7 @@ func decodeRPCResponse(r io.Reader, dst any) error {
 	return nil
 }
 
+// call sends a JSON-RPC POST request to the NZBGet API and decodes the response.
 func (c *Client) call(ctx context.Context, method string, params []any, dst any) error {
 	id := int(c.requestID.Add(1))
 	reqBody := rpcRequest{
@@ -130,7 +131,10 @@ func (c *Client) call(ctx context.Context, method string, params []any, dst any)
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("nzbget: HTTP %d: read body: %w", resp.StatusCode, err)
+		}
 		return fmt.Errorf("nzbget: HTTP %d: %s", resp.StatusCode, string(body))
 	}
 

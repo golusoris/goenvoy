@@ -217,27 +217,89 @@ func TestGetPlatforms(t *testing.T) {
 	}
 }
 
-func TestDownloadError(t *testing.T) {
-	t.Parallel()
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("server error"))
-	}))
+// runDownloadHTTPErrorTest verifies that Download returns the expected error when the server responds with an HTTP error.
+func runDownloadHTTPErrorTest(t *testing.T, handler http.HandlerFunc, wantErrIs error, check func(*testing.T, error)) {
+	t.Helper()
+	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
 
 	c := launchbox.New(metadata.WithBaseURL(srv.URL))
 	err := c.Download(context.Background())
 	if err == nil {
-		t.Fatal("expected error")
+		t.Fatal("expected error, got nil")
 	}
+	if wantErrIs != nil && !errors.Is(err, wantErrIs) {
+		t.Fatalf("errors.Is(err, %v) = false; err: %v", wantErrIs, err)
+	}
+	if check != nil {
+		check(t, err)
+	}
+}
 
-	var apiErr *launchbox.APIError
-	if !errors.As(err, &apiErr) {
-		t.Fatalf("error type = %T, want *launchbox.APIError", err)
+type downloadTestCase struct {
+	name      string
+	handler   func(t *testing.T) http.HandlerFunc
+	wantErrIs error
+	check     func(*testing.T, error)
+}
+
+// downloadErrorCases returns test cases for TestDownloadError.
+func downloadErrorCases() []downloadTestCase {
+	return []downloadTestCase{
+		{
+			name: "read body error",
+			handler: func(t *testing.T) http.HandlerFunc {
+				t.Helper()
+				return func(w http.ResponseWriter, _ *http.Request) {
+					w.Header().Set("Content-Length", "100")
+					w.WriteHeader(http.StatusInternalServerError)
+					if _, err := w.Write([]byte("short")); err != nil {
+						t.Errorf("write body: %v", err)
+					}
+				}
+			},
+			wantErrIs: io.ErrUnexpectedEOF,
+			check: func(t *testing.T, err error) {
+				t.Helper()
+				if !strings.Contains(err.Error(), "launchbox: HTTP 500: read body:") {
+					t.Fatalf("err = %q, want containing %q", err.Error(), "launchbox: HTTP 500: read body:")
+				}
+			},
+		},
+		{
+			name: "non-2xx with body",
+			handler: func(t *testing.T) http.HandlerFunc {
+				t.Helper()
+				return func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusInternalServerError)
+					if _, err := w.Write([]byte("server error")); err != nil {
+						t.Errorf("write body: %v", err)
+					}
+				}
+			},
+			check: func(t *testing.T, err error) {
+				t.Helper()
+				var apiErr *launchbox.APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("error type = %T, want *launchbox.APIError", err)
+				}
+				if apiErr.StatusCode != http.StatusInternalServerError {
+					t.Errorf("StatusCode = %d, want 500", apiErr.StatusCode)
+				}
+			},
+		},
 	}
-	if apiErr.StatusCode != http.StatusInternalServerError {
-		t.Errorf("StatusCode = %d, want 500", apiErr.StatusCode)
+}
+
+// TestDownloadError verifies error handling for HTTP failures and non-2xx status codes during download.
+func TestDownloadError(t *testing.T) {
+	t.Parallel()
+	cases := downloadErrorCases()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runDownloadHTTPErrorTest(t, tc.handler(t), tc.wantErrIs, tc.check)
+		})
 	}
 }
 
