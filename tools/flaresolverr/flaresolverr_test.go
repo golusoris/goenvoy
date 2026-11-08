@@ -12,6 +12,7 @@ import (
 	"github.com/golusoris/goenvoy/tools/flaresolverr/v2"
 )
 
+// newTestServer starts an httptest server asserting FlareSolverr commands.
 func newTestServer(t *testing.T, wantCmd string, response any) *flaresolverr.Client {
 	t.Helper()
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -24,13 +25,15 @@ func newTestServer(t *testing.T, wantCmd string, response any) *flaresolverr.Cli
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			t.Fatalf("read body: %v", err)
+			t.Errorf("read body: %v", err)
+			return
 		}
 		defer func() { _ = r.Body.Close() }()
 
 		var req map[string]any
 		if err := json.Unmarshal(body, &req); err != nil {
-			t.Fatalf("decode body: %v", err)
+			t.Errorf("decode body: %v", err)
+			return
 		}
 		if got, ok := req["cmd"].(string); !ok || got != wantCmd {
 			t.Errorf("cmd = %q, want %q", got, wantCmd)
@@ -170,6 +173,7 @@ func TestCreateSession(t *testing.T) {
 	}
 }
 
+// TestCreateSessionWithProxy tests creating a FlareSolverr session configured with an HTTP proxy.
 func TestCreateSessionWithProxy(t *testing.T) {
 	t.Parallel()
 
@@ -180,7 +184,8 @@ func TestCreateSessionWithProxy(t *testing.T) {
 
 		proxy, ok := req["proxy"].(map[string]any)
 		if !ok {
-			t.Fatal("missing proxy")
+			t.Error("missing proxy")
+			return
 		}
 		if proxy["url"] != "http://proxy:8080" {
 			t.Errorf("proxy.url = %v, want http://proxy:8080", proxy["url"])

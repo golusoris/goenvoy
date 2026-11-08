@@ -24,6 +24,7 @@ func newTestServer(t *testing.T, wantPath string, response any) *httptest.Server
 	}))
 }
 
+// newLoginServer starts a mock qBittorrent server handling login and logout endpoints.
 func newLoginServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +33,7 @@ func newLoginServer(t *testing.T) *httptest.Server {
 			if r.Method != http.MethodPost {
 				t.Errorf("login method = %q, want POST", r.Method)
 			}
-			http.SetCookie(w, &http.Cookie{Name: "SID", Value: "test-session-id", Path: "/"})
+			http.SetCookie(w, &http.Cookie{Name: "SID", Value: "test-session-id", Path: "/", HttpOnly: true, Secure: true})
 			w.WriteHeader(http.StatusOK)
 		case "/api/v2/auth/logout":
 			w.WriteHeader(http.StatusOK)

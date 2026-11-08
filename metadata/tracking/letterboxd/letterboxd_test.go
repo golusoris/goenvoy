@@ -63,6 +63,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
+// TestNewWithClientCredentials tests OAuth2 client credentials authentication and the token callback.
 func TestNewWithClientCredentials(t *testing.T) {
 	t.Parallel()
 
@@ -75,7 +76,8 @@ func TestNewWithClientCredentials(t *testing.T) {
 				t.Errorf("method = %s, want POST", r.Method)
 			}
 			if err := r.ParseForm(); err != nil {
-				t.Fatalf("ParseForm: %v", err)
+				t.Errorf("ParseForm: %v", err)
+				return
 			}
 			if got := r.Form.Get("client_id"); got != "client-id" {
 				t.Errorf("client_id = %q, want client-id", got)

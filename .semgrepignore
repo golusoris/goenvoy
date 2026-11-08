@@ -1,0 +1,17 @@
+# Why: Semgrep 1.183.0 built-in ignore list minus *_test.go; a repository .semgrepignore replaces the built-in one, and tools/semgrep rules target tests.
+.git
+.svn
+.hg
+_darcs
+CVS
+build/
+vendor/
+*.min.js
+node_modules/
+.yarn/
+.venv/
+_opam/
+_build/
+_cargo/
+tests/
+testsuite/
