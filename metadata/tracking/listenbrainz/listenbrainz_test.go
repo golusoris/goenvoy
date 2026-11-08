@@ -414,7 +414,11 @@ func TestSubmitListens(t *testing.T) {
 			t.Errorf("listen_type = %v, want single", payload["listen_type"])
 		}
 		items, ok := payload["payload"].([]any)
-		if !ok || len(items) != 1 {
+		if !ok {
+			t.Errorf("payload = %T (%v), want []any", payload["payload"], payload["payload"])
+			return
+		}
+		if len(items) != 1 {
 			t.Errorf("payload length = %d, want 1", len(items))
 			return
 		}
