@@ -34,8 +34,9 @@ func (c *Client) DeleteBackup(ctx context.Context, id int) error {
 	return c.base.Delete(ctx, fmt.Sprintf("/api/v3/system/backup/%d", id), nil, nil)
 }
 
-// RestoreBackup stages a restore from the backup with the given ID.
-// Sonarr applies the staged restore on its next start and does not restart itself; call Restart afterwards.
+// RestoreBackup restores the backup with the given ID the same way as UploadBackup: Sonarr overwrites
+// config.xml at once, stages any database in the archive for its next start and does not restart itself,
+// so call Restart afterwards.
 func (c *Client) RestoreBackup(ctx context.Context, id int) error {
 	return c.base.Post(ctx, fmt.Sprintf("/api/v3/system/backup/restore/%d", id), nil, nil)
 }
@@ -109,11 +110,14 @@ func (c *Client) HeadPing(ctx context.Context) error {
 
 // ---------- Backup Upload ----------.
 
-// UploadBackup uploads a backup archive via multipart form POST and stages it for restore.
-// Sonarr writes config.xml at once and applies the staged database on its next start; it does not restart
-// itself, so call Restart afterwards. No upload-only endpoint exists: authorize callers for restore, not
-// archive storage. A failed or canceled call can leave the remote outcome unknown; retrying with the same
-// archive stages it again, and Restart applies the archive staged last.
+// UploadBackup uploads a backup archive via multipart form POST and restores it.
+// Sonarr overwrites config.xml at once and stages the archive's SQLite database (sonarr.db or nzbdrone.db)
+// for its next start; it does not restart itself, so call Restart afterwards. An archive without a
+// database, such as a backup of a PostgreSQL instance, restores config.xml only, and a database staged by
+// an earlier restore then stays pending. No upload-only endpoint exists: authorize callers for restore,
+// not archive storage. A failed or canceled call can leave the remote outcome unknown and the request still
+// running on Sonarr; every upload shares one temporary path there, so do not retry while the earlier
+// attempt may still be running.
 func (c *Client) UploadBackup(ctx context.Context, fileName string, data io.Reader) error {
 	return c.base.Upload(ctx, "/api/v3/system/backup/restore/upload", "file", fileName, data)
 }
