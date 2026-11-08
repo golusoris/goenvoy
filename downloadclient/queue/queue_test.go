@@ -58,7 +58,7 @@ func rpcMethod(t *testing.T, r *http.Request) string {
 	return body.Method
 }
 
-// assertSnapshot verifies that the taken snapshot matches the expected snapshot.
+// Why: asserts that the taken snapshot matches the expected snapshot.
 func assertSnapshot(t *testing.T, got, want queue.Snapshot) {
 	t.Helper()
 	if got != want {
@@ -66,7 +66,7 @@ func assertSnapshot(t *testing.T, got, want queue.Snapshot) {
 	}
 }
 
-// assertErrorPrefix verifies that err is non-nil and starts with the expected prefix.
+// Why: asserts that err is non-nil and starts with the expected prefix.
 func assertErrorPrefix(t *testing.T, err error, prefix string) {
 	t.Helper()
 	if err == nil {
@@ -77,7 +77,7 @@ func assertErrorPrefix(t *testing.T, err error, prefix string) {
 	}
 }
 
-// checkBasicAuth verifies that the request basic auth matches the expected user and pass.
+// Why: validates basic authentication credentials on an incoming request.
 func checkBasicAuth(r *http.Request, wantUser, wantPass string) bool {
 	u, p, ok := r.BasicAuth()
 	return ok && u == wantUser && p == wantPass
@@ -335,7 +335,7 @@ func rtListing(downloads ...rtTorrentFixture) string {
 	return "<params><param><value><array><data>" + strings.Join(rows, "") + "</data></array></value></param></params>"
 }
 
-// rtXMLResponse returns the method response XML for a given method and multicall listing.
+// Why: maps an rTorrent XML-RPC method name to its mock XML response.
 func rtXMLResponse(method, listing string) (string, bool) {
 	switch method {
 	case "system.client_version":
@@ -555,27 +555,44 @@ func TestTake_UnknownKind(t *testing.T) {
 	}
 }
 
-// checkNoWrite verifies that action contains none of the blocked write operations.
-func checkNoWrite(t *testing.T, service, action string, blocked []string) {
+// Why: writes an XML-RPC method response and reports write errors.
+func writeXMLResponse(t *testing.T, w io.Writer, result string) {
+	t.Helper()
+	if _, err := io.WriteString(w, xml.Header+"<methodResponse>"+result+"</methodResponse>"); err != nil {
+		t.Errorf("write XML response: %v", err)
+	}
+}
+
+// Why: asserts that action contains none of the blocked write operations.
+func checkNoWrite(t *testing.T, service, action string, blocked []string) bool {
 	t.Helper()
 	lowerAction := strings.ToLower(action)
 	for _, b := range blocked {
 		if strings.Contains(lowerAction, strings.ToLower(b)) {
-			t.Fatalf("%s write violation: executed write operation %q", service, action)
+			t.Errorf("%s write violation: executed write operation %q", service, action)
+			return false
 		}
 	}
+	return true
 }
 
-// testNeverWritesQBittorrent verifies that Take makes no write requests to qBittorrent.
+// Why: verifies that Take makes no write requests to qBittorrent.
 func testNeverWritesQBittorrent(t *testing.T) {
 	t.Helper()
+	var listed atomic.Bool
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		checkNoWrite(t, "qbittorrent", r.URL.Path, []string{"/pause", "/resume", "/delete", "/add"})
+		if !checkNoWrite(t, "qbittorrent", r.URL.Path, []string{"/pause", "/resume", "/delete", "/add"}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 		switch r.URL.Path {
 		case "/api/v2/app/version":
-			_, _ = io.WriteString(w, "5.0.0")
+			if _, err := io.WriteString(w, "5.0.0"); err != nil {
+				t.Errorf("write version: %v", err)
+			}
 		case "/api/v2/torrents/info":
+			listed.Store(true)
 			writeJSON(t, w, []map[string]any{})
 		default:
 			http.NotFound(w, r)
@@ -588,11 +605,15 @@ func testNeverWritesQBittorrent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Take error: %v", err)
 	}
+	if !listed.Load() {
+		t.Errorf("qbittorrent: Take sent no /api/v2/torrents/info request")
+	}
 }
 
-// testNeverWritesTransmission verifies that Take makes no write requests to Transmission.
+// Why: verifies that Take makes no write requests to Transmission.
 func testNeverWritesTransmission(t *testing.T) {
 	t.Helper()
+	var listed atomic.Bool
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /transmission/rpc", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Transmission-Session-Id") == "" {
@@ -601,11 +622,15 @@ func testNeverWritesTransmission(t *testing.T) {
 			return
 		}
 		method := rpcMethod(t, r)
-		checkNoWrite(t, "transmission", method, []string{"torrent-start", "torrent-stop", "torrent-remove", "torrent-add"})
+		if !checkNoWrite(t, "transmission", method, []string{"torrent-start", "torrent-stop", "torrent-remove", "torrent-add"}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 		switch method {
 		case "session-get":
 			writeJSON(t, w, map[string]any{"result": "success", "arguments": map[string]any{"version": "4.0.0"}})
 		case "torrent-get":
+			listed.Store(true)
 			writeJSON(t, w, map[string]any{"result": "success", "arguments": map[string]any{"torrents": []map[string]any{}}})
 		default:
 			writeJSON(t, w, map[string]any{"result": "unknown method"})
@@ -618,11 +643,15 @@ func testNeverWritesTransmission(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Take error: %v", err)
 	}
+	if !listed.Load() {
+		t.Errorf("transmission: Take sent no torrent-get request")
+	}
 }
 
-// testNeverWritesDeluge verifies that Take makes no write requests to Deluge.
+// Why: verifies that Take makes no write requests to Deluge.
 func testNeverWritesDeluge(t *testing.T) {
 	t.Helper()
+	var listed atomic.Bool
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /json", func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
@@ -632,15 +661,19 @@ func testNeverWritesDeluge(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			t.Errorf("decode deluge body: %v", err)
 		}
-		checkNoWrite(t, "deluge", body.Method, []string{
+		if !checkNoWrite(t, "deluge", body.Method, []string{
 			"core.pause", "core.resume", "core.remove", "core.add",
-		})
+		}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 		switch body.Method {
 		case "auth.login":
 			writeJSON(t, w, map[string]any{"result": true, "error": nil, "id": body.ID})
 		case "daemon.get_version", "daemon.info":
 			writeJSON(t, w, map[string]any{"result": "2.1.0", "error": nil, "id": body.ID})
 		case "core.get_torrents_status":
+			listed.Store(true)
 			writeJSON(t, w, map[string]any{"result": map[string]any{}, "error": nil, "id": body.ID})
 		default:
 			writeJSON(t, w, map[string]any{"result": nil, "error": map[string]any{"code": 1, "message": "unknown"}, "id": body.ID})
@@ -653,11 +686,15 @@ func testNeverWritesDeluge(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Take error: %v", err)
 	}
+	if !listed.Load() {
+		t.Errorf("deluge: Take sent no core.get_torrents_status request")
+	}
 }
 
-// testNeverWritesRTorrent verifies that Take makes no write requests to rTorrent.
+// Why: verifies that Take makes no write requests to rTorrent.
 func testNeverWritesRTorrent(t *testing.T) {
 	t.Helper()
+	var listed atomic.Bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var call struct {
 			Method string `xml:"methodName"`
@@ -665,13 +702,19 @@ func testNeverWritesRTorrent(t *testing.T) {
 		if err := xml.NewDecoder(r.Body).Decode(&call); err != nil {
 			t.Errorf("decode call: %v", err)
 		}
-		checkNoWrite(t, "rtorrent", call.Method, []string{"d.stop", "d.start", "d.erase", "d.load"})
+		if !checkNoWrite(t, "rtorrent", call.Method, []string{"d.stop", "d.start", "d.erase", "d.load"}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		if call.Method == "d.multicall2" {
+			listed.Store(true)
+		}
 		result, ok := rtXMLResponse(call.Method, rtListing())
 		if !ok {
 			t.Errorf("unexpected xmlrpc call %q", call.Method)
 		}
 		w.Header().Set("Content-Type", "text/xml")
-		_, _ = io.WriteString(w, xml.Header+"<methodResponse>"+result+"</methodResponse>")
+		writeXMLResponse(t, w, result)
 	}))
 	t.Cleanup(srv.Close)
 
@@ -679,22 +722,33 @@ func testNeverWritesRTorrent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Take error: %v", err)
 	}
+	if !listed.Load() {
+		t.Errorf("rtorrent: Take sent no d.multicall2 request")
+	}
 }
 
-// testNeverWritesSABnzbd verifies that Take makes no write requests to SABnzbd.
+// Why: verifies that Take makes no write requests to SABnzbd.
 func testNeverWritesSABnzbd(t *testing.T) {
 	t.Helper()
+	var listed atomic.Bool
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		mode := q.Get("mode")
 		name := q.Get("name")
-		checkNoWrite(t, "sabnzbd", "mode="+mode, []string{"mode=pause", "mode=resume"})
-		checkNoWrite(t, "sabnzbd", "name="+name, []string{"name=delete", "name=addurl", "name=addfile"})
+		if !checkNoWrite(t, "sabnzbd", "mode="+mode, []string{"mode=pause", "mode=resume"}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		if !checkNoWrite(t, "sabnzbd", "name="+name, []string{"name=delete", "name=addurl", "name=addfile"}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 		switch mode {
 		case "version":
 			writeJSON(t, w, map[string]any{"version": "4.3.0"})
 		case "queue":
+			listed.Store(true)
 			writeJSON(t, w, map[string]any{"queue": map[string]any{"paused": false, "speed": "0", "slots": []map[string]any{}}})
 		default:
 			http.NotFound(w, r)
@@ -707,21 +761,29 @@ func testNeverWritesSABnzbd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Take error: %v", err)
 	}
+	if !listed.Load() {
+		t.Errorf("sabnzbd: Take sent no mode=queue request")
+	}
 }
 
-// testNeverWritesNZBGet verifies that Take makes no write requests to NZBGet.
+// Why: verifies that Take makes no write requests to NZBGet.
 func testNeverWritesNZBGet(t *testing.T) {
 	t.Helper()
+	var listed atomic.Bool
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /jsonrpc", func(w http.ResponseWriter, r *http.Request) {
 		method := rpcMethod(t, r)
-		checkNoWrite(t, "nzbget", method, []string{"pausedownload", "resumedownload", "editqueue", "append"})
+		if !checkNoWrite(t, "nzbget", method, []string{"pausedownload", "resumedownload", "editqueue", "append"}) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 		switch method {
 		case "version":
 			writeJSON(t, w, map[string]any{"result": "24.0"})
 		case "status":
 			writeJSON(t, w, map[string]any{"result": map[string]any{"DownloadPaused": false, "DownloadRate": 0}})
 		case "listgroups":
+			listed.Store(true)
 			writeJSON(t, w, map[string]any{"result": []map[string]any{}})
 		default:
 			writeJSON(t, w, map[string]any{"result": "unknown"})
@@ -733,6 +795,9 @@ func testNeverWritesNZBGet(t *testing.T) {
 	_, err := queue.Take(context.Background(), queue.Target{Kind: queue.KindNZBGet, BaseURL: srv.URL})
 	if err != nil {
 		t.Fatalf("Take error: %v", err)
+	}
+	if !listed.Load() {
+		t.Errorf("nzbget: Take sent no listgroups request")
 	}
 }
 
