@@ -31,7 +31,8 @@ func jsonOK(t *testing.T, w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		t.Fatalf("failed to encode mock response: %v", err)
+		// Why: handler runs on the server goroutine; FailNow must run on the test goroutine.
+		t.Errorf("failed to encode mock response: %v", err)
 	}
 }
 
@@ -59,8 +60,7 @@ func readOnlyHandler(t *testing.T) http.HandlerFunc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, body)
+		jsonOK(t, w, json.RawMessage(body))
 	}
 }
 
@@ -874,8 +874,7 @@ func configHandler(t *testing.T, path, body string) http.HandlerFunc {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, body)
+		jsonOK(t, w, json.RawMessage(body))
 	}
 }
 
