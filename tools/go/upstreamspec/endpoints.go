@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"time"
+
+	"github.com/golusoris/goenvoy/tools/go/lintexceptions"
 )
 
 type operation struct {
@@ -118,12 +120,13 @@ func evalOps(p pin, ops []codeOp, specOps map[operation]bool, allowList []allowE
 	return findings, inSpecCount, len(calledSpecOps)
 }
 
+// evalOffSpecOp returns findings for one off-spec code operation, empty when a matching allow-list entry has not expired, reporting an expired entry once.
 func evalOffSpecOp(module, tag, specName string, op codeOp, allowList []allowEntry, matched, expiredReported map[int]bool, now time.Time) []string {
 	matchIdx := findAllowMatch(module, op, allowList)
 	if matchIdx != -1 {
 		matched[matchIdx] = true
 		entry := allowList[matchIdx]
-		if expired, err := isExpired(entry.Expires, now); err == nil && !expired {
+		if expired, err := lintexceptions.Expired(entry.Expires, now); err == nil && !expired {
 			return nil
 		}
 		if !expiredReported[matchIdx] {
