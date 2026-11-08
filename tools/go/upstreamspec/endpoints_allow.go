@@ -95,13 +95,3 @@ func findAllowMatch(module string, op codeOp, allowList []allowEntry) int {
 	}
 	return -1
 }
-
-// isExpired checks whether the given expiry string is strictly before today in UTC.
-func isExpired(expiry string, today time.Time) (bool, error) {
-	date, err := time.Parse(time.DateOnly, expiry)
-	if err != nil {
-		return false, fmt.Errorf("expiry %q: %w", expiry, err)
-	}
-	day := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
-	return day.After(date), nil
-}
