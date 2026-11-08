@@ -267,3 +267,34 @@ func TestEndpointsUnexpiredAllowPasses(t *testing.T) {
 		t.Fatalf("unexpected error with valid allow: %v", err)
 	}
 }
+
+// TestEndpointsExpiredAllowReportedOnce verifies that multiple off-spec operations matching one expired allow entry emit the expiry finding only once.
+func TestEndpointsExpiredAllowReportedOnce(t *testing.T) {
+	t.Parallel()
+	specBytes := []byte(fixtureSpec)
+	specSha := digest(specBytes)
+	server := serveSpec(t, specBytes, "application/json")
+
+	code := "func (c *Client) Old(ctx context.Context) error {\n" +
+		"\t_ = c.Delete(ctx, \"/not-in-spec\")\n" +
+		"\treturn c.Delete(ctx, \"/not-in-spec\")\n" +
+		"}\n"
+	allow := "allow:\n  - module: testmod\n    func: Client.Old\n    method: DELETE\n    path: /not-in-spec\n    reason: test\n    expires: 2020-01-01\n"
+	root := setupTestRoot(t, code, allow)
+	manifestFile := filepath.Join(root, "specs.yaml")
+	writeManifest(t, manifestFile, specSha, "testmod")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var out bytes.Buffer
+	err := run(ctx, []string{"endpoints", "-manifest", manifestFile, "-root", root}, &out, server.URL)
+	if err == nil {
+		t.Fatal("expected error with expired allow entry, got nil")
+	}
+	if got := strings.Count(err.Error(), "allow entry testmod Client.Old expired 2020-01-01"); got != 1 {
+		t.Errorf("expired entry count = %d, want 1; err: %v", got, err)
+	}
+	if got := strings.Count(err.Error(), "DELETE /not-in-spec not in sample v1.2.3 spec"); got != 2 {
+		t.Errorf("off-spec delete count = %d, want 2; err: %v", got, err)
+	}
+}
