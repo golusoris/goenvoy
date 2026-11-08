@@ -239,6 +239,39 @@ check_atomic_failure() {
   printf 'generator failed atomically (rc=%d), config and manifest unmodified\n' "$gen_rc"
 }
 
+# Why: verify parent module manifest ignores nested module tag.
+check_nested_tag_manifest() {
+  local gen_dir="$1"
+  local manifest="$gen_dir/.release-please-manifest.json"
+  local meta_ver tvmaze_ver
+
+  (
+    cd "$gen_dir"
+    bash tools/gen-release-please.sh >/dev/null 2>&1
+  ) || {
+    printf 'FAIL %s: generator failed\n' "case_i" >&2
+    return 1
+  }
+
+  if [ ! -f "$manifest" ]; then
+    printf 'FAIL %s: manifest file not found: %s\n' "case_i" "$manifest" >&2
+    return 1
+  fi
+
+  meta_ver="$(jq -r '."metadata"' "$manifest")"
+  tvmaze_ver="$(jq -r '."metadata/video/tvmaze"' "$manifest")"
+
+  if [ "$meta_ver" != "1.4.3" ]; then
+    printf 'FAIL %s: manifest "metadata" expected 1.4.3, got %s\n' "case_i" "$meta_ver" >&2
+    return 1
+  fi
+  if [ "$tvmaze_ver" != "1.3.5" ]; then
+    printf 'FAIL %s: manifest "metadata/video/tvmaze" expected 1.3.5, got %s\n' "case_i" "$tvmaze_ver" >&2
+    return 1
+  fi
+  printf 'manifest holds expected module versions: metadata=%s, metadata/video/tvmaze=%s\n' "$meta_ver" "$tvmaze_ver"
+}
+
 GEN_DIR="$WORK/gen"
 setup_generator_dir "$GEN_DIR"
 BASE_CONFIG="$GEN_DIR/release-please-config.json"
@@ -293,6 +326,14 @@ EOFSTUB
 chmod +x "$CASE_H_DIR/git"
 
 expect_pass "case_h: generator fails atomically on tag error" check_atomic_failure "$CASE_H_DIR"
+
+# Why: case i: parent module manifest must not pick up nested module tag.
+CASE_I_DIR="$WORK/case_i"
+setup_generator_dir "$CASE_I_DIR"
+GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$CASE_I_DIR" -c user.name=fixture -c user.email=fixture@example.invalid commit -q -m "initial"
+GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$CASE_I_DIR" -c user.name=fixture -c user.email=fixture@example.invalid tag metadata/v1.4.3
+GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$CASE_I_DIR" -c user.name=fixture -c user.email=fixture@example.invalid tag metadata/video/tvmaze/v1.3.5
+expect_pass "case_i: parent module ignores nested module tag" check_nested_tag_manifest "$CASE_I_DIR"
 
 # Why: positive case: committed repository configuration matches generator and PR template.
 expect_pass "repo: committed config matches generator and PR template" check_release_config "$REPO_ROOT/release-please-config.json" "$GEN_DIR"
