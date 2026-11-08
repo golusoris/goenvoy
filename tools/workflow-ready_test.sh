@@ -186,6 +186,31 @@ mkdir -p "$WORK/case_s/.github/workflows"
 printf 'name: CI\non:\n-\n  push\n' > "$WORK/case_s/.github/workflows/ci.yml"
 expect_pass "case_s: indentless bare-dash push" "$WORK/case_s"
 
+# Why: case t: indentless dash-tab pull_request must be refused.
+mkdir -p "$WORK/case_t/.github/workflows"
+printf 'name: CI\non:\n-\tpull_request\n' > "$WORK/case_t/.github/workflows/ci.yml"
+expect_refusal "case_t: indentless dash-tab pull_request" "pull_request trigger lacks ready_for_review" "$WORK/case_t"
+
+# Why: case u: indented dash-tab pull_request must be refused.
+mkdir -p "$WORK/case_u/.github/workflows"
+printf 'name: CI\non:\n  -\tpull_request\n' > "$WORK/case_u/.github/workflows/ci.yml"
+expect_refusal "case_u: indented dash-tab pull_request" "pull_request trigger lacks ready_for_review" "$WORK/case_u"
+
+# Why: case v: indented dash-tab ready_for_review in types must pass.
+mkdir -p "$WORK/case_v/.github/workflows"
+printf 'name: CI\non:\n  pull_request:\n    types:\n      -\tready_for_review\n' > "$WORK/case_v/.github/workflows/ci.yml"
+expect_pass "case_v: indented dash-tab ready_for_review in types" "$WORK/case_v"
+
+# Why: case w: indentless dash-tab push must pass.
+mkdir -p "$WORK/case_w/.github/workflows"
+printf 'name: CI\non:\n-\tpush\n' > "$WORK/case_w/.github/workflows/ci.yml"
+expect_pass "case_w: indentless dash-tab push" "$WORK/case_w"
+
+# Why: case x: trailing tab before comment on pull_request item must be refused.
+mkdir -p "$WORK/case_x/.github/workflows"
+printf 'name: CI\non:\n  - pull_request\t# note\n' > "$WORK/case_x/.github/workflows/ci.yml"
+expect_refusal "case_x: trailing tab before comment on pull_request item" "pull_request trigger lacks ready_for_review" "$WORK/case_x"
+
 # Why: verify the real repository passes.
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 expect_pass "repo: real check" "$REPO_ROOT"

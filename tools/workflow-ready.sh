@@ -135,7 +135,7 @@ for f in "${files[@]}"; do
       if [ "$pending_dash_indent" -ge 0 ]; then
         if [ "$indent" -gt "$pending_dash_indent" ]; then
           item="${trimmed%%#*}"
-          item="${item%"${item##*[! ]}"}"
+          item="${item%"${item##*[![:blank:]]}"}"
           item="${item#[\'\"]}"
           item="${item%[\'\"]}"
           if [ "$item" = "pull_request" ]; then
@@ -180,15 +180,15 @@ for f in "${files[@]}"; do
         # nested lists (e.g. branches: [- pull_request]).
         if [[ "$trimmed" == -* ]] && [ "$indent" -eq "$on_indent" ]; then
           item="${trimmed#-}"
-          item="${item#"${item%%[! ]*}"}"
+          item="${item#"${item%%[![:blank:]]*}"}"
           item="${item%%#*}"
-          item="${item%"${item##*[! ]}"}"
+          item="${item%"${item##*[![:blank:]]}"}"
           # Why: strip YAML block scalar indicators (>-, >, |, |-).
           item="${item#>-}"
           item="${item#>}"
           item="${item#\|-}"
           item="${item#\|}"
-          item="${item#"${item%%[! ]*}"}"
+          item="${item#"${item%%[![:blank:]]*}"}"
           item="${item#[\'\"]}"
           item="${item%[\'\"]}"
           if [ "$item" = "pull_request" ]; then
@@ -209,9 +209,9 @@ for f in "${files[@]}"; do
             in_types_block=0
           else
             item="${trimmed%%#*}"
-            item="${item%"${item##*[! ]}"}"
+            item="${item%"${item##*[![:blank:]]}"}"
             item="${item#-}"
-            item="${item#"${item%%[! ]*}"}"
+            item="${item#"${item%%[![:blank:]]*}"}"
             item="${item#[\'\"]}"
             item="${item%[\'\"]}"
             if [ "$item" = "ready_for_review" ]; then
