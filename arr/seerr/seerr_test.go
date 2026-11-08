@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/golusoris/goenvoy/arr/seerr"
@@ -822,6 +823,44 @@ func TestReopenIssue(t *testing.T) {
 	}
 }
 
+// Why: builds a seerr.Client bound to srv so each test skips constructor boilerplate.
+func newTestClient(t *testing.T, srv *httptest.Server) *seerr.Client {
+	t.Helper()
+	c, err := seerr.New(srv.URL, "test-key")
+	if err != nil {
+		t.Fatalf("seerr.New: %v", err)
+	}
+	return c
+}
+
+// Why: one HTTP 500 fixture with a JSON message shared by every error-path test.
+func new500Server(t *testing.T, message string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		if err := json.NewEncoder(w).Encode(map[string]string{"message": message}); err != nil {
+			t.Errorf("encode mock response: %v", err)
+		}
+	}))
+}
+
+// Why: one assertion that err wraps an *arr.APIError with HTTP 500 status.
+func assertAPIError500(t *testing.T, err error) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("expected error on HTTP 500, got nil")
+	}
+	var apiErr *arr.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *arr.APIError, got %T", err)
+	}
+	if apiErr.StatusCode != http.StatusInternalServerError {
+		t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusInternalServerError)
+	}
+}
+
+// TestGetSonarrSettings asserts Sonarr service settings retrieval across positive, error, and empty responses.
 func TestGetSonarrSettings(t *testing.T) {
 	t.Parallel()
 
@@ -847,54 +886,27 @@ func TestGetSonarrSettings(t *testing.T) {
 		srv := newTestServer(t, http.MethodGet, "/api/v1/settings/sonarr", want)
 		defer srv.Close()
 
-		c, err := seerr.New(srv.URL, "test-key")
-		if err != nil {
-			t.Fatalf("seerr.New: %v", err)
-		}
+		c := newTestClient(t, srv)
 		got, err := c.GetSonarrSettings(context.Background())
 		if err != nil {
 			t.Fatalf("GetSonarrSettings: %v", err)
 		}
-		if len(got) != 1 {
-			t.Fatalf("len = %d, want 1", len(got))
-		}
-		if got[0].Name != "Sonarr 4K" {
-			t.Errorf("Name = %q, want %q", got[0].Name, "Sonarr 4K")
-		}
-		if got[0].Port != 8989 {
-			t.Errorf("Port = %d, want 8989", got[0].Port)
-		}
-		if got[0].ActiveDirectory != "/media/tv4k" {
-			t.Errorf("ActiveDirectory = %q, want %q", got[0].ActiveDirectory, "/media/tv4k")
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got = %+v, want %+v", got, want)
 		}
 	})
 
 	t.Run("negative HTTP 500", func(t *testing.T) {
 		t.Parallel()
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte(`{"message":"Sonarr unavailable"}`))
-		}))
+		srv := new500Server(t, "Sonarr unavailable")
 		defer srv.Close()
 
-		c, err := seerr.New(srv.URL, "test-key")
-		if err != nil {
-			t.Fatalf("seerr.New: %v", err)
-		}
+		c := newTestClient(t, srv)
 		got, err := c.GetSonarrSettings(context.Background())
-		if err == nil {
-			t.Fatal("expected error on HTTP 500, got nil")
-		}
 		if got != nil {
 			t.Errorf("got = %v, want nil", got)
 		}
-		var apiErr *arr.APIError
-		if !errors.As(err, &apiErr) {
-			t.Fatalf("expected *arr.APIError, got %T", err)
-		}
-		if apiErr.StatusCode != http.StatusInternalServerError {
-			t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusInternalServerError)
-		}
+		assertAPIError500(t, err)
 	})
 
 	t.Run("boundary empty array", func(t *testing.T) {
@@ -902,10 +914,7 @@ func TestGetSonarrSettings(t *testing.T) {
 		srv := newTestServer(t, http.MethodGet, "/api/v1/settings/sonarr", []seerr.ServiceSettings{})
 		defer srv.Close()
 
-		c, err := seerr.New(srv.URL, "test-key")
-		if err != nil {
-			t.Fatalf("seerr.New: %v", err)
-		}
+		c := newTestClient(t, srv)
 		got, err := c.GetSonarrSettings(context.Background())
 		if err != nil {
 			t.Fatalf("GetSonarrSettings: %v", err)
@@ -919,6 +928,7 @@ func TestGetSonarrSettings(t *testing.T) {
 	})
 }
 
+// TestGetRadarrSettings asserts Radarr service settings retrieval across positive, error, and empty responses.
 func TestGetRadarrSettings(t *testing.T) {
 	t.Parallel()
 
@@ -944,54 +954,27 @@ func TestGetRadarrSettings(t *testing.T) {
 		srv := newTestServer(t, http.MethodGet, "/api/v1/settings/radarr", want)
 		defer srv.Close()
 
-		c, err := seerr.New(srv.URL, "test-key")
-		if err != nil {
-			t.Fatalf("seerr.New: %v", err)
-		}
+		c := newTestClient(t, srv)
 		got, err := c.GetRadarrSettings(context.Background())
 		if err != nil {
 			t.Fatalf("GetRadarrSettings: %v", err)
 		}
-		if len(got) != 1 {
-			t.Fatalf("len = %d, want 1", len(got))
-		}
-		if got[0].Name != "Radarr" {
-			t.Errorf("Name = %q, want %q", got[0].Name, "Radarr")
-		}
-		if got[0].Port != 7878 {
-			t.Errorf("Port = %d, want 7878", got[0].Port)
-		}
-		if !got[0].UseSSL {
-			t.Errorf("UseSSL = %v, want true", got[0].UseSSL)
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got = %+v, want %+v", got, want)
 		}
 	})
 
 	t.Run("negative HTTP 500", func(t *testing.T) {
 		t.Parallel()
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte(`{"message":"Radarr unavailable"}`))
-		}))
+		srv := new500Server(t, "Radarr unavailable")
 		defer srv.Close()
 
-		c, err := seerr.New(srv.URL, "test-key")
-		if err != nil {
-			t.Fatalf("seerr.New: %v", err)
-		}
+		c := newTestClient(t, srv)
 		got, err := c.GetRadarrSettings(context.Background())
-		if err == nil {
-			t.Fatal("expected error on HTTP 500, got nil")
-		}
 		if got != nil {
 			t.Errorf("got = %v, want nil", got)
 		}
-		var apiErr *arr.APIError
-		if !errors.As(err, &apiErr) {
-			t.Fatalf("expected *arr.APIError, got %T", err)
-		}
-		if apiErr.StatusCode != http.StatusInternalServerError {
-			t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, http.StatusInternalServerError)
-		}
+		assertAPIError500(t, err)
 	})
 
 	t.Run("boundary empty array", func(t *testing.T) {
@@ -999,10 +982,7 @@ func TestGetRadarrSettings(t *testing.T) {
 		srv := newTestServer(t, http.MethodGet, "/api/v1/settings/radarr", []seerr.ServiceSettings{})
 		defer srv.Close()
 
-		c, err := seerr.New(srv.URL, "test-key")
-		if err != nil {
-			t.Fatalf("seerr.New: %v", err)
-		}
+		c := newTestClient(t, srv)
 		got, err := c.GetRadarrSettings(context.Background())
 		if err != nil {
 			t.Fatalf("GetRadarrSettings: %v", err)
@@ -1157,6 +1137,7 @@ func TestUser_Name(t *testing.T) {
 	}
 }
 
+// TestMediaRequest_DecodeProcessingFields asserts media request decoding across movie, tv, and boundary fields.
 func TestMediaRequest_DecodeProcessingFields(t *testing.T) {
 	t.Parallel()
 
@@ -1228,87 +1209,93 @@ func TestMediaRequest_DecodeProcessingFields(t *testing.T) {
 	srv := newTestServer(t, http.MethodGet, "/api/v1/request?take=20&skip=0&filter=processing", fixture)
 	defer srv.Close()
 
-	c, err := seerr.New(srv.URL, "test-key")
-	if err != nil {
-		t.Fatalf("seerr.New: %v", err)
-	}
-
+	c := newTestClient(t, srv)
 	results, pageInfo, err := c.GetRequests(context.Background(), 20, 0, "processing")
 	if err != nil {
 		t.Fatalf("GetRequests: %v", err)
 	}
+
+	wantPageInfo := &seerr.PageInfo{Page: 1, Pages: 1, Results: 3}
+	if !reflect.DeepEqual(pageInfo, wantPageInfo) {
+		t.Errorf("PageInfo = %+v, want %+v", pageInfo, wantPageInfo)
+	}
 	if len(results) != 3 {
 		t.Fatalf("len = %d, want 3", len(results))
 	}
-	if pageInfo.Results != 3 {
-		t.Errorf("PageInfo.Results = %d, want 3", pageInfo.Results)
+
+	wantResults := []seerr.MediaRequest{
+		{
+			ID:        11,
+			Status:    2,
+			CreatedAt: "2026-09-20T10:00:00.000Z",
+			RequestedBy: &seerr.User{
+				DisplayName: "Alice",
+				Username:    "alice",
+				Email:       "alice@example.com",
+			},
+			Is4k:           false,
+			ServerID:       0,
+			ServerAssigned: true,
+			Type:           "movie",
+			Media: &seerr.MediaInfo{
+				ID:        5,
+				TmdbID:    603,
+				Status:    3,
+				MediaType: "movie",
+				Status4k:  1,
+			},
+		},
+		{
+			ID:             12,
+			Status:         2,
+			Is4k:           true,
+			ServerID:       1,
+			ServerAssigned: true,
+			Type:           "tv",
+			RequestedBy: &seerr.User{
+				Username: "bob",
+			},
+			Seasons: &[]seerr.RequestSeason{
+				{ID: 1, SeasonNumber: 1, Status: 2},
+				{ID: 2, SeasonNumber: 2, Status: 2},
+			},
+			Media: &seerr.MediaInfo{
+				ID:        6,
+				TmdbID:    1396,
+				Status:    4,
+				MediaType: "tv",
+				Status4k:  2,
+			},
+		},
+		{
+			ID:             13,
+			Status:         2,
+			Is4k:           false,
+			ServerID:       1,
+			ServerAssigned: true,
+			Type:           "tv",
+			RequestedBy: &seerr.User{
+				Username: "carol",
+			},
+			Seasons: &[]seerr.RequestSeason{},
+			Media: &seerr.MediaInfo{
+				ID:        7,
+				TmdbID:    1397,
+				Status:    4,
+				MediaType: "tv",
+				Status4k:  0,
+			},
+		},
 	}
 
-	// Movie request assertions
-	movieReq := results[0]
-	if movieReq.Type != "movie" {
-		t.Errorf("movieReq.Type = %q, want %q", movieReq.Type, "movie")
+	if !reflect.DeepEqual(results, wantResults) {
+		t.Errorf("results mismatch:\n got %+v\nwant %+v", results, wantResults)
 	}
-	if movieReq.Media == nil || movieReq.Media.MediaType != "movie" {
-		t.Errorf("movieReq.Media.MediaType = %v, want %q", movieReq.Media, "movie")
+	if results[0].RequestedBy.Name() != "Alice" {
+		t.Errorf("movie requestedBy name = %q, want %q", results[0].RequestedBy.Name(), "Alice")
 	}
-	if movieReq.Media.Status4k != 1 {
-		t.Errorf("movieReq.Media.Status4k = %d, want 1", movieReq.Media.Status4k)
-	}
-	if movieReq.RequestedBy == nil || movieReq.RequestedBy.DisplayName != "Alice" {
-		t.Errorf("movieReq.RequestedBy.DisplayName = %v, want %q", movieReq.RequestedBy, "Alice")
-	}
-	if movieReq.RequestedBy.Name() != "Alice" {
-		t.Errorf("movieReq.RequestedBy.Name() = %q, want %q", movieReq.RequestedBy.Name(), "Alice")
-	}
-	if movieReq.Seasons != nil {
-		t.Errorf("movieReq.Seasons = %v, want nil", movieReq.Seasons)
-	}
-	if !movieReq.ServerAssigned || movieReq.ServerID != 0 {
-		t.Errorf("movieReq server = (%d, assigned %t), want (0, assigned true)", movieReq.ServerID, movieReq.ServerAssigned)
-	}
-
-	// TV request assertions
-	tvReq := results[1]
-	if tvReq.Type != "tv" {
-		t.Errorf("tvReq.Type = %q, want %q", tvReq.Type, "tv")
-	}
-	if tvReq.Media == nil || tvReq.Media.MediaType != "tv" {
-		t.Errorf("tvReq.Media.MediaType = %v, want %q", tvReq.Media, "tv")
-	}
-	if tvReq.Media.Status4k != 2 {
-		t.Errorf("tvReq.Media.Status4k = %d, want 2", tvReq.Media.Status4k)
-	}
-	if tvReq.Seasons == nil {
-		t.Fatal("tvReq.Seasons is nil, want non-nil pointer")
-	}
-	tvSeasons := *tvReq.Seasons
-	if len(tvSeasons) != 2 {
-		t.Fatalf("tvSeasons len = %d, want 2", len(tvSeasons))
-	}
-	if tvSeasons[0].SeasonNumber != 1 || tvSeasons[0].Status != 2 || tvSeasons[0].ID != 1 {
-		t.Errorf("tvSeasons[0] = %+v, want ID=1 SeasonNumber=1 Status=2", tvSeasons[0])
-	}
-	if tvSeasons[1].SeasonNumber != 2 || tvSeasons[1].Status != 2 || tvSeasons[1].ID != 2 {
-		t.Errorf("tvSeasons[1] = %+v, want ID=2 SeasonNumber=2 Status=2", tvSeasons[1])
-	}
-	if tvReq.RequestedBy == nil || tvReq.RequestedBy.Name() != "bob" {
-		t.Errorf("tvReq.RequestedBy.Name() = %v, want %q", tvReq.RequestedBy, "bob")
-	}
-	if !tvReq.ServerAssigned || tvReq.ServerID != 1 {
-		t.Errorf("tvReq server = (%d, assigned %t), want (1, assigned true)", tvReq.ServerID, tvReq.ServerAssigned)
-	}
-
-	// TV request boundary case: empty seasons slice
-	tvEmptyReq := results[2]
-	if tvEmptyReq.Type != "tv" {
-		t.Errorf("tvEmptyReq.Type = %q, want %q", tvEmptyReq.Type, "tv")
-	}
-	if tvEmptyReq.Seasons == nil {
-		t.Fatal("tvEmptyReq.Seasons is nil, want non-nil pointer to empty slice")
-	}
-	if len(*tvEmptyReq.Seasons) != 0 {
-		t.Errorf("len(*tvEmptyReq.Seasons) = %d, want 0", len(*tvEmptyReq.Seasons))
+	if results[1].RequestedBy.Name() != "bob" {
+		t.Errorf("tv requestedBy name = %q, want %q", results[1].RequestedBy.Name(), "bob")
 	}
 }
 

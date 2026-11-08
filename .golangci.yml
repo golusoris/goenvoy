@@ -463,10 +463,6 @@ linters:
         linters:
           - gocognit
         text: func `TestGetQueueWithOptions_QueryString`
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
-      - path: ^arr/seerr/seerr_test\.go$
-        linters:
-          - cyclop
       # baseline #141
       - path: ^arr/seerr/seerr_test\.go$
         linters:
