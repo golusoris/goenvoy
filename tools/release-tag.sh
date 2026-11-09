@@ -9,6 +9,8 @@
 #   stdout: mode tag:     JSON array of tags in C-locale order
 #           mode relabel: compact JSON array of relabelled PR numbers in ascending numeric order
 set -euo pipefail
+# Why: plan_tags and tag_state run in command substitutions; without inherit_errexit a failed read inside them would print a state instead of stopping.
+shopt -s inherit_errexit
 
 # usage: prints the usage line and exits 2.
 usage() {

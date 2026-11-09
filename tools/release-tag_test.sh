@@ -29,6 +29,9 @@
 #   z1) no mode argument -> exit 2, zero gh calls
 #   z2) mode publish -> exit 2, zero gh calls
 #   i2) relabel with RELEASE_TAG_DRY_RUN=1 -> stdout [<N>], zero logged writes, dry-run: lines in stderr
+#   aa) tag with STUB_MATCHING_FAIL=1 -> exit 1, zero logged writes, stderr has failed to check matching refs, stdout empty
+#   ab) relabel with STUB_MATCHING_FAIL=1 -> exit 1, zero logged writes, stderr does not have left pending
+#   ac) tag with STUB_COMMITS_FAIL=1 -> exit 1, zero logged writes, stderr has failed to fetch commit
 #   usage: tools/release-tag_test.sh
 set -euo pipefail
 
@@ -134,6 +137,10 @@ case "$1" in
         fi
         ;;
       repos/*/commits/*)
+        if [ "${STUB_COMMITS_FAIL:-0}" = "1" ]; then
+          echo "HTTP 502" >&2
+          exit 1
+        fi
         sha="${endpoint##*/}"
         commit_file="$STUB_COMMITS_DIR/$sha.json"
         if [ ! -f "$commit_file" ]; then
@@ -156,6 +163,10 @@ case "$1" in
         cat "$manifest_file"
         ;;
       repos/*/git/matching-refs/tags/*)
+        if [ "${STUB_MATCHING_FAIL:-0}" = "1" ]; then
+          echo "HTTP 502" >&2
+          exit 1
+        fi
         refs_file="$STUB_MATCHING_REFS_MAP"
         if [ -n "${STUB_WORK:-}" ] && [ -f "$STUB_WORK/ref_post_failed" ] && [ -n "${STUB_REFS_AFTER_FAIL:-}" ] && [ -f "$STUB_REFS_AFTER_FAIL" ]; then
           refs_file="$STUB_REFS_AFTER_FAIL"
@@ -1038,5 +1049,38 @@ rc=0
 grep -q "dry-run: POST repos/owner/repo/issues/10/labels labels\[\]=autorelease: tagged" "$ERR" || fail "case_i2" "missing dry-run label POST"
 grep -q "dry-run: DELETE repos/owner/repo/issues/10/labels/autorelease:%20pending" "$ERR" || fail "case_i2" "missing dry-run label DELETE"
 echo "ok   case_i2"
+
+# Case aa: tag with STUB_MATCHING_FAIL=1 -> exit 1, zero logged writes, stderr has failed to check matching refs, stdout empty
+rc=0
+(
+  STUB_MATCHING_FAIL=1 run_tag tag
+) || rc=$?
+[ "$rc" -eq 1 ] || fail "case_aa" "exit $rc, want 1"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_aa" "want 0 writes"
+[ ! -s "$OUT" ] || fail "case_aa" "stdout not empty: $(cat "$OUT")"
+grep -q "failed to check matching refs" "$ERR" || fail "case_aa" "stderr missing 'failed to check matching refs': $(cat "$ERR")"
+echo "ok   case_aa"
+
+# Case ab: relabel with STUB_MATCHING_FAIL=1 -> exit 1, zero logged writes, stderr does not have left pending
+rc=0
+(
+  STUB_MATCHING_FAIL=1 run_tag relabel
+) || rc=$?
+[ "$rc" -eq 1 ] || fail "case_ab" "exit $rc, want 1"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_ab" "want 0 writes"
+if grep -q "left pending" "$ERR"; then
+  fail "case_ab" "stderr has 'left pending': $(cat "$ERR")"
+fi
+echo "ok   case_ab"
+
+# Case ac: tag with STUB_COMMITS_FAIL=1 -> exit 1, zero logged writes, stderr has failed to fetch commit
+rc=0
+(
+  STUB_COMMITS_FAIL=1 run_tag tag
+) || rc=$?
+[ "$rc" -eq 1 ] || fail "case_ac" "exit $rc, want 1"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_ac" "want 0 writes"
+grep -q "failed to fetch commit" "$ERR" || fail "case_ac" "stderr missing 'failed to fetch commit': $(cat "$ERR")"
+echo "ok   case_ac"
 
 echo "release tag: all cases pass"
