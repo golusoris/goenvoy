@@ -967,6 +967,17 @@ func runCustomTransportErrorCase(t *testing.T, tc customTransportTestCase, key s
 	}
 }
 
+// runCustomTransportErrorCases runs each case as a parallel subtest against a client holding key.
+func runCustomTransportErrorCases(t *testing.T, cases []customTransportTestCase, key string) {
+	t.Helper()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runCustomTransportErrorCase(t, tc, key)
+		})
+	}
+}
+
 // TestCustomTransportErrorRedactsAPIKey verifies that custom transport errors do not leak keys.
 func TestCustomTransportErrorRedactsAPIKey(t *testing.T) {
 	t.Parallel()
@@ -1007,12 +1018,7 @@ func TestCustomTransportErrorRedactsAPIKey(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			runCustomTransportErrorCase(t, tc, secretKey)
-		})
-	}
+	runCustomTransportErrorCases(t, cases, secretKey)
 }
 
 // quietWrapError hides the error it wraps from its own message.
@@ -1071,12 +1077,7 @@ func TestNestedTransportErrorRedactsAPIKey(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			runCustomTransportErrorCase(t, tc, secretKey)
-		})
-	}
+	runCustomTransportErrorCases(t, cases, secretKey)
 }
 
 // echoKeyHandler answers 500 with a body that echoes the request URL and the raw API key.
