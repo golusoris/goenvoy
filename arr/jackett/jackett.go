@@ -156,10 +156,10 @@ func (c *Client) scrubError(err error) error {
 func (c *Client) redactError(err error) error {
 	var uerr *url.Error
 	if errors.As(err, &uerr) {
+		// Why: net/http returns the *url.Error unwrapped at both call sites.
 		// Why: copy, never mutate an error value net/http or a custom transport may share.
 		err = &url.Error{Op: uerr.Op, URL: c.scrub(redactURL(uerr.URL)), Err: c.scrubError(uerr.Err)}
 	}
-	// Why: net/http returns the *url.Error unwrapped at both call sites.
 	return c.scrubError(err)
 }
 

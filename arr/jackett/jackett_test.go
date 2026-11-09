@@ -887,7 +887,7 @@ func (e timeoutError) Error() string {
 }
 
 // Timeout returns true.
-func (e timeoutError) Timeout() bool {
+func (timeoutError) Timeout() bool {
 	return true
 }
 

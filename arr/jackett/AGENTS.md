@@ -11,4 +11,4 @@
 ## Auth model
 
 API key passed as `apikey` query parameter.
-Transport and request-build errors replace the `apikey` query value with `REDACTED` (redactURLError in jackett.go); keep key out of every error.
+Errors never carry key: request-build + transport errors copied with `apikey=REDACTED` (redactError); leftover raw or query-escaped key text + `APIError.Body` scrubbed (scrub); `New` rejects base URL containing `?` or `#`.
