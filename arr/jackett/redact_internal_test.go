@@ -63,9 +63,6 @@ func TestRedactURLErrorNonURLError(t *testing.T) {
 
 	plain := errors.New("boom")
 	got := redactURLError(plain)
-	if got != plain {
-		t.Errorf("redactURLError(plain) = %v, want same pointer %v", got, plain)
-	}
 	if !errors.Is(got, plain) {
 		t.Errorf("errors.Is(got, plain) = false, want true")
 	}

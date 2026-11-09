@@ -726,15 +726,15 @@ func TestApplyNumericAttr_ValidAndBoundary(t *testing.T) {
 // closedServerURL returns the URL of a server that is already closed to force connection errors.
 func closedServerURL(t *testing.T) string {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	srv.Close()
 	return srv.URL
 }
 
-// hangingServerURL returns the URL of a server whose handler hangs until cancelled.
+// hangingServerURL returns the URL of a server whose handler hangs until canceled.
 func hangingServerURL(t *testing.T) string {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		select {
 		case <-r.Context().Done():
 		case <-time.After(2 * time.Second):
@@ -748,7 +748,7 @@ func hangingServerURL(t *testing.T) string {
 // liveServerURL returns the URL of an active server that responds with 200 OK.
 func liveServerURL(t *testing.T) string {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	t.Cleanup(srv.Close)
 	return srv.URL
 }
