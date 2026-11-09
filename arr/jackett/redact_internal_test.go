@@ -32,6 +32,26 @@ func TestRedactURL(t *testing.T) {
 			raw:  "http://h:9117/api/v2.0/indexers?apikey=",
 			want: "http://h:9117/api/v2.0/indexers?apikey=REDACTED",
 		},
+		{
+			name: "malformed escape in apikey drops query",
+			raw:  "http://h:9117/api/v2.0/indexers?apikey=K1%zz&configured=true",
+			want: "http://h:9117/api/v2.0/indexers",
+		},
+		{
+			name: "semicolon separator drops query",
+			raw:  "http://h:9117/api/v2.0/indexers?apikey=K1;configured=true",
+			want: "http://h:9117/api/v2.0/indexers",
+		},
+		{
+			name: "malformed other param drops query",
+			raw:  "http://h:9117/api/v2.0/indexers?configured=%zz&apikey=K1",
+			want: "http://h:9117/api/v2.0/indexers",
+		},
+		{
+			name: "malformed query without apikey drops query",
+			raw:  "http://h:9117/api/v2.0/indexers?x=%zz",
+			want: "http://h:9117/api/v2.0/indexers",
+		},
 	}
 
 	for _, tc := range cases {

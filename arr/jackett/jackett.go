@@ -163,15 +163,18 @@ func (c *Client) redactError(err error) error {
 	return c.scrubError(err)
 }
 
-// redactURL replaces the apikey query parameter in raw with REDACTED.
+// redactURL replaces the apikey query parameter in raw with REDACTED; it drops the whole query when the URL or its query does not parse.
 func redactURL(raw string) string {
 	u, err := url.Parse(raw)
+	var q url.Values
+	if err == nil {
+		q, err = url.ParseQuery(u.RawQuery)
+	}
 	if err != nil {
-		// Why: unparseable URL strips query string to prevent key exposure.
+		// Why: an unparseable URL or query may still carry the key, so drop the query whole.
 		base, _, _ := strings.Cut(raw, "?")
 		return base
 	}
-	q := u.Query()
 	if !q.Has("apikey") {
 		return raw
 	}

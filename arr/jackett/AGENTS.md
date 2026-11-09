@@ -11,4 +11,4 @@
 ## Auth model
 
 API key passed as `apikey` query parameter.
-Errors never carry key: request-build + transport errors copied with `apikey=REDACTED` (redactError); leftover raw or query-escaped key text + `APIError.Body` scrubbed (scrub); `New` rejects base URL containing `?` or `#`.
+Errors never carry key: request-build + transport errors copied with `apikey=REDACTED` (redactError); unparseable URL or query dropped whole (redactURL); leftover raw or query-escaped key text + `APIError.Body` scrubbed (scrub); `New` rejects base URL containing `?` or `#`.
