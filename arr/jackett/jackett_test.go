@@ -723,89 +723,135 @@ func TestApplyNumericAttr_ValidAndBoundary(t *testing.T) {
 	}
 }
 
+// closedServerURL returns the URL of a server that is already closed to force connection errors.
+func closedServerURL(t *testing.T) string {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close()
+	return srv.URL
+}
+
+// hangingServerURL returns the URL of a server whose handler hangs until cancelled.
+func hangingServerURL(t *testing.T) string {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-r.Context().Done():
+		case <-time.After(2 * time.Second):
+			t.Errorf("handler timeout waiting for request cancellation")
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv.URL
+}
+
+// liveServerURL returns the URL of an active server that responds with 200 OK.
+func liveServerURL(t *testing.T) string {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	t.Cleanup(srv.Close)
+	return srv.URL
+}
+
+// assertRedactedTransportError verifies that err is a redacted transport error not leaking key.
+func assertRedactedTransportError(t *testing.T, err error, key string) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	errMsg := err.Error()
+	if strings.Contains(errMsg, key) {
+		t.Errorf("error leaked raw key: %q", errMsg)
+	}
+	if strings.Contains(errMsg, url.QueryEscape(key)) {
+		t.Errorf("error leaked escaped key: %q", errMsg)
+	}
+	if !strings.Contains(errMsg, "apikey=REDACTED") {
+		t.Errorf("error missing apikey=REDACTED: %q", errMsg)
+	}
+	if !strings.HasPrefix(errMsg, "jackett: request: ") {
+		t.Errorf("error does not start with %q: %q", "jackett: request: ", errMsg)
+	}
+	var uerr *url.Error
+	if !errors.As(err, &uerr) {
+		t.Errorf("expected *url.Error in chain, got %T", err)
+	}
+}
+
+// transportTestCase defines inputs and expectations for transport error redaction tests.
+type transportTestCase struct {
+	name     string
+	baseURL  func(t *testing.T) string
+	opts     []jackett.Option
+	canceled bool
+	call     func(ctx context.Context, c *jackett.Client) error
+}
+
+// runTransportErrorCase executes a single transport error test case and verifies error redaction.
+func runTransportErrorCase(t *testing.T, tc transportTestCase, key string) {
+	t.Helper()
+	c, err := jackett.New(tc.baseURL(t), key, tc.opts...)
+	if err != nil {
+		t.Fatalf("jackett.New: %v", err)
+	}
+	ctx := context.Background()
+	if tc.canceled {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithCancel(ctx)
+		cancel()
+	}
+	err = tc.call(ctx, c)
+	assertRedactedTransportError(t, err, key)
+	if tc.canceled && !errors.Is(err, context.Canceled) {
+		t.Errorf("expected errors.Is(err, context.Canceled), got %v", err)
+	}
+}
+
 // TestTransportErrorRedactsAPIKey verifies that transport errors do not leak the API key.
 func TestTransportErrorRedactsAPIKey(t *testing.T) {
 	t.Parallel()
 
 	const secretKey = `s3cr3t+key/=&x`
-	escapedKey := url.QueryEscape(secretKey)
-
-	cases := []struct {
-		name           string
-		assertCanceled bool
-		run            func(t *testing.T) error
-	}{
+	cases := []transportTestCase{
 		{
-			name: "search torznab path on closed server",
-			run: func(t *testing.T) error {
-				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-				srv.Close()
-				c, err := jackett.New(srv.URL, secretKey)
-				if err != nil {
-					t.Fatalf("jackett.New: %v", err)
-				}
-				_, err = c.Search(context.Background(), "test", nil)
+			name:    "search torznab path on closed server",
+			baseURL: closedServerURL,
+			call: func(ctx context.Context, c *jackett.Client) error {
+				_, err := c.Search(ctx, "test", nil)
 				return err
 			},
 		},
 		{
-			name: "capabilities xml path on closed server",
-			run: func(t *testing.T) error {
-				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-				srv.Close()
-				c, err := jackett.New(srv.URL, secretKey)
-				if err != nil {
-					t.Fatalf("jackett.New: %v", err)
-				}
-				_, err = c.GetCapabilities(context.Background())
+			name:    "capabilities xml path on closed server",
+			baseURL: closedServerURL,
+			call: func(ctx context.Context, c *jackett.Client) error {
+				_, err := c.GetCapabilities(ctx)
 				return err
 			},
 		},
 		{
-			name: "indexers json path on closed server",
-			run: func(t *testing.T) error {
-				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-				srv.Close()
-				c, err := jackett.New(srv.URL, secretKey)
-				if err != nil {
-					t.Fatalf("jackett.New: %v", err)
-				}
-				_, err = c.GetIndexers(context.Background())
+			name:    "indexers json path on closed server",
+			baseURL: closedServerURL,
+			call: func(ctx context.Context, c *jackett.Client) error {
+				_, err := c.GetIndexers(ctx)
 				return err
 			},
 		},
 		{
-			name:           "canceled context on live server",
-			assertCanceled: true,
-			run: func(t *testing.T) error {
-				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-				t.Cleanup(srv.Close)
-				c, err := jackett.New(srv.URL, secretKey)
-				if err != nil {
-					t.Fatalf("jackett.New: %v", err)
-				}
-				ctx, cancel := context.WithCancel(context.Background())
-				cancel()
-				_, err = c.GetServerConfig(ctx)
+			name:     "canceled context on live server",
+			baseURL:  liveServerURL,
+			canceled: true,
+			call: func(ctx context.Context, c *jackett.Client) error {
+				_, err := c.GetServerConfig(ctx)
 				return err
 			},
 		},
 		{
-			name: "timeout on hanging handler",
-			run: func(t *testing.T) error {
-				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					select {
-					case <-r.Context().Done():
-					case <-time.After(2 * time.Second):
-						t.Errorf("handler timeout waiting for request cancellation")
-					}
-				}))
-				t.Cleanup(srv.Close)
-				c, err := jackett.New(srv.URL, secretKey, jackett.WithTimeout(20*time.Millisecond))
-				if err != nil {
-					t.Fatalf("jackett.New: %v", err)
-				}
-				_, err = c.Search(context.Background(), "test", nil)
+			name:    "timeout on hanging handler",
+			baseURL: hangingServerURL,
+			opts:    []jackett.Option{jackett.WithTimeout(20 * time.Millisecond)},
+			call: func(ctx context.Context, c *jackett.Client) error {
+				_, err := c.Search(ctx, "test", nil)
 				return err
 			},
 		},
@@ -814,30 +860,7 @@ func TestTransportErrorRedactsAPIKey(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := tc.run(t)
-			if err == nil {
-				t.Fatal("expected error, got nil")
-			}
-			errMsg := err.Error()
-			if strings.Contains(errMsg, secretKey) {
-				t.Errorf("error leaked raw key: %q", errMsg)
-			}
-			if strings.Contains(errMsg, escapedKey) {
-				t.Errorf("error leaked escaped key: %q", errMsg)
-			}
-			if !strings.Contains(errMsg, "apikey=REDACTED") {
-				t.Errorf("error missing apikey=REDACTED: %q", errMsg)
-			}
-			if !strings.HasPrefix(errMsg, "jackett: request: ") {
-				t.Errorf("error does not start with %q: %q", "jackett: request: ", errMsg)
-			}
-			var uerr *url.Error
-			if !errors.As(err, &uerr) {
-				t.Errorf("expected *url.Error in chain, got %T", err)
-			}
-			if tc.assertCanceled && !errors.Is(err, context.Canceled) {
-				t.Errorf("expected errors.Is(err, context.Canceled), got %v", err)
-			}
+			runTransportErrorCase(t, tc, secretKey)
 		})
 	}
 }

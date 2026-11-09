@@ -11,10 +11,9 @@ func TestRedactURL(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name        string
-		raw         string
-		want        string
-		unparseable bool
+		name string
+		raw  string
+		want string
 	}{
 		{
 			name: "replaces apikey preserving other params",
@@ -31,30 +30,30 @@ func TestRedactURL(t *testing.T) {
 			raw:  "http://h:9117/api/v2.0/indexers?apikey=",
 			want: "http://h:9117/api/v2.0/indexers?apikey=REDACTED",
 		},
-		{
-			name:        "unparseable url strips query",
-			raw:         "http://[::1%zz]/x?apikey=K2",
-			unparseable: true,
-		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			got := redactURL(tc.raw)
-			if tc.unparseable {
-				if strings.Contains(got, "K2") {
-					t.Errorf("redactURL(%q) = %q; contains K2", tc.raw, got)
-				}
-				if strings.Contains(got, "?") {
-					t.Errorf("redactURL(%q) = %q; contains ?", tc.raw, got)
-				}
-				return
-			}
 			if got != tc.want {
 				t.Errorf("redactURL(%q) = %q, want %q", tc.raw, got, tc.want)
 			}
 		})
+	}
+}
+
+// TestRedactURLUnparseable verifies that unparseable URLs strip query parameters without leaking keys.
+func TestRedactURLUnparseable(t *testing.T) {
+	t.Parallel()
+
+	const raw = "http://[::1%zz]/x?apikey=K2"
+	got := redactURL(raw)
+	if strings.Contains(got, "K2") {
+		t.Errorf("redactURL(%q) = %q; contains K2", raw, got)
+	}
+	if strings.Contains(got, "?") {
+		t.Errorf("redactURL(%q) = %q; contains ?", raw, got)
 	}
 }
 
