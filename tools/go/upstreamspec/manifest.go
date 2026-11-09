@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // pin is one upstream OpenAPI spec, fixed to the bytes of one file at one commit.
