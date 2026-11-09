@@ -4,10 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/golusoris/goenvoy/arr/jackett/v2"
 )
@@ -565,10 +569,13 @@ func TestEmptySearchResults(t *testing.T) {
 	}
 }
 
+// roundTripFunc adapts a function to the http.RoundTripper interface.
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
+// RoundTrip executes the round trip function.
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
+// TestNew_invalidURL verifies that New rejects malformed URLs and URLs with query or fragment.
 func TestNew_invalidURL(t *testing.T) {
 	t.Parallel()
 
@@ -579,6 +586,10 @@ func TestNew_invalidURL(t *testing.T) {
 		{"malformed", "://x"},
 		{"ftp", "ftp://x"},
 		{"no-scheme", "no-scheme"},
+		{"query", "http://h:9117?apikey=K9"},
+		{"empty-query", "http://h:9117/?"},
+		{"fragment", "http://h:9117#x"},
+		{"path-query", "http://h:9117/jackett?x=1"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -589,6 +600,9 @@ func TestNew_invalidURL(t *testing.T) {
 			}
 			if c != nil {
 				t.Fatal("expected nil client")
+			}
+			if strings.Contains(err.Error(), "K9") {
+				t.Errorf("New(%q) error leaked key: %q", tc.url, err.Error())
 			}
 		})
 	}
@@ -717,6 +731,484 @@ func TestApplyNumericAttr_ValidAndBoundary(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			runNumericAttrCase(t, tc.xml, tc.wantSeeders, tc.wantPeers)
+		})
+	}
+}
+
+// closedServerURL returns the URL of a server that is already closed to force connection errors.
+func closedServerURL(t *testing.T) string {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	srv.Close()
+	return srv.URL
+}
+
+// hangingServerURL returns the URL of a server whose handler hangs until canceled.
+func hangingServerURL(t *testing.T) string {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		select {
+		case <-r.Context().Done():
+		case <-time.After(2 * time.Second):
+			t.Errorf("handler timeout waiting for request cancellation")
+		}
+	}))
+	t.Cleanup(srv.Close)
+	return srv.URL
+}
+
+// liveServerURL returns the URL of an active server that responds with 200 OK.
+func liveServerURL(t *testing.T) string {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
+	t.Cleanup(srv.Close)
+	return srv.URL
+}
+
+// assertRedactedTransportError verifies that err is a redacted transport error not leaking key.
+func assertRedactedTransportError(t *testing.T, err error, key string) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	errMsg := err.Error()
+	if strings.Contains(errMsg, key) {
+		t.Errorf("error leaked raw key: %q", errMsg)
+	}
+	if strings.Contains(errMsg, url.QueryEscape(key)) {
+		t.Errorf("error leaked escaped key: %q", errMsg)
+	}
+	if !strings.Contains(errMsg, "apikey=REDACTED") {
+		t.Errorf("error missing apikey=REDACTED: %q", errMsg)
+	}
+	if !strings.HasPrefix(errMsg, "jackett: request: ") {
+		t.Errorf("error does not start with %q: %q", "jackett: request: ", errMsg)
+	}
+	var uerr *url.Error
+	if !errors.As(err, &uerr) {
+		t.Errorf("expected *url.Error in chain, got %T", err)
+	}
+	assertChainRedacted(t, err, key)
+}
+
+// maxChainNodes bounds the error chain walk in assertChainRedacted.
+const maxChainNodes = 64
+
+// assertChainRedacted fails when any error reachable through errors.Unwrap carries the raw or escaped key.
+func assertChainRedacted(t *testing.T, err error, key string) {
+	t.Helper()
+	// Why: errors.Unwrap stops at joined errors; no case here builds one.
+	for i, e := 0, err; i < maxChainNodes && e != nil; i, e = i+1, errors.Unwrap(e) {
+		if msg := e.Error(); strings.Contains(msg, key) || strings.Contains(msg, url.QueryEscape(key)) {
+			t.Errorf("chain node %d (%T) leaked key: %q", i, e, msg)
+		}
+	}
+}
+
+// transportTestCase defines inputs and expectations for transport error redaction tests.
+type transportTestCase struct {
+	name     string
+	baseURL  func(t *testing.T) string
+	opts     []jackett.Option
+	canceled bool
+	call     func(ctx context.Context, c *jackett.Client) error
+}
+
+// runTransportErrorCase executes a single transport error test case and verifies error redaction.
+func runTransportErrorCase(t *testing.T, tc transportTestCase, key string) {
+	t.Helper()
+	c, err := jackett.New(tc.baseURL(t), key, tc.opts...)
+	if err != nil {
+		t.Fatalf("jackett.New: %v", err)
+	}
+	ctx := context.Background()
+	if tc.canceled {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithCancel(ctx)
+		cancel()
+	}
+	err = tc.call(ctx, c)
+	assertRedactedTransportError(t, err, key)
+	if tc.canceled && !errors.Is(err, context.Canceled) {
+		t.Errorf("expected errors.Is(err, context.Canceled), got %v", err)
+	}
+}
+
+// TestTransportErrorRedactsAPIKey verifies that transport errors do not leak the API key.
+func TestTransportErrorRedactsAPIKey(t *testing.T) {
+	t.Parallel()
+
+	const secretKey = `s3cr3t+key/=&x`
+	cases := []transportTestCase{
+		{
+			name:    "search torznab path on closed server",
+			baseURL: closedServerURL,
+			call: func(ctx context.Context, c *jackett.Client) error {
+				_, err := c.Search(ctx, "test", nil)
+				return err
+			},
+		},
+		{
+			name:    "capabilities xml path on closed server",
+			baseURL: closedServerURL,
+			call: func(ctx context.Context, c *jackett.Client) error {
+				_, err := c.GetCapabilities(ctx)
+				return err
+			},
+		},
+		{
+			name:    "indexers json path on closed server",
+			baseURL: closedServerURL,
+			call: func(ctx context.Context, c *jackett.Client) error {
+				_, err := c.GetIndexers(ctx)
+				return err
+			},
+		},
+		{
+			name:     "canceled context on live server",
+			baseURL:  liveServerURL,
+			canceled: true,
+			call: func(ctx context.Context, c *jackett.Client) error {
+				_, err := c.GetServerConfig(ctx)
+				return err
+			},
+		},
+		{
+			name:    "timeout on hanging handler",
+			baseURL: hangingServerURL,
+			opts:    []jackett.Option{jackett.WithTimeout(20 * time.Millisecond)},
+			call: func(ctx context.Context, c *jackett.Client) error {
+				_, err := c.Search(ctx, "test", nil)
+				return err
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runTransportErrorCase(t, tc, secretKey)
+		})
+	}
+}
+
+// errTripSentinel is a transport error matched through the redaction wrapper.
+var errTripSentinel = errors.New("trip sentinel")
+
+// timeoutError represents a test error that reports a timeout.
+type timeoutError struct {
+	msg string
+}
+
+// Error returns the error message.
+func (e timeoutError) Error() string {
+	return e.msg
+}
+
+// Timeout returns true.
+func (timeoutError) Timeout() bool {
+	return true
+}
+
+// customTransportTestCase defines inputs and expectations for custom transport error tests.
+type customTransportTestCase struct {
+	name         string
+	tripErr      func(r *http.Request) error
+	checkTimeout bool
+	wantIs       error
+}
+
+// runCustomTransportErrorCase executes a custom transport error case and verifies redaction.
+func runCustomTransportErrorCase(t *testing.T, tc customTransportTestCase, key string) {
+	t.Helper()
+	c, err := jackett.New("http://127.0.0.1:9117", key, jackett.WithHTTPClient(&http.Client{
+		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			return nil, tc.tripErr(r)
+		}),
+	}))
+	if err != nil {
+		t.Fatalf("jackett.New: %v", err)
+	}
+
+	_, err = c.GetIndexers(context.Background())
+	assertRedactedTransportError(t, err, key)
+
+	var uerr *url.Error
+	if !errors.As(err, &uerr) {
+		t.Fatalf("expected *url.Error, got %T", err)
+	}
+	if !strings.Contains(uerr.URL, "apikey=REDACTED") {
+		t.Errorf("uerr.URL missing apikey=REDACTED: %q", uerr.URL)
+	}
+	uerrStr := uerr.Error()
+	if strings.Contains(uerrStr, key) {
+		t.Errorf("uerr.Error() leaked raw key: %q", uerrStr)
+	}
+	if strings.Contains(uerrStr, url.QueryEscape(key)) {
+		t.Errorf("uerr.Error() leaked escaped key: %q", uerrStr)
+	}
+	if tc.checkTimeout && !uerr.Timeout() {
+		t.Errorf("uerr.Timeout() = false, want true")
+	}
+	if tc.wantIs != nil && !errors.Is(err, tc.wantIs) {
+		t.Errorf("errors.Is(err, %v) = false, want true", tc.wantIs)
+	}
+}
+
+// TestCustomTransportErrorRedactsAPIKey verifies that custom transport errors do not leak keys.
+func TestCustomTransportErrorRedactsAPIKey(t *testing.T) {
+	t.Parallel()
+
+	const secretKey = `s3cr3t+key/=&x`
+	cases := []customTransportTestCase{
+		{
+			name: "escaped key in inner text",
+			tripErr: func(r *http.Request) error {
+				return fmt.Errorf("upstream refused %s", r.URL)
+			},
+		},
+		{
+			name: "nested url error",
+			tripErr: func(r *http.Request) error {
+				return fmt.Errorf("retry: %w", &url.Error{Op: "Get", URL: r.URL.String(), Err: errors.New("reset")})
+			},
+		},
+		{
+			name: "raw key",
+			tripErr: func(r *http.Request) error {
+				return fmt.Errorf("raw key %s", r.URL.Query().Get("apikey"))
+			},
+		},
+		{
+			name: "timeout error",
+			tripErr: func(r *http.Request) error {
+				return timeoutError{msg: "timeout: " + r.URL.String()}
+			},
+			checkTimeout: true,
+		},
+		{
+			name: "sentinel behind key text",
+			tripErr: func(r *http.Request) error {
+				return fmt.Errorf("%w: %s", errTripSentinel, r.URL.String())
+			},
+			wantIs: errTripSentinel,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runCustomTransportErrorCase(t, tc, secretKey)
+		})
+	}
+}
+
+// echoKeyHandler answers 500 with a body that echoes the request URL and the raw API key.
+func echoKeyHandler(t *testing.T) http.HandlerFunc {
+	t.Helper()
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		body := "bad request " + r.URL.String() + " key=" + r.URL.Query().Get("apikey")
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+			t.Errorf("echoKeyHandler: write body: %v", err)
+		}
+	}
+}
+
+// TestAPIErrorBodyRedactsAPIKey verifies that APIError.Body scrubs raw and escaped API keys.
+func TestAPIErrorBodyRedactsAPIKey(t *testing.T) {
+	t.Parallel()
+
+	const secretKey = `s3cr3t+key/=&x`
+	srv := httptest.NewServer(echoKeyHandler(t))
+	t.Cleanup(srv.Close)
+
+	c, err := jackett.New(srv.URL, secretKey)
+	if err != nil {
+		t.Fatalf("jackett.New: %v", err)
+	}
+
+	_, err = c.GetIndexers(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var apiErr *jackett.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *jackett.APIError, got %T", err)
+	}
+	if apiErr.StatusCode != http.StatusInternalServerError {
+		t.Errorf("StatusCode = %d, want 500", apiErr.StatusCode)
+	}
+	if !strings.Contains(apiErr.Body, "REDACTED") {
+		t.Errorf("apiErr.Body missing REDACTED: %q", apiErr.Body)
+	}
+	if strings.Contains(apiErr.Body, secretKey) {
+		t.Errorf("apiErr.Body leaked raw key: %q", apiErr.Body)
+	}
+	if strings.Contains(apiErr.Body, url.QueryEscape(secretKey)) {
+		t.Errorf("apiErr.Body leaked escaped key: %q", apiErr.Body)
+	}
+	errMsg := err.Error()
+	if strings.Contains(errMsg, secretKey) {
+		t.Errorf("err.Error() leaked raw key: %q", errMsg)
+	}
+	if strings.Contains(errMsg, url.QueryEscape(secretKey)) {
+		t.Errorf("err.Error() leaked escaped key: %q", errMsg)
+	}
+}
+
+// errReadSentinel marks the body read failure in TestResponseErrorRedactsAPIKey.
+var errReadSentinel = errors.New("read sentinel")
+
+// failingBody is a response body whose Read always returns err.
+type failingBody struct{ err error }
+
+// Read returns the configured error.
+func (b failingBody) Read([]byte) (int, error) { return 0, b.err }
+
+// Close does nothing.
+func (failingBody) Close() error { return nil }
+
+// responseErrorTestCase describes a 200 response that the client fails to read or decode.
+type responseErrorTestCase struct {
+	name       string
+	key        string
+	body       func(r *http.Request, key string) io.ReadCloser
+	call       func(ctx context.Context, c *jackett.Client) error
+	wantPrefix string
+	wantIs     error
+}
+
+// runResponseErrorCase serves tc.body(r, tc.key) with status 200 through a stub transport and checks that the error hides the key.
+func runResponseErrorCase(t *testing.T, tc responseErrorTestCase) {
+	t.Helper()
+	c, err := jackett.New("http://127.0.0.1:9117", tc.key, jackett.WithHTTPClient(&http.Client{
+		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: http.StatusOK, Header: http.Header{}, Body: tc.body(r, tc.key), Request: r}, nil
+		}),
+	}))
+	if err != nil {
+		t.Fatalf("jackett.New: %v", err)
+	}
+	err = tc.call(context.Background(), c)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.HasPrefix(err.Error(), tc.wantPrefix) {
+		t.Errorf("err = %q, want prefix %q", err, tc.wantPrefix)
+	}
+	assertChainRedacted(t, err, tc.key)
+	if tc.wantIs != nil && !errors.Is(err, tc.wantIs) {
+		t.Errorf("errors.Is(err, %v) = false, want true", tc.wantIs)
+	}
+}
+
+// readErrPlainBody returns a failingBody whose error carries no key.
+func readErrPlainBody(*http.Request, string) io.ReadCloser {
+	return failingBody{err: errReadSentinel}
+}
+
+// readErrURLBody returns a failingBody carrying the request URL.
+func readErrURLBody(r *http.Request, _ string) io.ReadCloser {
+	return failingBody{err: fmt.Errorf("%w: %s", errReadSentinel, r.URL.String())}
+}
+
+// readErrRawKeyBody returns a failingBody carrying the raw API key.
+func readErrRawKeyBody(_ *http.Request, key string) io.ReadCloser {
+	return failingBody{err: fmt.Errorf("%w: key %s", errReadSentinel, key)}
+}
+
+// readErrURLStructBody returns a failingBody carrying a url.Error.
+func readErrURLStructBody(r *http.Request, _ string) io.ReadCloser {
+	return failingBody{err: &url.Error{Op: "Get", URL: r.URL.String(), Err: errReadSentinel}}
+}
+
+// xmlAttrEchoBody returns an XML response whose limits max attribute holds the key.
+func xmlAttrEchoBody(_ *http.Request, key string) io.ReadCloser {
+	return io.NopCloser(strings.NewReader(`<caps><limits max="` + key + `" default="50"/></caps>`))
+}
+
+// jsonNumEchoBody returns a JSON response whose port holds the key.
+func jsonNumEchoBody(_ *http.Request, key string) io.ReadCloser {
+	return io.NopCloser(strings.NewReader(`{"port": ` + key + `}`))
+}
+
+// callGetIndexers calls GetIndexers and returns its error.
+func callGetIndexers(ctx context.Context, c *jackett.Client) error {
+	_, err := c.GetIndexers(ctx)
+	return err
+}
+
+// callGetCapabilities calls GetCapabilities and returns its error.
+func callGetCapabilities(ctx context.Context, c *jackett.Client) error {
+	_, err := c.GetCapabilities(ctx)
+	return err
+}
+
+// callGetServerConfig calls GetServerConfig and returns its error.
+func callGetServerConfig(ctx context.Context, c *jackett.Client) error {
+	_, err := c.GetServerConfig(ctx)
+	return err
+}
+
+// TestResponseErrorRedactsAPIKey verifies that response read and decode errors do not leak keys.
+func TestResponseErrorRedactsAPIKey(t *testing.T) {
+	t.Parallel()
+
+	cases := []responseErrorTestCase{
+		{
+			name:       "read error without key keeps text",
+			key:        `s3cr3t+key/=&x`,
+			body:       readErrPlainBody,
+			call:       callGetIndexers,
+			wantPrefix: "jackett: read response: read sentinel",
+			wantIs:     errReadSentinel,
+		},
+		{
+			name:       "read error carries URL",
+			key:        `s3cr3t+key/=&x`,
+			body:       readErrURLBody,
+			call:       callGetIndexers,
+			wantPrefix: "jackett: read response:",
+			wantIs:     errReadSentinel,
+		},
+		{
+			name:       "read error carries raw key",
+			key:        `s3cr3t+key/=&x`,
+			body:       readErrRawKeyBody,
+			call:       callGetIndexers,
+			wantPrefix: "jackett: read response:",
+			wantIs:     errReadSentinel,
+		},
+		{
+			name:       "read error is url error",
+			key:        `s3cr3t+key/=&x`,
+			body:       readErrURLStructBody,
+			call:       callGetIndexers,
+			wantPrefix: "jackett: read response:",
+			wantIs:     errReadSentinel,
+		},
+		{
+			name:       "xml attribute echoes key",
+			key:        "s3cr3tkey42",
+			body:       xmlAttrEchoBody,
+			call:       callGetCapabilities,
+			wantPrefix: "jackett: decode xml:",
+		},
+		{
+			name:       "json number echoes key",
+			key:        "98765432109876543210987654321",
+			body:       jsonNumEchoBody,
+			call:       callGetServerConfig,
+			wantPrefix: "jackett: decode json:",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runResponseErrorCase(t, tc)
 		})
 	}
 }
