@@ -64,14 +64,17 @@ cat > "$WORK/c2.md" <<'EOF'
 * initial release
 EOF
 
+cat > "$WORK/c2.expected" <<'EOF'
+## [2.0.0](https://example.com/2.0.0) (2026-02-01)
+
+### Bug Fixes
+* fixed issue 42
+EOF
+
 rc=0
 bash "$HERE/release-notes.sh" "$WORK/c2.md" "2.0.0" > "$WORK/out" 2>&1 || rc=$?
 [ "$rc" -eq 0 ] || fail "middle-section" "exit $rc, want 0"
-grep -q '^## \[2\.0\.0\]' "$WORK/out" || fail "middle-section" "missing 2.0.0 header"
-grep -q '\* fixed issue 42' "$WORK/out" || fail "middle-section" "missing body"
-if grep -q '3\.0\.0' "$WORK/out" || grep -q '1\.0\.0' "$WORK/out"; then
-  fail "middle-section" "included lines from outside middle section"
-fi
+diff -u "$WORK/c2.expected" "$WORK/out" || fail "middle-section" "output does not match expected section"
 last_line="$(tail -n 1 "$WORK/out")"
 [ -n "${last_line//[[:space:]]/}" ] || fail "middle-section" "has trailing blank line"
 echo "ok   middle-section"

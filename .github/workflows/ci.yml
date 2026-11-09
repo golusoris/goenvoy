@@ -81,6 +81,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+      # Why: the release scripts run only in release-please.yml and release.yml on ubuntu runners, so their planted cases run on ubuntu only (HISS-21 stated skip for macOS and Windows).
       - name: Release manifest check refuses its planted cases
         run: bash tools/release-manifest_test.sh
       - name: Release manifest versions match the module paths
@@ -91,6 +92,8 @@ jobs:
         run: bash tools/release-tag_test.sh
       - name: Release notes extraction refuses its planted cases
         run: bash tools/release-notes_test.sh
+      - name: Release publishing refuses its planted cases
+        run: bash tools/release-publish_test.sh
       - name: README workflow badges point at existing workflows
         run: bash tools/readme-badges_test.sh
       - name: Workflows with pull_request trigger have ready_for_review

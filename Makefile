@@ -143,12 +143,13 @@ release-config-check: ## Release-please config matches its generator and carries
 	bash tools/release-config_test.sh
 
 .PHONY: release-scripts-check
-release-scripts-check: ## Release manifest, tagging, notes and release-PR CI scripts: planted cases, then the manifest
+release-scripts-check: ## Release manifest, tagging, notes, publishing and release-PR CI scripts: planted cases, then the manifest
 	bash tools/release-manifest_test.sh
 	bash tools/release-manifest.sh check
 	bash tools/release-pr-ci_test.sh
 	bash tools/release-tag_test.sh
 	bash tools/release-notes_test.sh
+	bash tools/release-publish_test.sh
 
 doc: ## Local godoc server at :6060
 	@echo "Starting godoc server at http://localhost:6060"

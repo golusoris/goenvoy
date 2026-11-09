@@ -3,11 +3,12 @@ name: release-please
 # release-please keeps one release pull request current and creates no GitHub
 # release (skip-github-release in release-please-config.json); merging that pull
 # request is the publish step: the run on the merge commit creates the module
-# tags and relabels the pull request (tools/release-tag.sh), then calls
-# release.yml once per tag, which creates each GitHub release and publishes it
-# only after its signed, attested artefacts are attached. A run that failed
-# before tagging is repaired by the next run, because the pull request keeps
-# "autorelease: pending" until every tag exists.
+# tags (tools/release-tag.sh tag), then calls release.yml once per tag, which
+# publishes each release only after its signed, attested artefacts are attached
+# (tools/release-publish.sh), and relabels the pull request "autorelease: tagged"
+# only after every release succeeded (tools/release-tag.sh relabel). A failed
+# run is repaired by the next one, because the pull request keeps "autorelease:
+# pending" until then.
 on:
   push:
     branches: [main]
@@ -19,7 +20,8 @@ permissions:
 concurrency:
   # release-please maintains long-lived release PRs; two runs racing on
   # main can produce duplicate PR branches and conflicting manifests.
-  group: release-please-${{ github.ref }}
+  # One group for every ref: a dispatched run on another branch still reads and tags the main release pull requests.
+  group: release-please
   cancel-in-progress: false
 
 jobs:
@@ -50,11 +52,12 @@ jobs:
           manifest-file: .release-please-manifest.json
       - id: tag
         name: Tag the merged release pull requests
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          tags="$(bash tools/release-tag.sh "$GITHUB_REPOSITORY")"
+          tags="$(bash tools/release-tag.sh tag "$GITHUB_REPOSITORY")"
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
           echo "Tags created or kept by this run: $tags"
 
@@ -63,7 +66,7 @@ jobs:
   release:
     name: Release ${{ matrix.tag }}
     needs: release-please
-    if: needs.release-please.outputs.tags != '[]'
+    if: needs.release-please.outputs.tags != '' && needs.release-please.outputs.tags != '[]'
     strategy:
       fail-fast: false
       max-parallel: 8
@@ -76,6 +79,26 @@ jobs:
     uses: ./.github/workflows/release.yml
     with:
       tag: ${{ matrix.tag }}
+
+  # The release pull request keeps "autorelease: pending" until every release of
+  # this run is published, so the next run retries a failed release.
+  relabel:
+    name: Mark the released pull requests tagged
+    needs: release
+    if: needs.release.result == 'success'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Relabel the release pull requests whose tags all exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/release-tag.sh relabel "$GITHUB_REPOSITORY"
 
   # The CI runs of a pull request opened with the repository token wait for an
   # approval, and main requires the CI success check. A dispatched run does not

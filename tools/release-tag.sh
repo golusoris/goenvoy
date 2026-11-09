@@ -1,22 +1,30 @@
 #!/usr/bin/env bash
-# Tag the merged release pull requests and relabel them for publication.
-#   usage:  tools/release-tag.sh OWNER/REPO
+# Tag the merged release pull requests (tag) or relabel them after publication (relabel).
+#   usage:  tools/release-tag.sh tag|relabel OWNER/REPO
 #   needs:  gh, jq, timeout
 #   env:    GH_BIN (default: gh)
 #           RELEASE_TAG_ROOT (default: repository root)
 #           RELEASE_TAG_DRY_RUN (default: 0)
 #           RELEASE_TAG_TIMEOUT (default: 60)
-#   stdout: JSON array of tags in C-locale order
+#   stdout: mode tag:     JSON array of tags in C-locale order
+#           mode relabel: compact JSON array of relabelled PR numbers in ascending numeric order
 set -euo pipefail
 
 # usage: prints the usage line and exits 2.
 usage() {
-  echo "usage: ${0##*/} OWNER/REPO" >&2
+  echo "usage: ${0##*/} tag|relabel OWNER/REPO" >&2
   exit 2
 }
 
-[ $# -eq 1 ] || usage
-REPO="$1"
+[ $# -eq 2 ] || usage
+MODE="$1"
+REPO="$2"
+
+if [ "$MODE" != "tag" ] && [ "$MODE" != "relabel" ]; then
+  echo "error: unknown mode '$MODE', expected tag or relabel" >&2
+  exit 2
+fi
+
 [ -n "$REPO" ] || usage
 if [[ ! "$REPO" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
   echo "error: invalid repository '$REPO', expected OWNER/REPO" >&2
@@ -52,8 +60,8 @@ gh_read() {
   }
 }
 
-# gh_write METHOD ENDPOINT ARGS...: runs one write under the deadline, or prints it when RELEASE_TAG_DRY_RUN=1.
-gh_write() {
+# gh_try_write METHOD ENDPOINT ARGS...: runs one write under deadline, or prints warning and returns 1.
+gh_try_write() {
   local method="$1" endpoint="$2"
   shift 2
   if [ "$DRY_RUN" = "1" ]; then
@@ -75,33 +83,25 @@ gh_write() {
     return 0
   fi
   timeout "$TIMEOUT" "$GH" api --method "$method" "$endpoint" "$@" >/dev/null || {
+    echo "warning: $method $endpoint failed" >&2
+    return 1
+  }
+}
+
+# gh_write METHOD ENDPOINT ARGS...: runs one write under deadline or exits 1 on failure.
+gh_write() {
+  local method="$1" endpoint="$2"
+  gh_try_write "$@" || {
     echo "error: failed to $method $endpoint" >&2
     exit 1
   }
 }
 
-# Why: gh pr list --label reads the search index, which lags behind a merge; the REST list with a head filter does not.
-OWNER="${REPO%%/*}"
-pr_lines="$(gh_read "list release pull requests for $REPO" api "repos/$REPO/pulls?state=closed&head=$OWNER:$RELEASE_BRANCH&per_page=20" --jq '.[] | select(.merged_at != null) | select(.head.ref == "'"$RELEASE_BRANCH"'") | select(any(.labels[]; .name == "autorelease: pending")) | "\(.number) \(.merge_commit_sha)"')"
-
-prs=()
-if [ -n "$pr_lines" ]; then
-  while IFS= read -r pr_line || [ -n "$pr_line" ]; do
-    [ -n "$pr_line" ] || continue
-    if [[ ! "$pr_line" =~ ^([1-9][0-9]*)[[:space:]]+([0-9a-f]{40})$ ]]; then
-      echo "error: invalid pull request entry: '$pr_line'" >&2
-      exit 1
-    fi
-    prs+=("$pr_line")
-  done <<< "$pr_lines"
-fi
-
-all_tags=()
-
-for pr_entry in "${prs[@]}"; do
-  [[ "$pr_entry" =~ ^([1-9][0-9]*)[[:space:]]+([0-9a-f]{40})$ ]]
-  pr_num="${BASH_REMATCH[1]}"
-  sha="${BASH_REMATCH[2]}"
+# plan_tags PR SHA: plans and prints tags for PR at SHA, one per line.
+plan_tags() {
+  local pr_num="$1" sha="$2"
+  local parents parent parent_manifest sha_manifest paths_json tags_json
+  local -a paths tags
 
   parents="$(gh_read "fetch commit $sha for PR $pr_num" api "repos/$REPO/commits/$sha" --jq '.parents | map(.sha) | join(" ")')"
   if [[ ! "$parents" =~ ^[0-9a-f]{40}$ ]]; then
@@ -143,35 +143,141 @@ for pr_entry in "${prs[@]}"; do
   fi
 
   for i in "${!paths[@]}"; do
-    p="${paths[$i]}"
-    t="${tags[$i]}"
+    local p="${paths[$i]}"
+    local t="${tags[$i]}"
+    local sha_ver
     sha_ver="$(jq -r --arg p "$p" '.[$p]' <<< "$sha_manifest")"
-    want_tag="$p/v$sha_ver"
+    local want_tag="$p/v$sha_ver"
     if [ "$t" != "$want_tag" ]; then
       echo "error: tag $t does not match expected $want_tag in manifest at $sha (the checkout manifest moved)" >&2
       exit 1
     fi
   done
 
-  for tag in "${tags[@]}"; do
-    matching="$(gh_read "check matching refs for tag $tag" api "repos/$REPO/git/matching-refs/tags/$tag" --jq ".[] | select(.ref == \"refs/tags/$tag\") | \"\(.object.type) \(.object.sha)\"")"
-    if [ -z "$matching" ]; then
-      gh_write POST "repos/$REPO/git/refs" -f "ref=refs/tags/$tag" -f "sha=$sha"
-    elif [ "$matching" = "commit $sha" ]; then
-      echo "tag $tag already exists at commit $sha" >&2
-    else
-      echo "error: tag $tag exists at $matching, want commit $sha" >&2
+  printf '%s\n' "${tags[@]}"
+}
+
+# tag_state TAG SHA: prints tag state (missing or ok) or exits 1 on conflict.
+tag_state() {
+  local tag="$1" sha="$2"
+  local matching
+  matching="$(gh_read "check matching refs for tag $tag" api "repos/$REPO/git/matching-refs/tags/$tag" --jq ".[] | select(.ref == \"refs/tags/$tag\") | \"\(.object.type) \(.object.sha)\"")"
+  if [ -z "$matching" ]; then
+    echo "missing"
+    return 0
+  fi
+  if [ "$matching" = "commit $sha" ]; then
+    echo "ok"
+    return 0
+  fi
+  if [[ "$matching" =~ ^tag[[:space:]]+(.+)$ ]]; then
+    local obj_sha="${BASH_REMATCH[1]}"
+    if [[ ! "$obj_sha" =~ ^[0-9a-f]{40}$ ]]; then
+      echo "error: invalid tag object sha '$obj_sha' for tag $tag" >&2
       exit 1
     fi
-    all_tags+=("$tag")
+    local deref
+    deref="$(gh_read "read tag object for $tag" api "repos/$REPO/git/tags/$obj_sha" --jq '"\(.object.type) \(.object.sha)"')"
+    if [ "$deref" = "commit $sha" ]; then
+      echo "ok"
+      return 0
+    fi
+    echo "error: tag $tag exists at $deref, want commit $sha" >&2
+    exit 1
+  fi
+  echo "error: tag $tag exists at $matching, want commit $sha" >&2
+  exit 1
+}
+
+# Why: gh pr list --label reads the search index, which lags behind a merge; the REST list with a head filter does not; --paginate so a pending pull request behind 100 newer closed ones is still found.
+OWNER="${REPO%%/*}"
+pr_lines="$(gh_read "list release pull requests for $REPO" api --paginate "repos/$REPO/pulls?state=closed&head=$OWNER:$RELEASE_BRANCH&per_page=100" --jq '.[] | select(.merged_at != null) | select(.head.ref == "'"$RELEASE_BRANCH"'") | select(any(.labels[]; .name == "autorelease: pending")) | "\(.number) \(.merge_commit_sha)"')"
+
+prs=()
+if [ -n "$pr_lines" ]; then
+  while IFS= read -r pr_line || [ -n "$pr_line" ]; do
+    [ -n "$pr_line" ] || continue
+    if [[ ! "$pr_line" =~ ^([1-9][0-9]*)[[:space:]]+([0-9a-f]{40})$ ]]; then
+      echo "error: invalid pull request entry: '$pr_line'" >&2
+      exit 1
+    fi
+    prs+=("$pr_line")
+  done <<< "$pr_lines"
+fi
+
+if [ "$MODE" = "tag" ]; then
+  all_tags=()
+  for pr_entry in "${prs[@]}"; do
+    [[ "$pr_entry" =~ ^([1-9][0-9]*)[[:space:]]+([0-9a-f]{40})$ ]]
+    pr_num="${BASH_REMATCH[1]}"
+    sha="${BASH_REMATCH[2]}"
+
+    planned_tags="$(plan_tags "$pr_num" "$sha")"
+    mapfile -t tags <<< "$planned_tags"
+    for tag in "${tags[@]}"; do
+      state="$(tag_state "$tag" "$sha")"
+      if [ "$state" = "missing" ]; then
+        if ! gh_try_write POST "repos/$REPO/git/refs" -f "ref=refs/tags/$tag" -f "sha=$sha"; then
+          recheck="$(tag_state "$tag" "$sha")"
+          if [ "$recheck" = "ok" ]; then
+            echo "tag $tag created by a concurrent run" >&2
+          else
+            echo "error: failed to create tag $tag at $sha" >&2
+            exit 1
+          fi
+        fi
+      elif [ "$state" = "ok" ]; then
+        echo "tag $tag already exists at commit $sha" >&2
+      fi
+      all_tags+=("$tag")
+    done
   done
 
-  gh_write POST "repos/$REPO/issues/$pr_num/labels" -f "labels[]=autorelease: tagged"
-  gh_write DELETE "repos/$REPO/issues/$pr_num/labels/autorelease:%20pending"
-done
+  if [ ${#all_tags[@]} -eq 0 ]; then
+    echo '[]'
+  else
+    printf '%s\n' "${all_tags[@]}" | LC_ALL=C sort -u | jq -R . | jq -sc .
+  fi
 
-if [ ${#all_tags[@]} -eq 0 ]; then
-  echo '[]'
-else
-  printf '%s\n' "${all_tags[@]}" | LC_ALL=C sort -u | jq -R . | jq -sc .
+elif [ "$MODE" = "relabel" ]; then
+  ready_prs=()
+  for pr_entry in "${prs[@]}"; do
+    [[ "$pr_entry" =~ ^([1-9][0-9]*)[[:space:]]+([0-9a-f]{40})$ ]]
+    pr_num="${BASH_REMATCH[1]}"
+    sha="${BASH_REMATCH[2]}"
+
+    planned_tags="$(plan_tags "$pr_num" "$sha")"
+    mapfile -t tags <<< "$planned_tags"
+    ready=1
+    for tag in "${tags[@]}"; do
+      state="$(tag_state "$tag" "$sha")"
+      if [ "$state" = "missing" ]; then
+        echo "PR $pr_num: tag $tag missing, left pending for the next run" >&2
+        ready=0
+        break
+      fi
+    done
+    if [ "$ready" -eq 1 ]; then
+      ready_prs+=("$pr_num")
+    fi
+  done
+
+  for pr_num in "${ready_prs[@]}"; do
+    gh_write POST "repos/$REPO/issues/$pr_num/labels" -f "labels[]=autorelease: tagged"
+    if ! gh_try_write DELETE "repos/$REPO/issues/$pr_num/labels/autorelease:%20pending"; then
+      has_pending="$(gh_read "read labels of PR $pr_num" api "repos/$REPO/issues/$pr_num/labels" --jq 'any(.[]; .name == "autorelease: pending")')"
+      if [ "$has_pending" = "false" ]; then
+        echo "PR $pr_num: pending label already removed" >&2
+      else
+        echo "error: failed to remove pending label from PR $pr_num" >&2
+        exit 1
+      fi
+    fi
+  done
+
+  if [ ${#ready_prs[@]} -eq 0 ]; then
+    echo '[]'
+  else
+    printf '%s\n' "${ready_prs[@]}" | LC_ALL=C sort -nu | jq -s -c .
+  fi
 fi
