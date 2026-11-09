@@ -10,6 +10,7 @@ REPO_ROOT="$(cd "$HERE/.." && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+# fail NAME MSG: prints the failed case and exits 1.
 fail() {
   local name="$1" msg="$2"
   printf 'FAIL %s: %s\n' "$name" "$msg" >&2

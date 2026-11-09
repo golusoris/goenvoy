@@ -4,6 +4,7 @@
 #   needs: none
 set -euo pipefail
 
+# usage: prints the usage line and exits 2.
 usage() {
   echo "usage: ${0##*/} CHANGELOG VERSION" >&2
   exit 2

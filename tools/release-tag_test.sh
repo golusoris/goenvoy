@@ -7,10 +7,16 @@
 #   e) tag exists at another sha -> exit 1, no label writes
 #   f) manifest unchanged -> exit 1, no writes
 #   g) merge commit with two parents -> exit 1, no writes
-#   h) gh failure on pr list -> exit 1
+#   h) gh failure on pulls endpoint -> exit 1
 #   i) RELEASE_TAG_DRY_RUN=1 -> stdout tags, zero logged writes, stderr holds dry-run: lines
 #   j) changed path version does not fit module path -> exit 1, no writes
-#   k) bad sha in pr list -> exit 1
+#   k) bad sha in pull request list -> exit 1
+#   l) closed pull request with merged_at null and label autorelease: pending -> [], no writes
+#   m) merged release pull request labelled autorelease: tagged only -> [], no writes
+#   n) RELEASE_TAG_TIMEOUT=abc -> exit 2, no gh call
+#   o) stub sleeps 5 s on pulls endpoint when STUB_SLEEP=1, RELEASE_TAG_TIMEOUT=1 -> exit 1 within 4 s, stderr names step
+#   p) two changed paths whose C-locale order differs from natural-language order -> stdout tags in C-locale order
+#   q) REPO bad repo -> exit 2, no gh call
 #   usage: tools/release-tag_test.sh
 set -euo pipefail
 
@@ -18,6 +24,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+# fail NAME MSG: prints the failed case and exits 1.
 fail() {
   local name="$1" msg="$2"
   printf 'FAIL %s: %s\n' "$name" "$msg" >&2
@@ -29,25 +36,11 @@ cat > "$WORK/gh" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [ -n "${STUB_CALLS:-}" ]; then
+  printf '%s\n' "$*" >> "$STUB_CALLS"
+fi
+
 case "$1" in
-  pr)
-    if [ "${STUB_PR_FAIL:-0}" = "1" ]; then
-      exit 1
-    fi
-    jq_expr=""
-    for ((i=1; i<=$#; i++)); do
-      if [ "${!i}" = "--jq" ]; then
-        next=$((i+1))
-        jq_expr="${!next}"
-        break
-      fi
-    done
-    if [ -n "$jq_expr" ]; then
-      jq -r "$jq_expr" "$STUB_PR_JSON"
-    else
-      cat "$STUB_PR_JSON"
-    fi
-    ;;
   api)
     shift
     if [ "${1:-}" = "--method" ]; then
@@ -78,6 +71,20 @@ case "$1" in
     done
 
     case "$endpoint" in
+      repos/*/pulls\?*|repos/*/pulls*)
+        if [ "${STUB_PR_FAIL:-0}" = "1" ]; then
+          echo "500 Internal Server Error" >&2
+          exit 1
+        fi
+        if [ "${STUB_SLEEP:-0}" = "1" ]; then
+          sleep 5
+        fi
+        if [ -n "$jq_expr" ]; then
+          jq -r "$jq_expr" "$STUB_PR_JSON"
+        else
+          cat "$STUB_PR_JSON"
+        fi
+        ;;
       repos/*/commits/*)
         sha="${endpoint##*/}"
         commit_file="$STUB_COMMITS_DIR/$sha.json"
@@ -191,10 +198,14 @@ cat > "$PR_JSON" <<EOF
 [
   {
     "number": 10,
-    "headRefName": "release-please--branches--main",
-    "mergeCommit": {
-      "oid": "$SHA_MERGE"
-    }
+    "merged_at": "2026-11-09T12:00:00Z",
+    "merge_commit_sha": "$SHA_MERGE",
+    "head": {
+      "ref": "release-please--branches--main"
+    },
+    "labels": [
+      { "name": "autorelease: pending" }
+    ]
   }
 ]
 EOF
@@ -202,26 +213,31 @@ EOF
 LOG="$WORK/log"
 OUT="$WORK/out"
 ERR="$WORK/err"
+CALLS="$WORK/calls"
 
+# run_tag [REPO]: runs tools/release-tag.sh against the stub gh and captures stdout, stderr, writes and calls.
 run_tag() {
+  local target_repo="${1:-owner/repo}"
   : > "$LOG"
   : > "$OUT"
   : > "$ERR"
+  : > "$CALLS"
   local rc=0
   (
     GH_BIN="$WORK/gh" \
+    STUB_CALLS="$CALLS" \
     STUB_PR_JSON="$PR_JSON" \
     STUB_COMMITS_DIR="$COMMITS_DIR" \
     STUB_MANIFESTS_DIR="$MANIFESTS_DIR" \
     STUB_MATCHING_REFS_MAP="$MATCHING_REFS" \
     STUB_LOG="$LOG" \
     RELEASE_TAG_ROOT="$REPO_DIR" \
-    bash "$HERE/release-tag.sh" owner/repo > "$OUT" 2> "$ERR"
+    bash "$HERE/release-tag.sh" "$target_repo" > "$OUT" 2> "$ERR"
   ) || rc=$?
   return "$rc"
 }
 
-# Case a: one pending PR, two changed paths -> 2 ref POSTs, label POST + DELETE, stdout JSON
+# Case a: one pending PR, two changed paths -> 2 ref POSTs, label POST + DELETE, stdout tags
 rc=0; run_tag || rc=$?
 [ "$rc" -eq 0 ] || fail "case_a" "exit $rc, want 0"
 [ "$(cat "$OUT")" = '["mod1/v1.1.0","mod2/v1.0.1"]' ] || fail "case_a" "stdout $(cat "$OUT")"
@@ -245,10 +261,14 @@ cat > "$PR_JSON" <<EOF
 [
   {
     "number": 11,
-    "headRefName": "feature/not-release-please",
-    "mergeCommit": {
-      "oid": "$SHA_MERGE"
-    }
+    "merged_at": "2026-11-09T12:00:00Z",
+    "merge_commit_sha": "$SHA_MERGE",
+    "head": {
+      "ref": "feature/not-release-please"
+    },
+    "labels": [
+      { "name": "autorelease: pending" }
+    ]
   }
 ]
 EOF
@@ -263,10 +283,14 @@ cat > "$PR_JSON" <<EOF
 [
   {
     "number": 10,
-    "headRefName": "release-please--branches--main",
-    "mergeCommit": {
-      "oid": "$SHA_MERGE"
-    }
+    "merged_at": "2026-11-09T12:00:00Z",
+    "merge_commit_sha": "$SHA_MERGE",
+    "head": {
+      "ref": "release-please--branches--main"
+    },
+    "labels": [
+      { "name": "autorelease: pending" }
+    ]
   }
 ]
 EOF
@@ -362,7 +386,7 @@ cat > "$COMMITS_DIR/$SHA_MERGE.json" <<EOF
 EOF
 echo "ok   case_g"
 
-# Case h: gh failure on pr list -> exit 1
+# Case h: gh failure on pulls endpoint -> exit 1
 rc=0
 (
   STUB_PR_FAIL=1 run_tag
@@ -419,15 +443,19 @@ cat > "$REPO_DIR/.release-please-manifest.json" <<'EOF'
 EOF
 echo "ok   case_j"
 
-# Case k: bad sha in pr list -> exit 1
+# Case k: bad sha in pull request list -> exit 1
 cat > "$PR_JSON" <<'EOF'
 [
   {
     "number": 10,
-    "headRefName": "release-please--branches--main",
-    "mergeCommit": {
-      "oid": "bad-sha"
-    }
+    "merged_at": "2026-11-09T12:00:00Z",
+    "merge_commit_sha": "bad-sha",
+    "head": {
+      "ref": "release-please--branches--main"
+    },
+    "labels": [
+      { "name": "autorelease: pending" }
+    ]
   }
 ]
 EOF
@@ -435,5 +463,157 @@ rc=0; run_tag || rc=$?
 [ "$rc" -eq 1 ] || fail "case_k" "exit $rc, want 1"
 [ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_k" "want 0 writes"
 echo "ok   case_k"
+
+# Case l: closed pull request with merged_at null and label autorelease: pending -> [], no writes
+cat > "$PR_JSON" <<EOF
+[
+  {
+    "number": 73,
+    "merged_at": null,
+    "merge_commit_sha": "$SHA_MERGE",
+    "head": {
+      "ref": "release-please--branches--main"
+    },
+    "labels": [
+      { "name": "autorelease: pending" }
+    ]
+  }
+]
+EOF
+rc=0; run_tag || rc=$?
+[ "$rc" -eq 0 ] || fail "case_l" "exit $rc, want 0"
+[ "$(cat "$OUT")" = '[]' ] || fail "case_l" "stdout $(cat "$OUT"), want []"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_l" "want 0 writes"
+echo "ok   case_l"
+
+# Case m: merged release pull request labelled autorelease: tagged only -> [], no writes
+cat > "$PR_JSON" <<EOF
+[
+  {
+    "number": 10,
+    "merged_at": "2026-11-09T12:00:00Z",
+    "merge_commit_sha": "$SHA_MERGE",
+    "head": {
+      "ref": "release-please--branches--main"
+    },
+    "labels": [
+      { "name": "autorelease: tagged" }
+    ]
+  }
+]
+EOF
+rc=0; run_tag || rc=$?
+[ "$rc" -eq 0 ] || fail "case_m" "exit $rc, want 0"
+[ "$(cat "$OUT")" = '[]' ] || fail "case_m" "stdout $(cat "$OUT"), want []"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_m" "want 0 writes"
+echo "ok   case_m"
+
+# Case n: RELEASE_TAG_TIMEOUT=abc -> exit 2, no gh call
+rc=0
+(
+  RELEASE_TAG_TIMEOUT=abc run_tag
+) || rc=$?
+[ "$rc" -eq 2 ] || fail "case_n" "exit $rc, want 2"
+[ "$(wc -l < "$CALLS")" -eq 0 ] || fail "case_n" "want 0 gh calls, got $(wc -l < "$CALLS")"
+echo "ok   case_n"
+
+# Case o: stub sleeps 5 s on pulls endpoint when STUB_SLEEP=1, RELEASE_TAG_TIMEOUT=1 -> exit 1 within 4 s, stderr names step
+cat > "$PR_JSON" <<EOF
+[
+  {
+    "number": 10,
+    "merged_at": "2026-11-09T12:00:00Z",
+    "merge_commit_sha": "$SHA_MERGE",
+    "head": {
+      "ref": "release-please--branches--main"
+    },
+    "labels": [
+      { "name": "autorelease: pending" }
+    ]
+  }
+]
+EOF
+start_sec=$SECONDS
+rc=0
+(
+  STUB_SLEEP=1 RELEASE_TAG_TIMEOUT=1 run_tag
+) || rc=$?
+elapsed=$((SECONDS - start_sec))
+[ "$rc" -eq 1 ] || fail "case_o" "exit $rc, want 1"
+[ "$elapsed" -lt 4 ] || fail "case_o" "elapsed $elapsed s, want < 4 s"
+grep -q "error: failed to list release pull requests for owner/repo" "$ERR" || fail "case_o" "stderr did not name the step: $(cat "$ERR")"
+echo "ok   case_o"
+
+# Case p: two changed paths whose C-locale order differs from natural-language order -> stdout tags in C-locale order
+mkdir -p "$REPO_DIR/metadata/game/steam" "$REPO_DIR/metadata/game/steamgriddb"
+cat > "$REPO_DIR/metadata/game/steam/go.mod" <<'EOF'
+module github.com/golusoris/goenvoy/metadata/game/steam
+
+go 1.26
+EOF
+
+cat > "$REPO_DIR/metadata/game/steamgriddb/go.mod" <<'EOF'
+module github.com/golusoris/goenvoy/metadata/game/steamgriddb
+
+go 1.26
+EOF
+
+cat > "$REPO_DIR/.release-please-manifest.json" <<'EOF'
+{
+  "metadata/game/steam": "1.3.6",
+  "metadata/game/steamgriddb": "1.0.7"
+}
+EOF
+
+cat > "$MANIFESTS_DIR/$SHA_PARENT.json" <<'EOF'
+{
+  "metadata/game/steam": "1.3.5",
+  "metadata/game/steamgriddb": "1.0.6"
+}
+EOF
+
+cat > "$MANIFESTS_DIR/$SHA_MERGE.json" <<'EOF'
+{
+  "metadata/game/steam": "1.3.6",
+  "metadata/game/steamgriddb": "1.0.7"
+}
+EOF
+
+cat > "$PR_JSON" <<EOF
+[
+  {
+    "number": 10,
+    "merged_at": "2026-11-09T12:00:00Z",
+    "merge_commit_sha": "$SHA_MERGE",
+    "head": {
+      "ref": "release-please--branches--main"
+    },
+    "labels": [
+      { "name": "autorelease: pending" }
+    ]
+  }
+]
+EOF
+
+echo '[]' > "$MATCHING_REFS"
+
+# Why: sort without LC_ALL=C puts steamgriddb first under en_US or de_DE collation, so the case runs under one when installed.
+natural_locale=""
+if all_locales="$(locale -a 2>/dev/null)" && match="$(grep -i -m1 -E '^(en_US|de_DE)\.utf-?8$' <<< "$all_locales")"; then
+  natural_locale="$match"
+fi
+rc=0
+(
+  LC_ALL="${natural_locale:-C}" run_tag
+) || rc=$?
+[ "$rc" -eq 0 ] || fail "case_p" "exit $rc, want 0"
+[ "$(cat "$OUT")" = '["metadata/game/steam/v1.3.6","metadata/game/steamgriddb/v1.0.7"]' ] || fail "case_p" "stdout $(cat "$OUT"), want [\"metadata/game/steam/v1.3.6\",\"metadata/game/steamgriddb/v1.0.7\"]"
+echo "ok   case_p (locale ${natural_locale:-C only, no natural-language locale installed})"
+
+# Case q: REPO bad repo -> exit 2, no gh call
+rc=0; run_tag "bad repo" || rc=$?
+[ "$rc" -eq 2 ] || fail "case_q" "exit $rc, want 2"
+[ "$(wc -l < "$CALLS")" -eq 0 ] || fail "case_q" "want 0 gh calls, got $(wc -l < "$CALLS")"
+echo "ok   case_q"
 
 echo "release tag: all cases pass"
