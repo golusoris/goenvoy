@@ -116,8 +116,9 @@ upstream-specs: ## Upstream OpenAPI spec pins: planted cases, then every pinned 
 	cd tools/go && go run ./upstreamspec endpoints -manifest ../../upstream/specs.yaml -root ../..
 
 .PHONY: tools-tidy-check
-tools-tidy-check: ## tools/go go.mod and go.sum match the imports: a dependency bump that leaves the imports behind fails here
-	cd tools/go && go mod tidy -diff
+tools-tidy-check: ## tools/go go.mod and go.sum match go mod tidy: planted cases, then tools/go (a dependency bump that leaves the imports behind fails here)
+	bash tools/tools-tidy_test.sh
+	bash tools/tools-tidy.sh tools/go
 
 lint-exceptions: ## Dated complexity exceptions in .golangci.yml: planted cases, then the repository config
 	cd tools/go && go vet ./lintexceptions/ && go test -count=1 ./lintexceptions/
