@@ -36,6 +36,12 @@
 #   ae) relabel with STUB_GOMOD_FAIL=1, all tags present at the merge commit -> exit 1, zero logged writes, stderr has failed to fetch mod1/go.mod for PR 10
 #   af) tag: go.mod of mod1 at the merge commit declares module github.com/golusoris/goenvoy/mod1/v2 -> exit 1, zero logged writes, stderr has does not fit the module path
 #   ag) tag: merge manifest adds key ../evil with version 1.0.0 -> exit 1, zero logged writes, zero go.mod reads in calls, stderr has is not a module folder
+#   ah) tag: pending PR merged into base develop -> [], no writes, zero compare calls
+#   ai) tag with STUB_COMPARE_STATUS=diverged -> exit 1, zero logged writes, stdout empty, stderr has is not in the history of main
+#   aj) relabel with STUB_COMPARE_STATUS=diverged, all tags present at the merge commit -> exit 1, zero logged writes, stdout empty
+#   ak) tag with STUB_COMPARE_STATUS=behind -> exit 1, zero logged writes
+#   al) tag with STUB_COMPARE_STATUS=identical -> rc 0, stdout same tags as case a
+#   am) tag with STUB_COMPARE_FAIL=1 -> exit 1, zero logged writes, stdout empty, stderr has failed to compare
 #   usage: tools/release-tag_test.sh
 set -euo pipefail
 
@@ -228,6 +234,18 @@ case "$1" in
           cat "$labels_file"
         fi
         ;;
+      repos/*/compare/*)
+        if [ "${STUB_COMPARE_FAIL:-0}" = "1" ]; then
+          echo "HTTP 502" >&2
+          exit 1
+        fi
+        compare_json="$(jq -nc --arg s "${STUB_COMPARE_STATUS:-ahead}" '{status: $s}')"
+        if [ -n "$jq_expr" ]; then
+          jq -r "$jq_expr" <<< "$compare_json"
+        else
+          printf '%s\n' "$compare_json"
+        fi
+        ;;
       *)
         echo "stub gh: unhandled endpoint: $endpoint" >&2
         exit 64
@@ -313,6 +331,9 @@ cat > "$PR_JSON" <<EOF
     "number": 10,
     "merged_at": "2026-11-09T12:00:00Z",
     "merge_commit_sha": "$SHA_MERGE",
+    "base": {
+      "ref": "main"
+    },
     "head": {
       "ref": "release-please--branches--main"
     },
@@ -392,6 +413,7 @@ grep -q "POST repos/owner/repo/git/refs -f ref=refs/tags/mod2/v1.0.1 -f sha=$SHA
 [ "$(grep -F -c "repos/owner/repo/contents/mod1/go.mod?ref=$SHA_MERGE" "$CALLS")" -eq 1 ] || fail "case_a" "want 1 mod1 go.mod call"
 [ "$(grep -F -c "repos/owner/repo/contents/mod2/go.mod?ref=$SHA_MERGE" "$CALLS")" -eq 1 ] || fail "case_a" "want 1 mod2 go.mod call"
 [ "$(grep -F -c "modv2/v2/go.mod" "$CALLS")" -eq 0 ] || fail "case_a" "unexpected modv2 go.mod call"
+[ "$(grep -F -c "repos/owner/repo/compare/$SHA_MERGE...main?per_page=1" "$CALLS")" -eq 1 ] || fail "case_a" "want 1 compare call"
 echo "ok   case_a"
 
 # Case b: no pending PR -> [], no writes
@@ -409,6 +431,9 @@ cat > "$PR_JSON" <<EOF
     "number": 11,
     "merged_at": "2026-11-09T12:00:00Z",
     "merge_commit_sha": "$SHA_MERGE",
+    "base": {
+      "ref": "main"
+    },
     "head": {
       "ref": "feature/not-release-please"
     },
@@ -431,6 +456,9 @@ cat > "$PR_JSON" <<EOF
     "number": 10,
     "merged_at": "2026-11-09T12:00:00Z",
     "merge_commit_sha": "$SHA_MERGE",
+    "base": {
+      "ref": "main"
+    },
     "head": {
       "ref": "release-please--branches--main"
     },
@@ -582,6 +610,9 @@ cat > "$PR_JSON" <<'EOF'
     "number": 10,
     "merged_at": "2026-11-09T12:00:00Z",
     "merge_commit_sha": "bad-sha",
+    "base": {
+      "ref": "main"
+    },
     "head": {
       "ref": "release-please--branches--main"
     },
@@ -603,6 +634,9 @@ cat > "$PR_JSON" <<EOF
     "number": 73,
     "merged_at": null,
     "merge_commit_sha": "$SHA_MERGE",
+    "base": {
+      "ref": "main"
+    },
     "head": {
       "ref": "release-please--branches--main"
     },
@@ -625,6 +659,9 @@ cat > "$PR_JSON" <<EOF
     "number": 10,
     "merged_at": "2026-11-09T12:00:00Z",
     "merge_commit_sha": "$SHA_MERGE",
+    "base": {
+      "ref": "main"
+    },
     "head": {
       "ref": "release-please--branches--main"
     },
@@ -656,6 +693,9 @@ cat > "$PR_JSON" <<EOF
     "number": 10,
     "merged_at": "2026-11-09T12:00:00Z",
     "merge_commit_sha": "$SHA_MERGE",
+    "base": {
+      "ref": "main"
+    },
     "head": {
       "ref": "release-please--branches--main"
     },
@@ -710,6 +750,9 @@ cat > "$PR_JSON" <<EOF
     "number": 10,
     "merged_at": "2026-11-09T12:00:00Z",
     "merge_commit_sha": "$SHA_MERGE",
+    "base": {
+      "ref": "main"
+    },
     "head": {
       "ref": "release-please--branches--main"
     },
@@ -768,6 +811,9 @@ for i in $(seq 1 100); do
     "number": $i,
     "merged_at": "2026-11-09T12:00:00Z",
     "merge_commit_sha": "$SHA_MERGE",
+    "base": {
+      "ref": "main"
+    },
     "head": {
       "ref": "release-please--branches--main"
     },
@@ -782,6 +828,9 @@ cat >> "$PR_JSON" <<EOF
     "number": 101,
     "merged_at": "2026-11-09T12:00:00Z",
     "merge_commit_sha": "$SHA_MERGE",
+    "base": {
+      "ref": "main"
+    },
     "head": {
       "ref": "release-please--branches--main"
     },
@@ -806,6 +855,9 @@ cat > "$PR_JSON" <<EOF
     "number": 10,
     "merged_at": "2026-11-09T12:00:00Z",
     "merge_commit_sha": "$SHA_MERGE",
+    "base": {
+      "ref": "main"
+    },
     "head": {
       "ref": "release-please--branches--main"
     },
@@ -1148,5 +1200,118 @@ cat > "$MANIFESTS_DIR/$SHA_MERGE.json" <<'EOF'
 }
 EOF
 echo "ok   case_ag"
+
+# Case ah: tag: pending PR merged into base develop -> [], no writes, zero compare calls
+cat > "$PR_JSON" <<EOF
+[
+  {
+    "number": 10,
+    "merged_at": "2026-11-09T12:00:00Z",
+    "merge_commit_sha": "$SHA_MERGE",
+    "base": {
+      "ref": "develop"
+    },
+    "head": {
+      "ref": "release-please--branches--main"
+    },
+    "labels": [
+      { "name": "autorelease: pending" }
+    ]
+  }
+]
+EOF
+rc=0; run_tag tag || rc=$?
+[ "$rc" -eq 0 ] || fail "case_ah" "exit $rc, want 0"
+[ "$(cat "$OUT")" = '[]' ] || fail "case_ah" "stdout $(cat "$OUT"), want []"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_ah" "want 0 writes"
+[ "$(grep -F -c 'compare' "$CALLS")" -eq 0 ] || fail "case_ah" "unexpected compare calls"
+cat > "$PR_JSON" <<EOF
+[
+  {
+    "number": 10,
+    "merged_at": "2026-11-09T12:00:00Z",
+    "merge_commit_sha": "$SHA_MERGE",
+    "base": {
+      "ref": "main"
+    },
+    "head": {
+      "ref": "release-please--branches--main"
+    },
+    "labels": [
+      { "name": "autorelease: pending" }
+    ]
+  }
+]
+EOF
+echo "ok   case_ah"
+
+# Case ai: tag with STUB_COMPARE_STATUS=diverged -> exit 1, zero logged writes, stdout empty, stderr has is not in the history of main
+rc=0
+(
+  STUB_COMPARE_STATUS=diverged run_tag tag
+) || rc=$?
+[ "$rc" -eq 1 ] || fail "case_ai" "exit $rc, want 1"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_ai" "want 0 writes"
+[ ! -s "$OUT" ] || fail "case_ai" "stdout not empty: $(cat "$OUT")"
+grep -q "is not in the history of main" "$ERR" || fail "case_ai" "stderr missing 'is not in the history of main': $(cat "$ERR")"
+echo "ok   case_ai"
+
+# Case aj: relabel with STUB_COMPARE_STATUS=diverged, all tags present at the merge commit -> exit 1, zero logged writes, stdout empty
+cat > "$MATCHING_REFS" <<EOF
+[
+  {
+    "ref": "refs/tags/mod1/v1.1.0",
+    "object": {
+      "type": "commit",
+      "sha": "$SHA_MERGE"
+    }
+  },
+  {
+    "ref": "refs/tags/mod2/v1.0.1",
+    "object": {
+      "type": "commit",
+      "sha": "$SHA_MERGE"
+    }
+  }
+]
+EOF
+rc=0
+(
+  STUB_COMPARE_STATUS=diverged run_tag relabel
+) || rc=$?
+[ "$rc" -eq 1 ] || fail "case_aj" "exit $rc, want 1"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_aj" "want 0 writes"
+[ ! -s "$OUT" ] || fail "case_aj" "stdout not empty: $(cat "$OUT")"
+echo '[]' > "$MATCHING_REFS"
+echo "ok   case_aj"
+
+# Case ak: tag with STUB_COMPARE_STATUS=behind -> exit 1, zero logged writes
+rc=0
+(
+  STUB_COMPARE_STATUS=behind run_tag tag
+) || rc=$?
+[ "$rc" -eq 1 ] || fail "case_ak" "exit $rc, want 1"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_ak" "want 0 writes"
+echo "ok   case_ak"
+
+# Case al: tag with STUB_COMPARE_STATUS=identical -> rc 0, stdout same tags as case a
+rc=0
+(
+  STUB_COMPARE_STATUS=identical run_tag tag
+) || rc=$?
+[ "$rc" -eq 0 ] || fail "case_al" "exit $rc, want 0"
+[ "$(cat "$OUT")" = '["mod1/v1.1.0","mod2/v1.0.1"]' ] || fail "case_al" "stdout $(cat "$OUT")"
+echo "ok   case_al"
+
+# Case am: tag with STUB_COMPARE_FAIL=1 -> exit 1, zero logged writes, stdout empty, stderr has failed to compare
+rc=0
+(
+  STUB_COMPARE_FAIL=1 run_tag tag
+) || rc=$?
+[ "$rc" -eq 1 ] || fail "case_am" "exit $rc, want 1"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_am" "want 0 writes"
+[ ! -s "$OUT" ] || fail "case_am" "stdout not empty: $(cat "$OUT")"
+grep -q "failed to compare" "$ERR" || fail "case_am" "stderr missing 'failed to compare': $(cat "$ERR")"
+echo "ok   case_am"
 
 echo "release tag: all cases pass"

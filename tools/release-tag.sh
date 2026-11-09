@@ -38,7 +38,8 @@ if [[ ! "$TIMEOUT" =~ ^[1-9][0-9]{0,2}$ ]]; then
   exit 2
 fi
 
-RELEASE_BRANCH="release-please--branches--main"
+BASE_BRANCH="main"
+RELEASE_BRANCH="release-please--branches--$BASE_BRANCH"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GH="${GH_BIN:-gh}"
 DRY_RUN="${RELEASE_TAG_DRY_RUN:-0}"
@@ -99,6 +100,17 @@ gh_write() {
     echo "error: failed to $method $endpoint" >&2
     exit 1
   }
+}
+
+# check_on_base PR SHA: exits 1 unless SHA is in the history of BASE_BRANCH.
+check_on_base() {
+  local pr_num="$1" sha="$2" status
+  status="$(gh_read "compare $sha with $BASE_BRANCH for PR $pr_num" api "repos/$REPO/compare/$sha...$BASE_BRANCH?per_page=1" --jq '.status')"
+  # Why: ahead or identical means BASE_BRANCH contains SHA; diverged or behind means the release commit never reached it.
+  if [ "$status" != "ahead" ] && [ "$status" != "identical" ]; then
+    echo "error: PR $pr_num: merge commit $sha is not in the history of $BASE_BRANCH (compare status '$status')" >&2
+    exit 1
+  fi
 }
 
 # merge_tree PR SHA MANIFEST PATHS_JSON: writes MANIFEST and the go.mod of each path in PATHS_JSON, read at SHA, into a new folder and prints its path.
@@ -216,7 +228,7 @@ tag_state() {
 
 # Why: gh pr list --label reads the search index, which lags behind a merge; the REST list with a head filter does not; --paginate so a pending pull request behind 100 newer closed ones is still found.
 OWNER="${REPO%%/*}"
-pr_lines="$(gh_read "list release pull requests for $REPO" api --paginate "repos/$REPO/pulls?state=closed&head=$OWNER:$RELEASE_BRANCH&per_page=100" --jq '.[] | select(.merged_at != null) | select(.head.ref == "'"$RELEASE_BRANCH"'") | select(any(.labels[]; .name == "autorelease: pending")) | "\(.number) \(.merge_commit_sha)"')"
+pr_lines="$(gh_read "list release pull requests for $REPO" api --paginate "repos/$REPO/pulls?state=closed&head=$OWNER:$RELEASE_BRANCH&per_page=100" --jq '.[] | select(.merged_at != null) | select(.base.ref == "'"$BASE_BRANCH"'") | select(.head.ref == "'"$RELEASE_BRANCH"'") | select(any(.labels[]; .name == "autorelease: pending")) | "\(.number) \(.merge_commit_sha)"')"
 
 prs=()
 if [ -n "$pr_lines" ]; then
@@ -226,6 +238,7 @@ if [ -n "$pr_lines" ]; then
       echo "error: invalid pull request entry: '$pr_line'" >&2
       exit 1
     fi
+    check_on_base "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
     prs+=("$pr_line")
   done <<< "$pr_lines"
 fi
