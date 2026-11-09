@@ -283,19 +283,16 @@ type valueKeyError struct{ text string }
 // Error returns the key-bearing text.
 func (e valueKeyError) Error() string { return e.text }
 
-// TestRedactedErrorFormatHidesOriginal verifies that every string fmt verb prints only the sanitized message, never the hidden error.
+// TestRedactedErrorFormatHidesOriginal verifies that every fmt verb prints the sanitized message as it prints a plain string, never the hidden error.
 func TestRedactedErrorFormatHidesOriginal(t *testing.T) {
 	t.Parallel()
 
+	const sanitized = "dial with apikey=REDACTED"
 	c := &Client{apiKey: "secret"}
 	got := c.scrubError(valueKeyError{text: "dial with apikey=secret"})
-	for _, verb := range []string{"%v", "%+v", "%s", "%q", "%#v"} {
-		out := fmt.Sprintf(verb, got)
-		if strings.Contains(out, "secret") {
-			t.Errorf("fmt.Sprintf(%q, err) = %q, leaks key", verb, out)
-		}
-		if !strings.Contains(out, "apikey=REDACTED") {
-			t.Errorf("fmt.Sprintf(%q, err) = %q, want sanitized message", verb, out)
+	for _, verb := range []string{"%v", "%+v", "%s", "%q", "%x", "%#v", "%d", "%t", "%10.4v"} {
+		if out, want := fmt.Sprintf(verb, got), fmt.Sprintf(verb, sanitized); out != want {
+			t.Errorf("fmt.Sprintf(%q, err) = %q, want %q", verb, out, want)
 		}
 	}
 }

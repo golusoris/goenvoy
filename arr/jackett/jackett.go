@@ -140,9 +140,12 @@ func (e *redactedError) Timeout() bool {
 	return errors.As(e.err, &t) && t.Timeout()
 }
 
-// GoString returns a Go-syntax form holding only the sanitized message, so %#v never prints the hidden error.
-func (e *redactedError) GoString() string {
-	return "&jackett.redactedError{msg:" + strconv.Quote(e.msg) + "}"
+// Format prints only the sanitized message for every fmt verb and flag, so no verb reaches the hidden error.
+func (e *redactedError) Format(f fmt.State, verb rune) {
+	if _, err := fmt.Fprintf(f, fmt.FormatString(f, verb), e.msg); err != nil {
+		// Why: Format has no error return; a failed write leaves nothing more to print.
+		return
+	}
 }
 
 // maxErrNodes bounds the error tree walk in carriesKey.
