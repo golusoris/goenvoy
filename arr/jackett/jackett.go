@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -76,15 +77,16 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("jackett: HTTP %d", e.StatusCode)
 }
 
+// doRequest executes an HTTP request and returns the response body.
 func (c *Client) doRequest(ctx context.Context, u string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("jackett: create request: %w", err)
+		return nil, fmt.Errorf("jackett: create request: %w", redactURLError(err))
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("jackett: request: %w", err)
+		return nil, fmt.Errorf("jackett: request: %w", redactURLError(err))
 	}
 	defer resp.Body.Close()
 
@@ -98,6 +100,33 @@ func (c *Client) doRequest(ctx context.Context, u string) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+// redactURLError redacts the apikey query parameter from [url.Error] URLs.
+func redactURLError(err error) error {
+	var uerr *url.Error
+	if errors.As(err, &uerr) {
+		// Why: error is freshly built by net/http, owned here.
+		uerr.URL = redactURL(uerr.URL)
+	}
+	return err
+}
+
+// redactURL replaces the apikey query parameter in raw with REDACTED.
+func redactURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		// Why: unparseable URL strips query string to prevent key exposure.
+		base, _, _ := strings.Cut(raw, "?")
+		return base
+	}
+	q := u.Query()
+	if !q.Has("apikey") {
+		return raw
+	}
+	q.Set("apikey", "REDACTED")
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
 func (c *Client) getJSON(ctx context.Context, path string, params url.Values, v any) error {

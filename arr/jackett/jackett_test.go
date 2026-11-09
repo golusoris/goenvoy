@@ -6,8 +6,10 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/golusoris/goenvoy/arr/jackett/v2"
 )
@@ -717,6 +719,125 @@ func TestApplyNumericAttr_ValidAndBoundary(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			runNumericAttrCase(t, tc.xml, tc.wantSeeders, tc.wantPeers)
+		})
+	}
+}
+
+// TestTransportErrorRedactsAPIKey verifies that transport errors do not leak the API key.
+func TestTransportErrorRedactsAPIKey(t *testing.T) {
+	t.Parallel()
+
+	const secretKey = `s3cr3t+key/=&x`
+	escapedKey := url.QueryEscape(secretKey)
+
+	cases := []struct {
+		name           string
+		assertCanceled bool
+		run            func(t *testing.T) error
+	}{
+		{
+			name: "search torznab path on closed server",
+			run: func(t *testing.T) error {
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+				srv.Close()
+				c, err := jackett.New(srv.URL, secretKey)
+				if err != nil {
+					t.Fatalf("jackett.New: %v", err)
+				}
+				_, err = c.Search(context.Background(), "test", nil)
+				return err
+			},
+		},
+		{
+			name: "capabilities xml path on closed server",
+			run: func(t *testing.T) error {
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+				srv.Close()
+				c, err := jackett.New(srv.URL, secretKey)
+				if err != nil {
+					t.Fatalf("jackett.New: %v", err)
+				}
+				_, err = c.GetCapabilities(context.Background())
+				return err
+			},
+		},
+		{
+			name: "indexers json path on closed server",
+			run: func(t *testing.T) error {
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+				srv.Close()
+				c, err := jackett.New(srv.URL, secretKey)
+				if err != nil {
+					t.Fatalf("jackett.New: %v", err)
+				}
+				_, err = c.GetIndexers(context.Background())
+				return err
+			},
+		},
+		{
+			name:           "canceled context on live server",
+			assertCanceled: true,
+			run: func(t *testing.T) error {
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+				t.Cleanup(srv.Close)
+				c, err := jackett.New(srv.URL, secretKey)
+				if err != nil {
+					t.Fatalf("jackett.New: %v", err)
+				}
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				_, err = c.GetServerConfig(ctx)
+				return err
+			},
+		},
+		{
+			name: "timeout on hanging handler",
+			run: func(t *testing.T) error {
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					select {
+					case <-r.Context().Done():
+					case <-time.After(2 * time.Second):
+						t.Errorf("handler timeout waiting for request cancellation")
+					}
+				}))
+				t.Cleanup(srv.Close)
+				c, err := jackett.New(srv.URL, secretKey, jackett.WithTimeout(20*time.Millisecond))
+				if err != nil {
+					t.Fatalf("jackett.New: %v", err)
+				}
+				_, err = c.Search(context.Background(), "test", nil)
+				return err
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := tc.run(t)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			errMsg := err.Error()
+			if strings.Contains(errMsg, secretKey) {
+				t.Errorf("error leaked raw key: %q", errMsg)
+			}
+			if strings.Contains(errMsg, escapedKey) {
+				t.Errorf("error leaked escaped key: %q", errMsg)
+			}
+			if !strings.Contains(errMsg, "apikey=REDACTED") {
+				t.Errorf("error missing apikey=REDACTED: %q", errMsg)
+			}
+			if !strings.HasPrefix(errMsg, "jackett: request: ") {
+				t.Errorf("error does not start with %q: %q", "jackett: request: ", errMsg)
+			}
+			var uerr *url.Error
+			if !errors.As(err, &uerr) {
+				t.Errorf("expected *url.Error in chain, got %T", err)
+			}
+			if tc.assertCanceled && !errors.Is(err, context.Canceled) {
+				t.Errorf("expected errors.Is(err, context.Canceled), got %v", err)
+			}
 		})
 	}
 }
