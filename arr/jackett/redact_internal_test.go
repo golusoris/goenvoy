@@ -193,3 +193,46 @@ func TestScrubErrorHidesOriginal(t *testing.T) {
 		t.Errorf("errors.Is(got, orig) = false, want true")
 	}
 }
+
+// quietLink hides the error it wraps from its own message.
+type quietLink struct{ err error }
+
+// Error returns a message without the wrapped error's text.
+func (quietLink) Error() string { return "link" }
+
+// Unwrap returns the wrapped error.
+func (l quietLink) Unwrap() error { return l.err }
+
+// quietChain returns a chain of n errors: n-1 quiet links over leaf.
+func quietChain(n int, leaf error) error {
+	err := leaf
+	for range n - 1 {
+		err = quietLink{err: err}
+	}
+	return err
+}
+
+// TestCarriesKeyBound verifies that carriesKey reads exactly maxErrNodes errors and treats a longer tree as carrying the key.
+func TestCarriesKeyBound(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "no key within bound", err: quietChain(maxErrNodes, errors.New("plain")), want: false},
+		{name: "key at last node read", err: quietChain(maxErrNodes, errors.New("apikey=secret")), want: true},
+		{name: "one node past bound", err: quietChain(maxErrNodes+1, errors.New("plain")), want: true},
+	}
+
+	c := &Client{apiKey: "secret"}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := c.carriesKey(tc.err); got != tc.want {
+				t.Errorf("c.carriesKey(chain) = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

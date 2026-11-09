@@ -140,17 +140,45 @@ func (e *redactedError) Timeout() bool {
 	return errors.As(e.err, &t) && t.Timeout()
 }
 
-// scrubError returns err with any occurrences of the API key scrubbed from its message.
+// maxErrNodes bounds the error tree walk in carriesKey.
+const maxErrNodes = 64
+
+// scrubError returns err unchanged when no error in its tree prints the API key; otherwise it hides err behind its scrubbed message.
 func (c *Client) scrubError(err error) error {
-	if err == nil {
-		return nil
-	}
-	msg := err.Error()
-	clean := c.scrub(msg)
-	if clean == msg {
+	if err == nil || !c.carriesKey(err) {
 		return err
 	}
-	return &redactedError{msg: clean, err: err}
+	return &redactedError{msg: c.scrub(err.Error()), err: err}
+}
+
+// carriesKey reports whether err or any error it wraps, single or joined, prints the raw or query-escaped API key.
+func (c *Client) carriesKey(err error) bool {
+	queue := []error{err}
+	for i := 0; i < maxErrNodes && i < len(queue); i++ {
+		if msg := queue[i].Error(); c.scrub(msg) != msg {
+			return true
+		}
+		queue = appendWrapped(queue, queue[i])
+	}
+	// Why: a tree past the bound is hidden, never trusted unread.
+	return len(queue) > maxErrNodes
+}
+
+// appendWrapped appends the non-nil errors that err wraps directly, single or joined, to queue.
+func appendWrapped(queue []error, err error) []error {
+	if w := errors.Unwrap(err); w != nil {
+		return append(queue, w)
+	}
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		return queue
+	}
+	for _, w := range joined.Unwrap() {
+		if w != nil {
+			queue = append(queue, w)
+		}
+	}
+	return queue
 }
 
 // redactError redacts the API key from URL errors and scrubs remaining key text.
