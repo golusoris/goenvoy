@@ -175,3 +175,21 @@ func TestRedactURLErrorNonURLError(t *testing.T) {
 		t.Errorf("c.redactError(nil) = %v, want nil", gotNil)
 	}
 }
+
+// TestScrubErrorHidesOriginal verifies that a scrubbed error hides the original from Unwrap but still matches errors.Is.
+func TestScrubErrorHidesOriginal(t *testing.T) {
+	t.Parallel()
+
+	c := &Client{apiKey: "secret"}
+	orig := errors.New("dial with apikey=secret")
+	got := c.scrubError(orig)
+	if got.Error() != "dial with apikey=REDACTED" {
+		t.Errorf("got.Error() = %q, want %q", got.Error(), "dial with apikey=REDACTED")
+	}
+	if inner := errors.Unwrap(got); inner != nil {
+		t.Errorf("errors.Unwrap(got) = %v, want nil", inner)
+	}
+	if !errors.Is(got, orig) {
+		t.Errorf("errors.Is(got, orig) = false, want true")
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -787,6 +788,31 @@ func assertRedactedTransportError(t *testing.T, err error, key string) {
 	if !errors.As(err, &uerr) {
 		t.Errorf("expected *url.Error in chain, got %T", err)
 	}
+	assertChainRedacted(t, err, key)
+}
+
+// maxChainNodes bounds the error chain walk in assertChainRedacted.
+const maxChainNodes = 64
+
+// assertChainRedacted fails when any error reachable through Unwrap carries the raw or escaped key.
+func assertChainRedacted(t *testing.T, err error, key string) {
+	t.Helper()
+	queue := []error{err}
+	for i := 0; i < maxChainNodes && len(queue) > 0; i++ {
+		e := queue[0]
+		queue = queue[1:]
+		if msg := e.Error(); strings.Contains(msg, key) || strings.Contains(msg, url.QueryEscape(key)) {
+			t.Errorf("chain node %d (%T) leaked key: %q", i, e, msg)
+		}
+		switch u := e.(type) {
+		case interface{ Unwrap() error }:
+			if next := u.Unwrap(); next != nil {
+				queue = append(queue, next)
+			}
+		case interface{ Unwrap() []error }:
+			queue = append(queue, u.Unwrap()...)
+		}
+	}
 }
 
 // transportTestCase defines inputs and expectations for transport error redaction tests.
@@ -876,6 +902,9 @@ func TestTransportErrorRedactsAPIKey(t *testing.T) {
 	}
 }
 
+// errTripSentinel is a transport error matched through the redaction wrapper.
+var errTripSentinel = errors.New("trip sentinel")
+
 // timeoutError represents a test error that reports a timeout.
 type timeoutError struct {
 	msg string
@@ -896,6 +925,7 @@ type customTransportTestCase struct {
 	name         string
 	tripErr      func(r *http.Request) error
 	checkTimeout bool
+	wantIs       error
 }
 
 // runCustomTransportErrorCase executes a custom transport error case and verifies redaction.
@@ -930,6 +960,9 @@ func runCustomTransportErrorCase(t *testing.T, tc customTransportTestCase, key s
 	if tc.checkTimeout && !uerr.Timeout() {
 		t.Errorf("uerr.Timeout() = false, want true")
 	}
+	if tc.wantIs != nil && !errors.Is(err, tc.wantIs) {
+		t.Errorf("errors.Is(err, %v) = false, want true", tc.wantIs)
+	}
 }
 
 // TestCustomTransportErrorRedactsAPIKey verifies that custom transport errors do not leak keys.
@@ -963,6 +996,13 @@ func TestCustomTransportErrorRedactsAPIKey(t *testing.T) {
 			},
 			checkTimeout: true,
 		},
+		{
+			name: "sentinel behind key text",
+			tripErr: func(r *http.Request) error {
+				return fmt.Errorf("%w: %s", errTripSentinel, r.URL.String())
+			},
+			wantIs: errTripSentinel,
+		},
 	}
 
 	for _, tc := range cases {
@@ -980,7 +1020,10 @@ func TestAPIErrorBodyRedactsAPIKey(t *testing.T) {
 	const secretKey = `s3cr3t+key/=&x`
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte("bad request " + r.URL.String() + " key=" + r.URL.Query().Get("apikey")))
+		body := "bad request " + r.URL.String() + " key=" + r.URL.Query().Get("apikey")
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+			t.Errorf("TestAPIErrorBodyRedactsAPIKey: write body: %v", err)
+		}
 	}))
 	t.Cleanup(srv.Close)
 

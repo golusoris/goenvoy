@@ -116,9 +116,10 @@ func (c *Client) scrub(s string) string {
 	return strings.ReplaceAll(s, url.QueryEscape(c.apiKey), "REDACTED")
 }
 
-// redactedError wraps an error while presenting sanitized message text.
+// redactedError presents sanitized message text and hides the error it replaces, whose text holds the API key.
 type redactedError struct {
 	msg string
+	// Why: no Unwrap method, so callers cannot reach text that holds the key.
 	err error
 }
 
@@ -127,9 +128,9 @@ func (e *redactedError) Error() string {
 	return e.msg
 }
 
-// Unwrap returns the underlying wrapped error.
-func (e *redactedError) Unwrap() error {
-	return e.err
+// Is reports whether the hidden error matches target, so errors.Is keeps working without exposing it.
+func (e *redactedError) Is(target error) bool {
+	return errors.Is(e.err, target)
 }
 
 // Timeout reports whether the underlying error timed out.
