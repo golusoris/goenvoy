@@ -1057,3 +1057,158 @@ func TestAPIErrorBodyRedactsAPIKey(t *testing.T) {
 		t.Errorf("err.Error() leaked escaped key: %q", errMsg)
 	}
 }
+
+// errReadSentinel marks the body read failure in TestResponseErrorRedactsAPIKey.
+var errReadSentinel = errors.New("read sentinel")
+
+// failingBody is a response body whose Read always returns err.
+type failingBody struct{ err error }
+
+// Read returns the configured error.
+func (b failingBody) Read([]byte) (int, error) { return 0, b.err }
+
+// Close does nothing.
+func (failingBody) Close() error { return nil }
+
+// responseErrorTestCase describes a 200 response that the client fails to read or decode.
+type responseErrorTestCase struct {
+	name       string
+	key        string
+	body       func(r *http.Request) io.ReadCloser
+	call       func(ctx context.Context, c *jackett.Client) error
+	wantPrefix string
+	wantIs     error
+}
+
+// runResponseErrorCase serves tc.body with status 200 through a stub transport and checks that the error hides the key.
+func runResponseErrorCase(t *testing.T, tc responseErrorTestCase) {
+	t.Helper()
+	c, err := jackett.New("http://127.0.0.1:9117", tc.key, jackett.WithHTTPClient(&http.Client{
+		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: http.StatusOK, Header: http.Header{}, Body: tc.body(r), Request: r}, nil
+		}),
+	}))
+	if err != nil {
+		t.Fatalf("jackett.New: %v", err)
+	}
+	err = tc.call(context.Background(), c)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.HasPrefix(err.Error(), tc.wantPrefix) {
+		t.Errorf("err = %q, want prefix %q", err, tc.wantPrefix)
+	}
+	assertChainRedacted(t, err, tc.key)
+	if tc.wantIs != nil && !errors.Is(err, tc.wantIs) {
+		t.Errorf("errors.Is(err, %v) = false, want true", tc.wantIs)
+	}
+}
+
+// readErrPlainBody returns a failingBody whose error carries no key.
+func readErrPlainBody(*http.Request) io.ReadCloser {
+	return failingBody{err: errReadSentinel}
+}
+
+// readErrURLBody returns a failingBody carrying the request URL.
+func readErrURLBody(r *http.Request) io.ReadCloser {
+	return failingBody{err: fmt.Errorf("%w: %s", errReadSentinel, r.URL.String())}
+}
+
+// readErrRawKeyBody returns a failingBody carrying the raw API key.
+func readErrRawKeyBody(r *http.Request) io.ReadCloser {
+	return failingBody{err: fmt.Errorf("%w: key %s", errReadSentinel, r.URL.Query().Get("apikey"))}
+}
+
+// readErrURLStructBody returns a failingBody carrying a url.Error.
+func readErrURLStructBody(r *http.Request) io.ReadCloser {
+	return failingBody{err: &url.Error{Op: "Get", URL: r.URL.String(), Err: errReadSentinel}}
+}
+
+// xmlAttrEchoBody returns an XML response whose limits max echoes the key.
+func xmlAttrEchoBody(r *http.Request) io.ReadCloser {
+	return io.NopCloser(strings.NewReader(`<caps><limits max="` + r.URL.Query().Get("apikey") + `" default="50"/></caps>`))
+}
+
+// jsonNumEchoBody returns a JSON response whose port echoes the key.
+func jsonNumEchoBody(r *http.Request) io.ReadCloser {
+	return io.NopCloser(strings.NewReader(`{"port": ` + r.URL.Query().Get("apikey") + `}`))
+}
+
+// callGetIndexers calls GetIndexers and returns its error.
+func callGetIndexers(ctx context.Context, c *jackett.Client) error {
+	_, err := c.GetIndexers(ctx)
+	return err
+}
+
+// callGetCapabilities calls GetCapabilities and returns its error.
+func callGetCapabilities(ctx context.Context, c *jackett.Client) error {
+	_, err := c.GetCapabilities(ctx)
+	return err
+}
+
+// callGetServerConfig calls GetServerConfig and returns its error.
+func callGetServerConfig(ctx context.Context, c *jackett.Client) error {
+	_, err := c.GetServerConfig(ctx)
+	return err
+}
+
+// TestResponseErrorRedactsAPIKey verifies that response read and decode errors do not leak keys.
+func TestResponseErrorRedactsAPIKey(t *testing.T) {
+	t.Parallel()
+
+	cases := []responseErrorTestCase{
+		{
+			name:       "read error without key keeps text",
+			key:        `s3cr3t+key/=&x`,
+			body:       readErrPlainBody,
+			call:       callGetIndexers,
+			wantPrefix: "jackett: read response: read sentinel",
+			wantIs:     errReadSentinel,
+		},
+		{
+			name:       "read error carries URL",
+			key:        `s3cr3t+key/=&x`,
+			body:       readErrURLBody,
+			call:       callGetIndexers,
+			wantPrefix: "jackett: read response:",
+			wantIs:     errReadSentinel,
+		},
+		{
+			name:       "read error carries raw key",
+			key:        `s3cr3t+key/=&x`,
+			body:       readErrRawKeyBody,
+			call:       callGetIndexers,
+			wantPrefix: "jackett: read response:",
+			wantIs:     errReadSentinel,
+		},
+		{
+			name:       "read error is url error",
+			key:        `s3cr3t+key/=&x`,
+			body:       readErrURLStructBody,
+			call:       callGetIndexers,
+			wantPrefix: "jackett: read response:",
+			wantIs:     errReadSentinel,
+		},
+		{
+			name:       "xml attribute echoes key",
+			key:        "s3cr3tkey42",
+			body:       xmlAttrEchoBody,
+			call:       callGetCapabilities,
+			wantPrefix: "jackett: decode xml:",
+		},
+		{
+			name:       "json number echoes key",
+			key:        "98765432109876543210987654321",
+			body:       jsonNumEchoBody,
+			call:       callGetServerConfig,
+			wantPrefix: "jackett: decode json:",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runResponseErrorCase(t, tc)
+		})
+	}
+}

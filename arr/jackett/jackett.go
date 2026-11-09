@@ -96,7 +96,7 @@ func (c *Client) doRequest(ctx context.Context, u string) ([]byte, error) {
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("jackett: read response: %w", err)
+		return nil, fmt.Errorf("jackett: read response: %w", c.redactError(err))
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -157,7 +157,7 @@ func (c *Client) scrubError(err error) error {
 func (c *Client) redactError(err error) error {
 	var uerr *url.Error
 	if errors.As(err, &uerr) {
-		// Why: net/http returns the *url.Error unwrapped at both call sites.
+		// Why: Do and NewRequestWithContext return it unwrapped; a body read error wrapping one loses its outer wrappers.
 		// Why: copy, never mutate an error value net/http or a custom transport may share.
 		err = &url.Error{Op: uerr.Op, URL: c.scrub(redactURL(uerr.URL)), Err: c.scrubError(uerr.Err)}
 	}
@@ -198,7 +198,8 @@ func (c *Client) getJSON(ctx context.Context, path string, params url.Values, v 
 
 	if v != nil {
 		if err := json.Unmarshal(data, v); err != nil {
-			return fmt.Errorf("jackett: decode json: %w", err)
+			// Why: decode errors quote response text, which may echo the key.
+			return fmt.Errorf("jackett: decode json: %w", c.scrubError(err))
 		}
 	}
 	return nil
@@ -218,7 +219,8 @@ func (c *Client) getXML(ctx context.Context, path string, params url.Values, v a
 
 	if v != nil {
 		if err := xml.Unmarshal(data, v); err != nil {
-			return fmt.Errorf("jackett: decode xml: %w", err)
+			// Why: decode errors quote response text, which may echo the key.
+			return fmt.Errorf("jackett: decode xml: %w", c.scrubError(err))
 		}
 	}
 	return nil
