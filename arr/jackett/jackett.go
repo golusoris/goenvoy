@@ -140,17 +140,64 @@ func (e *redactedError) Timeout() bool {
 	return errors.As(e.err, &t) && t.Timeout()
 }
 
-// scrubError returns err with any occurrences of the API key scrubbed from its message.
-func (c *Client) scrubError(err error) error {
-	if err == nil {
-		return nil
+// Format prints only the sanitized message for every fmt verb and flag, so no verb reaches the hidden error.
+func (e *redactedError) Format(f fmt.State, verb rune) {
+	if _, err := fmt.Fprintf(f, fmt.FormatString(f, verb), e.msg); err != nil {
+		// Why: Format has no error return; a failed write leaves nothing more to print.
+		return
 	}
-	msg := err.Error()
-	clean := c.scrub(msg)
-	if clean == msg {
+}
+
+// maxErrNodes bounds the error tree walk in carriesKey.
+const maxErrNodes = 64
+
+// scrubError returns err unchanged when no error in its tree prints the API key; otherwise it hides err behind its scrubbed message.
+func (c *Client) scrubError(err error) error {
+	if err == nil || !c.carriesKey(err) {
 		return err
 	}
-	return &redactedError{msg: clean, err: err}
+	return &redactedError{msg: c.scrub(err.Error()), err: err}
+}
+
+// carriesKey reports whether err or any error it wraps, single or joined, prints the raw or query-escaped API key.
+func (c *Client) carriesKey(err error) bool {
+	queue := []error{err}
+	for i := 0; i < maxErrNodes && i < len(queue); i++ {
+		if c.containsKey(queue[i].Error()) {
+			return true
+		}
+		queue = appendWrapped(queue, queue[i])
+	}
+	// Why: a tree past the bound is hidden, never trusted unread.
+	return len(queue) > maxErrNodes
+}
+
+// containsKey reports whether s holds the raw or query-escaped API key.
+func (c *Client) containsKey(s string) bool {
+	// Why: strings.Contains with an empty key matches every string.
+	return c.apiKey != "" && (strings.Contains(s, c.apiKey) || strings.Contains(s, url.QueryEscape(c.apiKey)))
+}
+
+// appendWrapped appends the non-nil errors that err wraps directly, single or joined, to queue, never growing it past maxErrNodes+1 errors.
+func appendWrapped(queue []error, err error) []error {
+	if len(queue) > maxErrNodes {
+		// Why: carriesKey already treats this tree as too large; more entries only cost memory.
+		return queue
+	}
+	if w := errors.Unwrap(err); w != nil {
+		return append(queue, w)
+	}
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		return queue
+	}
+	children := joined.Unwrap()
+	for i := 0; i < len(children) && len(queue) <= maxErrNodes; i++ {
+		if children[i] != nil {
+			queue = append(queue, children[i])
+		}
+	}
+	return queue
 }
 
 // redactError redacts the API key from URL errors and scrubs remaining key text.

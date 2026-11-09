@@ -3,6 +3,7 @@ package jackett
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 	"testing"
@@ -191,5 +192,133 @@ func TestScrubErrorHidesOriginal(t *testing.T) {
 	}
 	if !errors.Is(got, orig) {
 		t.Errorf("errors.Is(got, orig) = false, want true")
+	}
+}
+
+// quietLink hides the error it wraps from its own message.
+type quietLink struct{ err error }
+
+// Error returns a message without the wrapped error's text.
+func (quietLink) Error() string { return "link" }
+
+// Unwrap returns the wrapped error.
+func (l quietLink) Unwrap() error { return l.err }
+
+// quietChain returns a chain of n errors: n-1 quiet links over leaf.
+func quietChain(n int, leaf error) error {
+	err := leaf
+	for range n - 1 {
+		err = quietLink{err: err}
+	}
+	return err
+}
+
+// TestCarriesKeyBound verifies that carriesKey reads exactly maxErrNodes errors and treats a longer tree as carrying the key.
+func TestCarriesKeyBound(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "no key within bound", err: quietChain(maxErrNodes, errors.New("plain")), want: false},
+		{name: "key at last node read", err: quietChain(maxErrNodes, errors.New("apikey=secret")), want: true},
+		{name: "one node past bound", err: quietChain(maxErrNodes+1, errors.New("plain")), want: true},
+		{name: "wide join past bound", err: errors.Join(plainLinks(4 * maxErrNodes)...), want: true},
+	}
+
+	c := &Client{apiKey: "secret"}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := c.carriesKey(tc.err); got != tc.want {
+				t.Errorf("c.carriesKey(chain) = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// plainLinks returns n quiet links over key-free errors.
+func plainLinks(n int) []error {
+	errs := make([]error, n)
+	for i := range errs {
+		errs[i] = quietLink{err: errors.New("plain")}
+	}
+	return errs
+}
+
+// TestCarriesKey verifies raw and query-escaped key detection, including a key equal to the redaction placeholder and an empty key.
+func TestCarriesKey(t *testing.T) {
+	t.Parallel()
+
+	const escapedKey = `s3cr3t+key/=&x`
+	cases := []struct {
+		name string
+		key  string
+		err  error
+		want bool
+	}{
+		{name: "raw key", key: "secret", err: errors.New("dial apikey=secret"), want: true},
+		{name: "escaped key only", key: escapedKey, err: errors.New("dial apikey=" + url.QueryEscape(escapedKey)), want: true},
+		{name: "key equals placeholder", key: "REDACTED", err: errors.New("dial apikey=REDACTED"), want: true},
+		{name: "no key text", key: "secret", err: errors.New("dial refused"), want: false},
+		{name: "empty key never matches", key: "", err: errors.New("dial refused"), want: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c := &Client{apiKey: tc.key}
+			if got := c.carriesKey(tc.err); got != tc.want {
+				t.Errorf("c.carriesKey(%q) = %v, want %v", tc.err, got, tc.want)
+			}
+		})
+	}
+}
+
+// valueKeyError is a value-type error whose field holds key text, the shape %#v prints field by field.
+type valueKeyError struct{ text string }
+
+// Error returns the key-bearing text.
+func (e valueKeyError) Error() string { return e.text }
+
+// TestRedactedErrorFormatHidesOriginal verifies that every fmt verb prints the sanitized message as it prints a plain string, never the hidden error.
+func TestRedactedErrorFormatHidesOriginal(t *testing.T) {
+	t.Parallel()
+
+	const sanitized = "dial with apikey=REDACTED"
+	c := &Client{apiKey: "secret"}
+	got := c.scrubError(valueKeyError{text: "dial with apikey=secret"})
+	for _, verb := range []string{"%v", "%+v", "%s", "%q", "%x", "%#v", "%d", "%t", "%10.4v"} {
+		if out, want := fmt.Sprintf(verb, got), fmt.Sprintf(verb, sanitized); out != want {
+			t.Errorf("fmt.Sprintf(%q, err) = %q, want %q", verb, out, want)
+		}
+	}
+}
+
+// TestAppendWrappedBound verifies that appendWrapped never grows the queue past maxErrNodes+1 errors.
+func TestAppendWrappedBound(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name    string
+		queue   []error
+		err     error
+		wantLen int
+	}{
+		{name: "wide join stops past bound", queue: []error{errors.New("root")}, err: errors.Join(plainLinks(4 * maxErrNodes)...), wantLen: maxErrNodes + 1},
+		{name: "full queue skips single unwrap", queue: make([]error, maxErrNodes+1), err: quietLink{err: errors.New("plain")}, wantLen: maxErrNodes + 1},
+		{name: "narrow join keeps every non-nil child", queue: []error{errors.New("root")}, err: errors.Join(nil, errors.New("a"), errors.New("b")), wantLen: 3},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			queue := append([]error(nil), tc.queue...)
+			if got := len(appendWrapped(queue, tc.err)); got != tc.wantLen {
+				t.Errorf("len(appendWrapped(queue, err)) = %d, want %d", got, tc.wantLen)
+			}
+		})
 	}
 }

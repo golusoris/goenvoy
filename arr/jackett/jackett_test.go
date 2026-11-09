@@ -791,17 +791,29 @@ func assertRedactedTransportError(t *testing.T, err error, key string) {
 	assertChainRedacted(t, err, key)
 }
 
-// maxChainNodes bounds the error chain walk in assertChainRedacted.
-const maxChainNodes = 64
+// maxChainNodes bounds the error tree walk in assertChainRedacted; it exceeds the client's own walk bound so the check also reads what the client leaves unread.
+const maxChainNodes = 256
 
-// assertChainRedacted fails when any error reachable through errors.Unwrap carries the raw or escaped key.
+// assertChainRedacted fails when any error reachable through Unwrap, single or joined, carries the raw or escaped key.
 func assertChainRedacted(t *testing.T, err error, key string) {
 	t.Helper()
-	// Why: errors.Unwrap stops at joined errors; no case here builds one.
-	for i, e := 0, err; i < maxChainNodes && e != nil; i, e = i+1, errors.Unwrap(e) {
+	queue := []error{err}
+	for i := 0; i < maxChainNodes && i < len(queue); i++ {
+		e := queue[i]
+		if e == nil {
+			continue
+		}
 		if msg := e.Error(); strings.Contains(msg, key) || strings.Contains(msg, url.QueryEscape(key)) {
 			t.Errorf("chain node %d (%T) leaked key: %q", i, e, msg)
 		}
+		if w := errors.Unwrap(e); w != nil {
+			queue = append(queue, w)
+		} else if joined, ok := e.(interface{ Unwrap() []error }); ok {
+			queue = append(queue, joined.Unwrap()...)
+		}
+	}
+	if len(queue) > maxChainNodes {
+		t.Errorf("error tree exceeds %d nodes; check incomplete", maxChainNodes)
 	}
 }
 
@@ -955,6 +967,17 @@ func runCustomTransportErrorCase(t *testing.T, tc customTransportTestCase, key s
 	}
 }
 
+// runCustomTransportErrorCases runs each case as a parallel subtest against a client holding key.
+func runCustomTransportErrorCases(t *testing.T, cases []customTransportTestCase, key string) {
+	t.Helper()
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runCustomTransportErrorCase(t, tc, key)
+		})
+	}
+}
+
 // TestCustomTransportErrorRedactsAPIKey verifies that custom transport errors do not leak keys.
 func TestCustomTransportErrorRedactsAPIKey(t *testing.T) {
 	t.Parallel()
@@ -995,12 +1018,66 @@ func TestCustomTransportErrorRedactsAPIKey(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			runCustomTransportErrorCase(t, tc, secretKey)
-		})
+	runCustomTransportErrorCases(t, cases, secretKey)
+}
+
+// quietWrapError hides the error it wraps from its own message.
+type quietWrapError struct{ err error }
+
+// Error returns a message without the wrapped error's text.
+func (quietWrapError) Error() string { return "quiet" }
+
+// Unwrap returns the wrapped error.
+func (e quietWrapError) Unwrap() error { return e.err }
+
+// quietJoinError hides the errors it joins from its own message.
+type quietJoinError struct{ errs []error }
+
+// Error returns a message without the joined errors' text.
+func (quietJoinError) Error() string { return "quiet join" }
+
+// Unwrap returns the joined errors.
+func (e quietJoinError) Unwrap() []error { return e.errs }
+
+// deepQuietChain wraps a url.Error carrying the request URL in n quiet wrappers.
+func deepQuietChain(r *http.Request, n int) error {
+	var err error = &url.Error{Op: "Get", URL: r.URL.String(), Err: errTripSentinel}
+	for range n {
+		err = quietWrapError{err: err}
 	}
+	return err
+}
+
+// TestNestedTransportErrorRedactsAPIKey verifies that key text below a wrapper whose own message is key-free stays hidden.
+func TestNestedTransportErrorRedactsAPIKey(t *testing.T) {
+	t.Parallel()
+
+	const secretKey = `s3cr3t+key/=&x`
+	cases := []customTransportTestCase{
+		{
+			name: "quiet wrapper over url error",
+			tripErr: func(r *http.Request) error {
+				return quietWrapError{err: &url.Error{Op: "Get", URL: r.URL.String(), Err: errTripSentinel}}
+			},
+			wantIs: errTripSentinel,
+		},
+		{
+			name: "quiet join with nil and key text",
+			tripErr: func(r *http.Request) error {
+				return quietJoinError{errs: []error{nil, errTripSentinel, fmt.Errorf("upstream refused %s", r.URL)}}
+			},
+			wantIs: errTripSentinel,
+		},
+		{
+			name: "quiet chain past walk bound",
+			tripErr: func(r *http.Request) error {
+				return deepQuietChain(r, 100)
+			},
+			wantIs: errTripSentinel,
+		},
+	}
+
+	runCustomTransportErrorCases(t, cases, secretKey)
 }
 
 // echoKeyHandler answers 500 with a body that echoes the request URL and the raw API key.
