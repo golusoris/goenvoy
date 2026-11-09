@@ -298,3 +298,19 @@ func TestEndpointsExpiredAllowReportedOnce(t *testing.T) {
 		t.Errorf("off-spec delete count = %d, want 2; err: %v", got, err)
 	}
 }
+
+// TestReadAllowListEmpty verifies that an empty allow file returns no error and zero entries.
+func TestReadAllowListEmpty(t *testing.T) {
+	t.Parallel()
+	allowFile := filepath.Join(t.TempDir(), "endpoints-allow.yaml")
+	if err := os.WriteFile(allowFile, []byte{}, 0o600); err != nil {
+		t.Fatalf("write allow file: %v", err)
+	}
+	entries, err := readAllowList(allowFile)
+	if err != nil {
+		t.Fatalf("readAllowList unexpected error: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("readAllowList returned %d entries, want 0", len(entries))
+	}
+}

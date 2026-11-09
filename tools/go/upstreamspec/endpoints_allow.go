@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // allowEntry defines an approved off-spec endpoint exception with expiration and audit metadata.
