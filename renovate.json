@@ -10,6 +10,10 @@
     "dependencies"
   ],
   "prConcurrentLimit": 5,
+  "postUpdateOptions": [
+    "gomodTidy",
+    "gomodUpdateImportPaths"
+  ],
   "customManagers": [
     {
       "customType": "regex",

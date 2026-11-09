@@ -115,6 +115,10 @@ upstream-specs: ## Upstream OpenAPI spec pins: planted cases, then every pinned 
 	cd tools/go && go run ./upstreamspec check -manifest ../../upstream/specs.yaml
 	cd tools/go && go run ./upstreamspec endpoints -manifest ../../upstream/specs.yaml -root ../..
 
+.PHONY: tools-tidy-check
+tools-tidy-check: ## tools/go go.mod and go.sum match the imports: a dependency bump that leaves the imports behind fails here
+	cd tools/go && go mod tidy -diff
+
 lint-exceptions: ## Dated complexity exceptions in .golangci.yml: planted cases, then the repository config
 	cd tools/go && go vet ./lintexceptions/ && go test -count=1 ./lintexceptions/
 
@@ -169,6 +173,7 @@ verify-all:
 	@$(MAKE) --no-print-directory semgrep-local
 	@$(MAKE) --no-print-directory release-config-check
 	@$(MAKE) --no-print-directory release-scripts-check
+	@$(MAKE) --no-print-directory tools-tidy-check
 	@$(MAKE) --no-print-directory ci-all
 
 compile-context:
