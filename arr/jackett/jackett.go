@@ -140,6 +140,11 @@ func (e *redactedError) Timeout() bool {
 	return errors.As(e.err, &t) && t.Timeout()
 }
 
+// GoString returns a Go-syntax form holding only the sanitized message, so %#v never prints the hidden error.
+func (e *redactedError) GoString() string {
+	return "&jackett.redactedError{msg:" + strconv.Quote(e.msg) + "}"
+}
+
 // maxErrNodes bounds the error tree walk in carriesKey.
 const maxErrNodes = 64
 
@@ -155,7 +160,7 @@ func (c *Client) scrubError(err error) error {
 func (c *Client) carriesKey(err error) bool {
 	queue := []error{err}
 	for i := 0; i < maxErrNodes && i < len(queue); i++ {
-		if msg := queue[i].Error(); c.scrub(msg) != msg {
+		if c.containsKey(queue[i].Error()) {
 			return true
 		}
 		queue = appendWrapped(queue, queue[i])
@@ -164,8 +169,18 @@ func (c *Client) carriesKey(err error) bool {
 	return len(queue) > maxErrNodes
 }
 
-// appendWrapped appends the non-nil errors that err wraps directly, single or joined, to queue.
+// containsKey reports whether s holds the raw or query-escaped API key.
+func (c *Client) containsKey(s string) bool {
+	// Why: strings.Contains with an empty key matches every string.
+	return c.apiKey != "" && (strings.Contains(s, c.apiKey) || strings.Contains(s, url.QueryEscape(c.apiKey)))
+}
+
+// appendWrapped appends the non-nil errors that err wraps directly, single or joined, to queue, never growing it past maxErrNodes+1 errors.
 func appendWrapped(queue []error, err error) []error {
+	if len(queue) > maxErrNodes {
+		// Why: carriesKey already treats this tree as too large; more entries only cost memory.
+		return queue
+	}
 	if w := errors.Unwrap(err); w != nil {
 		return append(queue, w)
 	}
@@ -173,9 +188,10 @@ func appendWrapped(queue []error, err error) []error {
 	if !ok {
 		return queue
 	}
-	for _, w := range joined.Unwrap() {
-		if w != nil {
-			queue = append(queue, w)
+	children := joined.Unwrap()
+	for i := 0; i < len(children) && len(queue) <= maxErrNodes; i++ {
+		if children[i] != nil {
+			queue = append(queue, children[i])
 		}
 	}
 	return queue
