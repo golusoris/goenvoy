@@ -14,7 +14,10 @@ tool (
 	mvdan.cc/gofumpt
 )
 
-require go.yaml.in/yaml/v3 v3.0.6
+require (
+	go.yaml.in/yaml/v3 v3.0.5
+	go.yaml.in/yaml/v4 v4.0.0
+)
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
