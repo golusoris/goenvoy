@@ -794,23 +794,13 @@ func assertRedactedTransportError(t *testing.T, err error, key string) {
 // maxChainNodes bounds the error chain walk in assertChainRedacted.
 const maxChainNodes = 64
 
-// assertChainRedacted fails when any error reachable through Unwrap carries the raw or escaped key.
+// assertChainRedacted fails when any error reachable through errors.Unwrap carries the raw or escaped key.
 func assertChainRedacted(t *testing.T, err error, key string) {
 	t.Helper()
-	queue := []error{err}
-	for i := 0; i < maxChainNodes && len(queue) > 0; i++ {
-		e := queue[0]
-		queue = queue[1:]
+	// Why: errors.Unwrap stops at joined errors; no case here builds one.
+	for i, e := 0, err; i < maxChainNodes && e != nil; i, e = i+1, errors.Unwrap(e) {
 		if msg := e.Error(); strings.Contains(msg, key) || strings.Contains(msg, url.QueryEscape(key)) {
 			t.Errorf("chain node %d (%T) leaked key: %q", i, e, msg)
-		}
-		switch u := e.(type) {
-		case interface{ Unwrap() error }:
-			if next := u.Unwrap(); next != nil {
-				queue = append(queue, next)
-			}
-		case interface{ Unwrap() []error }:
-			queue = append(queue, u.Unwrap()...)
 		}
 	}
 }
@@ -1013,18 +1003,24 @@ func TestCustomTransportErrorRedactsAPIKey(t *testing.T) {
 	}
 }
 
+// echoKeyHandler answers 500 with a body that echoes the request URL and the raw API key.
+func echoKeyHandler(t *testing.T) http.HandlerFunc {
+	t.Helper()
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		body := "bad request " + r.URL.String() + " key=" + r.URL.Query().Get("apikey")
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+			t.Errorf("echoKeyHandler: write body: %v", err)
+		}
+	}
+}
+
 // TestAPIErrorBodyRedactsAPIKey verifies that APIError.Body scrubs raw and escaped API keys.
 func TestAPIErrorBodyRedactsAPIKey(t *testing.T) {
 	t.Parallel()
 
 	const secretKey = `s3cr3t+key/=&x`
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		body := "bad request " + r.URL.String() + " key=" + r.URL.Query().Get("apikey")
-		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
-			t.Errorf("TestAPIErrorBodyRedactsAPIKey: write body: %v", err)
-		}
-	}))
+	srv := httptest.NewServer(echoKeyHandler(t))
 	t.Cleanup(srv.Close)
 
 	c, err := jackett.New(srv.URL, secretKey)
