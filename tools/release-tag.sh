@@ -3,7 +3,6 @@
 #   usage:  tools/release-tag.sh tag|relabel OWNER/REPO
 #   needs:  gh, jq, timeout
 #   env:    GH_BIN (default: gh)
-#           RELEASE_TAG_ROOT (default: repository root)
 #           RELEASE_TAG_DRY_RUN (default: 0)
 #           RELEASE_TAG_TIMEOUT (default: 60)
 #   stdout: mode tag:     JSON array of tags in C-locale order
@@ -42,7 +41,6 @@ fi
 RELEASE_BRANCH="release-please--branches--main"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GH="${GH_BIN:-gh}"
-ROOT="${RELEASE_TAG_ROOT:-$(cd "$HERE/.." && pwd)}"
 DRY_RUN="${RELEASE_TAG_DRY_RUN:-0}"
 
 for cmd in "$GH" jq timeout; do
@@ -51,6 +49,10 @@ for cmd in "$GH" jq timeout; do
     exit 1
   fi
 done
+
+# Why: plan_tags checks tags against files read at the merge commit; this folder holds them and goes away on exit.
+WORK_DIR="$(mktemp -d)"
+trap 'rm -rf "$WORK_DIR"' EXIT
 
 # gh_read STEP ARGS...: runs a read-only gh call under the deadline; on failure names STEP and exits 1.
 gh_read() {
@@ -99,10 +101,30 @@ gh_write() {
   }
 }
 
+# merge_tree PR SHA MANIFEST PATHS_JSON: writes MANIFEST and the go.mod of each path in PATHS_JSON, read at SHA, into a new folder and prints its path.
+merge_tree() {
+  local pr_num="$1" sha="$2" manifest="$3" paths_json="$4"
+  local tree p
+  local -a paths
+  tree="$(mktemp -d "$WORK_DIR/pr-$pr_num.XXXXXX")"
+  printf '%s\n' "$manifest" > "$tree/.release-please-manifest.json"
+  mapfile -t paths < <(jq -r '.[]' <<< "$paths_json")
+  for p in "${paths[@]}"; do
+    # Why: the path names a folder of the release commit and goes into the contents URL; the allow-list keeps it inside both.
+    if [[ ! "$p" =~ ^[a-z0-9][a-z0-9_-]*(/[a-z0-9][a-z0-9_.-]*)*$ ]]; then
+      echo "error: PR $pr_num: manifest path '$p' is not a module folder" >&2
+      exit 1
+    fi
+    mkdir -p "$tree/$p"
+    gh_read "fetch $p/go.mod for PR $pr_num at $sha" api -H 'Accept: application/vnd.github.raw' "repos/$REPO/contents/$p/go.mod?ref=$sha" > "$tree/$p/go.mod"
+  done
+  printf '%s\n' "$tree"
+}
+
 # plan_tags PR SHA: plans and prints tags for PR at SHA, one per line.
 plan_tags() {
   local pr_num="$1" sha="$2"
-  local parents parent parent_manifest sha_manifest paths_json tags_json
+  local parents parent parent_manifest sha_manifest paths_json tags_json tree
   local -a paths tags
 
   parents="$(gh_read "fetch commit $sha for PR $pr_num" api "repos/$REPO/commits/$sha" --jq '.parents | map(.sha) | join(" ")')"
@@ -131,7 +153,8 @@ plan_tags() {
     exit 1
   fi
 
-  tags_json="$(bash "$HERE/release-manifest.sh" tags "$paths_json" "$ROOT")" || {
+  tree="$(merge_tree "$pr_num" "$sha" "$sha_manifest" "$paths_json")"
+  tags_json="$(bash "$HERE/release-manifest.sh" tags "$paths_json" "$tree")" || {
     echo "error: release-manifest.sh failed for PR $pr_num" >&2
     exit 1
   }
@@ -151,7 +174,7 @@ plan_tags() {
     sha_ver="$(jq -r --arg p "$p" '.[$p]' <<< "$sha_manifest")"
     local want_tag="$p/v$sha_ver"
     if [ "$t" != "$want_tag" ]; then
-      echo "error: tag $t does not match expected $want_tag in manifest at $sha (the checkout manifest moved)" >&2
+      echo "error: tag $t does not match expected $want_tag in manifest at $sha" >&2
       exit 1
     fi
   done

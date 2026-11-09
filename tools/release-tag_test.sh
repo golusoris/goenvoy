@@ -32,6 +32,10 @@
 #   aa) tag with STUB_MATCHING_FAIL=1 -> exit 1, zero logged writes, stderr has failed to check matching refs, stdout empty
 #   ab) relabel with STUB_MATCHING_FAIL=1 -> exit 1, zero logged writes, stderr does not have left pending
 #   ac) tag with STUB_COMMITS_FAIL=1 -> exit 1, zero logged writes, stderr has failed to fetch commit
+#   ad) tag with STUB_GOMOD_FAIL=1 -> exit 1, zero logged writes, stdout empty, stderr has failed to fetch mod1/go.mod for PR 10
+#   ae) relabel with STUB_GOMOD_FAIL=1, all tags present at the merge commit -> exit 1, zero logged writes, stderr has failed to fetch mod1/go.mod for PR 10
+#   af) tag: go.mod of mod1 at the merge commit declares module github.com/golusoris/goenvoy/mod1/v2 -> exit 1, zero logged writes, stderr has does not fit the module path
+#   ag) tag: merge manifest adds key ../evil with version 1.0.0 -> exit 1, zero logged writes, zero go.mod reads in calls, stderr has is not a module folder
 #   usage: tools/release-tag_test.sh
 set -euo pipefail
 
@@ -153,6 +157,21 @@ case "$1" in
           cat "$commit_file"
         fi
         ;;
+      repos/*/contents/*/go.mod\?ref=*)
+        if [ "${STUB_GOMOD_FAIL:-0}" = "1" ]; then
+          echo "HTTP 502" >&2
+          exit 1
+        fi
+        ref="${endpoint##*?ref=}"
+        mod_path="${endpoint#repos/*/contents/}"
+        mod_path="${mod_path%/go.mod\?ref=*}"
+        gomod_file="$STUB_TREES_DIR/$ref/$mod_path/go.mod"
+        if [ ! -f "$gomod_file" ]; then
+          echo "404 Not Found" >&2
+          exit 1
+        fi
+        cat "$gomod_file"
+        ;;
       repos/*/contents/.release-please-manifest.json\?ref=*)
         ref="${endpoint##*?ref=}"
         manifest_file="$STUB_MANIFESTS_DIR/$ref.json"
@@ -222,8 +241,14 @@ esac
 STUB
 chmod 0755 "$WORK/gh"
 
-# RELEASE_TAG_ROOT structure
-REPO_DIR="$WORK/repo"
+SHA_MERGE="1111111111111111111111111111111111111111"
+SHA_PARENT="2222222222222222222222222222222222222222"
+SHA_PARENT2="3333333333333333333333333333333333333333"
+SHA_OTHER="9999999999999999999999999999999999999999"
+
+# Module folders at the merge commit, served by the stub contents handler
+TREES_DIR="$WORK/trees"
+REPO_DIR="$TREES_DIR/$SHA_MERGE"
 mkdir -p "$REPO_DIR/mod1" "$REPO_DIR/mod2" "$REPO_DIR/modv2/v2"
 cat > "$REPO_DIR/mod1/go.mod" <<'EOF'
 module github.com/golusoris/goenvoy/mod1
@@ -243,22 +268,9 @@ module github.com/golusoris/goenvoy/modv2/v2
 go 1.26
 EOF
 
-cat > "$REPO_DIR/.release-please-manifest.json" <<'EOF'
-{
-  "mod1": "1.1.0",
-  "mod2": "1.0.1",
-  "modv2/v2": "2.0.0"
-}
-EOF
-
 COMMITS_DIR="$WORK/commits"
 MANIFESTS_DIR="$WORK/manifests"
 mkdir -p "$COMMITS_DIR" "$MANIFESTS_DIR"
-
-SHA_MERGE="1111111111111111111111111111111111111111"
-SHA_PARENT="2222222222222222222222222222222222222222"
-SHA_PARENT2="3333333333333333333333333333333333333333"
-SHA_OTHER="9999999999999999999999999999999999999999"
 
 # Common commit setup
 cat > "$COMMITS_DIR/$SHA_MERGE.json" <<EOF
@@ -338,7 +350,7 @@ run_tag() {
     STUB_TAG_OBJECTS_MAP="$TAG_OBJECTS_MAP" \
     STUB_LABELS_JSON="$LABELS_JSON" \
     STUB_LOG="$LOG" \
-    RELEASE_TAG_ROOT="$REPO_DIR" \
+    STUB_TREES_DIR="$TREES_DIR" \
     bash "$HERE/release-tag.sh" "$mode" "$target_repo" > "$OUT" 2> "$ERR"
   ) || rc=$?
   return "$rc"
@@ -363,7 +375,7 @@ run_tag_no_args() {
     STUB_TAG_OBJECTS_MAP="$TAG_OBJECTS_MAP" \
     STUB_LABELS_JSON="$LABELS_JSON" \
     STUB_LOG="$LOG" \
-    RELEASE_TAG_ROOT="$REPO_DIR" \
+    STUB_TREES_DIR="$TREES_DIR" \
     bash "$HERE/release-tag.sh" > "$OUT" 2> "$ERR"
   ) || rc=$?
   return "$rc"
@@ -377,6 +389,9 @@ rc=0; run_tag tag || rc=$?
 grep -q "POST repos/owner/repo/git/refs -f ref=refs/tags/mod1/v1.1.0 -f sha=$SHA_MERGE" "$LOG" || fail "case_a" "missing mod1 ref POST"
 grep -q "POST repos/owner/repo/git/refs -f ref=refs/tags/mod2/v1.0.1 -f sha=$SHA_MERGE" "$LOG" || fail "case_a" "missing mod2 ref POST"
 [ "$(grep -c 'labels' "$LOG")" -eq 0 ] || fail "case_a" "unexpected label writes"
+[ "$(grep -F -c "repos/owner/repo/contents/mod1/go.mod?ref=$SHA_MERGE" "$CALLS")" -eq 1 ] || fail "case_a" "want 1 mod1 go.mod call"
+[ "$(grep -F -c "repos/owner/repo/contents/mod2/go.mod?ref=$SHA_MERGE" "$CALLS")" -eq 1 ] || fail "case_a" "want 1 mod2 go.mod call"
+[ "$(grep -F -c "modv2/v2/go.mod" "$CALLS")" -eq 0 ] || fail "case_a" "unexpected modv2 go.mod call"
 echo "ok   case_a"
 
 # Case b: no pending PR -> [], no writes
@@ -547,25 +562,11 @@ cat > "$MANIFESTS_DIR/$SHA_MERGE.json" <<'EOF'
   "modv2/v2": "2.0.0"
 }
 EOF
-cat > "$REPO_DIR/.release-please-manifest.json" <<'EOF'
-{
-  "mod1": "2.0.0",
-  "mod2": "1.0.0",
-  "modv2/v2": "2.0.0"
-}
-EOF
 rc=0; run_tag tag || rc=$?
 [ "$rc" -eq 1 ] || fail "case_j" "exit $rc, want 1"
 [ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_j" "want 0 writes"
 # Restore manifests
 cat > "$MANIFESTS_DIR/$SHA_MERGE.json" <<'EOF'
-{
-  "mod1": "1.1.0",
-  "mod2": "1.0.1",
-  "modv2/v2": "2.0.0"
-}
-EOF
-cat > "$REPO_DIR/.release-please-manifest.json" <<'EOF'
 {
   "mod1": "1.1.0",
   "mod2": "1.0.1",
@@ -689,13 +690,6 @@ module github.com/golusoris/goenvoy/metadata/game/steamgriddb
 go 1.26
 EOF
 
-cat > "$REPO_DIR/.release-please-manifest.json" <<'EOF'
-{
-  "metadata/game/steam": "1.3.6",
-  "metadata/game/steamgriddb": "1.0.7"
-}
-EOF
-
 cat > "$MANIFESTS_DIR/$SHA_PARENT.json" <<'EOF'
 {
   "metadata/game/steam": "1.3.5",
@@ -748,14 +742,6 @@ rc=0; run_tag tag "bad repo" || rc=$?
 echo "ok   case_q"
 
 # Reset fixtures for new cases
-cat > "$REPO_DIR/.release-please-manifest.json" <<'EOF'
-{
-  "mod1": "1.1.0",
-  "mod2": "1.0.1",
-  "modv2/v2": "2.0.0"
-}
-EOF
-
 cat > "$MANIFESTS_DIR/$SHA_PARENT.json" <<'EOF'
 {
   "mod1": "1.0.0",
@@ -1082,5 +1068,85 @@ rc=0
 [ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_ac" "want 0 writes"
 grep -q "failed to fetch commit" "$ERR" || fail "case_ac" "stderr missing 'failed to fetch commit': $(cat "$ERR")"
 echo "ok   case_ac"
+
+# Case ad: tag with STUB_GOMOD_FAIL=1 -> exit 1, zero logged writes, stdout empty, stderr has failed to fetch mod1/go.mod for PR 10
+rc=0
+(
+  STUB_GOMOD_FAIL=1 run_tag tag
+) || rc=$?
+[ "$rc" -eq 1 ] || fail "case_ad" "exit $rc, want 1"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_ad" "want 0 writes"
+[ ! -s "$OUT" ] || fail "case_ad" "stdout not empty: $(cat "$OUT")"
+grep -q "failed to fetch mod1/go.mod for PR 10" "$ERR" || fail "case_ad" "stderr missing 'failed to fetch mod1/go.mod for PR 10': $(cat "$ERR")"
+echo "ok   case_ad"
+
+# Case ae: relabel with STUB_GOMOD_FAIL=1, all tags present at the merge commit -> exit 1, zero logged writes, stderr has failed to fetch mod1/go.mod for PR 10
+cat > "$MATCHING_REFS" <<EOF
+[
+  {
+    "ref": "refs/tags/mod1/v1.1.0",
+    "object": {
+      "type": "commit",
+      "sha": "$SHA_MERGE"
+    }
+  },
+  {
+    "ref": "refs/tags/mod2/v1.0.1",
+    "object": {
+      "type": "commit",
+      "sha": "$SHA_MERGE"
+    }
+  }
+]
+EOF
+rc=0
+(
+  STUB_GOMOD_FAIL=1 run_tag relabel
+) || rc=$?
+[ "$rc" -eq 1 ] || fail "case_ae" "exit $rc, want 1"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_ae" "want 0 writes"
+grep -q "failed to fetch mod1/go.mod for PR 10" "$ERR" || fail "case_ae" "stderr missing 'failed to fetch mod1/go.mod for PR 10': $(cat "$ERR")"
+echo '[]' > "$MATCHING_REFS"
+echo "ok   case_ae"
+
+# Case af: tag: go.mod of mod1 at the merge commit declares module github.com/golusoris/goenvoy/mod1/v2 -> exit 1, zero logged writes, stderr has does not fit the module path
+cat > "$REPO_DIR/mod1/go.mod" <<'EOF'
+module github.com/golusoris/goenvoy/mod1/v2
+
+go 1.26
+EOF
+rc=0; run_tag tag || rc=$?
+[ "$rc" -eq 1 ] || fail "case_af" "exit $rc, want 1"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_af" "want 0 writes"
+grep -q "does not fit the module path" "$ERR" || fail "case_af" "stderr missing 'does not fit the module path': $(cat "$ERR")"
+cat > "$REPO_DIR/mod1/go.mod" <<'EOF'
+module github.com/golusoris/goenvoy/mod1
+
+go 1.26
+EOF
+echo "ok   case_af"
+
+# Case ag: tag: merge manifest adds key ../evil with version 1.0.0 -> exit 1, zero logged writes, zero go.mod reads in calls, stderr has is not a module folder
+cat > "$MANIFESTS_DIR/$SHA_MERGE.json" <<'EOF'
+{
+  "../evil": "1.0.0",
+  "mod1": "1.1.0",
+  "mod2": "1.0.1",
+  "modv2/v2": "2.0.0"
+}
+EOF
+rc=0; run_tag tag || rc=$?
+[ "$rc" -eq 1 ] || fail "case_ag" "exit $rc, want 1"
+[ "$(wc -l < "$LOG")" -eq 0 ] || fail "case_ag" "want 0 writes"
+[ "$(grep -F -c 'go.mod' "$CALLS")" -eq 0 ] || fail "case_ag" "unexpected go.mod calls: $(grep -F 'go.mod' "$CALLS")"
+grep -q "is not a module folder" "$ERR" || fail "case_ag" "stderr missing 'is not a module folder': $(cat "$ERR")"
+cat > "$MANIFESTS_DIR/$SHA_MERGE.json" <<'EOF'
+{
+  "mod1": "1.1.0",
+  "mod2": "1.0.1",
+  "modv2/v2": "2.0.0"
+}
+EOF
+echo "ok   case_ag"
 
 echo "release tag: all cases pass"

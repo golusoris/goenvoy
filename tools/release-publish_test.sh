@@ -14,7 +14,7 @@
 #   l) confirm on a draft state: exit 1, stderr has still a draft
 #   m) confirm with STUB_VIEW_ERROR set: exit 1
 #   n) no mode argument, and mode publish: exit 2, zero calls (two runs)
-#   o) the release.yml step order: find line numbers of stage, edit --draft=false, confirm in release.yml; exactly once and in that order inside 'Create or update GitHub Release'
+#   o) the release.yml step order: find line numbers of stage, edit --draft=false, confirm in release.yml; exactly once and in that order inside 'Create or update GitHub Release'; the edit call runs under timeout "$RELEASE_PUBLISH_TIMEOUT", set once in the step env
 #   p) stage, published release missing an asset: exit 1, no upload, stderr has lacks asset asset2.txt
 #   usage: tools/release-publish_test.sh
 set -euo pipefail
@@ -318,12 +318,15 @@ else
 fi
 
 mapfile -t stage_lines < <(grep -n 'release-publish\.sh[[:space:]]\+stage' "$WF_FILE" | cut -d: -f1)
-mapfile -t edit_lines < <(grep -F -n "gh release edit \"\$TAG\" --repo \"\$GITHUB_REPOSITORY\" --draft=false" "$WF_FILE" | cut -d: -f1)
+mapfile -t edit_lines < <(grep -F -n "timeout \"\$RELEASE_PUBLISH_TIMEOUT\" gh release edit \"\$TAG\" --repo \"\$GITHUB_REPOSITORY\" --draft=false" "$WF_FILE" | cut -d: -f1)
 mapfile -t confirm_lines < <(grep -n 'release-publish\.sh[[:space:]]\+confirm' "$WF_FILE" | cut -d: -f1)
 
 [ "${#stage_lines[@]}" -eq 1 ] || fail "case_o" "stage occurs ${#stage_lines[@]} times, want 1"
 [ "${#edit_lines[@]}" -eq 1 ] || fail "case_o" "edit occurs ${#edit_lines[@]} times, want 1"
 [ "${#confirm_lines[@]}" -eq 1 ] || fail "case_o" "confirm occurs ${#confirm_lines[@]} times, want 1"
+
+mapfile -t timeout_lines < <(sed -n "$((step_line + 1)),$((step_end - 1))p" "$WF_FILE" | grep 'RELEASE_PUBLISH_TIMEOUT: "[1-9][0-9]*"')
+[ "${#timeout_lines[@]}" -eq 1 ] || fail "case_o" "RELEASE_PUBLISH_TIMEOUT matches ${#timeout_lines[@]} times, want 1"
 
 l_stage="${stage_lines[0]}"
 l_edit="${edit_lines[0]}"
