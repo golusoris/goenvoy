@@ -9,7 +9,7 @@ Cut the tag that triggers [release.yml](../../.github/workflows/release.yml) (co
 
 ## When to use
 
-Regular releases do not use this skill: [release-please.yml](../../.github/workflows/release-please.yml) keeps one release pull request current, and merging it creates the tags and the signed releases for every module it lists. To retry a release whose run failed, dispatch `release.yml` with the existing tag.
+Regular releases do not use this skill: [release-please.yml](../../.github/workflows/release-please.yml) keeps one release pull request current, and merging it creates the tags and the signed releases for every module it lists (tools/release-tag.sh tags the merge commit; release-please itself creates no GitHub release). To retry a release whose run failed, dispatch `release.yml` with the existing tag.
 
 Use this skill only when the user asks for a hand-cut tag of a version the release manifest (`.release-please-manifest.json`) already names.
 
@@ -30,7 +30,7 @@ Use this skill only when the user asks for a hand-cut tag of a version the relea
    git tag "<module>/<version>"
    git push origin "<module>/<version>"
    ```
-7. Wait briefly (`sleep 10`) then report the release.yml run URL: `gh run list --workflow=release.yml --limit=1 --json url,status,conclusion`.
+7. Dispatch the release run for the pushed tag, `gh workflow run release.yml --ref main -f tag="<module>/<version>"`, wait briefly, then report the run URL with `gh run list --workflow=release.yml --event=workflow_dispatch --limit=1 --json url,status,conclusion`.
 8. Tell the user to watch the run. When it completes, a signed GH Release with the tarball, checksums, .sig, .pem, and SBOM will be published at `https://github.com/golusoris/goenvoy/releases/tag/<module>/<version>`.
 9. Remind the user: to consume the new version from another module in this monorepo, bump the `require` line in that module's `go.mod` and run `go mod tidy`.
 
@@ -38,5 +38,5 @@ Use this skill only when the user asks for a hand-cut tag of a version the relea
 
 - Don't tag `v0.0.0` — semver starts at `v0.1.0` or `v1.0.0`.
 - Don't tag from a dirty tree. A stray uncommitted file can end up in the source tarball.
-- Don't release without the `<module>/CHANGELOG.md` stanza — the GH Release notes link to it.
+- Don't release without the `<module>/CHANGELOG.md` stanza — the GH Release notes are that stanza (tools/release-notes.sh), and release.yml stops without it.
 - Don't retry by force-pushing a tag. If the release workflow failed, investigate, fix forward, and cut a new patch version. Moving tags is forbidden.

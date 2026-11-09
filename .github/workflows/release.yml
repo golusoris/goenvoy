@@ -5,7 +5,7 @@ on:
   workflow_call:
     inputs:
       tag:
-        description: 'Existing tag to release, e.g. anime/v1.3.0.'
+        description: 'Existing tag to release, e.g. anime/v1.3.0; release-please.yml creates it.'
         required: true
         type: string
   workflow_dispatch:
@@ -78,7 +78,9 @@ jobs:
           ref: ${{ github.workflow_sha }}
           path: .release-tools
           persist-credentials: false
-          sparse-checkout: .github/actions/install-release-tools
+          sparse-checkout: |
+            .github/actions/install-release-tools
+            tools
 
       - uses: ./.release-tools/.github/actions/install-release-tools
 
@@ -139,9 +141,9 @@ jobs:
           MOD: ${{ steps.tag.outputs.module }}
           VER: ${{ steps.tag.outputs.version }}
           BASENAME: ${{ steps.pkg.outputs.basename }}
+          RELEASE_PUBLISH_TIMEOUT: "300"
         run: |
-          # A retry or manual dispatch may find an existing release. Upload
-          # the signed artefacts idempotently instead of failing.
+          set -euo pipefail
           ASSETS=(
             "dist/${BASENAME}.tar.gz"
             "dist/${BASENAME}.tar.gz.sigstore.json"
@@ -150,11 +152,10 @@ jobs:
             "dist/${BASENAME}.sbom.spdx.json"
             "dist/${BASENAME}.sbom.spdx.json.sigstore.json"
           )
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$TAG" "${ASSETS[@]}" --clobber
-          else
-            gh release create "$TAG" \
-              --title "$MOD $VER" \
-              --generate-notes \
-              "${ASSETS[@]}"
-          fi
+          NOTES="${RUNNER_TEMP}/release-notes.md"
+          bash .release-tools/tools/release-notes.sh "${MOD}/CHANGELOG.md" "${VER#v}" > "$NOTES"
+          # A retry or manual dispatch may find an existing release; stage finishes a draft and leaves the assets of a published one unchanged.
+          bash .release-tools/tools/release-publish.sh stage "$GITHUB_REPOSITORY" "$TAG" "${MOD}: ${VER}" "$NOTES" "${ASSETS[@]}"
+          # Why: the publish call stays in this step, where praetorctl audit (release-own-publisher) finds the release publisher; it runs after stage has listed every asset, under the deadline release-publish.sh uses.
+          timeout "$RELEASE_PUBLISH_TIMEOUT" gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false
+          bash .release-tools/tools/release-publish.sh confirm "$GITHUB_REPOSITORY" "$TAG"
