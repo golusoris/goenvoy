@@ -31,6 +31,7 @@ trap 'rm -f "$TMP_CONFIG" "$TMP_MANIFEST"' EXIT
   "include-v-in-tag": true,
   "separate-pull-requests": false,
   "tag-separator": "/",
+  "skip-github-release": true,
   "pull-request-header": "## Description\n\nRelease pull request opened by release-please. The release notes below list each module version and the Conventional Commit subjects it ships; release-please wrote the version bumps and changelogs from those subjects.\n\n## Module(s) Affected\n\nThe modules named in the release notes below.\n\n## Type of Change\n\nRelease: version bumps and changelogs only.\n\n## Checklist\n\n- [ ] Required status checks pass (`CI success`, `Go API Compatibility` and the rest of the `main` ruleset); the ruleset blocks the merge until they do.",
   "changelog-sections": [
     { "type": "feat", "section": "Features" },

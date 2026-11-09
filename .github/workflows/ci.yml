@@ -87,6 +87,10 @@ jobs:
         run: bash tools/release-manifest.sh check
       - name: Release pull request run approval refuses its planted cases
         run: bash tools/release-pr-ci_test.sh
+      - name: Release tagging refuses its planted cases
+        run: bash tools/release-tag_test.sh
+      - name: Release notes extraction refuses its planted cases
+        run: bash tools/release-notes_test.sh
       - name: README workflow badges point at existing workflows
         run: bash tools/readme-badges_test.sh
       - name: Workflows with pull_request trigger have ready_for_review

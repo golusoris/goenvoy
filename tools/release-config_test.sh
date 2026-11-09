@@ -80,6 +80,17 @@ check_config_structure() {
   return 0
 }
 
+# Why: verify skip-github-release resolves to true for every package.
+check_skip_github_release() {
+  local config="$1"
+
+  if ! jq -e '."skip-github-release" == true and ([.packages[] | select(has("skip-github-release")) | ."skip-github-release" != true] | any | not)' "$config" >/dev/null 2>&1; then
+    printf 'FAIL %s: skip-github-release must resolve to true for every package\n' "$config" >&2
+    return 1
+  fi
+  return 0
+}
+
 # Why: verify pull-request-header contains all top-level headings from PR template.
 check_header_headings() {
   local config="$1"
@@ -164,6 +175,7 @@ check_release_config() {
   fi
 
   check_config_structure "$config" || return 1
+  check_skip_github_release "$config" || return 1
   check_header_headings "$config" || return 1
   check_header_separator "$config" || return 1
   check_header_ticked "$config" || return 1
@@ -269,6 +281,18 @@ expect_refusal "case_c: header with a '---' line" "---" check_release_config "$W
 # Why: case d: separate-pull-requests set to true must be refused.
 jq '."separate-pull-requests" = true' "$BASE_CONFIG" > "$WORK/case_d.json"
 expect_refusal "case_d: separate-pull-requests is true" "separate-pull-requests" check_release_config "$WORK/case_d.json"
+
+# Why: case j: top-level skip-github-release deleted must be refused.
+jq 'del(."skip-github-release")' "$BASE_CONFIG" > "$WORK/case_j.json"
+expect_refusal "case_j: top-level skip-github-release deleted" "skip-github-release" check_release_config "$WORK/case_j.json"
+
+# Why: case k: top-level skip-github-release set to false must be refused.
+jq '."skip-github-release" = false' "$BASE_CONFIG" > "$WORK/case_k.json"
+expect_refusal "case_k: top-level skip-github-release is false" "skip-github-release" check_release_config "$WORK/case_k.json"
+
+# Why: case l: package overriding skip-github-release to false must be refused.
+jq '(.packages | .[keys[0]]["skip-github-release"]) = false' "$BASE_CONFIG" > "$WORK/case_l.json"
+expect_refusal "case_l: one package sets skip-github-release to false" "skip-github-release" check_release_config "$WORK/case_l.json"
 
 # Why: case e: committed config differing from generator output by one byte must be refused.
 sed 's/release-type/Release-type/' "$BASE_CONFIG" > "$WORK/case_e.json"

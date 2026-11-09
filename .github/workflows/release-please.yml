@@ -1,9 +1,13 @@
 name: release-please
 
-# Keeps one release pull request current. Merging that pull request is the
-# publish step: the run on the merge commit creates the module tags and GitHub
-# releases, then calls release.yml once per tag for the signed, attested
-# artefacts.
+# release-please keeps one release pull request current and creates no GitHub
+# release (skip-github-release in release-please-config.json); merging that pull
+# request is the publish step: the run on the merge commit creates the module
+# tags and relabels the pull request (tools/release-tag.sh), then calls
+# release.yml once per tag, which creates each GitHub release and publishes it
+# only after its signed, attested artefacts are attached. A run that failed
+# before tagging is repaired by the next run, because the pull request keeps
+# "autorelease: pending" until every tag exists.
 on:
   push:
     branches: [main]
@@ -26,7 +30,7 @@ jobs:
       contents: write
       pull-requests: write
     outputs:
-      tags: ${{ steps.plan.outputs.tags }}
+      tags: ${{ steps.tag.outputs.tags }}
     steps:
       # A release pull request opened with the workflow token starts no checks; the App token does.
       - name: Mint the release token
@@ -44,15 +48,15 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-      - id: plan
-        name: List the tags this run created
+      - id: tag
+        name: Tag the merged release pull requests
         env:
-          PATHS: ${{ steps.rp.outputs.paths_released }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          tags="$(bash tools/release-manifest.sh tags "${PATHS:-[]}")"
+          tags="$(bash tools/release-tag.sh "$GITHUB_REPOSITORY")"
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
-          echo "Tags created by this run: $tags"
+          echo "Tags created or kept by this run: $tags"
 
   # release.yml is called here once per tag; it has no tag trigger, which the
   # App-token tags would otherwise start a second time.
