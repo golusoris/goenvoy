@@ -105,6 +105,14 @@ jobs:
   # its planted cases, then every pinned file must still have its sha256.
   # Runs on every pull request; a scheduled run is not needed, because a pin
   # names a commit, whose files do not change.
+  # It also fails when tools/go/go.mod or go.sum differ from what go mod tidy
+  # writes (tools/tools-tidy.sh; planted cases in tools/tools-tidy_test.sh).
+  # Renovate runs go get, then mod upgrade for gomodUpdateImportPaths, then
+  # go mod tidy, in that order whatever the postUpdateOptions order
+  # (renovatebot/renovate lib/modules/manager/gomod/artifacts.ts at
+  # a6acb300edb3, lines 279-369), so its major-bump pull requests reach this
+  # step tidy. The tidy step runs unfiltered: it took about 5 s on #294, and
+  # this job is a required check that runs on every pull request anyway.
   upstream-specs:
     name: Upstream spec pins
     runs-on: ubuntu-26.04
@@ -116,6 +124,8 @@ jobs:
       - uses: ./.github/actions/setup-tools-go
       - name: Check the pins
         run: make upstream-specs
+      - name: Check that tools/go is tidy
+        run: make tools-tidy-check
 
   # The complexity limits hold for every Go file; the dated per-file test
   # exceptions in .golangci.yml expire, and this job fails once one has (#141).
