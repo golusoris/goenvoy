@@ -2,7 +2,7 @@
 # Publish a GitHub Release with its signed, attested assets.
 #   usage:  tools/release-publish.sh stage OWNER/REPO TAG TITLE NOTES_FILE ASSET...
 #           tools/release-publish.sh confirm OWNER/REPO TAG
-#   modes:  stage:   verifies or creates a draft release, uploads and verifies all assets
+#   modes:  stage:   creates or reuses a draft release, uploads and verifies all assets; on a published release it uploads nothing and only verifies the asset names
 #           confirm: verifies the release is published (draft is false)
 #   needs:  gh, jq, timeout
 #   env:    GH_BIN (default: gh)
@@ -113,7 +113,10 @@ if [ "$MODE" = "stage" ]; then
     exit 1
   fi
 
-  gh_call "upload assets for $TAG" release upload "$TAG" --repo "$REPO" --clobber "${ASSETS[@]}"
+  # Why: a published release keeps the signed assets consumers may already have fetched; a rerun only checks that each one is listed.
+  if [ "$is_draft" = "true" ]; then
+    gh_call "upload assets for $TAG" release upload "$TAG" --repo "$REPO" --clobber "${ASSETS[@]}"
+  fi
 
   assets_json="$(gh_call "verify assets for $TAG" release view "$TAG" --repo "$REPO" --json assets --jq '[.assets[].name]')"
   for asset in "${ASSETS[@]}"; do
@@ -127,7 +130,7 @@ if [ "$MODE" = "stage" ]; then
   if [ "$is_draft" = "true" ]; then
     echo "release $TAG staged as a draft, assets verified" >&2
   else
-    echo "release $TAG already published, assets refreshed" >&2
+    echo "release $TAG already published, assets left unchanged and verified" >&2
   fi
 
 elif [ "$MODE" = "confirm" ]; then

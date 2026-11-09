@@ -2,7 +2,7 @@
 # Planted cases for tools/release-publish.sh against a stateful stub gh:
 #   a) stage, no release: create (--draft, --verify-tag, no asset basename in its arguments), upload, view assets, in that order. No edit. The state ends as isDraft true with both assets
 #   b) stage, existing draft: upload, view assets. No create, no edit
-#   c) stage, existing published release: upload, view assets, no edit, stderr has already published
+#   c) stage, existing published release with both assets: view, view assets, no upload, no create, no edit, stderr has already published, assets left unchanged
 #   d) stage, upload fails: exit 1, no edit, state still a draft
 #   e) stage, one asset dropped: exit 1, no edit, stderr names the asset
 #   f) stage, three arguments after the mode: exit 2, zero calls
@@ -15,6 +15,7 @@
 #   m) confirm with STUB_VIEW_ERROR set: exit 1
 #   n) no mode argument, and mode publish: exit 2, zero calls (two runs)
 #   o) the release.yml step order: find line numbers of stage, edit --draft=false, confirm in release.yml; exactly once and in that order inside 'Create or update GitHub Release'
+#   p) stage, published release missing an asset: exit 1, no upload, stderr has lacks asset asset2.txt
 #   usage: tools/release-publish_test.sh
 set -euo pipefail
 
@@ -189,18 +190,18 @@ if grep -q "release edit" "$CALLS"; then fail "case_b" "should not call release 
 [ "$(jq -r .isDraft "$STATE_FILE")" = "true" ] || fail "case_b" "want isDraft true"
 echo "ok   case_b"
 
-# Case c: stage, existing published release: upload, view assets, no edit, stderr has already published
-echo '{"isDraft":false,"assets":[]}' > "$STATE_FILE"
+# Case c: stage, existing published release with both assets: view, view assets, no upload, no create, no edit, stderr has already published, assets left unchanged
+echo '{"isDraft":false,"assets":[{"name":"asset1.tar.gz"},{"name":"asset2.txt"}]}' > "$STATE_FILE"
 rc=0; run_publish stage "owner/repo" "v1.0.0" "mod: v1.0.0" "$NOTES_FILE" "$ASSET1" "$ASSET2" || rc=$?
 [ "$rc" -eq 0 ] || fail "case_c" "exit $rc, want 0"
-[ "$(wc -l < "$CALLS")" -eq 3 ] || fail "case_c" "want 3 calls, got $(wc -l < "$CALLS")"
+[ "$(wc -l < "$CALLS")" -eq 2 ] || fail "case_c" "want 2 calls, got $(wc -l < "$CALLS")"
 mapfile -t calls < "$CALLS"
 [[ "${calls[0]}" =~ ^release[[:space:]]+view ]] || fail "case_c" "call 1 want release view"
-[[ "${calls[1]}" =~ ^release[[:space:]]+upload ]] || fail "case_c" "call 2 want release upload"
-[[ "${calls[2]}" =~ ^release[[:space:]]+view.*assets ]] || fail "case_c" "call 3 want release view assets"
+[[ "${calls[1]}" =~ ^release[[:space:]]+view.*assets ]] || fail "case_c" "call 2 want release view assets"
+if grep -q "release upload" "$CALLS"; then fail "case_c" "should not call release upload"; fi
 if grep -q "release create" "$CALLS"; then fail "case_c" "should not call release create"; fi
 if grep -q "release edit" "$CALLS"; then fail "case_c" "should not call release edit"; fi
-grep -q "already published" "$ERR" || fail "case_c" "missing already published in stderr"
+grep -q "already published, assets left unchanged" "$ERR" || fail "case_c" "missing already published, assets left unchanged in stderr"
 echo "ok   case_c"
 
 # Case d: stage, upload fails: exit 1, no edit, state still a draft
@@ -343,5 +344,13 @@ if [ "$l_stage" -ge "$l_edit" ] || [ "$l_edit" -ge "$l_confirm" ]; then
 fi
 
 echo "ok   case_o"
+
+# Case p: stage, published release missing an asset: exit 1, no upload, stderr has lacks asset asset2.txt
+echo '{"isDraft":false,"assets":[{"name":"asset1.tar.gz"}]}' > "$STATE_FILE"
+rc=0; run_publish stage "owner/repo" "v1.0.0" "mod: v1.0.0" "$NOTES_FILE" "$ASSET1" "$ASSET2" || rc=$?
+[ "$rc" -eq 1 ] || fail "case_p" "exit $rc, want 1"
+if grep -q "release upload" "$CALLS"; then fail "case_p" "should not call release upload"; fi
+grep -q "lacks asset asset2.txt" "$ERR" || fail "case_p" "stderr missing 'lacks asset asset2.txt': $(cat "$ERR")"
+echo "ok   case_p"
 
 echo "release publish: all cases pass"

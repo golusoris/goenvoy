@@ -153,7 +153,7 @@ jobs:
           )
           NOTES="${RUNNER_TEMP}/release-notes.md"
           bash .release-tools/tools/release-notes.sh "${MOD}/CHANGELOG.md" "${VER#v}" > "$NOTES"
-          # A retry or manual dispatch may find an existing or draft release; stage finishes it as a draft.
+          # A retry or manual dispatch may find an existing release; stage finishes a draft and leaves the assets of a published one unchanged.
           bash .release-tools/tools/release-publish.sh stage "$GITHUB_REPOSITORY" "$TAG" "${MOD}: ${VER}" "$NOTES" "${ASSETS[@]}"
           # Why: the publish call stays in this step, where praetorctl audit (release-own-publisher) finds the release publisher; it runs only after stage has listed every asset.
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false
