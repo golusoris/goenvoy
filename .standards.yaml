@@ -29,12 +29,10 @@ facets:
   - docs:seo-portal
   - agent:sandboxed
 overrides:
+  # Why: overrides only tighten the profile join; signed commits, linear history and stale-review dismissal come from library-client.
   branch_protection:
-    enforce_linear_history: false
-    require_signed_commits: false
-    required_approving_reviewers: 0
-    dismiss_stale_reviews: false
     review_mode: single_maintainer
+    require_extra_approval_for_unattributed_changes: true
 register:
   sources:
     expected: 13
