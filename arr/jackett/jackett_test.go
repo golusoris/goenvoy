@@ -1074,18 +1074,18 @@ func (failingBody) Close() error { return nil }
 type responseErrorTestCase struct {
 	name       string
 	key        string
-	body       func(r *http.Request) io.ReadCloser
+	body       func(r *http.Request, key string) io.ReadCloser
 	call       func(ctx context.Context, c *jackett.Client) error
 	wantPrefix string
 	wantIs     error
 }
 
-// runResponseErrorCase serves tc.body with status 200 through a stub transport and checks that the error hides the key.
+// runResponseErrorCase serves tc.body(r, tc.key) with status 200 through a stub transport and checks that the error hides the key.
 func runResponseErrorCase(t *testing.T, tc responseErrorTestCase) {
 	t.Helper()
 	c, err := jackett.New("http://127.0.0.1:9117", tc.key, jackett.WithHTTPClient(&http.Client{
 		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
-			return &http.Response{StatusCode: http.StatusOK, Header: http.Header{}, Body: tc.body(r), Request: r}, nil
+			return &http.Response{StatusCode: http.StatusOK, Header: http.Header{}, Body: tc.body(r, tc.key), Request: r}, nil
 		}),
 	}))
 	if err != nil {
@@ -1105,33 +1105,33 @@ func runResponseErrorCase(t *testing.T, tc responseErrorTestCase) {
 }
 
 // readErrPlainBody returns a failingBody whose error carries no key.
-func readErrPlainBody(*http.Request) io.ReadCloser {
+func readErrPlainBody(*http.Request, string) io.ReadCloser {
 	return failingBody{err: errReadSentinel}
 }
 
 // readErrURLBody returns a failingBody carrying the request URL.
-func readErrURLBody(r *http.Request) io.ReadCloser {
+func readErrURLBody(r *http.Request, _ string) io.ReadCloser {
 	return failingBody{err: fmt.Errorf("%w: %s", errReadSentinel, r.URL.String())}
 }
 
 // readErrRawKeyBody returns a failingBody carrying the raw API key.
-func readErrRawKeyBody(r *http.Request) io.ReadCloser {
-	return failingBody{err: fmt.Errorf("%w: key %s", errReadSentinel, r.URL.Query().Get("apikey"))}
+func readErrRawKeyBody(_ *http.Request, key string) io.ReadCloser {
+	return failingBody{err: fmt.Errorf("%w: key %s", errReadSentinel, key)}
 }
 
 // readErrURLStructBody returns a failingBody carrying a url.Error.
-func readErrURLStructBody(r *http.Request) io.ReadCloser {
+func readErrURLStructBody(r *http.Request, _ string) io.ReadCloser {
 	return failingBody{err: &url.Error{Op: "Get", URL: r.URL.String(), Err: errReadSentinel}}
 }
 
-// xmlAttrEchoBody returns an XML response whose limits max echoes the key.
-func xmlAttrEchoBody(r *http.Request) io.ReadCloser {
-	return io.NopCloser(strings.NewReader(`<caps><limits max="` + r.URL.Query().Get("apikey") + `" default="50"/></caps>`))
+// xmlAttrEchoBody returns an XML response whose limits max attribute holds the key.
+func xmlAttrEchoBody(_ *http.Request, key string) io.ReadCloser {
+	return io.NopCloser(strings.NewReader(`<caps><limits max="` + key + `" default="50"/></caps>`))
 }
 
-// jsonNumEchoBody returns a JSON response whose port echoes the key.
-func jsonNumEchoBody(r *http.Request) io.ReadCloser {
-	return io.NopCloser(strings.NewReader(`{"port": ` + r.URL.Query().Get("apikey") + `}`))
+// jsonNumEchoBody returns a JSON response whose port holds the key.
+func jsonNumEchoBody(_ *http.Request, key string) io.ReadCloser {
+	return io.NopCloser(strings.NewReader(`{"port": ` + key + `}`))
 }
 
 // callGetIndexers calls GetIndexers and returns its error.
