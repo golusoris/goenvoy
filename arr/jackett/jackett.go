@@ -40,9 +40,13 @@ type Client struct {
 }
 
 // New creates a Jackett [Client] for the instance at baseURL with the given API key.
-// It returns an error if baseURL is not a valid HTTP/HTTPS URL.
+// It returns an error if baseURL is not a valid HTTP/HTTPS URL, or if it contains a query or fragment.
 func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	baseURL = strings.TrimRight(baseURL, "/")
+	if strings.ContainsAny(baseURL, "?#") {
+		// Why: message omits baseURL because a base URL query may itself carry the key.
+		return nil, errors.New("jackett: invalid base URL: query or fragment not allowed")
+	}
 
 	u, err := url.Parse(baseURL)
 	if err != nil {
@@ -81,12 +85,12 @@ func (e *APIError) Error() string {
 func (c *Client) doRequest(ctx context.Context, u string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("jackett: create request: %w", redactURLError(err))
+		return nil, fmt.Errorf("jackett: create request: %w", c.redactError(err))
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("jackett: request: %w", redactURLError(err))
+		return nil, fmt.Errorf("jackett: request: %w", c.redactError(err))
 	}
 	defer resp.Body.Close()
 
@@ -96,20 +100,67 @@ func (c *Client) doRequest(ctx context.Context, u string) ([]byte, error) {
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(data)}
+		return nil, &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: c.scrub(string(data))}
 	}
 
 	return data, nil
 }
 
-// redactURLError redacts the apikey query parameter from [url.Error] URLs.
-func redactURLError(err error) error {
+// scrub replaces raw and query-escaped occurrences of the API key in s with REDACTED.
+func (c *Client) scrub(s string) string {
+	if c.apiKey == "" {
+		// Why: ReplaceAll with empty old inserts at every rune.
+		return s
+	}
+	s = strings.ReplaceAll(s, c.apiKey, "REDACTED")
+	return strings.ReplaceAll(s, url.QueryEscape(c.apiKey), "REDACTED")
+}
+
+// redactedError wraps an error while presenting sanitized message text.
+type redactedError struct {
+	msg string
+	err error
+}
+
+// Error returns the sanitized error message.
+func (e *redactedError) Error() string {
+	return e.msg
+}
+
+// Unwrap returns the underlying wrapped error.
+func (e *redactedError) Unwrap() error {
+	return e.err
+}
+
+// Timeout reports whether the underlying error timed out.
+func (e *redactedError) Timeout() bool {
+	// Why: url.Error.Timeout type-asserts its Err directly, so the wrapper must forward it.
+	var t interface{ Timeout() bool }
+	return errors.As(e.err, &t) && t.Timeout()
+}
+
+// scrubError returns err with any occurrences of the API key scrubbed from its message.
+func (c *Client) scrubError(err error) error {
+	if err == nil {
+		return nil
+	}
+	msg := err.Error()
+	clean := c.scrub(msg)
+	if clean == msg {
+		return err
+	}
+	return &redactedError{msg: clean, err: err}
+}
+
+// redactError redacts the API key from URL errors and scrubs remaining key text.
+func (c *Client) redactError(err error) error {
 	var uerr *url.Error
 	if errors.As(err, &uerr) {
-		// Why: error is freshly built by net/http, owned here.
-		uerr.URL = redactURL(uerr.URL)
+		// Why: copy, never mutate an error value net/http or a custom transport may share.
+		err = &url.Error{Op: uerr.Op, URL: c.scrub(redactURL(uerr.URL)), Err: c.scrubError(uerr.Err)}
 	}
-	return err
+	// Why: net/http returns the *url.Error unwrapped at both call sites.
+	return c.scrubError(err)
 }
 
 // redactURL replaces the apikey query parameter in raw with REDACTED.

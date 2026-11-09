@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -567,10 +568,13 @@ func TestEmptySearchResults(t *testing.T) {
 	}
 }
 
+// roundTripFunc adapts a function to the http.RoundTripper interface.
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
+// RoundTrip executes the round trip function.
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
+// TestNew_invalidURL verifies that New rejects malformed URLs and URLs with query or fragment.
 func TestNew_invalidURL(t *testing.T) {
 	t.Parallel()
 
@@ -581,6 +585,10 @@ func TestNew_invalidURL(t *testing.T) {
 		{"malformed", "://x"},
 		{"ftp", "ftp://x"},
 		{"no-scheme", "no-scheme"},
+		{"query", "http://h:9117?apikey=K9"},
+		{"empty-query", "http://h:9117/?"},
+		{"fragment", "http://h:9117#x"},
+		{"path-query", "http://h:9117/jackett?x=1"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -591,6 +599,9 @@ func TestNew_invalidURL(t *testing.T) {
 			}
 			if c != nil {
 				t.Fatal("expected nil client")
+			}
+			if strings.Contains(err.Error(), "K9") {
+				t.Errorf("New(%q) error leaked key: %q", tc.url, err.Error())
 			}
 		})
 	}
@@ -862,5 +873,148 @@ func TestTransportErrorRedactsAPIKey(t *testing.T) {
 			t.Parallel()
 			runTransportErrorCase(t, tc, secretKey)
 		})
+	}
+}
+
+// timeoutError represents a test error that reports a timeout.
+type timeoutError struct {
+	msg string
+}
+
+// Error returns the error message.
+func (e timeoutError) Error() string {
+	return e.msg
+}
+
+// Timeout returns true.
+func (e timeoutError) Timeout() bool {
+	return true
+}
+
+// customTransportTestCase defines inputs and expectations for custom transport error tests.
+type customTransportTestCase struct {
+	name         string
+	tripErr      func(r *http.Request) error
+	checkTimeout bool
+}
+
+// runCustomTransportErrorCase executes a custom transport error case and verifies redaction.
+func runCustomTransportErrorCase(t *testing.T, tc customTransportTestCase, key string) {
+	t.Helper()
+	c, err := jackett.New("http://127.0.0.1:9117", key, jackett.WithHTTPClient(&http.Client{
+		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			return nil, tc.tripErr(r)
+		}),
+	}))
+	if err != nil {
+		t.Fatalf("jackett.New: %v", err)
+	}
+
+	_, err = c.GetIndexers(context.Background())
+	assertRedactedTransportError(t, err, key)
+
+	var uerr *url.Error
+	if !errors.As(err, &uerr) {
+		t.Fatalf("expected *url.Error, got %T", err)
+	}
+	if !strings.Contains(uerr.URL, "apikey=REDACTED") {
+		t.Errorf("uerr.URL missing apikey=REDACTED: %q", uerr.URL)
+	}
+	uerrStr := uerr.Error()
+	if strings.Contains(uerrStr, key) {
+		t.Errorf("uerr.Error() leaked raw key: %q", uerrStr)
+	}
+	if strings.Contains(uerrStr, url.QueryEscape(key)) {
+		t.Errorf("uerr.Error() leaked escaped key: %q", uerrStr)
+	}
+	if tc.checkTimeout && !uerr.Timeout() {
+		t.Errorf("uerr.Timeout() = false, want true")
+	}
+}
+
+// TestCustomTransportErrorRedactsAPIKey verifies that custom transport errors do not leak keys.
+func TestCustomTransportErrorRedactsAPIKey(t *testing.T) {
+	t.Parallel()
+
+	const secretKey = `s3cr3t+key/=&x`
+	cases := []customTransportTestCase{
+		{
+			name: "escaped key in inner text",
+			tripErr: func(r *http.Request) error {
+				return fmt.Errorf("upstream refused %s", r.URL)
+			},
+		},
+		{
+			name: "nested url error",
+			tripErr: func(r *http.Request) error {
+				return fmt.Errorf("retry: %w", &url.Error{Op: "Get", URL: r.URL.String(), Err: errors.New("reset")})
+			},
+		},
+		{
+			name: "raw key",
+			tripErr: func(r *http.Request) error {
+				return fmt.Errorf("raw key %s", r.URL.Query().Get("apikey"))
+			},
+		},
+		{
+			name: "timeout error",
+			tripErr: func(r *http.Request) error {
+				return timeoutError{msg: "timeout: " + r.URL.String()}
+			},
+			checkTimeout: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			runCustomTransportErrorCase(t, tc, secretKey)
+		})
+	}
+}
+
+// TestAPIErrorBodyRedactsAPIKey verifies that APIError.Body scrubs raw and escaped API keys.
+func TestAPIErrorBodyRedactsAPIKey(t *testing.T) {
+	t.Parallel()
+
+	const secretKey = `s3cr3t+key/=&x`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("bad request " + r.URL.String() + " key=" + r.URL.Query().Get("apikey")))
+	}))
+	t.Cleanup(srv.Close)
+
+	c, err := jackett.New(srv.URL, secretKey)
+	if err != nil {
+		t.Fatalf("jackett.New: %v", err)
+	}
+
+	_, err = c.GetIndexers(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	var apiErr *jackett.APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *jackett.APIError, got %T", err)
+	}
+	if apiErr.StatusCode != http.StatusInternalServerError {
+		t.Errorf("StatusCode = %d, want 500", apiErr.StatusCode)
+	}
+	if !strings.Contains(apiErr.Body, "REDACTED") {
+		t.Errorf("apiErr.Body missing REDACTED: %q", apiErr.Body)
+	}
+	if strings.Contains(apiErr.Body, secretKey) {
+		t.Errorf("apiErr.Body leaked raw key: %q", apiErr.Body)
+	}
+	if strings.Contains(apiErr.Body, url.QueryEscape(secretKey)) {
+		t.Errorf("apiErr.Body leaked escaped key: %q", apiErr.Body)
+	}
+	errMsg := err.Error()
+	if strings.Contains(errMsg, secretKey) {
+		t.Errorf("err.Error() leaked raw key: %q", errMsg)
+	}
+	if strings.Contains(errMsg, url.QueryEscape(secretKey)) {
+		t.Errorf("err.Error() leaked escaped key: %q", errMsg)
 	}
 }
