@@ -22,11 +22,11 @@ None (optional: `$1` = path glob, default `docs/upstream/*.md`).
 1. Glob all targets. If none exist, tell the user `docs/upstream/` is empty and stop.
 2. For each file:
    - Read the frontmatter. Extract the pinned URL (field: `url:`) and the last-verified date (field: `last_verified:`).
-   - `curl -sS -I --max-time 20 -o /dev/null -w '%{http_code} %header{cf-mitigated} %{redirect_url}\n' "<url>"` — field 1 is status, field 2 is `cf-mitigated` value (empty if absent), and field 3 is redirect target (empty unless 3xx). Needs curl >= 7.84.0 for `%header{}`.
+   - `curl -sS -I --max-time 20 -o /dev/null -w '%{http_code}|%header{cf-mitigated}|%{redirect_url}\n' "<url>"` — split the output on `|` with a parser that keeps empty fields (for example `IFS='|' read -r status mitigated target`), never on whitespace. Field 1 is status, field 2 is `cf-mitigated` value (empty if absent), and field 3 is redirect target (empty unless 3xx). Needs curl >= 7.84.0 for `%header{}`.
+   - Field 2 = `challenge`, whatever the status (checked before any status rule): Cloudflare bot wall, not a broken link. Leave `last_verified:` untouched, add no marker, list the row as `UNVERIFIABLE` in the summary.
    - If the status is `2xx`: update `last_verified:` to today's date (YYYY-MM-DD) and remove an existing `broken:` key. Save.
-   - If the status is `3xx`: the redirect target is field 3 (no `-L`). Probe that target once with the same command; flag the row `REDIRECT` with the target for user review — DO NOT auto-update the `url:` field (could be a dark pattern / sales redirect).
+   - If the status is `3xx`: the redirect target is field 3 (no `-L`). If the target in field 3 has a path segment named `login`, `signin` or `sign-in`, it is a login wall: leave `last_verified:` untouched, add no marker, list the row as `UNVERIFIABLE` with the target in the notes. Otherwise probe that target once with the same command; flag the row `REDIRECT` with the target for user review — DO NOT auto-update the `url:` field (could be a dark pattern / sales redirect).
    - `HEAD` returns `405`: retry once with the same command minus `-I` (a GET); use the GET fields.
-   - Status `403` and field 2 = `challenge`: Cloudflare bot wall, not a broken link. Leave `last_verified:` untouched, add no marker, list the row as `UNVERIFIABLE` in the summary.
    - other `4xx` / `5xx`: leave `last_verified:` untouched and set frontmatter key `broken: "<code> <today>"` after `last_verified:`, replacing an existing `broken:` key so a file holds at most one. Why: a body `# BROKEN` line is a second H1 and fails markdownlint MD025.
    - Stamp the module `AGENTS.md` `- Last verified:` line in lockstep when it holds only a date; leave lines that carry spec-pin evidence.
 3. Collect a summary table: service | status | old date → new date | notes.
