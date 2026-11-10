@@ -30,8 +30,8 @@ None (optional: `$1` = path glob, default `docs/upstream/*.md`).
    - other `4xx` / `5xx`: leave `last_verified:` untouched and add frontmatter key `broken: "<code> <today>"` after `last_verified:`. Why: a body `# BROKEN` line is a second H1 and fails markdownlint MD025.
    - Stamp the module `AGENTS.md` `- Last verified:` line in lockstep when it holds only a date; leave lines that carry spec-pin evidence.
 3. Collect a summary table: service | status | old date → new date | notes.
-4. Report the table to the user. If any row is `BROKEN` or `REDIRECT`, highlight those and recommend opening a tracking issue.
-5. If any `last_verified:` was updated, stage `docs/upstream/*.md` and commit with message `docs(upstream): refresh verified dates (N services)`.
+4. Report the table to the user. If any row is `BROKEN`, `REDIRECT` or `UNVERIFIABLE`, highlight those and recommend opening a tracking issue for `BROKEN` or `REDIRECT`; `UNVERIFIABLE` rows need a manual browser check, not an issue.
+5. If any `last_verified:` was updated, stage `docs/upstream/*.md` plus the module `AGENTS.md` files stamped in step 2 and commit with message `docs(upstream): refresh verified dates (N services)`.
 
 ## Don't
 
