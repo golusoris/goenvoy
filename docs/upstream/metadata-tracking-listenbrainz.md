@@ -1,13 +1,13 @@
 ---
 service: ListenBrainz
-url: https://listenbrainz.readthedocs.io/
-last_verified: 2026-04-15
+url: https://listenbrainz.readthedocs.io/en/latest/
+last_verified: 2026-11-10
 ---
 
 # Upstream API — ListenBrainz
 
-- **Canonical docs:** <https://listenbrainz.readthedocs.io/>
-- **Last verified:** 2026-04-15
+- **Canonical docs:** <https://listenbrainz.readthedocs.io/en/latest/>
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

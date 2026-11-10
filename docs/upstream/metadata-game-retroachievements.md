@@ -1,13 +1,13 @@
 ---
 service: RetroAchievements
 url: https://api-docs.retroachievements.org/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — RetroAchievements
 
 - **Canonical docs:** <https://api-docs.retroachievements.org/>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

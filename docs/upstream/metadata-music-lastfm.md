@@ -1,13 +1,13 @@
 ---
 service: Last.fm
 url: https://www.last.fm/api
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Last.fm
 
 - **Canonical docs:** <https://www.last.fm/api>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

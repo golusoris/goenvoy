@@ -1,13 +1,13 @@
 ---
 service: NZBHydra2
 url: https://github.com/theotherp/nzbhydra2/wiki
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — NZBHydra2
 
 - **Canonical docs:** <https://github.com/theotherp/nzbhydra2/wiki>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

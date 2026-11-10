@@ -1,13 +1,13 @@
 ---
 service: Shoko Server
 url: https://docs.shokoanime.com/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Shoko Server
 
 - **Canonical docs:** <https://docs.shokoanime.com/>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

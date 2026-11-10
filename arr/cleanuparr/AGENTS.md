@@ -6,7 +6,7 @@
 
 - Canonical repository: <https://github.com/Cleanuparr/Cleanuparr>
 - Pinned tag / commit: `v2.10.11` (`9f324ead2a732f3a5ed1ddc36448c661d6b98263`)
-- Last verified: 2026-10-16
+- Last verified: 2026-11-10
 - Details: [docs/upstream/arr-cleanuparr.md](../../docs/upstream/arr-cleanuparr.md)
 
 ## Auth model

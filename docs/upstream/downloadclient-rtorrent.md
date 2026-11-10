@@ -1,13 +1,13 @@
 ---
 service: rTorrent
 url: https://github.com/rakshasa/rtorrent/wiki/rTorrent-0.9-Comprehensive-Command-list-(WIP)
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — rTorrent
 
 - **Canonical docs:** <https://github.com/rakshasa/rtorrent/wiki/rTorrent-0.9-Comprehensive-Command-list-(WIP)>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

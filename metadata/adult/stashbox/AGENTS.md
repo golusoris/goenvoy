@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://github.com/stashapp/stash-box>
 - Pinned schema: v0.10.3 (commit 5eb3551e19fd494e93be410d8149adc785cffd6a)
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/metadata-adult-stashbox.md](../../../docs/upstream/metadata-adult-stashbox.md)
 - Performer fields follow v0.10.3 non-deprecated names; merged_ids/merged_into_id performer only.
 

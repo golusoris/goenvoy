@@ -1,13 +1,13 @@
 ---
 service: Komga
 url: https://komga.org/docs/openapi/komga-api/
-last_verified: 2026-06-14
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Komga
 
 - **Canonical docs:** <https://komga.org/docs/openapi/komga-api/>
-- **Last verified:** 2026-06-14
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

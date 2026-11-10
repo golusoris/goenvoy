@@ -1,13 +1,13 @@
 ---
 service: Sonarr
 url: https://sonarr.tv/docs/api/
-last_verified: 2026-11-06
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Sonarr
 
 - **Canonical docs:** <https://sonarr.tv/docs/api/>
-- **Last verified:** 2026-11-06
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

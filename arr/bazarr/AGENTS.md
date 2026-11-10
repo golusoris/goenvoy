@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://wiki.bazarr.media/>
-- Last verified: 2026-06-14
+- Last verified: 2026-11-10
 - Details: [docs/upstream/arr-bazarr.md](../../docs/upstream/arr-bazarr.md)
 
 ## Auth model

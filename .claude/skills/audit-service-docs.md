@@ -25,7 +25,10 @@ None (optional: `$1` = path glob, default `docs/upstream/*.md`).
    - `curl -sSLI -o /dev/null -w "%{http_code}" "<url>"` — capture the status code.
    - If the status is `2xx`: update `last_verified:` to today's date (YYYY-MM-DD). Save.
    - If the status is `3xx` with a `Location:` header: follow it once; if the final URL differs from the pinned URL, flag for user review — DO NOT auto-update the `url:` field (could be a dark pattern / sales redirect).
-   - If the status is `4xx` or `5xx`: leave `last_verified:` untouched and append a `# BROKEN (<code>): <today>` line under the frontmatter.
+   - `HEAD` returns `405`: retry once with `GET`; use the GET status.
+   - `403` with response header `cf-mitigated: challenge`: Cloudflare bot wall, not a broken link. Leave `last_verified:` untouched, add no marker, list the row as `UNVERIFIABLE` in the summary.
+   - other `4xx` / `5xx`: leave `last_verified:` untouched and add frontmatter key `broken: "<code> <today>"` after `last_verified:`. Why: a body `# BROKEN` line is a second H1 and fails markdownlint MD025.
+   - Stamp the module `AGENTS.md` `- Last verified:` line in lockstep when it holds only a date; leave lines that carry spec-pin evidence.
 3. Collect a summary table: service | status | old date → new date | notes.
 4. Report the table to the user. If any row is `BROKEN` or `REDIRECT`, highlight those and recommend opening a tracking issue.
 5. If any `last_verified:` was updated, stage `docs/upstream/*.md` and commit with message `docs(upstream): refresh verified dates (N services)`.

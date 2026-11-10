@@ -1,13 +1,13 @@
 ---
 service: Cleanuparr
 url: https://github.com/Cleanuparr/Cleanuparr
-last_verified: 2026-10-16
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Cleanuparr
 
 - **Canonical source:** <https://github.com/Cleanuparr/Cleanuparr> (tag `v2.10.11`, commit `9f324ead2a732f3a5ed1ddc36448c661d6b98263`)
-- **Last verified:** 2026-10-16
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

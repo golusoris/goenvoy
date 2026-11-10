@@ -1,13 +1,13 @@
 ---
 service: Plex
-url: https://plexapi.dev/
-last_verified: 2026-04-15
+url: https://plexapi.dev/Intro
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Plex
 
-- **Canonical docs:** <https://plexapi.dev/>
-- **Last verified:** 2026-04-15
+- **Canonical docs:** <https://plexapi.dev/Intro>
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

@@ -1,14 +1,14 @@
 ---
 service: Audiobookshelf
 url: https://api.audiobookshelf.org/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Audiobookshelf
 
 - **Canonical docs:** <https://api.audiobookshelf.org/>
 - **Pinned server:** v2.37.2 (commit edb1f7e)
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

@@ -1,13 +1,13 @@
 ---
 service: MyAnimeList
 url: https://myanimelist.net/apiconfig/references/api/v2
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — MyAnimeList
 
 - **Canonical docs:** <https://myanimelist.net/apiconfig/references/api/v2>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

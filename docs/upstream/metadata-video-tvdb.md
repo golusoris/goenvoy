@@ -1,13 +1,13 @@
 ---
 service: TheTVDB
 url: https://thetvdb.github.io/v4-api/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — TheTVDB
 
 - **Canonical docs:** <https://thetvdb.github.io/v4-api/>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

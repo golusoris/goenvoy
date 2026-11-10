@@ -1,14 +1,14 @@
 ---
 service: Stash
 url: https://docs.stashapp.cc/in-app-manual/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Stash
 
 - **Canonical docs:** <https://docs.stashapp.cc/in-app-manual/>
 - **Pinned schema:** v0.31.1 (commit 4de2351)
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

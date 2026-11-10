@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://wiki.servarr.com/whisparr>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/arr-whisparr.md](../../docs/upstream/arr-whisparr.md)
 
 ## Auth model

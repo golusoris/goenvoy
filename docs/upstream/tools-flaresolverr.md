@@ -1,13 +1,13 @@
 ---
 service: FlareSolverr
 url: https://github.com/FlareSolverr/FlareSolverr/blob/master/README.md
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — FlareSolverr
 
 - **Canonical docs:** <https://github.com/FlareSolverr/FlareSolverr/blob/master/README.md>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

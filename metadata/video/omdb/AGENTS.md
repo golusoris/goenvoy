@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://www.omdbapi.com/>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/metadata-video-omdb.md](../../../docs/upstream/metadata-video-omdb.md)
 
 ## Auth model

@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://github.com/rakshasa/rtorrent/wiki/rTorrent-0.9-Comprehensive-Command-list-(WIP)>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/downloadclient-rtorrent.md](../../docs/upstream/downloadclient-rtorrent.md)
 
 ## Auth model

@@ -1,13 +1,13 @@
 ---
 service: TheAudioDB
 url: https://www.theaudiodb.com/free_music_api
-last_verified: 2026-06-14
+last_verified: 2026-11-10
 ---
 
 # Upstream API — TheAudioDB
 
 - **Canonical docs:** <https://www.theaudiodb.com/free_music_api>
-- **Last verified:** 2026-06-14
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

@@ -4,8 +4,8 @@
 
 ## Upstream API
 
-- Canonical docs: <https://github.com/Jackett/Jackett/wiki/API-Endpoints-Reference>
-- Last verified: 2026-04-15
+- Canonical docs: <https://github.com/Jackett/Jackett/wiki/Jackett-API>
+- Last verified: 2026-11-10
 - Details: [docs/upstream/arr-jackett.md](../../docs/upstream/arr-jackett.md)
 
 ## Auth model

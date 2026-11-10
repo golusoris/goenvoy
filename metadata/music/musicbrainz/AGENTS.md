@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://musicbrainz.org/doc/MusicBrainz_API>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/metadata-music-musicbrainz.md](../../../docs/upstream/metadata-music-musicbrainz.md)
 
 ## Auth model

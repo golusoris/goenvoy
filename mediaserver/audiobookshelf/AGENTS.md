@@ -6,7 +6,7 @@
 
 - Canonical docs: <https://api.audiobookshelf.org/>
 - Pinned server: v2.37.2 (commit `edb1f7efc92ecacdef51aafb4d9d5054ce10604f`)
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/mediaserver-audiobookshelf.md](../../docs/upstream/mediaserver-audiobookshelf.md)
 
 ## Auth model

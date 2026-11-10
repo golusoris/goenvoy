@@ -4,8 +4,8 @@
 
 ## Upstream API
 
-- Canonical docs: <https://plexapi.dev/>
-- Last verified: 2026-04-15
+- Canonical docs: <https://plexapi.dev/Intro>
+- Last verified: 2026-11-10
 - Details: [docs/upstream/mediaserver-plex.md](../../docs/upstream/mediaserver-plex.md)
 
 ## Auth model

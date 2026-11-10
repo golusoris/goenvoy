@@ -1,13 +1,13 @@
 ---
 service: Kitsu
 url: https://kitsu.docs.apiary.io/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Kitsu
 
 - **Canonical docs:** <https://kitsu.docs.apiary.io/>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

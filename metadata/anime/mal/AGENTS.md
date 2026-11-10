@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://myanimelist.net/apiconfig/references/api/v2>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/metadata-anime-mal.md](../../../docs/upstream/metadata-anime-mal.md)
 
 ## Auth model

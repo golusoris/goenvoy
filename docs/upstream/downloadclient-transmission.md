@@ -1,13 +1,13 @@
 ---
 service: Transmission
 url: https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Transmission
 
 - **Canonical docs:** <https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

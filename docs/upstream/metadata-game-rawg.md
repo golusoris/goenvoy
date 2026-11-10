@@ -2,6 +2,7 @@
 service: RAWG
 url: https://rawg.io/apidocs
 last_verified: 2026-04-15
+broken: "522 2026-11-10"
 ---
 
 # Upstream API — RAWG

@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/downloadclient-qbit.md](../../docs/upstream/downloadclient-qbit.md)
 
 ## Auth model
