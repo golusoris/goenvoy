@@ -1,13 +1,13 @@
 ---
 service: MusicBrainz
 url: https://musicbrainz.org/doc/MusicBrainz_API
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — MusicBrainz
 
 - **Canonical docs:** <https://musicbrainz.org/doc/MusicBrainz_API>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

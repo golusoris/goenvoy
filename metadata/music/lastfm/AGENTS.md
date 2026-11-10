@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://www.last.fm/api>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/metadata-music-lastfm.md](../../../docs/upstream/metadata-music-lastfm.md)
 
 ## Auth model

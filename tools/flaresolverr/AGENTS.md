@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://github.com/FlareSolverr/FlareSolverr/blob/master/README.md>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/tools-flaresolverr.md](../../docs/upstream/tools-flaresolverr.md)
 
 ## Auth model

@@ -1,13 +1,13 @@
 ---
 service: Open Library
 url: https://openlibrary.org/developers/api
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Open Library
 
 - **Canonical docs:** <https://openlibrary.org/developers/api>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

@@ -1,13 +1,13 @@
 ---
 service: SABnzbd
 url: https://sabnzbd.org/wiki/advanced/api
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — SABnzbd
 
 - **Canonical docs:** <https://sabnzbd.org/wiki/advanced/api>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

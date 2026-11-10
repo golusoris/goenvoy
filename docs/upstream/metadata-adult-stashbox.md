@@ -1,14 +1,14 @@
 ---
 service: StashBox
 url: https://github.com/stashapp/stash-box
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — StashBox
 
 - **Canonical docs:** <https://github.com/stashapp/stash-box>
 - **Pinned schema:** v0.10.3 (commit 5eb3551)
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

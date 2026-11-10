@@ -1,13 +1,13 @@
 ---
 service: NZBGet
-url: https://nzbget.net/api
-last_verified: 2026-04-15
+url: https://nzbget.com/documentation/api/
+last_verified: 2026-11-10
 ---
 
 # Upstream API — NZBGet
 
-- **Canonical docs:** <https://nzbget.net/api>
-- **Last verified:** 2026-04-15
+- **Canonical docs:** <https://nzbget.com/documentation/api/>
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

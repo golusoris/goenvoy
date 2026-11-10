@@ -4,8 +4,8 @@
 
 ## Upstream API
 
-- Canonical docs: <https://nzbget.net/api>
-- Last verified: 2026-04-15
+- Canonical docs: <https://nzbget.com/documentation/api/>
+- Last verified: 2026-11-10
 - Details: [docs/upstream/downloadclient-nzbget.md](../../docs/upstream/downloadclient-nzbget.md)
 
 ## Auth model

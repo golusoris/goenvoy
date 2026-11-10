@@ -1,13 +1,13 @@
 ---
 service: IGDB
 url: https://api-docs.igdb.com/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — IGDB
 
 - **Canonical docs:** <https://api-docs.igdb.com/>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

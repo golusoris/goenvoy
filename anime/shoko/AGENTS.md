@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://docs.shokoanime.com/>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/anime-shoko.md](../../docs/upstream/anime-shoko.md)
 
 ## Auth model

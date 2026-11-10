@@ -1,13 +1,13 @@
 ---
 service: Navidrome
 url: https://www.navidrome.org/docs/developers/subsonic-api/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Navidrome
 
 - **Canonical docs:** <https://www.navidrome.org/docs/developers/subsonic-api/>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

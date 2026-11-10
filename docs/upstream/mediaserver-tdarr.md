@@ -1,13 +1,13 @@
 ---
 service: Tdarr
 url: https://docs.tdarr.io/docs/api/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Tdarr
 
 - **Canonical docs:** <https://docs.tdarr.io/docs/api/>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

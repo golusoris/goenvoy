@@ -1,13 +1,13 @@
 ---
 service: Fanart.tv
 url: https://fanarttv.docs.apiary.io/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Fanart.tv
 
 - **Canonical docs:** <https://fanarttv.docs.apiary.io/>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

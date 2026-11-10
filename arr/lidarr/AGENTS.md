@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://lidarr.audio/docs/api/>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/arr-lidarr.md](../../docs/upstream/arr-lidarr.md)
 
 ## Auth model

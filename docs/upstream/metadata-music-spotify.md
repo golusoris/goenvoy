@@ -1,13 +1,13 @@
 ---
 service: Spotify
 url: https://developer.spotify.com/documentation/web-api
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Spotify
 
 - **Canonical docs:** <https://developer.spotify.com/documentation/web-api>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

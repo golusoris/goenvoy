@@ -1,13 +1,13 @@
 ---
 service: Jackett
-url: https://github.com/Jackett/Jackett/wiki/API-Endpoints-Reference
-last_verified: 2026-04-15
+url: https://github.com/Jackett/Jackett/wiki/Jackett-API
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Jackett
 
-- **Canonical docs:** <https://github.com/Jackett/Jackett/wiki/API-Endpoints-Reference>
-- **Last verified:** 2026-04-15
+- **Canonical docs:** <https://github.com/Jackett/Jackett/wiki/Jackett-API>
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

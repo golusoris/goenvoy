@@ -1,13 +1,13 @@
 ---
 service: Deluge
 url: https://deluge.readthedocs.io/en/latest/reference/api.html
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Deluge
 
 - **Canonical docs:** <https://deluge.readthedocs.io/en/latest/reference/api.html>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

@@ -1,13 +1,13 @@
 ---
 service: Autobrr
 url: https://autobrr.com/api
-last_verified: 2026-06-14
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Autobrr
 
 - **Canonical docs:** <https://autobrr.com/api>
-- **Last verified:** 2026-06-14
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

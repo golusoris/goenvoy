@@ -1,13 +1,13 @@
 ---
 service: Mylar3
-url: https://github.com/mylar3/mylar3/wiki/API-Reference
-last_verified: 2026-04-15
+url: https://github.com/mylar3/mylar3/wiki/API-Documentation
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Mylar3
 
-- **Canonical docs:** <https://github.com/mylar3/mylar3/wiki/API-Reference>
-- **Last verified:** 2026-04-15
+- **Canonical docs:** <https://github.com/mylar3/mylar3/wiki/API-Documentation>
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

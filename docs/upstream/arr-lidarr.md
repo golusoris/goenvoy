@@ -1,13 +1,13 @@
 ---
 service: Lidarr
 url: https://lidarr.audio/docs/api/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Lidarr
 
 - **Canonical docs:** <https://lidarr.audio/docs/api/>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

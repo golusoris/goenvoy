@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://www.theaudiodb.com/free_music_api>
-- Last verified: 2026-06-14
+- Last verified: 2026-11-10
 - Details: [docs/upstream/metadata-music-audiodb.md](../../../docs/upstream/metadata-music-audiodb.md)
 
 ## Auth model

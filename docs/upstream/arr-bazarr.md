@@ -1,13 +1,13 @@
 ---
 service: Bazarr
 url: https://wiki.bazarr.media/
-last_verified: 2026-06-14
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Bazarr
 
 - **Canonical docs:** <https://wiki.bazarr.media/>
-- **Last verified:** 2026-06-14
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

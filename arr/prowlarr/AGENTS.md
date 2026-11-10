@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://prowlarr.com/docs/api/>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/arr-prowlarr.md](../../docs/upstream/arr-prowlarr.md)
 
 ## Auth model

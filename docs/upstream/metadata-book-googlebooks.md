@@ -1,13 +1,13 @@
 ---
 service: Google Books
 url: https://developers.google.com/books
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Google Books
 
 - **Canonical docs:** <https://developers.google.com/books>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

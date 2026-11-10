@@ -1,13 +1,13 @@
 ---
 service: OMDb
 url: https://www.omdbapi.com/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — OMDb
 
 - **Canonical docs:** <https://www.omdbapi.com/>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

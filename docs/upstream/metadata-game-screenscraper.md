@@ -1,13 +1,13 @@
 ---
 service: ScreenScraper
 url: https://www.screenscraper.fr/webapi2.php
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — ScreenScraper
 
 - **Canonical docs:** <https://www.screenscraper.fr/webapi2.php>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

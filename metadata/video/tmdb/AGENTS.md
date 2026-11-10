@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://developer.themoviedb.org/reference/intro/getting-started>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/metadata-video-tmdb.md](../../../docs/upstream/metadata-video-tmdb.md)
 
 ## Auth model

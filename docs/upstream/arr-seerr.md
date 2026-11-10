@@ -1,13 +1,13 @@
 ---
 service: Seerr
 url: https://api-docs.overseerr.dev/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Seerr
 
 - **Canonical docs:** <https://api-docs.overseerr.dev/>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

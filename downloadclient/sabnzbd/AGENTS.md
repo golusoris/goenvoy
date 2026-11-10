@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://sabnzbd.org/wiki/advanced/api>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/downloadclient-sabnzbd.md](../../docs/upstream/downloadclient-sabnzbd.md)
 
 ## Auth model

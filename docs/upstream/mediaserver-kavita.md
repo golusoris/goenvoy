@@ -1,13 +1,13 @@
 ---
 service: Kavita
 url: https://wiki.kavitareader.com/guides/api/
-last_verified: 2026-06-14
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Kavita
 
 - **Canonical docs:** <https://wiki.kavitareader.com/guides/api/>
-- **Last verified:** 2026-06-14
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

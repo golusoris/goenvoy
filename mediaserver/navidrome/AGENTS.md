@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://www.navidrome.org/docs/developers/subsonic-api/>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/mediaserver-navidrome.md](../../docs/upstream/mediaserver-navidrome.md)
 
 ## Auth model

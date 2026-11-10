@@ -1,13 +1,13 @@
 ---
 service: Whisparr
 url: https://wiki.servarr.com/whisparr
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — Whisparr
 
 - **Canonical docs:** <https://wiki.servarr.com/whisparr>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

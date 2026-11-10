@@ -1,13 +1,13 @@
 ---
 service: LaunchBox
 url: https://gamesdb.launchbox-app.com/
-last_verified: 2026-06-14
+last_verified: 2026-11-10
 ---
 
 # Upstream API — LaunchBox
 
 - **Canonical docs:** <https://gamesdb.launchbox-app.com/>
-- **Last verified:** 2026-06-14
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

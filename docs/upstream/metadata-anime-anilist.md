@@ -1,13 +1,13 @@
 ---
 service: AniList
 url: https://docs.anilist.co/
-last_verified: 2026-04-15
+last_verified: 2026-11-10
 ---
 
 # Upstream API — AniList
 
 - **Canonical docs:** <https://docs.anilist.co/>
-- **Last verified:** 2026-04-15
+- **Last verified:** 2026-11-10
 
 ## What this API does
 

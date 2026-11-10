@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://trakt.docs.apiary.io/>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/metadata-tracking-trakt.md](../../../docs/upstream/metadata-tracking-trakt.md)
 
 ## Auth model

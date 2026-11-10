@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://github.com/theotherp/nzbhydra2/wiki>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/arr-nzbhydra.md](../../docs/upstream/arr-nzbhydra.md)
 
 ## Auth model

@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md>
-- Last verified: 2026-04-15
+- Last verified: 2026-11-10
 - Details: [docs/upstream/downloadclient-transmission.md](../../docs/upstream/downloadclient-transmission.md)
 
 ## Auth model

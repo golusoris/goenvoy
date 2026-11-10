@@ -4,8 +4,8 @@
 
 ## Upstream API
 
-- Canonical docs: <https://github.com/mylar3/mylar3/wiki/API-Reference>
-- Last verified: 2026-04-15
+- Canonical docs: <https://github.com/mylar3/mylar3/wiki/API-Documentation>
+- Last verified: 2026-11-10
 - Details: [docs/upstream/arr-mylar.md](../../docs/upstream/arr-mylar.md)
 
 ## Auth model

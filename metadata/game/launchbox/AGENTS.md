@@ -5,7 +5,7 @@
 ## Upstream API
 
 - Canonical docs: <https://gamesdb.launchbox-app.com/>
-- Last verified: 2026-06-14
+- Last verified: 2026-11-10
 - Details: [docs/upstream/metadata-game-launchbox.md](../../../docs/upstream/metadata-game-launchbox.md)
 
 ## Auth model
