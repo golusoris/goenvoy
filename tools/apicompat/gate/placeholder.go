@@ -16,6 +16,7 @@ import (
 	"os"
 )
 
+// main explains how to invoke the standalone compatibility gate and exits with failure.
 func main() {
 	fmt.Fprintln(os.Stderr, "the API compatibility gate builds from its file: "+
 		"go run tools/apicompat/gate/main.go [-base=<rev>]")

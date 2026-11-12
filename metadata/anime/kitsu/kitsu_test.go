@@ -433,31 +433,37 @@ func TestWithUserAgent(t *testing.T) {
 
 // OAuth2 tests.
 
+// assertAuthenticateRequest checks the password-grant request sent to Kitsu.
+func assertAuthenticateRequest(t *testing.T, r *http.Request) {
+	t.Helper()
+	if r.Method != http.MethodPost {
+		t.Errorf("method = %s, want POST", r.Method)
+	}
+	ct := r.Header.Get("Content-Type")
+	if ct != "application/x-www-form-urlencoded" {
+		t.Errorf("Content-Type = %q, want application/x-www-form-urlencoded", ct)
+	}
+	if err := r.ParseForm(); err != nil {
+		t.Error(err)
+		return
+	}
+	if r.PostForm.Get("grant_type") != "password" {
+		t.Errorf("grant_type = %q, want password", r.PostForm.Get("grant_type"))
+	}
+	if r.PostForm.Get("username") != "user@example.com" {
+		t.Errorf("username = %q", r.PostForm.Get("username"))
+	}
+	if r.PostForm.Get("password") != "s3cret" {
+		t.Errorf("password = %q", r.PostForm.Get("password"))
+	}
+}
+
 // TestAuthenticate tests password grant authentication and token callback handling.
 func TestAuthenticate(t *testing.T) {
 	t.Parallel()
 
 	authSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("method = %s, want POST", r.Method)
-		}
-		ct := r.Header.Get("Content-Type")
-		if ct != "application/x-www-form-urlencoded" {
-			t.Errorf("Content-Type = %q, want application/x-www-form-urlencoded", ct)
-		}
-		if err := r.ParseForm(); err != nil {
-			t.Error(err)
-			return
-		}
-		if r.PostForm.Get("grant_type") != "password" {
-			t.Errorf("grant_type = %q, want password", r.PostForm.Get("grant_type"))
-		}
-		if r.PostForm.Get("username") != "user@example.com" {
-			t.Errorf("username = %q", r.PostForm.Get("username"))
-		}
-		if r.PostForm.Get("password") != "s3cret" {
-			t.Errorf("password = %q", r.PostForm.Get("password"))
-		}
+		assertAuthenticateRequest(t, r)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(Token{
 			AccessToken:  "kitsu-access",

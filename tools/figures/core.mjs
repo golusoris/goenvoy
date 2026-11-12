@@ -79,6 +79,7 @@ export function walkLayout(layout) {
   return { boxes, groups, errors };
 }
 
+/** Validate the figure's title, alternative text and evidence fields. */
 function validateTop(figure) {
   const errors = [];
   if (!isStr(figure.title) || !figure.title.trim()) errors.push('title must be a non-empty string');
@@ -93,9 +94,11 @@ function validateTop(figure) {
   return errors;
 }
 
+/** Validate the bounded layout inventory and its unique identifiers. */
 function validateLayout(walked) {
   const errors = [...walked.errors];
   const ids = new Map();
+  /** Register a layout ID and report invalid or duplicate identifiers. */
   const claim = (id, what) => {
     if (!isStr(id) || !id) return errors.push(`${what} needs a string id`);
     if (ids.has(id)) return errors.push(`duplicate id "${id}"`);
@@ -118,6 +121,7 @@ function validateLayout(walked) {
 
 const edgeIdOf = (e) => e.id ?? `${e.from}->${e.to}`;
 
+/** Validate edge definitions and collect their unique identifiers. */
 function validateEdges(edges, ids) {
   const errors = [];
   const edgeIds = new Set();
@@ -138,6 +142,7 @@ function validateEdges(edges, ids) {
   return { errors, edgeIds };
 }
 
+/** Validate bounded content rows and their optional text fields. */
 function validateContent(content, where) {
   if (isStr(content)) return [];
   if (!Array.isArray(content)) return [`${where}: content must be a string or a list of rows`];
@@ -151,6 +156,7 @@ function validateContent(content, where) {
   return errors;
 }
 
+/** Normalize a beat's edge references into hop objects. */
 function hopsOf(beat) {
   const isBeat = isObj(beat) && !('edge' in beat);
   const edges = isBeat ? beat.edges : beat;
@@ -158,6 +164,7 @@ function hopsOf(beat) {
   return list.map((h) => (isStr(h) ? { edge: h } : h));
 }
 
+/** Validate a beat's bounded hops and references to known boxes and edges. */
 function validateBeat(beat, where, boxIds, edgeIds) {
   const errors = [];
   const hops = hopsOf(beat);
@@ -176,6 +183,7 @@ function validateBeat(beat, where, boxIds, edgeIds) {
   return errors;
 }
 
+/** Validate scenario steps, labels and bounded flows. */
 function validateSteps(steps, boxIds, edgeIds) {
   if (steps === undefined) return [];
   if (!Array.isArray(steps)) return ['props.steps must be a list'];
@@ -211,6 +219,7 @@ function labeller(walked) {
   return (id) => names.get(id) ?? id;
 }
 
+/** Describe boxes grouped by their nearest labeled ancestor. */
 function describeLayout(walked) {
   const lines = [];
   const loose = [];
@@ -226,6 +235,7 @@ function describeLayout(walked) {
   return lines;
 }
 
+/** Describe scenario labels, captions and spoken flow text. */
 function describeSteps(steps) {
   return steps.map((step, i) => {
     const said = step.flow.filter((b) => isObj(b) && !('edge' in b) && isStr(b.say)).map((b) => b.say);

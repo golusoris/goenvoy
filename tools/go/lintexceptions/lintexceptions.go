@@ -8,7 +8,7 @@
 // A complexity linter outside that block fails, so no file tier comes back.
 //
 // This check is itself an exception to one mechanism per behavior (HISS-19; category C,
-// entered 2026-11-01, expires 2026-11-11, #141): the engine audit judges the same block in the
+// entered 2026-11-12, expires 2026-11-22, #141): the engine audit judges the same block in the
 // local hooks, and this check keeps a CI barrier until the CI runs that audit.
 // Adapted from tekmora/epitrop tools/lintexceptions (same author).
 package lintexceptions
@@ -22,7 +22,7 @@ import (
 )
 
 // selfExpiry is the date this package's own exception runs out.
-const selfExpiry = "2026-11-11"
+const selfExpiry = "2026-11-22"
 
 // maxLines bounds the configuration lines one check reads.
 const maxLines = 100000

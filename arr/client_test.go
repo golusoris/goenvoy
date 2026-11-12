@@ -506,36 +506,40 @@ func FuzzNewBaseClient(f *testing.F) {
 
 type wrappedClient struct{ base *arr.BaseClient }
 
+// TestNewServiceClient_WrapsBaseClient checks that NewServiceClient hands the configured base client to the wrapper.
+func TestNewServiceClient_WrapsBaseClient(t *testing.T) {
+	t.Parallel()
+
+	wrap := func(b *arr.BaseClient) *wrappedClient { return &wrappedClient{base: b} }
+	var gotUA string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotUA = r.Header.Get("User-Agent")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	c, err := arr.NewServiceClient(srv.URL+"/", "test-key", wrap, arr.WithUserAgent("svc/1.0"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if c == nil || c.base == nil {
+		t.Fatal("expected wrapped client with a base")
+	}
+	var out map[string]any
+	if err := c.base.Get(context.Background(), "/ping", &out); err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if gotUA != "svc/1.0" {
+		t.Errorf("User-Agent = %q, want svc/1.0", gotUA)
+	}
+}
+
+// TestNewServiceClient checks constructor error and empty-URL handling.
 func TestNewServiceClient(t *testing.T) {
 	t.Parallel()
 
 	wrap := func(b *arr.BaseClient) *wrappedClient { return &wrappedClient{base: b} }
-
-	t.Run("wraps the base client", func(t *testing.T) {
-		t.Parallel()
-		var gotUA string
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			gotUA = r.Header.Get("User-Agent")
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{}`))
-		}))
-		t.Cleanup(srv.Close)
-
-		c, err := arr.NewServiceClient(srv.URL+"/", "test-key", wrap, arr.WithUserAgent("svc/1.0"))
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if c == nil || c.base == nil {
-			t.Fatal("expected wrapped client with a base")
-		}
-		var out map[string]any
-		if err := c.base.Get(context.Background(), "/ping", &out); err != nil {
-			t.Fatalf("Get: %v", err)
-		}
-		if gotUA != "svc/1.0" {
-			t.Errorf("User-Agent = %q, want svc/1.0", gotUA)
-		}
-	})
 
 	t.Run("invalid URL skips wrap", func(t *testing.T) {
 		t.Parallel()

@@ -21,25 +21,12 @@ func setup(t *testing.T, handler http.HandlerFunc) *rawg.Client {
 	return rawg.New("test-key", metadata.WithBaseURL(srv.URL))
 }
 
+// TestSearchGames checks query construction and response decoding.
 func TestSearchGames(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			t.Errorf("method = %s, want GET", r.Method)
-		}
-		if got := r.URL.Query().Get("key"); got != "test-key" {
-			t.Errorf("key = %q, want test-key", got)
-		}
-		if got := r.URL.Query().Get("search"); got != "zelda" {
-			t.Errorf("search = %q, want zelda", got)
-		}
-		if got := r.URL.Query().Get("page"); got != "1" {
-			t.Errorf("page = %q, want 1", got)
-		}
-		if got := r.URL.Query().Get("page_size"); got != "10" {
-			t.Errorf("page_size = %q, want 10", got)
-		}
+		assertSearchGamesRequest(t, r)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
 			"count": 50,
@@ -65,6 +52,26 @@ func TestSearchGames(t *testing.T) {
 	}
 	if result.Results[0].Rating != 4.42 {
 		t.Errorf("Rating = %f, want 4.42", result.Results[0].Rating)
+	}
+}
+
+// assertSearchGamesRequest checks the request parameters sent by SearchGames.
+func assertSearchGamesRequest(t *testing.T, r *http.Request) {
+	t.Helper()
+	if r.Method != http.MethodGet {
+		t.Errorf("method = %s, want GET", r.Method)
+	}
+	if got := r.URL.Query().Get("key"); got != "test-key" {
+		t.Errorf("key = %q, want test-key", got)
+	}
+	if got := r.URL.Query().Get("search"); got != "zelda" {
+		t.Errorf("search = %q, want zelda", got)
+	}
+	if got := r.URL.Query().Get("page"); got != "1" {
+		t.Errorf("page = %q, want 1", got)
+	}
+	if got := r.URL.Query().Get("page_size"); got != "10" {
+		t.Errorf("page_size = %q, want 10", got)
 	}
 }
 

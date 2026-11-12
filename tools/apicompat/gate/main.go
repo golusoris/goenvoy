@@ -365,6 +365,7 @@ var gitRepositoryVariables = [...]string{
 	"GIT_PREFIX", "GIT_REPLACE_REF_BASE", "GIT_SHALLOW_FILE", "GIT_WORK_TREE",
 }
 
+// main runs the bounded API compatibility comparison and exits with its verdict.
 func main() {
 	for _, name := range gitRepositoryVariables {
 		if err := os.Unsetenv(name); err != nil {
@@ -393,6 +394,7 @@ func run(ctx context.Context, args []string, out, errOut io.Writer) int {
 	return status
 }
 
+// runGate parses options and compares the selected repository's public API.
 func runGate(ctx context.Context, args []string, stdout, stderr *printer) (int, error) {
 	opts, err := parseOptions(args, stderr.w)
 	if err != nil {
@@ -410,6 +412,7 @@ type printer struct {
 	failed error
 }
 
+// printf writes formatted output until the first writer error.
 func (p *printer) printf(format string, args ...any) {
 	if p.failed == nil {
 		_, p.failed = fmt.Fprintf(p.w, format, args...)
@@ -487,6 +490,7 @@ func exceptionFor(entries []exception, dir string, today time.Time) (live, expir
 	return live, expired
 }
 
+// parseOptions validates the compatibility gate's command-line options.
 func parseOptions(args []string, stderr io.Writer) (options, error) {
 	flags := flag.NewFlagSet("gate", flag.ContinueOnError)
 	flags.SetOutput(stderr)
@@ -568,6 +572,7 @@ type releaseTag struct {
 	found   bool
 }
 
+// resolveRepository resolves the repository root, head and comparison base.
 func resolveRepository(ctx context.Context, opts options) (repository, error) {
 	top, err := gitCapture(ctx, opts.repo, maxRevisionBytes, "rev-parse", "--show-toplevel")
 	if err != nil {
@@ -678,10 +683,12 @@ type modulePlan struct {
 	notPublic   []module
 }
 
+// empty reports whether the plan contains any module to report.
 func (p modulePlan) empty() bool {
 	return len(p.compared)+len(p.newMajor)+len(p.added)+len(p.removed)+len(p.notPublic) == 0
 }
 
+// planModules classifies modules present at the base and head revisions.
 func planModules(ctx context.Context, repo repository) (modulePlan, error) {
 	base, err := discoverModules(ctx, repo.root, repo.base)
 	if err != nil {
@@ -764,6 +771,7 @@ func splitPublic(modules, notPublic []module) (public, skipped []module) {
 	return public, skipped
 }
 
+// containsDir reports whether the module list owns the requested directory.
 func containsDir(modules []module, dir string) bool {
 	return slices.ContainsFunc(modules, func(m module) bool { return m.dir == dir })
 }
@@ -941,10 +949,12 @@ type downloadError struct {
 	err      error
 }
 
+// Error describes a module dependency download failure and its attempts.
 func (e *downloadError) Error() string {
 	return fmt.Sprintf("download dependencies of module %s failed after %d attempts: %v", e.dir, e.attempts, e.err)
 }
 
+// Unwrap returns the underlying dependency download error.
 func (e *downloadError) Unwrap() error {
 	return e.err
 }
@@ -1513,6 +1523,7 @@ type checkerSites struct {
 	root, nested checkerSite
 }
 
+// of selects the root or nested-module comparison site.
 func (s checkerSites) of(dir string) checkerSite {
 	if dir == "." {
 		return s.root
@@ -1894,12 +1905,14 @@ func isBreakingCommit(message string) bool {
 	return len(m) > 1 && strings.TrimSpace(m[1]) != ""
 }
 
+// printModules prints the bounded set of modules in one classification.
 func printModules(stdout *printer, state string, modules []module, note string) {
 	for index := 0; index < len(modules) && index < maxModules; index++ {
 		printModule(stdout, state, modules[index], note)
 	}
 }
 
+// printModule prints a module's state, path and optional explanation.
 func printModule(stdout *printer, state string, target module, note string) {
 	if note != "" {
 		note = ": " + note
@@ -2016,6 +2029,7 @@ type boundedBuffer struct {
 	limit int
 }
 
+// Write retains bytes within the cap while consuming the complete write.
 func (b *boundedBuffer) Write(p []byte) (int, error) {
 	if room := b.limit - len(b.data); room > 0 {
 		b.data = append(b.data, p[:min(room, len(p))]...)
@@ -2023,6 +2037,7 @@ func (b *boundedBuffer) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// String returns the retained process output as text.
 func (b *boundedBuffer) String() string {
 	return string(b.data)
 }
@@ -2051,6 +2066,7 @@ type aliasReplacement struct {
 	kind    replacementKind
 }
 
+// isWordChar reports whether a byte belongs to an identifier word.
 func isWordChar(b byte) bool {
 	return b == '_' || (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
 }
@@ -2068,6 +2084,7 @@ func isGoSourceFile(name string) bool {
 	return !slices.ContainsFunc(elements, skippedDirectory)
 }
 
+// matchLeftBoundary checks the alias replacement's required left boundary.
 func matchLeftBoundary(s string, start int, kind replacementKind) bool {
 	if start == 0 {
 		return true
@@ -2083,6 +2100,7 @@ func matchLeftBoundary(s string, start int, kind replacementKind) bool {
 	}
 }
 
+// replaceAliasPattern replaces bounded occurrences of an alias with valid boundaries.
 func replaceAliasPattern(s string, r aliasReplacement) (string, bool) {
 	var sb strings.Builder
 	idx := 0
@@ -2111,6 +2129,7 @@ func replaceAliasPattern(s string, r aliasReplacement) (string, bool) {
 	return sb.String(), changed
 }
 
+// buildAliasReplacements builds qualified and local spellings of the known type aliases.
 func buildAliasReplacements(aliases []typeAlias, currentPkg string) []aliasReplacement {
 	replacements := make([]aliasReplacement, 0, len(aliases)*3)
 	for index := 0; index < len(aliases) && index < maxAliases; index++ {
@@ -2130,6 +2149,7 @@ func buildAliasReplacements(aliases []typeAlias, currentPkg string) []aliasRepla
 	return replacements
 }
 
+// replaceTypeAliases normalizes a type string through the bounded alias replacement list.
 func replaceTypeAliases(typeStr, currentPkg string, aliases []typeAlias) (string, bool) {
 	replacements := buildAliasReplacements(aliases, currentPkg)
 	res := typeStr
@@ -2144,6 +2164,7 @@ func replaceTypeAliases(typeStr, currentPkg string, aliases []typeAlias) (string
 	return res, anyChanged
 }
 
+// collectFileImports maps imported package names to their unquoted paths.
 func collectFileImports(importSpecs []*ast.ImportSpec) map[string]string {
 	imports := make(map[string]string, len(importSpecs))
 	for index := 0; index < len(importSpecs) && index < maxImports; index++ {
@@ -2163,6 +2184,7 @@ func collectFileImports(importSpecs []*ast.ImportSpec) map[string]string {
 	return imports
 }
 
+// formatTypeDecl normalizes a type declaration for comparison across package boundaries.
 func formatTypeDecl(ts *ast.TypeSpec, fileImports []*ast.ImportSpec) string {
 	imports := collectFileImports(fileImports)
 	ast.Inspect(ts, func(n ast.Node) bool {
@@ -2194,6 +2216,7 @@ func formatTypeDecl(ts *ast.TypeSpec, fileImports []*ast.ImportSpec) string {
 	return buf.String()
 }
 
+// checkCompatibleAlias recognizes a type change explained by a verified alias move.
 func checkCompatibleAlias(line, currentPkg string, identical, nonIdentical []typeAlias) (bool, string) {
 	if !strings.HasPrefix(line, "  - ") {
 		return false, ""
@@ -2229,6 +2252,7 @@ func checkCompatibleAlias(line, currentPkg string, identical, nonIdentical []typ
 	return false, ""
 }
 
+// moduleDirs returns module directories within the inventory bound.
 func moduleDirs(modules []module) []string {
 	dirs := make([]string, 0, min(len(modules), maxModules))
 	for index := 0; index < len(modules) && index < maxModules; index++ {
@@ -2237,6 +2261,7 @@ func moduleDirs(modules []module) []string {
 	return dirs
 }
 
+// ownerModuleDir finds the most specific module directory owning a file.
 func ownerModuleDir(filePath string, moduleDirs []string) string {
 	p := strings.TrimPrefix(path.Clean(filepath.ToSlash(filePath)), "/")
 	owner := "."
@@ -2254,6 +2279,7 @@ func ownerModuleDir(filePath string, moduleDirs []string) string {
 	return owner
 }
 
+// listModuleGoFiles lists tracked Go sources owned by the selected module at a revision.
 func listModuleGoFiles(ctx context.Context, root, rev string, target module, modules []module) ([]string, error) {
 	args := []string{"ls-tree", "-r", "-z", "--full-tree", "--name-only", rev}
 	if target.dir != "." && target.dir != "" {
@@ -2275,6 +2301,7 @@ func listModuleGoFiles(ctx context.Context, root, rev string, target module, mod
 	return files, nil
 }
 
+// filePackagePath derives a Go package path from its module and source path.
 func filePackagePath(modulePath, moduleDir, filePath string) string {
 	rel := filePath
 	if moduleDir != "." && moduleDir != "" {
@@ -2287,6 +2314,7 @@ func filePackagePath(modulePath, moduleDir, filePath string) string {
 	return modulePath + "/" + path.Clean(dir)
 }
 
+// resolveAliasTarget resolves an exported alias target using the file's imports.
 func resolveAliasTarget(ts *ast.TypeSpec, imports map[string]string, moduleDir, pkgPath string) (typeAlias, bool) {
 	switch expr := ts.Type.(type) {
 	case *ast.SelectorExpr:
@@ -2318,6 +2346,7 @@ func resolveAliasTarget(ts *ast.TypeSpec, imports map[string]string, moduleDir, 
 	}
 }
 
+// appendAliases collects exported type aliases from one parsed Go file.
 func appendAliases(aliases []typeAlias, f *ast.File, moduleDir, pkgPath string) []typeAlias {
 	imports := collectFileImports(f.Imports)
 	for dIdx := 0; dIdx < len(f.Decls) && dIdx < maxDecls && len(aliases) < maxAliases; dIdx++ {
@@ -2330,6 +2359,7 @@ func appendAliases(aliases []typeAlias, f *ast.File, moduleDir, pkgPath string) 
 	return aliases
 }
 
+// appendTypeSpecs appends resolvable exported aliases within the declaration bounds.
 func appendTypeSpecs(aliases []typeAlias, specs []ast.Spec, imports map[string]string, moduleDir, pkgPath string) []typeAlias {
 	for sIdx := 0; sIdx < len(specs) && sIdx < maxSpecs && len(aliases) < maxAliases; sIdx++ {
 		ts, ok := specs[sIdx].(*ast.TypeSpec)
@@ -2343,6 +2373,7 @@ func appendTypeSpecs(aliases []typeAlias, specs []ast.Spec, imports map[string]s
 	return aliases
 }
 
+// collectAliasesAtHead collects exported aliases from the head revision's modules.
 func collectAliasesAtHead(ctx context.Context, root, head string, modules []module) ([]typeAlias, error) {
 	fset := token.NewFileSet()
 	aliases := make([]typeAlias, 0, maxAliases)
@@ -2381,6 +2412,7 @@ func matchTypeSpecInGenDecl(gen *ast.GenDecl, typeName string, imports []*ast.Im
 	return "", false
 }
 
+// matchTypeDeclInFile finds and normalizes the named type declaration in one source file.
 func matchTypeDeclInFile(fset *token.FileSet, filePath string, data []byte, typeName string) (string, bool) {
 	f, err := parser.ParseFile(fset, filePath, data, parser.SkipObjectResolution)
 	if err != nil {
@@ -2420,6 +2452,7 @@ func findTypeDeclInModule(ctx context.Context, fset *token.FileSet, root, rev st
 	return "", nil
 }
 
+// findTypeDecl finds a type declaration across the bounded module inventory.
 func findTypeDecl(ctx context.Context, root, rev string, modules []module, pkgPath, typeName string) (string, error) {
 	fset := token.NewFileSet()
 	for modIndex := 0; modIndex < len(modules) && modIndex < maxModules; modIndex++ {
@@ -2434,6 +2467,7 @@ func findTypeDecl(ctx context.Context, root, rev string, modules []module, pkgPa
 	return "", nil
 }
 
+// verifyIdenticalAliases partitions aliases by structural equivalence to their base declarations.
 func verifyIdenticalAliases(ctx context.Context, root, base, head string, baseModules, headModules []module, aliases []typeAlias) ([]typeAlias, []typeAlias) {
 	var identical, nonIdentical []typeAlias
 	for index := 0; index < len(aliases) && index < maxAliases; index++ {
@@ -2449,6 +2483,7 @@ func verifyIdenticalAliases(ctx context.Context, root, base, head string, baseMo
 	return identical, nonIdentical
 }
 
+// writeFilteredSection writes the compatible and incompatible changes for a package.
 func writeFilteredSection(sb *strings.Builder, pkg string, incomp, comp []string) {
 	if len(incomp) == 0 && len(comp) == 0 {
 		return
@@ -2478,6 +2513,7 @@ const (
 	lineChange
 )
 
+// classifyLine classifies a checker output line and extracts its package name.
 func classifyLine(line string) (lineKind, string) {
 	trimmed := strings.TrimSpace(line)
 	if trimmed == "" {
@@ -2498,6 +2534,7 @@ func classifyLine(line string) (lineKind, string) {
 	return lineIgnored, ""
 }
 
+// routeChangeLine routes a change to its section after checking alias compatibility.
 func routeChangeLine(line, pkg string, inIncomp, inComp bool, id, nonId []typeAlias, incomp, comp []string) ([]string, []string) {
 	if inIncomp {
 		if ok, acc := checkCompatibleAlias(line, pkg, id, nonId); ok {
@@ -2511,6 +2548,7 @@ func routeChangeLine(line, pkg string, inIncomp, inComp bool, id, nonId []typeAl
 	return incomp, comp
 }
 
+// filterOutput reclassifies verified alias moves in the checker's package sections.
 func filterOutput(output string, identical, nonIdentical []typeAlias) (bool, string) {
 	lines := strings.Split(output, "\n")
 	var res strings.Builder
@@ -2549,6 +2587,7 @@ func filterOutput(output string, identical, nonIdentical []typeAlias) (bool, str
 	return hasIncompatible, res.String()
 }
 
+// isNestedBeneath reports whether one module directory lies strictly beneath another.
 func isNestedBeneath(subDir, parentDir string) bool {
 	p := path.Clean(filepath.ToSlash(parentDir))
 	s := path.Clean(filepath.ToSlash(subDir))
@@ -2561,6 +2600,7 @@ func isNestedBeneath(subDir, parentDir string) bool {
 	return strings.HasPrefix(s, p+"/")
 }
 
+// filterAliasesForTarget excludes aliases owned by modules nested beneath the target.
 func filterAliasesForTarget(aliases []typeAlias, target module) []typeAlias {
 	filtered := make([]typeAlias, 0, len(aliases))
 	for index := 0; index < len(aliases) && index < maxAliases; index++ {
@@ -2572,6 +2612,7 @@ func filterAliasesForTarget(aliases []typeAlias, target module) []typeAlias {
 	return filtered
 }
 
+// filterModuleOutput filters a module's checker output using verified alias equivalence.
 func filterModuleOutput(ctx context.Context, root, base, head string, target module, baseModules, headModules []module, aliases []typeAlias, rawOutput string) (bool, string, error) {
 	targetAliases := filterAliasesForTarget(aliases, target)
 	if len(targetAliases) == 0 {

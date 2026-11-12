@@ -209,11 +209,6 @@ linters:
       - path: ^arr/cleanuparr/cleanuparr_test\.go$
         linters:
           - funlen
-        text: Function 'TestApplicationStatus_StartTimeParsed'
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - funlen
         text: Function 'TestGetArrConfig_Success'
       # baseline #141
       - path: ^arr/cleanuparr/cleanuparr_test\.go$
@@ -228,38 +223,8 @@ linters:
       # baseline #141
       - path: ^arr/cleanuparr/cleanuparr_test\.go$
         linters:
-          - funlen
-        text: Function 'TestGetStrikes_Success'
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocognit
-        text: func `TestApplicationStatus_StartTimeParsed`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
           - gocognit
         text: func `TestGetArrConfig_Success`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocognit
-        text: func `TestGetGeneralConfig_Success`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocognit
-        text: func `TestGetRecentStrikes_Success`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocognit
-        text: func `TestGetSeekerConfig_Success`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocognit
-        text: func `TestGetStatus_Success`
       # baseline #141
       - path: ^arr/cleanuparr/cleanuparr_test\.go$
         linters:
@@ -269,92 +234,13 @@ linters:
       - path: ^arr/cleanuparr/cleanuparr_test\.go$
         linters:
           - gocognit
-        text: func `TestGetStrikes_Success`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocognit
-        text: func `TestNegative_Config_APIError500`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocognit
         text: func `TestNew`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestApplicationStatus_StartTimeParsed`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestClientNeverWrites`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestGetArrConfig_Success`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestGetGeneralConfig_Success`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestGetRecentStrikes_Success`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestGetSeekerConfig_Success`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestGetStatus_Success`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestGetStrikes_Success`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestNegative_APIError500`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestNegative_Config_APIError500`
-      # baseline #141
-      - path: ^arr/cleanuparr/cleanuparr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestSummarizeStrikes_Success`
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
-      - path: ^arr/client_test\.go$
-        linters:
-          - cyclop
       # baseline #141
       - path: ^arr/client_test\.go$
         linters:
           - gocognit
         text: func `TestBaseClient_Head`
-      # baseline #141
-      - path: ^arr/client_test\.go$
-        linters:
-          - gocognit
-        text: func `TestNewServiceClient`
-      # baseline #141
-      - path: ^arr/client_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestNewServiceClient`
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
+      # category C, entered 2026-11-12, expires 2026-11-22, #141
       - path: ^arr/jackett/jackett_test\.go$
         linters:
           - cyclop
@@ -403,41 +289,6 @@ linters:
         linters:
           - gocognit
         text: func `TestGetQueueWithOptions_QueryString`
-      # baseline #141
-      - path: ^arr/nzbhydra/nzbhydra_test\.go$
-        linters:
-          - gocognit
-        text: func `TestGetStats`
-      # baseline #141
-      - path: ^arr/nzbhydra/nzbhydra_test\.go$
-        linters:
-          - gocognit
-        text: func `TestSearch`
-      # baseline #141
-      - path: ^arr/nzbhydra/nzbhydra_test\.go$
-        linters:
-          - gocognit
-        text: func `TestTVSearch`
-      # baseline #141
-      - path: ^arr/nzbhydra/nzbhydra_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestGetCapabilities`
-      # baseline #141
-      - path: ^arr/nzbhydra/nzbhydra_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestGetStats`
-      # baseline #141
-      - path: ^arr/nzbhydra/nzbhydra_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestSearch`
-      # baseline #141
-      - path: ^arr/nzbhydra/nzbhydra_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestTVSearch`
       # baseline #141
       - path: ^arr/readarr/queue_options_test\.go$
         linters:
@@ -484,36 +335,6 @@ linters:
           - funlen
         text: Function 'TestUser_Name'
       # baseline #141
-      - path: ^arr/seerr/seerr_test\.go$
-        linters:
-          - gocognit
-        text: func `TestGetRadarrSettings`
-      # baseline #141
-      - path: ^arr/seerr/seerr_test\.go$
-        linters:
-          - gocognit
-        text: func `TestGetSonarrSettings`
-      # baseline #141
-      - path: ^arr/seerr/seerr_test\.go$
-        linters:
-          - gocognit
-        text: func `TestMediaRequest_DecodeProcessingFields`
-      # baseline #141
-      - path: ^arr/seerr/seerr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestGetRadarrSettings`
-      # baseline #141
-      - path: ^arr/seerr/seerr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestGetSonarrSettings`
-      # baseline #141
-      - path: ^arr/seerr/seerr_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestMediaRequest_DecodeProcessingFields`
-      # baseline #141
       - path: ^arr/seerr/server_id_test\.go$
         linters:
           - gocognit
@@ -544,91 +365,6 @@ linters:
           - funlen
         text: Function 'TestV3RemainingEndpointWrappers'
       # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - funlen
-        text: Function 'TestNeverWrites'
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - funlen
-        text: Function 'TestTake_Deluge'
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - funlen
-        text: Function 'TestTake_QBittorrent'
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - funlen
-        text: Function 'TestTake_RTorrent'
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocognit
-        text: func `TestNeverWrites`
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocognit
-        text: func `TestTake_Deluge`
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocognit
-        text: func `TestTake_NZBGet`
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocognit
-        text: func `TestTake_QBittorrent`
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocognit
-        text: func `TestTake_RTorrent`
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocognit
-        text: func `TestTake_Transmission`
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestNeverWrites`
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestTake_Deluge`
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestTake_NZBGet`
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestTake_QBittorrent`
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestTake_RTorrent`
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestTake_SABnzbd`
-      # baseline #141
-      - path: ^downloadclient/queue/queue_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestTake_Transmission`
-      # baseline #141
       - path: ^downloadclient/rtorrent/rtorrent_test\.go$
         linters:
           - gocognit
@@ -643,7 +379,7 @@ linters:
         linters:
           - gocognit
         text: func `TestSetTorrentSpeedLimits`
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
+      # category C, entered 2026-11-12, expires 2026-11-22, #141
       - path: ^metadata/anime/anidb/anidb_test\.go$
         linters:
           - cyclop
@@ -667,21 +403,7 @@ linters:
         linters:
           - gocyclo
         text: func `TestSearchByTitle`
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
-      - path: ^metadata/anime/kitsu/kitsu_test\.go$
-        linters:
-          - cyclop
-      # baseline #141
-      - path: ^metadata/anime/kitsu/kitsu_test\.go$
-        linters:
-          - gocognit
-        text: func `TestAuthenticate`
-      # baseline #141
-      - path: ^metadata/anime/kitsu/kitsu_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestAuthenticate`
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
+      # category C, entered 2026-11-12, expires 2026-11-22, #141
       - path: ^metadata/anime/mal/mal_test\.go$
         linters:
           - cyclop
@@ -715,7 +437,7 @@ linters:
         linters:
           - gocognit
         text: func `TestDoRaw`
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
+      # category C, entered 2026-11-12, expires 2026-11-22, #141
       - path: ^metadata/game/hasheous/hasheous_test\.go$
         linters:
           - cyclop
@@ -739,21 +461,7 @@ linters:
         linters:
           - funlen
         text: Function 'makeTestZip'
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
-      - path: ^metadata/game/rawg/rawg_test\.go$
-        linters:
-          - cyclop
-      # baseline #141
-      - path: ^metadata/game/rawg/rawg_test\.go$
-        linters:
-          - gocognit
-        text: func `TestSearchGames`
-      # baseline #141
-      - path: ^metadata/game/rawg/rawg_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestSearchGames`
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
+      # category C, entered 2026-11-12, expires 2026-11-22, #141
       - path: ^metadata/game/screenscraper/screenscraper_test\.go$
         linters:
           - cyclop
@@ -772,21 +480,7 @@ linters:
         linters:
           - gocyclo
         text: func `TestGetGameInfo`
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
-      - path: ^metadata/music/spotify/spotify_test\.go$
-        linters:
-          - cyclop
-      # baseline #141
-      - path: ^metadata/music/spotify/spotify_test\.go$
-        linters:
-          - gocognit
-        text: func `TestSearch`
-      # baseline #141
-      - path: ^metadata/music/spotify/spotify_test\.go$
-        linters:
-          - gocyclo
-        text: func `TestSearch`
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
+      # category C, entered 2026-11-12, expires 2026-11-22, #141
       - path: ^metadata/tracking/letterboxd/letterboxd_test\.go$
         linters:
           - cyclop
@@ -815,7 +509,7 @@ linters:
         linters:
           - gocognit
         text: func `newTestServer`
-      # category C, entered 2026-11-01, expires 2026-11-11, #141
+      # category C, entered 2026-11-12, expires 2026-11-22, #141
       - path: ^tools/go/upstreamspec/manifest_test\.go$
         linters:
           - cyclop

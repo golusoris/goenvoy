@@ -120,6 +120,7 @@ const MAX_FINDINGS = 64;
 const MAX_DIAGNOSTIC_FIELD_CHARS = 256;
 const MAX_SOURCE_PATH_BYTES = 4_096;
 
+/** Decode a Markdown destination's escapes and HTML character references. */
 function markdownDestinationString(value, markdownEscapes) {
   const decoded = markdownEscapes ? value.replace(/\\([!-/:-@[-`{-~])/gu, "$1") : value;
   const safe = decoded.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
@@ -127,6 +128,7 @@ function markdownDestinationString(value, markdownEscapes) {
   return fragment.childNodes?.[0]?.childNodes?.map((node) => node.value ?? "").join("") ?? decoded;
 }
 
+/** Normalize URL input whitespace before resolving destinations. */
 function preprocessURLInput(value) {
   let start = 0;
   let end = value.length;
@@ -146,6 +148,7 @@ function preprocessURLInput(value) {
   return result;
 }
 
+/** Decode percent-encoded ASCII while preserving other octets. */
 function decodeASCIITriplets(value) {
   let result = "";
   for (let position = 0; position < value.length; position += 1) {
@@ -163,12 +166,14 @@ function decodeASCIITriplets(value) {
   return result;
 }
 
+/** Construct the synthetic repository URL of a source path. */
 function sourceURL(source) {
   const portable = source.replaceAll("\\", "/");
   const segments = portable.split("/").filter(Boolean).map((segment) => encodeURIComponent(segment));
   return new URL(SYNTHETIC_REPOSITORY_PATH + segments.join("/"), SYNTHETIC_ORIGIN);
 }
 
+/** Locate forbidden scratch roots in a normalized destination path. */
 function scratchResolution(pathname, anywhere) {
   const portable = path.posix.normalize(decodeASCIITriplets(pathname).replaceAll("\\", "/"));
   const parts = portable.split("/").filter(Boolean);
@@ -180,6 +185,7 @@ function scratchResolution(pathname, anywhere) {
   return { root, resolved: portable.replace(/^\/+/, "") };
 }
 
+/** Resolve a destination and return any forbidden scratch location. */
 function resolveURLDestination(source, value) {
   let candidate = preprocessURLInput(value);
   if (candidate === "") {
@@ -209,6 +215,7 @@ function resolveURLDestination(source, value) {
   return candidate.startsWith("/") ? scratchResolution(pathname, true) : null;
 }
 
+/** Check destination interpretations appropriate to Markdown or HTML. */
 function forbiddenResolution(source, destination, context) {
   const candidates = context === "markdown"
     ? [markdownDestinationString(destination, true), markdownDestinationString(destination, false)]
@@ -228,11 +235,13 @@ function forbiddenResolution(source, destination, context) {
   return null;
 }
 
+/** Recognize HTML whitespace characters. */
 function isHTMLSpace(character) {
   return character === "\t" || character === "\n" || character === "\f" ||
     character === "\r" || character === " ";
 }
 
+/** Validate parser limits and fill in unspecified bounds. */
 function parserBounds(overrides = {}) {
   const bounds = {
     maxHTMLNodes: overrides.maxHTMLNodes ?? MAX_HTML_NODES,
@@ -252,10 +261,12 @@ function parserBounds(overrides = {}) {
   return bounds;
 }
 
+/** Initialize shared counters and validated HTML and CSS bounds. */
 function createHTMLState(overrides = {}) {
   return { bounds: parserBounds(overrides), nodes: 0, cssTokens: 0 };
 }
 
+/** Charge a CSS token and refuse an exhausted parser budget. */
 function spendCSSToken(state) {
   if (state.cssTokens >= state.bounds.maxCSSTokens) {
     throw new Error(`embedded CSS exceeds ${state.bounds.maxCSSTokens} tokens`);
@@ -263,10 +274,12 @@ function spendCSSToken(state) {
   state.cssTokens += 1;
 }
 
+/** Recognize a hexadecimal digit used in a CSS escape. */
 function isCSSHex(character) {
   return character !== undefined && /[0-9A-Fa-f]/u.test(character);
 }
 
+/** Decode a CSS escape and return the next input position. */
 function consumeCSSEscape(value, position) {
   let cursor = position + 1;
   if (cursor >= value.length) {
@@ -295,6 +308,7 @@ function consumeCSSEscape(value, position) {
   return { decoded, position: cursor };
 }
 
+/** Recognize characters allowed in a CSS name. */
 function isCSSName(character) {
   if (character === undefined) {
     return false;
@@ -302,6 +316,7 @@ function isCSSName(character) {
   return /[A-Za-z0-9_-]/u.test(character) || character.codePointAt(0) >= 0x80;
 }
 
+/** Read and decode a CSS name, including escapes. */
 function consumeCSSName(value, position) {
   let decoded = "";
   let cursor = position;
@@ -320,6 +335,7 @@ function consumeCSSName(value, position) {
   return { decoded, position: cursor };
 }
 
+/** Advance past a CSS comment or the end of input. */
 function consumeCSSComment(value, position) {
   let cursor = position + 2;
   while (cursor < value.length && !(value[cursor] === "*" && value[cursor + 1] === "/")) {
@@ -328,6 +344,7 @@ function consumeCSSComment(value, position) {
   return cursor < value.length ? cursor + 2 : cursor;
 }
 
+/** Decode a quoted CSS string and record whether it closed. */
 function consumeCSSString(value, position) {
   const quote = value[position];
   let cursor = position + 1;
@@ -348,6 +365,7 @@ function consumeCSSString(value, position) {
   return { decoded, position: cursor < value.length ? cursor + 1 : cursor, valid: cursor < value.length };
 }
 
+/** Advance past CSS whitespace and budgeted comments. */
 function skipCSSSpaceAndComments(value, position, state) {
   let cursor = position;
   while (cursor < value.length) {
@@ -363,6 +381,7 @@ function skipCSSSpaceAndComments(value, position, state) {
   return cursor;
 }
 
+/** Read a quoted or unquoted CSS URL token. */
 function consumeCSSURL(value, position, state) {
   let cursor = skipCSSSpaceAndComments(value, position, state);
   if (value[cursor] === "\"" || value[cursor] === "'") {
@@ -392,6 +411,7 @@ function consumeCSSURL(value, position, state) {
   return { destination: decoded, position: value[cursor] === ")" ? cursor + 1 : cursor };
 }
 
+/** Collect CSS URL destinations within the shared parser limits. */
 function cssDestinations(value, line, state, allowImport = false) {
   const scan = { value, line, state, allowImport, found: [], imageSetDepths: new Set(), depth: 0 };
   let position = 0;
@@ -502,6 +522,7 @@ function cssBracket(scan, character) {
   }
 }
 
+/** Read the bounded URL candidates of an HTML srcset value. */
 function srcsetDestinations(value) {
   const found = [];
   let position = 0;
@@ -533,6 +554,7 @@ function srcsetDestinations(value) {
   return found;
 }
 
+/** Read a bounded list of whitespace-separated destinations. */
 function spaceSeparatedDestinations(value, limit) {
   const found = [];
   let position = 0;
@@ -554,6 +576,7 @@ function spaceSeparatedDestinations(value, limit) {
   return found;
 }
 
+/** Select the destination grammar for an HTML URL attribute. */
 function htmlAttributeDestinations(name, value, limit) {
   if (HTML_SRCSET_ATTRIBUTES.has(name)) {
     return srcsetDestinations(value);
@@ -564,6 +587,7 @@ function htmlAttributeDestinations(name, value, limit) {
   return [value];
 }
 
+/** Append a located destination while enforcing the finding limit. */
 function appendHTMLDestination(found, destination, line, limit, context = "html") {
   if (found.length >= limit) {
     throw new Error(`embedded HTML destinations exceed ${limit}`);
@@ -571,12 +595,14 @@ function appendHTMLDestination(found, destination, line, limit, context = "html"
   found.push({ destination, line, context });
 }
 
+/** Refuse an unevaluated JSX expression in a URL attribute. */
 function rejectJSXURLExpression(name, value) {
   if (value.trimStart().startsWith("{")) {
     throw new Error(`unsupported JSX expression in URL attribute ${name}`);
   }
 }
 
+/** Find a named attribute within the HTML node's attribute bound. */
 function nodeAttribute(node, name) {
   const attributes = node?.attrs ?? [];
   if (attributes.length > MAX_HTML_NODES) {
@@ -590,6 +616,7 @@ function nodeAttribute(node, name) {
   return null;
 }
 
+/** Return the first input position after HTML whitespace. */
 function skipHTMLSpace(value, position) {
   let cursor = position;
   while (cursor < value.length && isHTMLSpace(value[cursor])) {
@@ -598,10 +625,12 @@ function skipHTMLSpace(value, position) {
   return cursor;
 }
 
+/** Recognize a decimal ASCII digit. */
 function isASCIIDigit(character) {
   return character !== undefined && character >= "0" && character <= "9";
 }
 
+/** Extract the URL from a valid meta refresh content value. */
 function metaRefreshDestination(value) {
   let position = skipHTMLSpace(value, 0);
   const timeStart = position;
@@ -651,6 +680,7 @@ function metaRefreshDestination(value) {
   return value.slice(position);
 }
 
+/** Collect URL and CSS destinations from an HTML node's attributes. */
 function collectHTMLAttributes(node, startLine, state, found, limit, mdxJSX) {
   const locations = node?.sourceCodeLocation?.attrs ?? {};
   const attributes = node?.attrs ?? [];
@@ -685,6 +715,7 @@ function collectHTMLAttributes(node, startLine, state, found, limit, mdxJSX) {
   }
 }
 
+/** Collect the destination of an HTML meta refresh element. */
 function collectMetaRefresh(node, startLine, found, limit) {
   if (node?.tagName?.toLowerCase() !== "meta") {
     return;
@@ -703,6 +734,7 @@ function collectMetaRefresh(node, startLine, found, limit) {
   appendHTMLDestination(found, destination, startLine + (location?.startLine ?? 1) - 1, limit);
 }
 
+/** Collect CSS destinations from an HTML style element. */
 function collectStyleElement(node, startLine, state, found, limit) {
   if (node?.tagName?.toLowerCase() !== "style") {
     return;
@@ -780,6 +812,7 @@ function collectHTMLNode(frame, state, found, limit, mdxJSX) {
   return nested;
 }
 
+/** Collect embedded HTML destinations using shared parser budgets. */
 function htmlDestinations(fragment, startLine, limit = MAX_EVENTS, options = {}, sharedState = null) {
   const state = sharedState ?? createHTMLState(options);
   const found = [];
@@ -787,21 +820,25 @@ function htmlDestinations(fragment, startLine, limit = MAX_EVENTS, options = {},
   return found;
 }
 
+/** Recognize MDX sources, including template paths. */
 function isMDXSource(source) {
   const lower = source.toLowerCase();
   return lower.endsWith(".mdx") || lower.endsWith(".mdx.tmpl");
 }
 
+/** Recognize HTML attribute names that may contain URLs. */
 function isURLAttributeName(name) {
   return HTML_URL_ATTRIBUTES.has(name) || HTML_SRCSET_ATTRIBUTES.has(name) ||
     HTML_CSS_URL_ATTRIBUTES.has(name) || name === "style";
 }
 
+/** Recognize MDX property names requiring static URL analysis. */
 function isMDXExpressionURLProperty(name) {
   return isURLAttributeName(name) || MDX_EXPRESSION_URL_PROPERTIES.has(name) ||
     name.endsWith("href") || name.endsWith("src") || name.endsWith("url") || name.endsWith("path");
 }
 
+/** Collect a parsed MDX JSX attribute's static URL destinations. */
 function collectMDXJSXAttribute(markdown, token, found, limit, expressions) {
   const attribute = markdown.slice(token.start.offset, token.end.offset);
   const equals = attribute.indexOf("=");
@@ -834,6 +871,7 @@ function collectMDXJSXAttribute(markdown, token, found, limit, expressions) {
   }
 }
 
+/** Extract a single static string from an MDX expression tree. */
 function staticMDXString(estree) {
   const body = estree?.type === "Program" ? estree.body : null;
   if (!Array.isArray(body) || body.length !== 1 || body[0]?.type !== "ExpressionStatement") {
@@ -850,6 +888,7 @@ function staticMDXString(estree) {
   return null;
 }
 
+/** Collect URLs from a static MDX property value. */
 function appendMDXPropertyValue(name, value, line, state, found, limit) {
   if (HTML_URL_ATTRIBUTES.has(name) || HTML_SRCSET_ATTRIBUTES.has(name)) {
     const destinations = htmlAttributeDestinations(name, value, limit - found.length);
@@ -866,6 +905,7 @@ function appendMDXPropertyValue(name, value, line, state, found, limit) {
   }
 }
 
+/** Collect static property URLs and refuse unsupported URL expressions. */
 function collectMDXPropertyExpression(token, property, state, found, limit) {
   const value = staticMDXString(token.estree);
   if (value !== null) {
@@ -877,6 +917,7 @@ function collectMDXPropertyExpression(token, property, state, found, limit) {
   }
 }
 
+/** Queue an expression node within the pending-node bound. */
 function appendESTreeNode(pending, node, depth) {
   if (node === null || typeof node !== "object") {
     return;
@@ -887,6 +928,7 @@ function appendESTreeNode(pending, node, depth) {
   pending.push({ node, depth });
 }
 
+/** Walk a bounded MDX expression tree for URL destinations. */
 function collectMDXESTree(token, found, limit) {
   if (token.estree === null || typeof token.estree !== "object") {
     throw new Error(`${token.type} lacks a parsed MDX syntax tree`);
@@ -938,6 +980,7 @@ function collectMDXESTree(token, found, limit) {
   }
 }
 
+/** Report whether an odd backslash run escapes the current character. */
 function isEscaped(value, position) {
   let slashes = 0;
   let cursor = position - 1;
@@ -948,6 +991,7 @@ function isEscaped(value, position) {
   return slashes % 2 === 1;
 }
 
+/** Find an attribute list's closing brace outside quoted values. */
 function attributeListEnd(value, position, end) {
   let quote = "";
   for (let cursor = position; cursor < end; cursor += 1) {
@@ -964,6 +1008,7 @@ function attributeListEnd(value, position, end) {
   return -1;
 }
 
+/** Decode an attribute-list value and collect its URL destinations. */
 function appendAttributeValue(name, value, line, state, found, limit) {
   const decoded = markdownDestinationString(value, true);
   if (HTML_URL_ATTRIBUTES.has(name) || HTML_SRCSET_ATTRIBUTES.has(name)) {
@@ -979,6 +1024,7 @@ function appendAttributeValue(name, value, line, state, found, limit) {
   }
 }
 
+/** Collect destinations from one Markdown attribute-list body. */
 function collectAttributeListBody(value, start, end, line, state, found, limit) {
   let position = start;
   if (value[position] === ":") {
@@ -1025,6 +1071,7 @@ function collectAttributeListBody(value, start, end, line, state, found, limit) 
   }
 }
 
+/** Scan a bounded Markdown range for attribute-list destinations. */
 function collectAttributeLists(markdown, start, end, startLine, state, found, limit) {
   let position = start;
   let line = startLine;
@@ -1049,10 +1096,12 @@ function collectAttributeLists(markdown, start, end, startLine, state, found, li
   }
 }
 
+/** Derive the Markdown parser event bound from input bytes. */
 function parseEventLimit(markdown) {
   return Math.max(MAX_EVENTS, Buffer.byteLength(markdown) * MAX_EVENTS_PER_BYTE);
 }
 
+/** Extract destinations from supported fenced snippet forms. */
 function snippetDestinations(markdown, limit, maxLines) {
   const lines = markdown.split("\n");
   if (lines.length > maxLines) {
@@ -1085,6 +1134,7 @@ function snippetDestinations(markdown, limit, maxLines) {
   return found;
 }
 
+/** Find forbidden scratch destinations across Markdown and embedded syntax. */
 export function findPrivateScratchLinks(source, markdown, limit = MAX_FINDINGS + 1) {
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_FINDINGS + 1) {
     throw new Error(`finding limit must be between 1 and ${MAX_FINDINGS + 1}`);
@@ -1176,11 +1226,13 @@ function forbiddenFindings(source, destinations, limit) {
   return findings;
 }
 
+/** Truncate a diagnostic field to the configured character budget. */
 function boundedField(value) {
   return value.length <= MAX_DIAGNOSTIC_FIELD_CHARS ? value :
     `${value.slice(0, MAX_DIAGNOSTIC_FIELD_CHARS)}…(${value.length} chars)`;
 }
 
+/** Format one located private scratch link as a bounded diagnostic. */
 function diagnostic(finding) {
   return `${finding.source}:${finding.line}: error PRAETOR-MD001 private scratch link ` +
     `destination=${JSON.stringify(boundedField(finding.original))} ` +
@@ -1188,6 +1240,7 @@ function diagnostic(finding) {
     `forbidden_root=${JSON.stringify(finding.root)}`;
 }
 
+/** Select the remaining findings and preserve the first omitted result. */
 function capFindings(findings, remaining) {
   return {
     emitted: findings.slice(0, remaining),
@@ -1195,6 +1248,7 @@ function capFindings(findings, remaining) {
   };
 }
 
+/** Replay private-link parser fixtures and bound checks. */
 function selfTest() {
   selfTestClean();
   selfTestMDXClean();
@@ -1514,6 +1568,7 @@ function selfTestInvocation() {
   process.stdout.write("private-scratch-link fixtures: positive, negative, boundary pass\n");
 }
 
+/** Validate the bounded inventory and each relative source path. */
 function validateFileList(files) {
   if (!Array.isArray(files)) {
     throw new Error("inventory must be a JSON array");
@@ -1547,6 +1602,7 @@ function readBoundedSource(root, source) {
   }
 }
 
+/** Serve scan requests in the worker and report parser failures. */
 function serveScans(root) {
   parentPort.on("message", (request) => {
     try {
@@ -1558,6 +1614,7 @@ function serveScans(root) {
   });
 }
 
+/** Describe a worker failure, identifying heap exhaustion explicitly. */
 function workerFailure(source, error, bounds) {
   if (error?.code === "ERR_WORKER_OUT_OF_MEMORY") {
     return new Error(`${source}: Markdown parse exceeds the ${bounds.heapBudgetMb} MiB parse memory budget`);
@@ -1574,6 +1631,7 @@ class ScanWorker {
   #stopFailure = Promise.resolve(null);
   #worker;
 
+  /** Start a scan worker with the configured memory limits. */
   constructor(root, bounds) {
     this.#bounds = bounds;
     this.#worker = new Worker(new URL(import.meta.url), {
@@ -1595,6 +1653,7 @@ class ScanWorker {
     });
   }
 
+  /** Submit one scan request under the worker's lifecycle and deadline rules. */
   scan(source, limit) {
     if (this.#retired) {
       return Promise.reject(new Error(`${source}: scan worker has stopped`));
@@ -1634,6 +1693,7 @@ class ScanWorker {
     }
   }
 
+  /** Terminate the worker and report any deadline shutdown failure. */
   async close() {
     const stopFailure = await this.#stopFailure;
     await this.#worker.terminate();
@@ -1643,6 +1703,7 @@ class ScanWorker {
   }
 }
 
+/** Run an action with a scan worker and always terminate it. */
 async function withScanWorker(root, bounds, action) {
   const scanner = new ScanWorker(root, bounds);
   try {
@@ -1652,6 +1713,7 @@ async function withScanWorker(root, bounds, action) {
   }
 }
 
+/** Scan the bounded file list and emit capped sorted diagnostics. */
 async function reportFindings(files, scanner) {
   let emitted = 0;
   for (let index = 0; index < files.length && index < MAX_FILES; index += 1) {
@@ -1673,12 +1735,14 @@ async function reportFindings(files, scanner) {
   return emitted === 0 ? 0 : 1;
 }
 
+/** Load a validated inventory and scan it through a bounded worker. */
 function runFileList(root, inventoryPath, bounds = SCAN_BOUNDS) {
   const files = JSON.parse(fs.readFileSync(inventoryPath, "utf8"));
   validateFileList(files);
   return withScanWorker(root, bounds, (scanner) => reportFindings(files, scanner));
 }
 
+/** Create Markdown exactly at the file-size ceiling with a chosen tail. */
 function ceilingFixture(tail) {
   const bullet = "- Lorem ipsum dolor sit amet, [consectetur](https://example.invalid/x) `adipiscing` elit.\n";
   const count = Math.floor((MAX_FILE_BYTES - tail.length - 16) / bullet.length);
@@ -1686,6 +1750,7 @@ function ceilingFixture(tail) {
   return { markdown: `# ${"a".repeat(headingBytes - 4)}\n\n${bullet.repeat(count)}${tail}`, line: count + 3 };
 }
 
+/** Write a source fixture and its parent directories. */
 function writeScanFixture(root, source, markdown) {
   fs.mkdirSync(path.dirname(path.join(root, source)), { recursive: true });
   fs.writeFileSync(path.join(root, source), markdown);
@@ -1737,6 +1802,7 @@ async function scanWorkerSelfTest(root) {
     "budget and deadline failures name the file, one byte past the ceiling refused\n");
 }
 
+/** Replay parser and worker fixtures and clean up their temporary tree. */
 async function runSelfTests() {
   selfTest();
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "praetor-scratch-scan-"));
@@ -1762,6 +1828,7 @@ export function invokedAsScript(scriptPath, modulePath) {
   }
 }
 
+/** Dispatch worker, fixture and inventory-scanning entry modes. */
 async function main() {
   if (!isMainThread) {
     if (workerData?.role === SCAN_WORKER_ROLE) {
