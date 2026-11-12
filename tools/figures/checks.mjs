@@ -312,6 +312,7 @@ export function declaredHooks(text) {
   return [];
 }
 
+/** Collect the hook list following a configuration block. */
 function blockHooks(following) {
   const hooks = [];
   for (const nested of following) {
@@ -697,6 +698,7 @@ function decodeAttribute(value) {
   });
 }
 
+/** Decode a matched HTML attribute value, preserving absent values. */
 function attributeValue(match) {
   if (!match[2]) return null;
   const raw = match[3];
@@ -714,6 +716,7 @@ function tagEnd(html, at) {
 /** The URL attribute of each image element inside a figure. */
 const IMAGE_URL = { img: 'src', source: 'srcset' };
 
+/** Record diagram, script and figure information from an opening tag. */
 function handleStart(scan, tag, attributes) {
   const classes = words(attributes.get('class') ?? '');
   if (tag === 'pre' && classes.includes('mermaid')) scan.mermaid += 1;
@@ -723,6 +726,7 @@ function handleStart(scan, tag, attributes) {
   else if (scan.depth && Object.hasOwn(IMAGE_URL, tag)) scan.figures.at(-1).urls.push(attributes.get(IMAGE_URL[tag]) || '');
 }
 
+/** Track nested figures and collect the next managed figure's URLs. */
 function figureStart(scan, attributes, classes) {
   if (scan.depth) scan.depth += 1;
   else if (classes.includes('praetor-figure') && attributes.get('data-figure') && scan.figures.length < MAX_FIGURES) {
@@ -731,6 +735,7 @@ function figureStart(scan, attributes, classes) {
   }
 }
 
+/** Close one level of tracked figure nesting. */
 function handleEnd(scan, tag) {
   if (tag === 'figure' && scan.depth) scan.depth -= 1;
 }
@@ -757,6 +762,7 @@ function startTag(html, at, scan) {
   return { next: end, raw: rest === '>' && RAW_TEXT.has(tag) ? tag : null };
 }
 
+/** Locate the position after a delimiter, or report that it is absent. */
 const after = (html, text, from) => {
   const found = html.indexOf(text, from);
   return found < 0 ? -1 : found + text.length;
@@ -773,6 +779,7 @@ function endTag(html, at, scan) {
   return end;
 }
 
+/** Find the end of an HTML comment, including abrupt endings. */
 function commentEnd(html, at) {
   COMMENT_ABRUPT.lastIndex = at + 4;
   let match = COMMENT_ABRUPT.exec(html);
@@ -783,6 +790,7 @@ function commentEnd(html, at) {
   return match ? match.index + match[0].length : -1;
 }
 
+/** Find the end of a CDATA section, doctype or other declaration. */
 function declarationEnd(html, at) {
   if (html.startsWith('<![CDATA[', at)) return after(html, ']]>', at + 9);
   if (html.slice(at, at + 9).toLowerCase() === '<!doctype') return after(html, '>', at + 9);
@@ -924,6 +932,7 @@ function loaderErrors(page, output, built, scripts) {
   return [`${page}: loads ${loader}, but no ${PLAYER} sits beside it for the loader to import`];
 }
 
+/** Report a mismatch between expected and rendered Mermaid diagrams. */
 function mermaidError(page, output, expected, scanned) {
   if (scanned.mermaid === expected) return [];
   return [`${page}: ${expected} mermaid block(s), ${scanned.mermaid} rendered as diagrams in ${output}; ` +

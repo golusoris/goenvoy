@@ -139,12 +139,14 @@ const STYLE_EXCLUDED_PREFIXES = [
 ];
 
 class GateFailure extends Error {
+  /** Create a gate failure carrying its process exit status. */
   constructor(message, status = 2) {
     super(message);
     this.status = status;
   }
 }
 
+/** Refuse the gate with a diagnostic and explicit exit status. */
 function fail(message, status = 2) {
   throw new GateFailure(message, status);
 }
@@ -178,6 +180,7 @@ function timeoutMessage(commandName, limit) {
     `${commandName} exceeded ${limit.ms} ms`;
 }
 
+/** Select diagnostic text within byte and line budgets. */
 function boundedOutput(value, maxBytes, maxLines) {
   let cursor = 0;
   let bytes = 0;
@@ -199,6 +202,7 @@ function boundedOutput(value, maxBytes, maxLines) {
   return { output, bytes, lines, truncated: cursor < value.length };
 }
 
+/** Reserve diagnostic capacity for the truncation marker. */
 function outputBudget() {
   return {
     bytes: MAX_DIAGNOSTIC_OUTPUT_BYTES - TRUNCATION_MARKER_BYTES,
@@ -207,6 +211,7 @@ function outputBudget() {
   };
 }
 
+/** Write diagnostics within a shared budget and emit truncation once. */
 function emitBounded(value, stream, budget, label) {
   if (!value || budget.truncated) {
     return budget.truncated;
@@ -258,6 +263,7 @@ function command(commandName, args, options = {}) {
   return result;
 }
 
+/** Resolve the current Git worktree root to its real filesystem path. */
 function repositoryRoot() {
   const result = command("git", ["rev-parse", "--show-toplevel"], { maxBuffer: MAX_GIT_OUTPUT_BYTES });
   const root = result.stdout.trim();
@@ -274,6 +280,7 @@ function loadDependency(temporary, name) {
   return createRequire(path.join(temporary, "package.json"))(name);
 }
 
+/** Recognize plain objects accepted as configuration mappings. */
 function isMapping(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     return false;
@@ -282,6 +289,7 @@ function isMapping(value) {
   return prototype === Object.prototype || prototype === null;
 }
 
+/** Read a bounded regular manifest, distinguishing an absent path. */
 function readManifestText(root) {
   const full = path.join(root, MANIFEST_FILE);
   let descriptor;
@@ -312,6 +320,7 @@ function readManifestText(root) {
   }
 }
 
+/** Parse one manifest document and return its documentation settings. */
 function documentationBlock(yaml, text) {
   let documents;
   try {
@@ -550,6 +559,7 @@ function classRanges(body, start) {
   return ranges;
 }
 
+/** Format a character range for a glob character class. */
 function rangeText([low, high]) {
   return `${String.fromCharCode(low)}-${String.fromCharCode(high)}`;
 }
@@ -582,6 +592,7 @@ function classToken(body) {
   return { type: "class", negated, ranges, literal };
 }
 
+/** Convert text into literal glob tokens. */
 function literalTokens(text) {
   return Array.from({ length: text.length }, (_, index) => ({ type: "literal", code: text.charCodeAt(index) }));
 }
@@ -718,6 +729,7 @@ function parseStyleExclusion(pattern) {
   return { segments };
 }
 
+/** Match one character code against a compiled glob token. */
 function tokenMatches(token, code) {
   if (token.type === "any") {
     return true;
@@ -801,6 +813,7 @@ function styleExclusionMatcher(pattern, platform) {
   };
 }
 
+/** Validate bounded documentation style exclusion globs. */
 function styleExclusions(value) {
   if (value === undefined) {
     return [];
@@ -825,6 +838,7 @@ function styleExclusions(value) {
   return [...value];
 }
 
+/** Validate declared documentation settings and apply defaults. */
 function documentationSettings(block) {
   if (block === null || block === undefined) {
     return DEFAULT_SETTINGS;
@@ -847,6 +861,7 @@ function documentationSettings(block) {
   });
 }
 
+/** Load the repository's documentation settings or their defaults. */
 function repositorySettings(root, yaml) {
   const text = readManifestText(root);
   return text === null ? DEFAULT_SETTINGS : documentationSettings(documentationBlock(yaml, text));
@@ -857,6 +872,7 @@ function boundHint(key, value, ceiling) {
   return value < ceiling ? `; documentation.${key} in ${MANIFEST_FILE} raises it up to ${ceiling}` : "";
 }
 
+/** Refuse a Markdown inventory above its configured file limit. */
 function checkFileCount(count, settings) {
   if (count > settings.maxFiles) {
     fail(`Markdown inventory has ${count} files; maximum is ${settings.maxFiles}` +
@@ -864,6 +880,7 @@ function checkFileCount(count, settings) {
   }
 }
 
+/** Refuse a Markdown source above its configured byte limit. */
 function checkFileSize(relative, size, settings) {
   if (size > settings.maxFileBytes) {
     fail(`${relative} is ${size} bytes; per-file maximum is ${settings.maxFileBytes}` +
@@ -871,11 +888,13 @@ function checkFileSize(relative, size, settings) {
   }
 }
 
+/** Report whether a resolved target escapes its base directory. */
 function escapesDirectory(base, target) {
   const confined = path.relative(base, target);
   return confined === ".." || confined.startsWith(`..${path.sep}`) || path.isAbsolute(confined);
 }
 
+/** Select public Markdown paths eligible for style linting. */
 function isStyleSelected(relative) {
   const normalized = relative.replaceAll("\\", "/");
   const lower = normalized.toLowerCase();
@@ -923,6 +942,7 @@ function styleSelection(files, settings, platform) {
   return { styled, excluded: eligible - styled.length, counts };
 }
 
+/** Report declared bounds and style exclusion counts. */
 function reportSettings(settings, selection) {
   if (!settings.declared) {
     return;
@@ -937,6 +957,7 @@ function reportSettings(settings, selection) {
   }
 }
 
+/** Summarize style coverage and private-link inventory coverage. */
 function summaryLine(settings, selection, scratchCount) {
   const excluded = settings.styleExclude.length > 0 ?
     ` (${selection.excluded} excluded by documentation.style_exclude)` : "";
@@ -944,6 +965,7 @@ function summaryLine(settings, selection, scratchCount) {
     `checked ${scratchCount} tracked/non-ignored Markdown files for private links\n`;
 }
 
+/** Parse bounded Git index records for tracked symbolic links. */
 function parseTrackedSymlinkRecords(records) {
   if (records.length > MAX_TRACKED_ENTRIES) {
     fail(`tracked inventory has ${records.length} entries; maximum is ${MAX_TRACKED_ENTRIES}`);
@@ -972,6 +994,7 @@ function parseTrackedSymlinkRecords(records) {
   return symlinks;
 }
 
+/** Read tracked symbolic links from the Git index. */
 function trackedSymlinkRecords(root) {
   const result = command("git", ["ls-files", "-z", "--stage"], {
     cwd: root,
@@ -980,6 +1003,7 @@ function trackedSymlinkRecords(root) {
   return parseTrackedSymlinkRecords(result.stdout.split("\0").filter(Boolean));
 }
 
+/** Read indexed link targets through a bounded Git object batch. */
 function readSymlinkTargets(root, records) {
   const objectIDs = [...new Set(records.map((record) => record.oid))];
   if (objectIDs.length === 0) {
@@ -1026,6 +1050,7 @@ function readSymlinkTargets(root, records) {
   return targets;
 }
 
+/** Locate a private scratch component in a normalized link target. */
 function privateScratchRoot(target) {
   if (Buffer.byteLength(target) > MAX_SYMLINK_TARGET_BYTES || /[\0\r\n]/u.test(target)) {
     fail("tracked symlink has an unsafe or oversized target");
@@ -1035,6 +1060,7 @@ function privateScratchRoot(target) {
   return parts.map((part) => part.toLowerCase()).find((part) => SCRATCH_ROOTS.has(part)) ?? null;
 }
 
+/** Refuse indexed symbolic links targeting private scratch paths. */
 function auditTrackedSymlinkTargets(root) {
   const records = trackedSymlinkRecords(root);
   const targets = readSymlinkTargets(root, records);
@@ -1050,6 +1076,7 @@ function auditTrackedSymlinkTargets(root) {
   }
 }
 
+/** Build the bounded Markdown inventory after auditing tracked link targets. */
 function inventory(root, settings = DEFAULT_SETTINGS) {
   auditTrackedSymlinkTargets(root);
   const result = command("git", [
@@ -1103,6 +1130,7 @@ function npmInvocation(platform, execPath, args) {
   return { file: execPath, args: [cli, ...args] };
 }
 
+/** Install the locked documentation tools into an isolated directory. */
 function install(toolDir, temporary) {
   for (let index = 0; index < TOOL_FILES.length; index += 1) {
     fs.copyFileSync(path.join(toolDir, TOOL_FILES[index]), path.join(temporary, TOOL_FILES[index]));
@@ -1114,6 +1142,7 @@ function install(toolDir, temporary) {
   });
 }
 
+/** Verify portable npm invocation and refusal of a missing Windows CLI. */
 function npmInvocationSelfTest(temporary) {
   const nodeDir = path.join(temporary, "node distribution");
   const execPath = path.join(nodeDir, "node.exe");
@@ -1134,15 +1163,18 @@ function npmInvocationSelfTest(temporary) {
     "missing CLI fails closed\n");
 }
 
+/** Recognize platform errors that prevent filesystem link fixtures. */
 function filesystemSymlinkUnavailable(error) {
   return FILESYSTEM_SYMLINK_UNAVAILABLE.has(error?.code);
 }
 
+/** Explain skipped filesystem link coverage and its indexed alternative. */
 function filesystemSymlinkSkipDiagnostic(platform, code) {
   return `Markdown filesystem symlink fixture skipped on ${platform}: ${code}; ` +
     "alternate coverage: Git-index 120000 symlink target fixture\n";
 }
 
+/** Verify Markdown inventory selection, symlinks and inventory bounds. */
 function inventorySelfTest(temporary) {
   const fixture = writeInventoryFixture(temporary);
   const allFiles = inventory(fs.realpathSync(fixture));
@@ -1294,10 +1326,12 @@ function styleSelectionSelfTest(fixture, temporary, allFiles) {
   process.stdout.write("Markdown style fixtures: valid, malformed, generated/vendor exclusions, inventory bounds pass\n");
 }
 
+/** Parse and validate documentation settings from manifest text. */
 function settingsFrom(yaml, text) {
   return documentationSettings(documentationBlock(yaml, text));
 }
 
+/** Render fixture globs as documentation style exclusions. */
 function globList(globs) {
   return `documentation:\n  style_exclude:\n${globs.map((glob) => `    - ${JSON.stringify(glob)}\n`).join("")}`;
 }
@@ -1356,6 +1390,7 @@ function settingsSelfTest(temporary) {
   process.stdout.write("documentation settings fixtures: defaults, declared, ranges, globs, manifest bounds pass\n");
 }
 
+/** Verify manifest file bounds and refusal of nonregular sources. */
 function manifestFileSelfTest(temporary, yaml) {
   const root = path.join(temporary, "settings-fixture");
   const manifest = path.join(root, MANIFEST_FILE);
@@ -1388,6 +1423,7 @@ function manifestFileSelfTest(temporary, yaml) {
   assert.throws(() => repositorySettings(root, yaml), /refusing non-regular manifest \.standards\.yaml/u);
 }
 
+/** Create parent directories and write the named fixture files. */
 function writeFixtureFiles(root, files) {
   for (const [relative, text] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
@@ -1578,6 +1614,7 @@ const MATH_EXPECTED = Object.freeze([
   "docs/plain.md:3:12 error MD037/no-space-in-emphasis Spaces inside emphasis markers [Context: \"y *\"]",
   "docs/plain.md:5:5 error MD037/no-space-in-emphasis Spaces inside emphasis markers [Context: \"y *\"]",
 ]);
+/** Verify Markdown math handling and expected style diagnostics. */
 function mathSelfTest(temporary) {
   const fixture = path.join(temporary, "math-fixture");
   writeFixtureFiles(fixture, MATH_FIXTURES);
@@ -1599,6 +1636,7 @@ function mathSelfTest(temporary) {
 // the ceiling, of linked and code-spanned bullets, lints clean in a lint child capped at
 // LINT_MEMORY_HEAP_MB. Negative: one byte past the ceiling is refused before it is read.
 const LINT_MEMORY_HEAP_MB = 1_536;
+/** Verify linting at the file-size ceiling under the heap budget. */
 function lintMemorySelfTest(temporary) {
   const fixture = path.join(temporary, "lint-memory-fixture");
   const bullet = "- Lorem ipsum dolor sit amet, [consectetur](https://example.invalid/x) `adipiscing` elit.\n";
@@ -1873,6 +1911,7 @@ const PLANTED_DEADLINE_MS = 4_900;
 const FULL_BATCH_PATHS = 100;
 const FULL_BATCH_PATH_BYTES = 239;
 
+/** Build an assertion for a gate failure's status and diagnostic. */
 function budgetFailure(expected) {
   return (error) => {
     assert.ok(error instanceof GateFailure, error.stack);
@@ -1990,6 +2029,7 @@ function onlyModeSelfTest(temporary) {
   process.stdout.write("--only fixtures: named style-selected files lint alone, every other name refused\n");
 }
 
+/** Run the private-link scanner and bound its diagnostics. */
 function runScratchRule(root, temporary, files, selfTest, emitDiagnostics = true) {
   const rule = path.join(temporary, "no-private-scratch-links.mjs");
   const args = selfTest ? [rule, "--self-test"] : [rule, root, path.join(temporary, "inventory.json")];
@@ -2020,6 +2060,7 @@ function markdownlintLibrary(lock, metadata) {
   return MARKDOWNLINT_ENTRY;
 }
 
+/** Resolve the locked markdownlint library's installed entry point. */
 function markdownlintEntry(temporary) {
   const lock = JSON.parse(fs.readFileSync(path.join(temporary, "package-lock.json"), "utf8"));
   const packageDir = path.join(temporary, "node_modules", "markdownlint");
@@ -2027,6 +2068,7 @@ function markdownlintEntry(temporary) {
   return path.join(packageDir, markdownlintLibrary(lock, metadata));
 }
 
+/** Verify the locked markdownlint version and export contract. */
 function markdownlintLibrarySelfTest() {
   const lock = { packages: { "node_modules/markdownlint": { version: "1.2.3" } } };
   const installed = { version: "1.2.3", exports: { "./sync": MARKDOWNLINT_ENTRY } };
@@ -2101,6 +2143,7 @@ function lintConfiguration(yaml, text) {
 function configurationParsers(temporary, yaml) {
   const jsonc = loadDependency(temporary, "jsonc-parser");
   const toml = loadDependency(temporary, "smol-toml");
+  /** Parse JSONC with trailing commas and refuse parse errors. */
   const parseJSONC = (text) => {
     const errors = [];
     const result = jsonc.parse(text, errors, { allowTrailingComma: true });
@@ -2131,6 +2174,7 @@ function compareFindings(left, right) {
     left.ruleNames[0].localeCompare(right.ruleNames[0]) || left.order - right.order;
 }
 
+/** Read a bounded regular Markdown source for the lint child. */
 function readLintSource(relative) {
   let descriptor;
   try {
@@ -2190,6 +2234,7 @@ async function lintChild(args) {
   return findings.length === 0 ? 0 : 1;
 }
 
+/** Split file arguments into batches within the command byte limit. */
 function batches(files) {
   const result = [];
   let current = [];
@@ -2294,11 +2339,13 @@ function namedStyleFiles(root, settings, named, cwd) {
   return [...files];
 }
 
+/** Recognize a bounded Git reference accepted by changed-since mode. */
 function validChangedSinceRef(ref) {
   return typeof ref === "string" && Buffer.byteLength(ref) <= MAX_REF_BYTES &&
     REF_PATTERN.test(ref) && !INVALID_REF_PART.test(ref);
 }
 
+/** Validate the base reference and construct changed-since mode. */
 function changedSinceMode(ref) {
   if (!validChangedSinceRef(ref)) {
     fail(`${CHANGED_SINCE_MODE} requires a valid git ref or commit SHA`);
@@ -2322,6 +2369,7 @@ function gateMode(args) {
   );
 }
 
+/** Run style and private-link checks over the full Markdown inventory. */
 function runGate(root, temporary, settings) {
   const scratchFiles = inventory(root, settings);
   const selection = styleSelection(scratchFiles, settings, process.platform);
@@ -2369,6 +2417,7 @@ function changedPathsSince(root, ref) {
   return { fallback: changedTreeFallback(paths, ref), paths };
 }
 
+/** Intersect the full style selection with changed Markdown paths. */
 function changedStyleSelection(allFiles, scratchFiles, settings, platform) {
   const full = styleSelection(allFiles, settings, platform);
   const changed = new Set(scratchFiles);
@@ -2377,6 +2426,7 @@ function changedStyleSelection(allFiles, scratchFiles, settings, platform) {
   return { styled, excluded: eligible - styled.length, counts: full.counts };
 }
 
+/** Summarize changed-since style and private-link coverage. */
 function changedSummaryLine(ref, settings, selection, scratchCount) {
   const excluded = settings.styleExclude.length > 0 ?
     ` (${selection.excluded} excluded by documentation.style_exclude)` : "";
@@ -2384,6 +2434,7 @@ function changedSummaryLine(ref, settings, selection, scratchCount) {
     `Markdown files${excluded}; checked ${scratchCount} changed Markdown files for private links\n`;
 }
 
+/** Combine style and private-link results while preserving execution failures. */
 function combineGateStatus(scratchStatus, lintStatus) {
   return scratchStatus === 0 && lintStatus === 0 ? 0 : scratchStatus > 1 || lintStatus > 1 ? 2 : 1;
 }
@@ -2411,6 +2462,7 @@ function runChangedSince(root, temporary, settings, ref) {
   return combineGateStatus(scratchStatus, lintStatus);
 }
 
+/** Lint only the named style-selected Markdown files. */
 function runOnly(root, temporary, settings, named) {
   const files = namedStyleFiles(root, settings, named, process.cwd());
   const started = Date.now();
@@ -2432,6 +2484,7 @@ function fixtureGitEnv(root) {
   };
 }
 
+/** Write and commit fixture files with the fixture Git configuration. */
 function commitFixtureFiles(root, files, message) {
   writeFixtureFiles(root, files);
   const env = fixtureGitEnv(root);
@@ -2450,6 +2503,7 @@ function dropInheritedGitEnv() {
   }
 }
 
+/** Capture changed-since output and restore both output streams. */
 function captureChangedSince(root, temporary, settings, ref) {
   const outChunks = [];
   const errChunks = [];
@@ -2573,6 +2627,7 @@ function changedSinceSelfTest(temporary) {
     "tool/config/unknown ref lints whole tree\n");
 }
 
+/** Replay the documentation gate's fixture groups and private-link checks. */
 function runSelfTest(toolDir, temporary) {
   dropInheritedGitEnv();
   npmInvocationSelfTest(temporary);
@@ -2596,6 +2651,7 @@ function runSelfTest(toolDir, temporary) {
   return runScratchRule(process.cwd(), temporary, [], true);
 }
 
+/** Dispatch the selected documentation mode and clean up its temporary tools. */
 function main() {
   const mode = gateMode(process.argv.slice(2));
   const toolDir = path.dirname(fileURLToPath(import.meta.url));

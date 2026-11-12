@@ -412,6 +412,7 @@ class Blocked(Exception):
 
 
 def read_payload_command(stream):
+    """Read one bounded tool-call payload and require a shell command."""
     raw = stream.read(MAX_INPUT_BYTES + 1)
     if len(raw) > MAX_INPUT_BYTES:
         raise ValueError("hook input exceeds " + str(MAX_INPUT_BYTES) + " bytes")
@@ -428,6 +429,7 @@ def read_payload_command(stream):
 
 
 def pending_command():
+    """Select the pending command from arguments or standard input."""
     if len(sys.argv) > 1:
         return " ".join(sys.argv[1:])
     if sys.stdin.isatty():
@@ -439,6 +441,7 @@ def pending_command():
 
 
 def check_environment(environ):
+    """Reject environment settings that bypass the configured checks."""
     value = environ.get("LEFTHOOK")
     for disabled, refusal in LEFTHOOK_DISABLED:
         if value == disabled:
@@ -449,6 +452,7 @@ def check_environment(environ):
 
 
 def without_read_only_words(command):
+    """Remove read-only command words before judging exempt policy rules."""
     # The words of git log, head, sed -n and the other read-only commands READ_ONLY_WORDS
     # names, chained after ;, &&, || or |, belong to that command and are dropped, its name
     # kept. A command holding a construct READ_ONLY_VETO names keeps every word.
@@ -458,6 +462,7 @@ def without_read_only_words(command):
 
 
 def join_line_continuations(command):
+    """Normalize shell line continuations before matching policy rules."""
     # A backslash followed by a newline (LF or CRLF) joins lines without regex backtracking.
     return re.sub(r"\\\r?\n", " ", command)
 
@@ -501,6 +506,7 @@ def search(pattern, text):
 
 
 def check_command(command):
+    """Reject oversized commands and commands matching the evasion policy."""
     command = join_line_continuations(command)
     # re backtracks, so a longer command or line could stall this script past the harness's
     # hook timeout. Such a command is refused, never truncated.
@@ -519,6 +525,7 @@ def check_command(command):
 
 
 def main():
+    """Validate the pending tool call and exit with the harness refusal status."""
     try:
         check_environment(os.environ)
         check_command(pending_command())

@@ -103,10 +103,12 @@ export const figuresDigest = (figuresDir) => filesDigest(figuresDir, mountFiles(
 export function watchFigures(server, figuresDir, logger, delay = RESTART_DELAY_MS) {
   const dir = resolve(figuresDir);
   let timer = null;
+  /** Restart the development server and report a restart failure. */
   const restart = () => {
     logger?.info(`${dir}: a figure changed, so the development server restarts to render it again`);
     Promise.resolve(server.restart()).catch((error) => logger?.error(`figures: the development server did not restart: ${error.message}`));
   };
+  /** Debounce restarts for JSON figure changes in the watched directory. */
   const onEvent = (path) => {
     if (dirname(resolve(path)) !== dir || !isFigureJson(path)) return;
     clearTimeout(timer);
@@ -206,6 +208,7 @@ export function satteriFigures(options) {
     name: NAME,
     options: { position: true },
     figures: options,
+    /** Replace a figure code block with validated figure markup. */
     code(node, ctx) {
       if (!isFigureBlock(node)) return undefined;
       const errors = [];

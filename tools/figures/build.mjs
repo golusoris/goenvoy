@@ -57,6 +57,7 @@ export function listSpecs(root = ROOT) {
   return names.map((n) => n.slice(0, -3));
 }
 
+/** Import a figure spec by content hash under the load deadline. */
 async function loadSpec(root, slug) {
   const file = join(root, SPEC_DIR, `${slug}.ts`);
   const bytes = readFileSync(file);
@@ -114,12 +115,14 @@ export function compareOutputs(outputs, dir) {
   return problems;
 }
 
+/** Write current figure outputs and remove obsolete committed outputs. */
 function writeOutputs(outputs, dir) {
   mkdirSync(dir, { recursive: true });
   for (const name of committedOutputs(dir)) if (!(name in outputs)) rmSync(join(dir, name));
   for (const [name, text] of Object.entries(outputs)) writeFileSync(join(dir, name), text);
 }
 
+/** Render all figure specs and write their validated outputs. */
 async function runBuild(root) {
   const { slugs, outputs, errors } = await renderAll(root);
   if (errors.length) return errors;
@@ -128,6 +131,7 @@ async function runBuild(root) {
   return [];
 }
 
+/** Compare committed figure outputs with a fresh rendering. */
 async function runCheck(root) {
   if (!hasFigures(root)) return report([], NO_FIGURES);
   const { slugs, outputs, errors } = await renderAll(root);
@@ -157,12 +161,14 @@ function runSources(root, { values }) {
   return report(errors, `figure sources, hashes, markup and evidence are consistent; pages read: ${read.join(', ')}.`);
 }
 
+/** Check the configured built site for rendered diagrams. */
 function runSite(_root, { values }) {
   if (!values.config || !values.docs || !values.site) throw new UsageError('site needs --config, --docs and --site');
   const { errors, diagrams } = checkSite(values.config, values.docs, values.site, values.base);
   return report(errors, `${diagrams} diagram(s) under ${values.docs} render.`);
 }
 
+/** Validate portable figure output with the selected URL base. */
 function runPortable(root, { values, positionals }) {
   const modes = [values.base !== undefined, values.wiki, values.write].filter(Boolean);
   if (modes.length !== 1 || positionals.length === 0) throw new UsageError('portable needs one of --base, --wiki or --write, and a file');
