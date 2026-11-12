@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.2](https://github.com/golusoris/goenvoy/compare/mediaserver/emby/v3.2.1...mediaserver/emby/v3.2.2) (2026-11-12)
+
+
+### Bug Fixes
+
+* **deps:** move to Go 1.26.11 for the net/http advisory GO-2026-6859 ([#310](https://github.com/golusoris/goenvoy/issues/310)) ([eee19f2](https://github.com/golusoris/goenvoy/commit/eee19f20da04468690d04e67ed870cf85506218e))
+
 ## [3.2.1](https://github.com/golusoris/goenvoy/compare/mediaserver/emby/v3.2.0...mediaserver/emby/v3.2.1) (2026-10-26)
 
 

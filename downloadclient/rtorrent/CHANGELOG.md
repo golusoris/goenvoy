@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.4](https://github.com/golusoris/goenvoy/compare/downloadclient/rtorrent/v2.1.3...downloadclient/rtorrent/v2.1.4) (2026-11-12)
+
+
+### Bug Fixes
+
+* **deps:** move to Go 1.26.11 for the net/http advisory GO-2026-6859 ([#310](https://github.com/golusoris/goenvoy/issues/310)) ([eee19f2](https://github.com/golusoris/goenvoy/commit/eee19f20da04468690d04e67ed870cf85506218e))
+
 ## [2.1.3](https://github.com/golusoris/goenvoy/compare/downloadclient/rtorrent/v2.1.2...downloadclient/rtorrent/v2.1.3) (2026-11-08)
 
 
