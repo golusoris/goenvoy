@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.0.5](https://github.com/golusoris/goenvoy/compare/arr/jackett/v2.0.4...arr/jackett/v2.0.5) (2026-11-12)
+
+
+### Bug Fixes
+
+* **deps:** move to Go 1.26.11 for the net/http advisory GO-2026-6859 ([#310](https://github.com/golusoris/goenvoy/issues/310)) ([eee19f2](https://github.com/golusoris/goenvoy/commit/eee19f20da04468690d04e67ed870cf85506218e))
+* **jackett:** hide transport errors whose wrapped chain carries the key ([#291](https://github.com/golusoris/goenvoy/issues/291)) ([406cf15](https://github.com/golusoris/goenvoy/commit/406cf15b3b07c975f07265cb2f7aff630e3cb406))
+* **jackett:** keep the API key out of errors ([#289](https://github.com/golusoris/goenvoy/issues/289)) ([8088237](https://github.com/golusoris/goenvoy/commit/8088237463cde67a35316f93f167c96b721defb4))
+
 ## [2.0.4](https://github.com/golusoris/goenvoy/compare/arr/jackett/v2.0.3...arr/jackett/v2.0.4) (2026-11-08)
 
 

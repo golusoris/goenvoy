@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.7](https://github.com/golusoris/goenvoy/compare/metadata/game/retroachievements/v1.0.6...metadata/game/retroachievements/v1.0.7) (2026-11-12)
+
+
+### Bug Fixes
+
+* **deps:** move to Go 1.26.11 for the net/http advisory GO-2026-6859 ([#310](https://github.com/golusoris/goenvoy/issues/310)) ([eee19f2](https://github.com/golusoris/goenvoy/commit/eee19f20da04468690d04e67ed870cf85506218e))
+
 ## [1.0.6](https://github.com/golusoris/goenvoy/compare/metadata/game/retroachievements/v1.0.5...metadata/game/retroachievements/v1.0.6) (2026-11-08)
 
 

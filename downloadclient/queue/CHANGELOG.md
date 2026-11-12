@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.6](https://github.com/golusoris/goenvoy/compare/downloadclient/queue/v1.1.5...downloadclient/queue/v1.1.6) (2026-11-12)
+
+
+### Bug Fixes
+
+* **deps:** move to Go 1.26.11 for the net/http advisory GO-2026-6859 ([#310](https://github.com/golusoris/goenvoy/issues/310)) ([eee19f2](https://github.com/golusoris/goenvoy/commit/eee19f20da04468690d04e67ed870cf85506218e))
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/deluge/v2 to v2.0.5 ([#284](https://github.com/golusoris/goenvoy/issues/284)) ([0f80cb2](https://github.com/golusoris/goenvoy/commit/0f80cb2f44d54f2d8cea742de97e91313d3f9365))
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/nzbget/v2 to v2.0.4 ([#285](https://github.com/golusoris/goenvoy/issues/285)) ([c4324d3](https://github.com/golusoris/goenvoy/commit/c4324d32e7c8aad6e11583b9d86b110dc8ba3e11))
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/qbit/v2 to v2.1.1 ([#287](https://github.com/golusoris/goenvoy/issues/287)) ([d49102e](https://github.com/golusoris/goenvoy/commit/d49102ed512e16303a497722199cc7c16a0565f2))
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/rtorrent/v2 to v2.1.3 ([#288](https://github.com/golusoris/goenvoy/issues/288)) ([83b9082](https://github.com/golusoris/goenvoy/commit/83b9082b690d30915d207919ab9a7207c92a76b3))
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/sabnzbd/v2 to v2.1.1 ([#290](https://github.com/golusoris/goenvoy/issues/290)) ([170ac5e](https://github.com/golusoris/goenvoy/commit/170ac5ee18fcc85b3bf23fa0d9a4cd4de4c94bb9))
+
 ## [1.1.5](https://github.com/golusoris/goenvoy/compare/downloadclient/queue/v1.1.4...downloadclient/queue/v1.1.5) (2026-11-08)
 
 
