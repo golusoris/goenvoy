@@ -38,22 +38,12 @@ func TestAuthorizationHeader(t *testing.T) {
 	}
 }
 
+// TestSearch checks query construction and response decoding.
 func TestSearch(t *testing.T) {
 	t.Parallel()
 
 	c := setup(t, func(w http.ResponseWriter, r *http.Request) {
-		if got := r.URL.Query().Get("q"); got != "coldplay" {
-			t.Errorf("q = %q, want coldplay", got)
-		}
-		if got := r.URL.Query().Get("type"); got != "artist,track" {
-			t.Errorf("type = %q, want artist,track", got)
-		}
-		if got := r.URL.Query().Get("limit"); got != "10" {
-			t.Errorf("limit = %q, want 10", got)
-		}
-		if got := r.URL.Query().Get("offset"); got != "0" {
-			t.Errorf("offset = %q, want 0", got)
-		}
+		assertSearchRequest(t, r)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]any{
 			"artists": map[string]any{
@@ -89,6 +79,23 @@ func TestSearch(t *testing.T) {
 	}
 	if len(result.Tracks.Items) != 1 {
 		t.Fatalf("tracks len = %d, want 1", len(result.Tracks.Items))
+	}
+}
+
+// assertSearchRequest checks the request parameters sent by Search.
+func assertSearchRequest(t *testing.T, r *http.Request) {
+	t.Helper()
+	if got := r.URL.Query().Get("q"); got != "coldplay" {
+		t.Errorf("q = %q, want coldplay", got)
+	}
+	if got := r.URL.Query().Get("type"); got != "artist,track" {
+		t.Errorf("type = %q, want artist,track", got)
+	}
+	if got := r.URL.Query().Get("limit"); got != "10" {
+		t.Errorf("limit = %q, want 10", got)
+	}
+	if got := r.URL.Query().Get("offset"); got != "0" {
+		t.Errorf("offset = %q, want 0", got)
 	}
 }
 
