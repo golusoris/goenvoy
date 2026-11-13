@@ -1,5 +1,5 @@
-github.com/golusoris/goenvoy/downloadclient/deluge/v2 v2.0.5 h1:DhLzTzM9KIrAsKK2y6QukYnYU96VMPjv7AZvByLz4wE=
-github.com/golusoris/goenvoy/downloadclient/deluge/v2 v2.0.5/go.mod h1:qgVt2UG2ek1uL4BnPXuOfpe9eko0nl3iYD5qP4jkNCs=
+github.com/golusoris/goenvoy/downloadclient/deluge/v2 v2.0.6 h1:uNoCpxX2tL3I/7nqeoJBJt1rzT+6i6AxFGaFuPFIkWk=
+github.com/golusoris/goenvoy/downloadclient/deluge/v2 v2.0.6/go.mod h1:SLP1jsCIpWJJlJcpYjpYtJAd7TUR0CLaD2xS04d5P/A=
 github.com/golusoris/goenvoy/downloadclient/nzbget/v2 v2.0.4 h1:WzsB33f9+nEWaAalyz9CjzqbWtoV80oh1m2nooLIPg8=
 github.com/golusoris/goenvoy/downloadclient/nzbget/v2 v2.0.4/go.mod h1:vBjfOUR1GJQUbTUQJwj4s/IqOtuRlcr6OS/Xu6LyRAE=
 github.com/golusoris/goenvoy/downloadclient/qbit/v2 v2.1.1 h1:QUcr+SeJ0qoC5PqiVcDVJEK24Yn0xN6BEzEVzgz/cCw=
