@@ -8,5 +8,5 @@ require (
 	github.com/golusoris/goenvoy/downloadclient/qbit/v2 v2.1.2
 	github.com/golusoris/goenvoy/downloadclient/rtorrent/v2 v2.1.4
 	github.com/golusoris/goenvoy/downloadclient/sabnzbd/v2 v2.1.2
-	github.com/golusoris/goenvoy/downloadclient/transmission/v2 v2.0.3
+	github.com/golusoris/goenvoy/downloadclient/transmission/v2 v2.0.4
 )
