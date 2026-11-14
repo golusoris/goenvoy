@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.8](https://github.com/golusoris/goenvoy/compare/arr/bazarr/v1.3.7...arr/bazarr/v1.3.8) (2026-11-14)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/arr/v2 to v2.6.3 ([#312](https://github.com/golusoris/goenvoy/issues/312)) ([f359bd3](https://github.com/golusoris/goenvoy/commit/f359bd31dbc28461a14b7144da92702fe6fbacfa))
+
 ## [1.3.7](https://github.com/golusoris/goenvoy/compare/arr/bazarr/v1.3.6...arr/bazarr/v1.3.7) (2026-11-12)
 
 
