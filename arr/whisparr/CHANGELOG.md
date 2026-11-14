@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.2](https://github.com/golusoris/goenvoy/compare/arr/whisparr/v1.6.1...arr/whisparr/v1.6.2) (2026-11-14)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/arr/v2 to v2.6.3 ([#312](https://github.com/golusoris/goenvoy/issues/312)) ([f359bd3](https://github.com/golusoris/goenvoy/commit/f359bd31dbc28461a14b7144da92702fe6fbacfa))
+
 ## [1.6.1](https://github.com/golusoris/goenvoy/compare/arr/whisparr/v1.6.0...arr/whisparr/v1.6.1) (2026-11-12)
 
 
