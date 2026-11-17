@@ -90,10 +90,11 @@ type apiResponse struct {
 	} `json:"response"`
 }
 
+// Why: request failures can echo the query key through transport errors and status bodies.
 func (c *Client) get(ctx context.Context, cmd string, params url.Values) (json.RawMessage, error) {
 	u, err := url.Parse(c.rawBaseURL + "/api/v2")
 	if err != nil {
-		return nil, fmt.Errorf("tautulli: parse URL: %w", err)
+		return nil, fmt.Errorf("tautulli: parse URL: %w", c.redactError(err))
 	}
 
 	if params == nil {
@@ -105,24 +106,24 @@ func (c *Client) get(ctx context.Context, cmd string, params url.Values) (json.R
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("tautulli: create request: %w", err)
+		return nil, fmt.Errorf("tautulli: create request: %w", c.redactError(err))
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.userAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("tautulli: %s: %w", cmd, err)
+		return nil, fmt.Errorf("tautulli: %s: %w", cmd, c.redactError(err))
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("tautulli: read response: %w", err)
+		return nil, fmt.Errorf("tautulli: read response: %w", c.redactError(err))
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &APIError{StatusCode: resp.StatusCode, RawBody: string(body)}
+		return nil, &APIError{StatusCode: resp.StatusCode, RawBody: c.scrub(string(body))}
 	}
 
 	var r apiResponse
@@ -131,7 +132,7 @@ func (c *Client) get(ctx context.Context, cmd string, params url.Values) (json.R
 	}
 
 	if r.Response.Result != "success" {
-		return nil, &APIError{StatusCode: resp.StatusCode, RawBody: r.Response.Message}
+		return nil, &APIError{StatusCode: resp.StatusCode, RawBody: c.scrub(r.Response.Message)}
 	}
 
 	return r.Response.Data, nil
