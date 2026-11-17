@@ -15,3 +15,14 @@ reviews:
         reviewer. No workflow in .github/workflows runs `make verify-all`;
         do not ask for CI evidence of that target. Judge a pull request by
         the per-module CI jobs it triggers.
+  # Why: release-please title is fixed (one combined release PR); accept it.
+  pre_merge_checks:
+    title:
+      mode: warning
+      requirements: |-
+        Titles follow Conventional Commits type(scope): summary with the
+        types the pr-title job in .github/workflows/ci.yml accepts; the
+        summary says what changes. Release pull requests opened by
+        release-please carry the fixed title "chore: release main" because
+        this repository releases all modules in one combined pull request
+        whose body names each module version; that title passes as it is.
