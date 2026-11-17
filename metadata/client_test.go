@@ -555,7 +555,7 @@ func checkResponseLimit(t *testing.T, method string, size int) {
 	t.Helper()
 	body := `"` + strings.Repeat("a", size-2) + `"`
 	srv := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = io.WriteString(w, body)
+		_, _ = io.Copy(w, strings.NewReader(body))
 	})
 	c := metadata.NewBaseClient(srv.URL, testPkg, metadata.WithMaxResponseBytes(8))
 	err := readLimitedResponse(t, c, method, body)

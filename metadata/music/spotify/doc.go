@@ -3,9 +3,11 @@
 // Spotify provides music metadata including artists, albums, tracks, audio
 // features, recommendations, and browse categories.
 //
-// GetArtistTopTracks, GetNewReleases, GetCategories, GetRelatedArtists,
-// GetAudioFeatures, and GetRecommendations require extended quota access
-// following the February 2026 Development Mode changes.
+// GetArtistTopTracks, GetNewReleases, and GetCategories require extended quota
+// access for Development Mode Client IDs created on or after February 11, 2026.
+// Spotify postponed this change for existing Development Mode integrations.
+// GetRelatedArtists, GetAudioFeatures, and GetRecommendations are not listed
+// as available for Development Mode apps and require extended quota access.
 //
 // Usage:
 //

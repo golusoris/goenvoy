@@ -16,10 +16,16 @@ import (
 
 const defaultBaseURL = "https://api.spotify.com/v1"
 
+// Why: match metadata's 32 MiB cap; required v1.4.4 has no shared bounded reader.
+const defaultMaxResponseBytes = 32 << 20
+
+var errResponseTooLarge = errors.New("response too large")
+
 // Client is a Spotify Web API client.
 type Client struct {
 	*metadata.BaseClient
-	accessToken string
+	accessToken      string
+	maxResponseBytes int64
 }
 
 // APIError is returned when the API responds with a non-2xx status.
@@ -36,7 +42,7 @@ func (e *APIError) Error() string {
 // New creates a Spotify [Client] with the given OAuth2 access token.
 func New(accessToken string, opts ...metadata.Option) *Client {
 	bc := metadata.NewBaseClient(defaultBaseURL, "spotify", opts...)
-	c := &Client{BaseClient: bc, accessToken: accessToken}
+	c := &Client{BaseClient: bc, accessToken: accessToken, maxResponseBytes: defaultMaxResponseBytes}
 	bc.SetAuth(func(req *http.Request) {
 		req.Header.Set("Authorization", "Bearer "+accessToken)
 	})
@@ -64,9 +70,12 @@ func (c *Client) get(ctx context.Context, path string, v any) (err error) {
 		}
 	}()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, c.maxResponseBytes+1))
 	if err != nil {
 		return fmt.Errorf("spotify: read response: %w", err)
+	}
+	if int64(len(body)) > c.maxResponseBytes {
+		return fmt.Errorf("spotify: read response: %w (limit %d bytes)", errResponseTooLarge, c.maxResponseBytes)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
@@ -118,8 +127,9 @@ func (c *Client) GetArtistAlbums(ctx context.Context, artistID string, limit, of
 
 // GetArtistTopTracks returns top tracks for an artist in a given market.
 //
-// Deprecated: Removed for Development Mode apps in February 2026;
-// requires extended quota access.
+// Deprecated: Removed for Development Mode Client IDs created on or after February 11, 2026.
+// Spotify postponed the change for existing Development Mode integrations.
+// Requires extended quota access.
 func (c *Client) GetArtistTopTracks(ctx context.Context, artistID, market string) ([]Track, error) {
 	params := url.Values{}
 	params.Set("market", market)
@@ -188,8 +198,9 @@ func (c *Client) GetAudioFeatures(ctx context.Context, trackID string) (*AudioFe
 
 // GetNewReleases returns new album releases.
 //
-// Deprecated: Removed for Development Mode apps in February 2026;
-// requires extended quota access.
+// Deprecated: Removed for Development Mode Client IDs created on or after February 11, 2026.
+// Spotify postponed the change for existing Development Mode integrations.
+// Requires extended quota access.
 func (c *Client) GetNewReleases(ctx context.Context, limit, offset int) (*Paged[AlbumSimple], error) {
 	params := url.Values{}
 	params.Set("limit", strconv.Itoa(limit))
@@ -204,8 +215,9 @@ func (c *Client) GetNewReleases(ctx context.Context, limit, offset int) (*Paged[
 
 // GetCategories returns browse categories.
 //
-// Deprecated: Removed for Development Mode apps in February 2026;
-// requires extended quota access.
+// Deprecated: Removed for Development Mode Client IDs created on or after February 11, 2026.
+// Spotify postponed the change for existing Development Mode integrations.
+// Requires extended quota access.
 func (c *Client) GetCategories(ctx context.Context, limit, offset int) (*Paged[Category], error) {
 	params := url.Values{}
 	params.Set("limit", strconv.Itoa(limit))

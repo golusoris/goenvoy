@@ -1469,7 +1469,7 @@ func TestLoginResponseLimit(t *testing.T) {
 			body := `{"data":{"token":""}}`
 			body += strings.Repeat(" ", size-len(body))
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				_, _ = io.WriteString(w, body)
+				_, _ = io.Copy(w, strings.NewReader(body))
 			}))
 			defer srv.Close()
 			err := newClient(t, srv).Login(t.Context())
