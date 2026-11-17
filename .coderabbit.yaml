@@ -10,10 +10,8 @@ reviews:
   path_instructions:
     - path: "**"
       instructions: |-
-        Use the CI verification job as evidence for `make verify-all`.
-        Find it in .github/workflows by its step running `make verify-all`.
-        A green run of that job on the pull request head satisfies a request
-        to run that target only when that step ran and passed; a run in
-        which the step was skipped is no evidence. AGENTS.md and CLAUDE.md
-        turn-end rules bind coding agents working in this repository,
-        not the CodeRabbit reviewer.
+        AGENTS.md and CLAUDE.md turn-end rules, including `make verify-all`,
+        bind coding agents working in this repository, not the CodeRabbit
+        reviewer. No workflow in .github/workflows runs `make verify-all`;
+        do not ask for CI evidence of that target. Judge a pull request by
+        the per-module CI jobs it triggers.
