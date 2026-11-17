@@ -80,6 +80,10 @@ exceptions:
     reason: 'category D (ledger goenvoy-dedupe-hiss19-unexcepted-20261108-order): GetManualImportCandidates repeated in the sonarr and whisparr modules; folding needs a new arr helper released before both modules can require it; manifest caps expiry at 90 days'
     expires: "2027-02-06"
   - rule: HISS-19
+    path: arr/mylar/redact.go
+    reason: 'category D (ledger goenvoy-dedupe-hiss19-unexcepted-20261108-order): scrub, carriesKey, appendWrapped, redactError and redactURL repeat the arr/jackett redaction helpers for the apikey query value (issue 299) in a separate Go module; folding needs a new inter-module require; manifest caps expiry at 90 days'
+    expires: "2027-02-15"
+  - rule: HISS-19
     path: arr/whisparr/manualimport.go
     reason: 'category D (ledger goenvoy-dedupe-hiss19-unexcepted-20261108-order): GetManualImportCandidates repeated in the sonarr and whisparr modules; folding needs a new arr helper released before both modules can require it; manifest caps expiry at 90 days'
     expires: "2027-02-06"
