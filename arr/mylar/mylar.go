@@ -71,6 +71,7 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("mylar: HTTP %d", e.StatusCode)
 }
 
+// Why: request failures can echo the query key through transport errors and status bodies.
 func (c *Client) get(ctx context.Context, cmd string, params url.Values, v any) error {
 	if params == nil {
 		params = url.Values{}
@@ -81,23 +82,23 @@ func (c *Client) get(ctx context.Context, cmd string, params url.Values, v any) 
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
-		return fmt.Errorf("mylar: create request: %w", err)
+		return fmt.Errorf("mylar: create request: %w", c.redactError(err))
 	}
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("mylar: %s: %w", cmd, err)
+		return fmt.Errorf("mylar: %s: %w", cmd, c.redactError(err))
 	}
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("mylar: read response: %w", err)
+		return fmt.Errorf("mylar: read response: %w", c.redactError(err))
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(data)}
+		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: c.scrub(string(data))}
 	}
 
 	if v != nil {
