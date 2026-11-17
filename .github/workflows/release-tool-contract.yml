@@ -48,7 +48,7 @@ jobs:
           jq -e '.spdxVersion | startswith("SPDX-")' "$roundtrip_dir/sbom.spdx.json"
 
       - name: Select the repository Go toolchain
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: metadata/go.mod
           cache: false

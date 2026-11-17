@@ -7,3 +7,11 @@ reviews:
     auto_pause_after_reviewed_commits: 0
     base_branches:
       - .*
+  path_instructions:
+    - path: "**"
+      instructions: |-
+        AGENTS.md and CLAUDE.md turn-end rules, including `make verify-all`,
+        bind coding agents working in this repository, not the CodeRabbit
+        reviewer. No workflow in .github/workflows runs `make verify-all`;
+        do not ask for CI evidence of that target. Judge a pull request by
+        the per-module CI jobs it triggers.

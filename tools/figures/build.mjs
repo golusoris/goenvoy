@@ -26,25 +26,13 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import { CheckError, OUT_DIR, REBUILD, ROOT, SLUG, SPEC_DIR, checkSite, engineHash, portable, readText, siteUrl, sourceSites, sources } from './checks.mjs';
+import { CheckError, OUT_DIR, REBUILD, ROOT, SLUG, SPEC_DIR, checkSite, engineHash, portable, readText, siteUrl, sourceSites, sources, withTimeout } from './checks.mjs';
 import { LIMITS, render, sha256, validate } from './core.mjs';
 
 export { OUT_DIR, REBUILD, ROOT, SPEC_DIR, engineHash };
+export { withTimeout };
 export const VENDOR_JSON = 'tools/figures/third_party/interfig/vendor.json';
 const TIMEOUT_MS = 120_000;
-
-/** Rejects when `promise` has not settled within `ms` (HISS-02: every I/O is bounded). */
-export async function withTimeout(promise, ms, what) {
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${what} did not finish within ${ms} ms`)), ms);
-  });
-  try {
-    return await Promise.race([promise, timeout]);
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 /** Spec slugs under docs/figures, sorted, each a lowercase kebab-case name. */
 export function listSpecs(root = ROOT) {
