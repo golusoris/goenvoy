@@ -1,13 +1,16 @@
 package sabnzbd
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 type redactionTransport func(*http.Request) (*http.Response, error)
@@ -57,7 +60,9 @@ func TestRequestRedaction(t *testing.T) {
 			if tc.name == "create request" {
 				c.baseURL += "/%zz"
 			}
-			_, err := c.GetQueue(t.Context())
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+			_, err := c.GetQueue(ctx)
 			checkRedaction(t, err, key, tc.name, sentinel, tc.err != nil)
 		})
 	}
@@ -92,7 +97,9 @@ func redactionClient(t *testing.T, key string, status int, read bool, transportE
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, key+" "+url.QueryEscape(key))
+		if _, err := io.Copy(w, strings.NewReader(key+" "+url.QueryEscape(key))); err != nil {
+			t.Errorf("sabnzbd test: write redaction response: %v", err)
+		}
 	}))
 	t.Cleanup(srv.Close)
 	hc := srv.Client()
