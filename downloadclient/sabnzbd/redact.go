@@ -1,0 +1,127 @@
+package sabnzbd
+
+import (
+	"errors"
+	"fmt"
+	"net/url"
+	"strings"
+)
+
+// scrub replaces the raw and query-escaped API key with REDACTED.
+func (c *Client) scrub(s string) string {
+	if c.apiKey == "" {
+		// Why: ReplaceAll with empty old inserts at every rune.
+		return s
+	}
+	s = strings.ReplaceAll(s, c.apiKey, "REDACTED")
+	return strings.ReplaceAll(s, url.QueryEscape(c.apiKey), "REDACTED")
+}
+
+type redactedError struct {
+	msg string
+	// Why: no Unwrap method, so callers cannot reach text that holds the key.
+	err error
+}
+
+// Error returns the sanitized message.
+func (e *redactedError) Error() string { return e.msg }
+
+// Is matches the hidden error without exposing it.
+func (e *redactedError) Is(target error) bool { return errors.Is(e.err, target) }
+
+// Timeout reports whether the hidden error timed out.
+func (e *redactedError) Timeout() bool {
+	// Why: url.Error.Timeout type-asserts its Err directly, so the wrapper must forward it.
+	var t interface{ Timeout() bool }
+	return errors.As(e.err, &t) && t.Timeout()
+}
+
+// Format prints only the sanitized message for every verb and flag.
+func (e *redactedError) Format(f fmt.State, verb rune) {
+	if _, err := fmt.Fprintf(f, fmt.FormatString(f, verb), e.msg); err != nil {
+		// Why: Format has no error return; a failed write leaves nothing more to print.
+		return
+	}
+}
+
+const maxErrNodes = 64
+
+// scrubError hides error trees that carry the API key or exceed the traversal limit.
+func (c *Client) scrubError(err error) error {
+	if err == nil || !c.carriesKey(err) {
+		return err
+	}
+	return &redactedError{msg: c.scrub(err.Error()), err: err}
+}
+
+// carriesKey reports whether an error tree contains the API key or exceeds the node limit.
+func (c *Client) carriesKey(err error) bool {
+	queue := []error{err}
+	for i := 0; i < maxErrNodes && i < len(queue); i++ {
+		if c.containsKey(queue[i].Error()) {
+			return true
+		}
+		queue = appendWrapped(queue, queue[i])
+	}
+	// Why: a tree past the bound is hidden, never trusted unread.
+	return len(queue) > maxErrNodes
+}
+
+// containsKey reports whether s contains the nonempty raw or query-escaped API key.
+func (c *Client) containsKey(s string) bool {
+	// Why: strings.Contains with an empty key matches every string.
+	return c.apiKey != "" && (strings.Contains(s, c.apiKey) || strings.Contains(s, url.QueryEscape(c.apiKey)))
+}
+
+// appendWrapped appends non-nil wrapped errors while bounding queue growth.
+func appendWrapped(queue []error, err error) []error {
+	if len(queue) > maxErrNodes {
+		// Why: carriesKey already treats this tree as too large; more entries only cost memory.
+		return queue
+	}
+	if w := errors.Unwrap(err); w != nil {
+		return append(queue, w)
+	}
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		return queue
+	}
+	children := joined.Unwrap()
+	for i := 0; i < len(children) && len(queue) <= maxErrNodes; i++ {
+		if children[i] != nil {
+			queue = append(queue, children[i])
+		}
+	}
+	return queue
+}
+
+// redactError sanitizes URL errors and hides error trees that may expose the API key.
+func (c *Client) redactError(err error) error {
+	var uerr *url.Error
+	if errors.As(err, &uerr) {
+		// Why: Do and NewRequestWithContext return it unwrapped; a body read error wrapping one loses its outer wrappers.
+		// Why: copy, never mutate an error value net/http or a custom transport may share.
+		err = &url.Error{Op: uerr.Op, URL: c.scrub(redactURL(uerr.URL)), Err: c.scrubError(uerr.Err)}
+	}
+	return c.scrubError(err)
+}
+
+// redactURL redacts apikey query values or drops the query when parsing fails.
+func redactURL(raw string) string {
+	u, err := url.Parse(raw)
+	var q url.Values
+	if err == nil {
+		q, err = url.ParseQuery(u.RawQuery)
+	}
+	if err != nil {
+		// Why: an unparseable URL or query may still carry the key, so drop the query whole.
+		base, _, _ := strings.Cut(raw, "?")
+		return base
+	}
+	if !q.Has("apikey") {
+		return raw
+	}
+	q.Set("apikey", "REDACTED")
+	u.RawQuery = q.Encode()
+	return u.String()
+}

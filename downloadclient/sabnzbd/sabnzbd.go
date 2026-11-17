@@ -116,27 +116,27 @@ func (c *Client) get(ctx context.Context, mode string, params url.Values, dst an
 	reqURL := c.baseURL + "/api?" + params.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
-		return fmt.Errorf("sabnzbd: create request: %w", err)
+		return fmt.Errorf("sabnzbd: create request: %w", c.redactError(err))
 	}
 	req.Header.Set("User-Agent", c.userAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("sabnzbd: GET %s: %w", mode, err)
+		return fmt.Errorf("sabnzbd: GET %s: %w", mode, c.redactError(err))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("sabnzbd: HTTP %d: read body: %w", resp.StatusCode, err)
+			return fmt.Errorf("sabnzbd: HTTP %d: read body: %w", resp.StatusCode, c.redactError(err))
 		}
-		return fmt.Errorf("sabnzbd: HTTP %d: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("sabnzbd: HTTP %d: %s", resp.StatusCode, c.scrub(string(body)))
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("sabnzbd: read response: %w", err)
+		return fmt.Errorf("sabnzbd: read response: %w", c.redactError(err))
 	}
 
 	return decodeResponse(body, dst)
