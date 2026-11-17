@@ -1,13 +1,16 @@
 package mylar
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 type redactTransport struct{ err error }
@@ -48,12 +51,15 @@ func TestRequestRedaction(t *testing.T) {
 	}
 }
 
-// Why: keep fixture setup and error-kind checks outside the table traversal.
+// checkRequestRedaction checks redaction and error kinds using the configured fixture.
 func checkRequestRedaction(t *testing.T, key string, sentinel error, closed bool, transport http.RoundTripper, timedOut bool) {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = fmt.Fprintf(w, "raw %s escaped %s", key, url.QueryEscape(key))
+		body := fmt.Sprintf("raw %s escaped %s", key, url.QueryEscape(key))
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+			t.Errorf("mylar test: write redaction response: %v", err)
+		}
 	}))
 	t.Cleanup(server.Close)
 	if closed {
@@ -67,7 +73,9 @@ func checkRequestRedaction(t *testing.T, key string, sentinel error, closed bool
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = c.GetIndex(t.Context())
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	_, err = c.GetIndex(ctx)
 	assertRedactedTree(t, err, key)
 	assertRedactionKind(t, err, sentinel, closed, transport, timedOut)
 }
