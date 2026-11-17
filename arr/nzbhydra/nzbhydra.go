@@ -77,25 +77,26 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("nzbhydra: HTTP %d", e.StatusCode)
 }
 
+// Why: all GET request failures must redact the query API key.
 func (c *Client) doGet(ctx context.Context, u string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("nzbhydra: create request: %w", err)
+		return nil, fmt.Errorf("nzbhydra: create request: %w", c.redactError(err))
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("nzbhydra: request: %w", err)
+		return nil, fmt.Errorf("nzbhydra: request: %w", c.redactError(err))
 	}
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("nzbhydra: read response: %w", err)
+		return nil, fmt.Errorf("nzbhydra: read response: %w", c.redactError(err))
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(data)}
+		return nil, &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: c.scrub(string(data))}
 	}
 
 	return data, nil
@@ -141,6 +142,7 @@ func (c *Client) getJSON(ctx context.Context, path string, params url.Values, v 
 	return nil
 }
 
+// Why: POST request failures must redact the query API key.
 func (c *Client) postJSON(ctx context.Context, path string, body, v any) error {
 	params := url.Values{"apikey": {c.apiKey}}
 	u := c.rawBaseURL + path + "?" + params.Encode()
@@ -156,24 +158,24 @@ func (c *Client) postJSON(ctx context.Context, path string, body, v any) error {
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, reqBody)
 	if err != nil {
-		return fmt.Errorf("nzbhydra: create request: %w", err)
+		return fmt.Errorf("nzbhydra: create request: %w", c.redactError(err))
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("nzbhydra: request: %w", err)
+		return fmt.Errorf("nzbhydra: request: %w", c.redactError(err))
 	}
 	defer resp.Body.Close()
 
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("nzbhydra: read response: %w", err)
+		return fmt.Errorf("nzbhydra: read response: %w", c.redactError(err))
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: string(respData)}
+		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: c.scrub(string(respData))}
 	}
 
 	if v != nil {

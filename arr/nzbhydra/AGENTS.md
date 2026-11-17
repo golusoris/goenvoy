@@ -11,3 +11,4 @@
 ## Auth model
 
 API key passed as `apikey` query parameter.
+Transport and status errors redact the API key.
