@@ -13,6 +13,12 @@ last_verified: 2026-11-10
 
 Spotify Web API — tracks, albums, artists, playlists. OAuth2 required.
 
+## Development Mode availability
+
+- **February 2026 changelog:** <https://developer.spotify.com/documentation/web-api/references/changes/february-2026> (checked 2026-11-17).
+- Removed for Development Mode apps; require extended quota access: `GET /artists/{id}/top-tracks`, `GET /browse/new-releases`, `GET /browse/categories`.
+- Not listed under "Endpoints still available" for Development Mode apps; require extended quota access: `GET /artists/{id}/related-artists`, `GET /audio-features/{id}`, `GET /recommendations`.
+
 ## Related
 
 - Service module: see `metadata/music/spotify` in the monorepo tree.

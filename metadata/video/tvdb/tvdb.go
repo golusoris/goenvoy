@@ -15,7 +15,12 @@ import (
 	"github.com/golusoris/goenvoy/metadata"
 )
 
-const defaultBaseURL = "https://api4.thetvdb.com/v4"
+const (
+	defaultBaseURL        = "https://api4.thetvdb.com/v4"
+	maxLoginResponseBytes = 1 << 20
+)
+
+var errLoginResponseTooLarge = errors.New("login response too large")
 
 // Client is a TheTVDB API v4 client.
 type Client struct {
@@ -29,14 +34,23 @@ type Client struct {
 
 // New creates a TheTVDB [Client] using the given API key.
 func New(apiKey string, opts ...metadata.Option) *Client {
-	bc := metadata.NewBaseClient(defaultBaseURL, "tvdb", opts...)
-	return &Client{BaseClient: bc, apiKey: apiKey}
+	return NewWithPIN(apiKey, "", opts...)
 }
 
 // NewWithPIN creates a TheTVDB [Client] with an API key and subscriber PIN.
 func NewWithPIN(apiKey, pin string, opts ...metadata.Option) *Client {
 	bc := metadata.NewBaseClient(defaultBaseURL, "tvdb", opts...)
-	return &Client{BaseClient: bc, apiKey: apiKey, pin: pin}
+	c := &Client{BaseClient: bc, apiKey: apiKey, pin: pin}
+	c.SetAuth(func(req *http.Request) {
+		c.mu.Lock()
+		token := c.token
+		c.mu.Unlock()
+		req.Header.Set("Authorization", "Bearer "+token)
+		if req.Method != http.MethodGet {
+			req.Header.Set("Content-Type", "application/json")
+		}
+	})
+	return c
 }
 
 // Login authenticates with TheTVDB and caches the bearer token.
@@ -66,9 +80,12 @@ func (c *Client) Login(ctx context.Context) error {
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxLoginResponseBytes+1))
 	if err != nil {
 		return fmt.Errorf("tvdb: read login response: %w", err)
+	}
+	if len(respBody) > maxLoginResponseBytes {
+		return fmt.Errorf("tvdb: read login response: %w (limit %d bytes)", errLoginResponseTooLarge, maxLoginResponseBytes)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -126,14 +143,6 @@ func (c *Client) get(ctx context.Context, path string, dst any) error {
 }
 
 func (c *Client) doGet(ctx context.Context, path string, dst any) error {
-	c.mu.Lock()
-	token := c.token
-	c.mu.Unlock()
-
-	c.SetAuth(func(req *http.Request) {
-		req.Header.Set("Authorization", "Bearer "+token)
-	})
-
 	body, status, err := c.DoRaw(ctx, http.MethodGet, path, http.NoBody)
 	if err != nil {
 		return err
@@ -860,15 +869,6 @@ func (c *Client) post(ctx context.Context, path string, body any) error {
 	if err != nil {
 		return fmt.Errorf("tvdb: marshal body: %w", err)
 	}
-
-	c.mu.Lock()
-	token := c.token
-	c.mu.Unlock()
-
-	c.SetAuth(func(req *http.Request) {
-		req.Header.Set("Authorization", "Bearer "+token)
-		req.Header.Set("Content-Type", "application/json")
-	})
 
 	respBody, status, err := c.DoRaw(ctx, http.MethodPost, path, bytes.NewReader(data))
 	if err != nil {

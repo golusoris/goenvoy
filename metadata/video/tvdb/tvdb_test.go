@@ -4,9 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
+	"sync"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/golusoris/goenvoy/metadata"
 	"github.com/golusoris/goenvoy/metadata/video/tvdb"
@@ -571,6 +576,7 @@ func TestLoginError(t *testing.T) {
 	}
 }
 
+// TestTokenRefreshOn401 checks that a retry sends the token from the second login.
 func TestTokenRefreshOn401(t *testing.T) {
 	t.Parallel()
 	loginCount := 0
@@ -587,6 +593,9 @@ func TestTokenRefreshOn401(t *testing.T) {
 			return
 		}
 		requestCount++
+		if r.Header.Get("Authorization") != "Bearer jwt-token-"+strconv.Itoa(loginCount) {
+			t.Error("request did not use the current login token")
+		}
 		// First data request returns 401 (expired token), second succeeds.
 		if requestCount == 1 {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -666,6 +675,9 @@ func newPostTestServer(t *testing.T, wantPath string) *httptest.Server {
 		}
 		if auth := r.Header.Get("Authorization"); auth != "Bearer test-jwt-token" {
 			t.Errorf("Authorization = %q, want %q", auth, "Bearer test-jwt-token")
+		}
+		if r.Header.Get("Content-Type") != "application/json" {
+			t.Error("POST Content-Type must be application/json")
 		}
 		if wantPath != "" && r.URL.RequestURI() != wantPath {
 			t.Errorf("path = %q, want %q", r.URL.RequestURI(), wantPath)
@@ -1402,5 +1414,101 @@ func TestGetPersonTranslation(t *testing.T) {
 	}
 	if got.Name != "Person Name" {
 		t.Errorf("Name = %q", got.Name)
+	}
+}
+
+// TestConcurrentGetSeries checks concurrent requests through both constructors.
+func TestConcurrentGetSeries(t *testing.T) {
+	t.Parallel()
+	for _, withPIN := range []bool{false, true} {
+		t.Run(strconv.FormatBool(withPIN), func(t *testing.T) {
+			t.Parallel()
+			srv := newTestServer(t, "/series/1", map[string]any{"data": map[string]any{"id": 1}})
+			defer srv.Close()
+			c := newClient(t, srv)
+			if withPIN {
+				c = tvdb.NewWithPIN("test-key", "test-pin", metadata.WithBaseURL(srv.URL))
+			}
+			if err := c.Login(t.Context()); err != nil {
+				t.Fatalf("Login: %v", err)
+			}
+			checkConcurrentSeries(t, c)
+		})
+	}
+}
+
+// Why: synchronize eight callers to expose shared authentication callback races.
+func checkConcurrentSeries(t *testing.T, c *tvdb.Client) {
+	t.Helper()
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	for range 8 {
+		wg.Go(func() {
+			<-start
+			series, err := c.GetSeries(t.Context(), 1)
+			if err != nil {
+				t.Errorf("GetSeries: %v", err)
+				return
+			}
+			if series.ID != 1 {
+				t.Errorf("series ID = %d, want 1", series.ID)
+			}
+		})
+	}
+	close(start)
+	wg.Wait()
+}
+
+// TestLoginResponseLimit checks login response sizes around the local cap.
+func TestLoginResponseLimit(t *testing.T) {
+	t.Parallel()
+	const limit = 1 << 20
+	for _, size := range []int{limit - 1, limit, limit + 1} {
+		t.Run(strconv.Itoa(size), func(t *testing.T) {
+			t.Parallel()
+			body := `{"data":{"token":""}}`
+			body += strings.Repeat(" ", size-len(body))
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = io.WriteString(w, body)
+			}))
+			defer srv.Close()
+			err := newClient(t, srv).Login(t.Context())
+			if size <= limit {
+				if err != nil {
+					t.Fatalf("Login: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), "tvdb: read login response:") || !strings.Contains(err.Error(), "1048576 bytes") {
+				t.Fatalf("error = %v, want login response limit", err)
+			}
+		})
+	}
+}
+
+// TestAPIErrorTruncation checks byte limits, rune boundaries, and preserved raw bodies.
+func TestAPIErrorTruncation(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		body string
+		want string
+	}{
+		{"511", strings.Repeat("x", 511), strings.Repeat("x", 511)},
+		{"512", strings.Repeat("x", 512), strings.Repeat("x", 512)},
+		{"513", strings.Repeat("x", 513), strings.Repeat("x", 512) + "... (truncated)"},
+		{"rune", strings.Repeat("x", 511) + "界", strings.Repeat("x", 511) + "... (truncated)"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := &tvdb.APIError{StatusCode: http.StatusBadRequest, RawBody: tc.body}
+			got := err.Error()
+			if got != "tvdb: HTTP 400 Bad Request: "+tc.want || !utf8.ValidString(got) {
+				t.Errorf("Error() = %q, want valid UTF-8 and expected body", got)
+			}
+			if err.RawBody != tc.body {
+				t.Error("RawBody changed")
+			}
+		})
 	}
 }

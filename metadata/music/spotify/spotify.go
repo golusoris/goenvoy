@@ -117,6 +117,9 @@ func (c *Client) GetArtistAlbums(ctx context.Context, artistID string, limit, of
 }
 
 // GetArtistTopTracks returns top tracks for an artist in a given market.
+//
+// Deprecated: Removed for Development Mode apps in February 2026;
+// requires extended quota access.
 func (c *Client) GetArtistTopTracks(ctx context.Context, artistID, market string) ([]Track, error) {
 	params := url.Values{}
 	params.Set("market", market)
@@ -129,6 +132,9 @@ func (c *Client) GetArtistTopTracks(ctx context.Context, artistID, market string
 }
 
 // GetRelatedArtists returns artists related to the given artist.
+//
+// Deprecated: Not listed as available for Development Mode apps in the February 2026 changelog;
+// requires extended quota access.
 func (c *Client) GetRelatedArtists(ctx context.Context, artistID string) ([]Artist, error) {
 	var resp relatedArtistsResp
 	if err := c.get(ctx, "/artists/"+url.PathEscape(artistID)+"/related-artists", &resp); err != nil {
@@ -169,6 +175,9 @@ func (c *Client) GetTrack(ctx context.Context, id string) (*Track, error) {
 }
 
 // GetAudioFeatures returns audio features for a track.
+//
+// Deprecated: Not listed as available for Development Mode apps in the February 2026 changelog;
+// requires extended quota access.
 func (c *Client) GetAudioFeatures(ctx context.Context, trackID string) (*AudioFeatures, error) {
 	var features AudioFeatures
 	if err := c.get(ctx, "/audio-features/"+url.PathEscape(trackID), &features); err != nil {
@@ -178,6 +187,9 @@ func (c *Client) GetAudioFeatures(ctx context.Context, trackID string) (*AudioFe
 }
 
 // GetNewReleases returns new album releases.
+//
+// Deprecated: Removed for Development Mode apps in February 2026;
+// requires extended quota access.
 func (c *Client) GetNewReleases(ctx context.Context, limit, offset int) (*Paged[AlbumSimple], error) {
 	params := url.Values{}
 	params.Set("limit", strconv.Itoa(limit))
@@ -191,6 +203,9 @@ func (c *Client) GetNewReleases(ctx context.Context, limit, offset int) (*Paged[
 }
 
 // GetCategories returns browse categories.
+//
+// Deprecated: Removed for Development Mode apps in February 2026;
+// requires extended quota access.
 func (c *Client) GetCategories(ctx context.Context, limit, offset int) (*Paged[Category], error) {
 	params := url.Values{}
 	params.Set("limit", strconv.Itoa(limit))
@@ -204,6 +219,9 @@ func (c *Client) GetCategories(ctx context.Context, limit, offset int) (*Paged[C
 }
 
 // GetRecommendations returns track recommendations based on seed artists, genres, and tracks.
+//
+// Deprecated: Not listed as available for Development Mode apps in the February 2026 changelog;
+// requires extended quota access.
 func (c *Client) GetRecommendations(ctx context.Context, seeds RecommendationSeeds) (*Recommendations, error) {
 	params := url.Values{}
 	if len(seeds.SeedArtists) > 0 {
