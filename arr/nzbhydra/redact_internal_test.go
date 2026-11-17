@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 type redactionTransport func(*http.Request) (*http.Response, error)
@@ -66,7 +68,9 @@ func TestRequestRedaction(t *testing.T) {
 				if tc.name == "create request" {
 					c.rawBaseURL += "/%zz"
 				}
-				checkRedaction(t, p.call(t.Context(), c), key, tc.name, sentinel, tc.err != nil)
+				ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+				defer cancel()
+				checkRedaction(t, p.call(ctx, c), key, tc.name, sentinel, tc.err != nil)
 			})
 		}
 	}
@@ -101,7 +105,9 @@ func redactionClient(t *testing.T, key string, status int, read bool, transportE
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, key+" "+url.QueryEscape(key))
+		if _, err := io.Copy(w, strings.NewReader(key+" "+url.QueryEscape(key))); err != nil {
+			t.Errorf("nzbhydra test: write redaction response: %v", err)
+		}
 	}))
 	t.Cleanup(srv.Close)
 	hc := srv.Client()
