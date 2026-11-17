@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 	"unicode/utf8"
 
 	"github.com/golusoris/goenvoy/metadata"
@@ -1466,23 +1467,58 @@ func TestLoginResponseLimit(t *testing.T) {
 	for _, size := range []int{limit - 1, limit, limit + 1} {
 		t.Run(strconv.Itoa(size), func(t *testing.T) {
 			t.Parallel()
-			body := `{"data":{"token":""}}`
-			body += strings.Repeat(" ", size-len(body))
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				_, _ = io.Copy(w, strings.NewReader(body))
-			}))
-			defer srv.Close()
-			err := newClient(t, srv).Login(t.Context())
-			if size <= limit {
-				if err != nil {
-					t.Fatalf("Login: %v", err)
-				}
-				return
-			}
-			if err == nil || !strings.Contains(err.Error(), "tvdb: read login response:") || !strings.Contains(err.Error(), "1048576 bytes") {
-				t.Fatalf("error = %v, want login response limit", err)
-			}
+			checkLoginResponseLimit(t, size, limit)
 		})
+	}
+}
+
+// checkLoginResponseLimit checks login size bounds and subsequent bearer authentication.
+func checkLoginResponseLimit(t *testing.T, size, limit int) {
+	t.Helper()
+	body := `{"data":{"token":"test-token"}}`
+	body += strings.Repeat(" ", size-len(body))
+	var mu sync.Mutex
+	var authorization string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		responseBody := body
+		if r.Method != http.MethodPost || r.URL.Path != "/login" {
+			mu.Lock()
+			authorization = r.Header.Get("Authorization")
+			mu.Unlock()
+			responseBody = `{"data":{"id":1}}`
+		}
+		if _, err := io.Copy(w, strings.NewReader(responseBody)); err != nil {
+			t.Errorf("tvdb test: write response fixture: %v", err)
+		}
+	}))
+	defer srv.Close()
+	c := newClient(t, srv)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	err := c.Login(ctx)
+	if size <= limit {
+		if err != nil {
+			t.Fatalf("Login: %v", err)
+		}
+		if _, err := c.GetSeries(ctx, 1); err != nil {
+			t.Fatalf("GetSeries: %v", err)
+		}
+		mu.Lock()
+		got := authorization
+		mu.Unlock()
+		if got != "Bearer test-token" {
+			t.Errorf("Authorization = %q, want %q", got, "Bearer test-token")
+		}
+		return
+	}
+	checkLoginResponseLimitError(t, err)
+}
+
+// checkLoginResponseLimitError checks that oversized login responses report the limit.
+func checkLoginResponseLimitError(t *testing.T, err error) {
+	t.Helper()
+	if err == nil || !strings.Contains(err.Error(), "tvdb: read login response:") || !strings.Contains(err.Error(), "1048576 bytes") {
+		t.Fatalf("error = %v, want login response limit", err)
 	}
 }
 

@@ -1,21 +1,28 @@
 package spotify
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/golusoris/goenvoy/metadata"
 )
 
-// TestNewResponseLimit checks the constructor's default response cap.
+// TestNewResponseLimit checks the constructor's default response cap and base URL option.
 func TestNewResponseLimit(t *testing.T) {
 	t.Parallel()
-	if got := New("").maxResponseBytes; got != 32<<20 {
+	const baseURL = "https://spotify.example.test/v1"
+	c := New("", metadata.WithBaseURL(baseURL))
+	if got := c.maxResponseBytes; got != 32<<20 {
 		t.Errorf("maxResponseBytes = %d, want 32 MiB", got)
+	}
+	if got := c.BaseURL(); got != baseURL {
+		t.Errorf("BaseURL() = %q, want %q", got, baseURL)
 	}
 }
 
@@ -40,19 +47,23 @@ func TestGetResponseLimit(t *testing.T) {
 	}
 }
 
-// Why: keep HTTP setup and response assertions outside the case matrix.
+// checkGetResponseLimit checks response decoding around the configured cap.
 func checkGetResponseLimit(t *testing.T, size, status int) {
 	t.Helper()
 	body := `{"id":"1"}`
 	body += strings.Repeat(" ", size-len(body))
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(status)
-		_, _ = io.Copy(w, strings.NewReader(body))
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+			t.Errorf("spotify test: write response fixture: %v", err)
+		}
 	}))
 	defer srv.Close()
 	c := New("", metadata.WithBaseURL(srv.URL))
 	c.maxResponseBytes = 16
-	artist, err := c.GetArtist(t.Context(), "1")
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	artist, err := c.GetArtist(ctx, "1")
 	if size > 16 {
 		checkOversizedResponse(t, err)
 		return
