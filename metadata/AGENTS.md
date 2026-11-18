@@ -26,6 +26,7 @@ Shared helpers beside `BaseClient`: [metadata/oauth.go](oauth.go) `OAuthState[CB
 
 ## Shared conventions in this category
 
+- Response body cap: 32 MiB default; `WithMaxResponseBytes(n)` override, nonpositive values keep default.
 - **Auth diversity**: no single auth pattern. Each service documents own pattern in its `AGENTS.md`.
 - **Base-URL shape**: full upstream base, service-specific. Most use `https://api.<provider>.tld/v<n>`.
 - **Pagination**: varies wildly — page+pageSize, cursor, offset+limit, Link header. Document per service.

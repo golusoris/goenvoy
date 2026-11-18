@@ -5,13 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/golusoris/goenvoy/metadata"
 )
@@ -531,4 +535,128 @@ func TestAPIError_Error(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestResponseLimit checks each request path below, at, and above its response cap.
+func TestResponseLimit(t *testing.T) {
+	t.Parallel()
+	for _, method := range []string{"DoRaw", "DoRawURL", "DoJSON"} {
+		for _, size := range []int{7, 8, 9} {
+			t.Run(method+"/"+strconv.Itoa(size), func(t *testing.T) {
+				t.Parallel()
+				checkResponseLimit(t, method, size)
+			})
+		}
+	}
+}
+
+// Why: share boundary assertions without nesting HTTP setup inside the case matrix.
+func checkResponseLimit(t *testing.T, method string, size int) {
+	t.Helper()
+	body := `"` + strings.Repeat("a", size-2) + `"`
+	srv := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.Copy(w, strings.NewReader(body))
+	})
+	c := metadata.NewBaseClient(srv.URL, testPkg, metadata.WithMaxResponseBytes(8))
+	err := readLimitedResponse(t, c, method, body)
+	if size <= 8 {
+		if err != nil {
+			t.Fatalf("read: %v", err)
+		}
+		return
+	}
+	if !errors.Is(err, metadata.ErrResponseTooLarge) {
+		t.Fatalf("error = %v, want ErrResponseTooLarge", err)
+	}
+	if !strings.Contains(err.Error(), "testpkg: read response:") || !strings.Contains(err.Error(), "8 bytes") {
+		t.Errorf("missing prefix or limit: %v", err)
+	}
+}
+
+// Why: exercise the public request paths through one boundary-test adapter.
+func readLimitedResponse(t *testing.T, c *metadata.BaseClient, method, want string) error {
+	t.Helper()
+	var body []byte
+	var status int
+	var err error
+	switch method {
+	case "DoRaw":
+		body, status, err = c.DoRaw(t.Context(), http.MethodGet, "/", http.NoBody)
+	case "DoRawURL":
+		body, status, err = c.DoRawURL(t.Context(), http.MethodGet, c.BaseURL(), http.NoBody)
+	case "DoJSON":
+		var decoded string
+		err = c.DoJSON(t.Context(), http.MethodGet, "/", nil, &decoded)
+		if err == nil && decoded != strings.Trim(want, `"`) {
+			t.Errorf("decoded = %q, want %s", decoded, want)
+		}
+		return err
+	}
+	if err == nil && (string(body) != want || status != http.StatusOK) {
+		t.Errorf("body/status = %q/%d, want %q/200", body, status, want)
+	}
+	return err
+}
+
+// TestResponseLimitOptions checks nonpositive options and integer-overflow boundaries.
+func TestResponseLimitOptions(t *testing.T) {
+	t.Parallel()
+	for _, limit := range []int64{-1, 0, math.MaxInt64} {
+		t.Run(strconv.FormatInt(limit, 10), func(t *testing.T) {
+			t.Parallel()
+			srv := newTestServer(t, func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = io.WriteString(w, "ok")
+			})
+			c := metadata.NewBaseClient(srv.URL, testPkg, metadata.WithMaxResponseBytes(limit))
+			body, _, err := c.DoRaw(t.Context(), http.MethodGet, "/", http.NoBody)
+			if err != nil || string(body) != "ok" {
+				t.Fatalf("body/error = %q/%v", body, err)
+			}
+		})
+	}
+}
+
+// TestAPIErrorTruncation checks byte limits, rune boundaries, and preserved raw bodies.
+func TestAPIErrorTruncation(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		body string
+		want string
+	}{
+		{"511", strings.Repeat("x", 511), strings.Repeat("x", 511)},
+		{"512", strings.Repeat("x", 512), strings.Repeat("x", 512)},
+		{"513", strings.Repeat("x", 513), strings.Repeat("x", 512) + "... (truncated)"},
+		{"rune", strings.Repeat("x", 511) + "界", strings.Repeat("x", 511) + "... (truncated)"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := &metadata.APIError{StatusCode: http.StatusBadGateway, RawBody: tc.body}
+			got := err.Error()
+			if got != ": HTTP 502: "+tc.want || !utf8.ValidString(got) {
+				t.Errorf("Error() = %q, want valid UTF-8 and expected body", got)
+			}
+			if err.RawBody != tc.body {
+				t.Error("RawBody changed")
+			}
+		})
+	}
+}
+
+// ExampleWithMaxResponseBytes configures a response cap for a JSON request.
+func ExampleWithMaxResponseBytes() {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, `{"name":"example"}`)
+	}))
+	defer srv.Close()
+	c := metadata.NewBaseClient(srv.URL, "example", metadata.WithMaxResponseBytes(1024))
+	var result struct {
+		Name string `json:"name"`
+	}
+	if err := c.Get(context.Background(), "/", &result); err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(result.Name)
+	// Output: example
 }

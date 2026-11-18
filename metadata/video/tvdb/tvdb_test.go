@@ -4,9 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
+	"unicode/utf8"
 
 	"github.com/golusoris/goenvoy/metadata"
 	"github.com/golusoris/goenvoy/metadata/video/tvdb"
@@ -571,6 +578,7 @@ func TestLoginError(t *testing.T) {
 	}
 }
 
+// TestTokenRefreshOn401 checks that a retry sends the token from the second login.
 func TestTokenRefreshOn401(t *testing.T) {
 	t.Parallel()
 	loginCount := 0
@@ -587,6 +595,9 @@ func TestTokenRefreshOn401(t *testing.T) {
 			return
 		}
 		requestCount++
+		if r.Header.Get("Authorization") != "Bearer jwt-token-"+strconv.Itoa(loginCount) {
+			t.Error("request did not use the current login token")
+		}
 		// First data request returns 401 (expired token), second succeeds.
 		if requestCount == 1 {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -666,6 +677,9 @@ func newPostTestServer(t *testing.T, wantPath string) *httptest.Server {
 		}
 		if auth := r.Header.Get("Authorization"); auth != "Bearer test-jwt-token" {
 			t.Errorf("Authorization = %q, want %q", auth, "Bearer test-jwt-token")
+		}
+		if r.Header.Get("Content-Type") != "application/json" {
+			t.Error("POST Content-Type must be application/json")
 		}
 		if wantPath != "" && r.URL.RequestURI() != wantPath {
 			t.Errorf("path = %q, want %q", r.URL.RequestURI(), wantPath)
@@ -1402,5 +1416,294 @@ func TestGetPersonTranslation(t *testing.T) {
 	}
 	if got.Name != "Person Name" {
 		t.Errorf("Name = %q", got.Name)
+	}
+}
+
+// TestConcurrentGetSeries checks concurrent requests and concurrent relogin through both constructors.
+func TestConcurrentGetSeries(t *testing.T) {
+	t.Parallel()
+	for _, withPIN := range []bool{false, true} {
+		t.Run(strconv.FormatBool(withPIN), func(t *testing.T) {
+			t.Parallel()
+			srv := newTestServer(t, "/series/1", map[string]any{"data": map[string]any{"id": 1}})
+			defer srv.Close()
+			c := newConcurrentTestClient(srv.URL, withPIN)
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+			if err := c.Login(ctx); err != nil {
+				t.Fatalf("Login: %v", err)
+			}
+			checkConcurrentSeries(t, ctx, c)
+			checkConcurrentSeriesRelogin(t, ctx, withPIN)
+		})
+	}
+}
+
+// newConcurrentTestClient creates a client with or without a subscriber PIN for concurrency tests.
+func newConcurrentTestClient(baseURL string, withPIN bool) *tvdb.Client {
+	if withPIN {
+		return tvdb.NewWithPIN("test-key", "test-pin", metadata.WithBaseURL(baseURL))
+	}
+	return tvdb.New("test-api-key", metadata.WithBaseURL(baseURL))
+}
+
+// Why: synchronize eight callers to expose shared authentication callback races.
+func checkConcurrentSeries(t *testing.T, ctx context.Context, c *tvdb.Client) {
+	t.Helper()
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	for range 8 {
+		wg.Go(func() {
+			<-start
+			series, err := c.GetSeries(ctx, 1)
+			if err != nil {
+				t.Errorf("GetSeries: %v", err)
+				return
+			}
+			if series.ID != 1 {
+				t.Errorf("series ID = %d, want 1", series.ID)
+			}
+		})
+	}
+	close(start)
+	wg.Wait()
+}
+
+const (
+	firstReloginToken  = "test-jwt-token-1"
+	secondReloginToken = "test-jwt-token-2"
+)
+
+// reloginSeriesFixture coordinates the concurrent relogin test server and token tracking.
+type reloginSeriesFixture struct {
+	t             *testing.T
+	seriesArrived chan struct{}
+	releaseHeld   chan struct{}
+	releaseOnce   sync.Once
+	loginCount    atomic.Int32
+	heldOne       atomic.Bool
+	authMu        sync.Mutex
+	lastAuth      string
+}
+
+// release unblocks the held series response if it is still waiting.
+func (f *reloginSeriesFixture) release() {
+	f.releaseOnce.Do(func() {
+		close(f.releaseHeld)
+	})
+}
+
+// lastAuthorization returns the most recent Authorization header seen by /series/1.
+func (f *reloginSeriesFixture) lastAuthorization() string {
+	f.authMu.Lock()
+	defer f.authMu.Unlock()
+	return f.lastAuth
+}
+
+// handleLogin serves distinct tokens for the first and subsequent login calls.
+func (f *reloginSeriesFixture) handleLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	token := firstReloginToken
+	if f.loginCount.Add(1) > 1 {
+		token = secondReloginToken
+	}
+	w.Header().Set("Content-Type", "application/json")
+	body := `{"status":"success","data":{"token":"` + token + `"}}`
+	if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+		f.t.Errorf("tvdb test: write login fixture: %v", err)
+	}
+}
+
+// handleSeries records Authorization, holds the first request until release, and serves /series/1.
+func (f *reloginSeriesFixture) handleSeries(w http.ResponseWriter, r *http.Request) {
+	auth := r.Header.Get("Authorization")
+	if auth != "Bearer "+firstReloginToken && auth != "Bearer "+secondReloginToken {
+		f.t.Errorf("Authorization = %q, want Bearer %s or %s", auth, firstReloginToken, secondReloginToken)
+	}
+	f.authMu.Lock()
+	f.lastAuth = auth
+	f.authMu.Unlock()
+	if f.heldOne.CompareAndSwap(false, true) {
+		f.seriesArrived <- struct{}{}
+		select {
+		case <-f.releaseHeld:
+		case <-r.Context().Done():
+			return
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := io.Copy(w, strings.NewReader(`{"data":{"id":1}}`)); err != nil {
+		f.t.Errorf("tvdb test: write series fixture: %v", err)
+	}
+}
+
+// checkConcurrentSeriesRelogin triggers Login while concurrent GetSeries requests are in flight.
+func checkConcurrentSeriesRelogin(t *testing.T, ctx context.Context, withPIN bool) {
+	t.Helper()
+	srv, fixture := newReloginSeriesServer(t)
+	t.Cleanup(srv.Close)
+	c := newConcurrentTestClient(srv.URL, withPIN)
+	if err := c.Login(ctx); err != nil {
+		t.Fatalf("initial Login: %v", err)
+	}
+	workerCtx, cancelWorkers := context.WithCancel(ctx)
+	var wg sync.WaitGroup
+	t.Cleanup(func() {
+		fixture.release()
+		cancelWorkers()
+		wg.Wait()
+	})
+	start := make(chan struct{})
+	for range 8 {
+		wg.Go(func() {
+			<-start
+			runReloginSeriesWorker(t, workerCtx, c)
+		})
+	}
+	close(start)
+	select {
+	case <-fixture.seriesArrived:
+	case <-ctx.Done():
+		t.Fatalf("waiting for series request: %v", ctx.Err())
+	}
+	if err := c.Login(ctx); err != nil {
+		t.Fatalf("concurrent Login: %v", err)
+	}
+	fixture.release()
+	wg.Wait()
+	if _, err := c.GetSeries(ctx, 1); err != nil {
+		t.Fatalf("post-relogin GetSeries: %v", err)
+	}
+	if got, want := fixture.lastAuthorization(), "Bearer "+secondReloginToken; got != want {
+		t.Errorf("post-relogin Authorization = %q, want %q", got, want)
+	}
+}
+
+// runReloginSeriesWorker issues four GetSeries requests unless the worker context is canceled.
+func runReloginSeriesWorker(t *testing.T, ctx context.Context, c *tvdb.Client) {
+	t.Helper()
+	for range 4 {
+		series, err := c.GetSeries(ctx, 1)
+		if err != nil {
+			if ctx.Err() == nil {
+				t.Errorf("GetSeries: %v", err)
+			}
+			return
+		}
+		if series.ID != 1 {
+			t.Errorf("series ID = %d, want 1", series.ID)
+			return
+		}
+	}
+}
+
+// newReloginSeriesServer serves /login and holds one /series/1 response until released.
+func newReloginSeriesServer(t *testing.T) (*httptest.Server, *reloginSeriesFixture) {
+	t.Helper()
+	fixture := &reloginSeriesFixture{
+		t:             t,
+		seriesArrived: make(chan struct{}, 1),
+		releaseHeld:   make(chan struct{}),
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Connection", "close")
+		if r.URL.Path == "/login" {
+			fixture.handleLogin(w, r)
+			return
+		}
+		fixture.handleSeries(w, r)
+	}))
+	return srv, fixture
+}
+
+// TestLoginResponseLimit checks login response sizes around the local cap.
+func TestLoginResponseLimit(t *testing.T) {
+	t.Parallel()
+	const limit = 1 << 20
+	for _, size := range []int{limit - 1, limit, limit + 1} {
+		t.Run(strconv.Itoa(size), func(t *testing.T) {
+			t.Parallel()
+			checkLoginResponseLimit(t, size, limit)
+		})
+	}
+}
+
+// checkLoginResponseLimit checks login size bounds and subsequent bearer authentication.
+func checkLoginResponseLimit(t *testing.T, size, limit int) {
+	t.Helper()
+	body := `{"data":{"token":"test-token"}}`
+	body += strings.Repeat(" ", size-len(body))
+	var mu sync.Mutex
+	var authorization string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		responseBody := body
+		if r.Method != http.MethodPost || r.URL.Path != "/login" {
+			mu.Lock()
+			authorization = r.Header.Get("Authorization")
+			mu.Unlock()
+			responseBody = `{"data":{"id":1}}`
+		}
+		if _, err := io.Copy(w, strings.NewReader(responseBody)); err != nil {
+			t.Errorf("tvdb test: write response fixture: %v", err)
+		}
+	}))
+	defer srv.Close()
+	c := newClient(t, srv)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	err := c.Login(ctx)
+	if size <= limit {
+		if err != nil {
+			t.Fatalf("Login: %v", err)
+		}
+		if _, err := c.GetSeries(ctx, 1); err != nil {
+			t.Fatalf("GetSeries: %v", err)
+		}
+		mu.Lock()
+		got := authorization
+		mu.Unlock()
+		if got != "Bearer test-token" {
+			t.Errorf("Authorization = %q, want %q", got, "Bearer test-token")
+		}
+		return
+	}
+	checkLoginResponseLimitError(t, err)
+}
+
+// checkLoginResponseLimitError checks that oversized login responses report the limit.
+func checkLoginResponseLimitError(t *testing.T, err error) {
+	t.Helper()
+	if err == nil || !strings.Contains(err.Error(), "tvdb: read login response:") || !strings.Contains(err.Error(), "1048576 bytes") {
+		t.Fatalf("error = %v, want login response limit", err)
+	}
+}
+
+// TestAPIErrorTruncation checks byte limits, rune boundaries, and preserved raw bodies.
+func TestAPIErrorTruncation(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		body string
+		want string
+	}{
+		{"511", strings.Repeat("x", 511), strings.Repeat("x", 511)},
+		{"512", strings.Repeat("x", 512), strings.Repeat("x", 512)},
+		{"513", strings.Repeat("x", 513), strings.Repeat("x", 512) + "... (truncated)"},
+		{"rune", strings.Repeat("x", 511) + "界", strings.Repeat("x", 511) + "... (truncated)"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := &tvdb.APIError{StatusCode: http.StatusBadRequest, RawBody: tc.body}
+			got := err.Error()
+			if got != "tvdb: HTTP 400 Bad Request: "+tc.want || !utf8.ValidString(got) {
+				t.Errorf("Error() = %q, want valid UTF-8 and expected body", got)
+			}
+			if err.RawBody != tc.body {
+				t.Error("RawBody changed")
+			}
+		})
 	}
 }
