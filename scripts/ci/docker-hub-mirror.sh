@@ -21,6 +21,31 @@ validate_config() {
 	jq -se 'length == 1 and (.[0] | type == "object")' "$1" >/dev/null
 }
 
+# install_config stages the configuration before atomically replacing the target.
+install_config() {
+	local source="$1" target="$2" had_previous="$3" privilege="${DOCKER_MIRROR_PRIVILEGE:-sudo}" step=""
+	if ! "$privilege" install -m 0644 "$source" "$target.new"; then
+		step=install
+	elif [[ "$had_previous" == true ]] && ! "$privilege" chown --reference="$target" "$target.new"; then
+		step='chown'
+	elif [[ "$had_previous" == true ]] && ! "$privilege" chmod --reference="$target" "$target.new"; then
+		step='chmod'
+	elif ! "$privilege" mv -f "$target.new" "$target"; then
+		step=rename
+	fi
+	if [[ -n "$step" ]]; then
+		if ! "$privilege" rm -f "$target.new"; then
+			step="$step; staged file cleanup failed"
+		fi
+		printf '::error title=Docker Hub mirror::%s failed\n' "$step" >&2
+		return 1
+	fi
+}
+
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+	return
+fi
+
 if [[ "${1:-}" == --print ]]; then
 	if [[ $# -ne 2 ]]; then
 		printf 'usage: %s [--print FILE]\n' "$0" >&2
@@ -85,7 +110,7 @@ restore_config() {
 	exit 1
 }
 
-sudo cp "$work/merged" "$conf"
+install_config "$work/merged" "$conf" "$previous"
 if ! sudo systemctl restart docker; then
 	restore_config
 fi

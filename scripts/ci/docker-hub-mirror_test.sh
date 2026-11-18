@@ -17,15 +17,43 @@ expect_rejected() {
 	fi
 }
 printf '%s\n' '{"registry-mirrors":["https://z", "https://a"]}' >"$work/order"
-bash "$script" --print "$work/order" | jq -e '."registry-mirrors" == ["https://z", "https://a", "https://mirror.gcr.io"]' >/dev/null
+env DOCKER_HUB_MIRROR=https://mirror.gcr.io bash "$script" --print "$work/order" | jq -e '."registry-mirrors" == ["https://z", "https://a", "https://mirror.gcr.io"]' >/dev/null
 printf '%s\n' '{"registry-mirrors":["https://z", "https://mirror.gcr.io", "https://a"]}' >"$work/present"
-bash "$script" --print "$work/present" | jq -e '."registry-mirrors" == ["https://z", "https://mirror.gcr.io", "https://a"]' >/dev/null
+env DOCKER_HUB_MIRROR=https://mirror.gcr.io bash "$script" --print "$work/present" | jq -e '."registry-mirrors" == ["https://z", "https://mirror.gcr.io", "https://a"]' >/dev/null
 printf '\n' >"$work/newline"
 printf '{}\n{}\n' >"$work/two"
 printf '[]\n' >"$work/array"
 for file in newline two array; do
-	expect_rejected 1 "$work/$file" env
+	expect_rejected 1 "$work/$file" env DOCKER_HUB_MIRROR=https://mirror.gcr.io
 done
-bash "$script" --print "$work/missing" | jq -e '."registry-mirrors" == ["https://mirror.gcr.io"]' >/dev/null
+env DOCKER_HUB_MIRROR=https://mirror.gcr.io bash "$script" --print "$work/missing" | jq -e '."registry-mirrors" == ["https://mirror.gcr.io"]' >/dev/null
 expect_rejected 2 "$work/missing" env DOCKER_HUB_MIRROR=not-a-url
+
+export DOCKER_HUB_MIRROR=https://mirror.gcr.io DOCKER_MIRROR_PRIVILEGE=env
+# shellcheck source=/dev/null
+. "$script"
+printf 'old\n' >"$work/config"
+printf 'new\n' >"$work/merged"
+install_config "$work/merged" "$work/config" true
+cmp "$work/merged" "$work/config"
+[[ ! -e "$work/config.new" ]]
+printf 'old\n' >"$work/config"
+cp "$work/config" "$work/original"
+cat >"$work/fail-install" <<'EOF'
+#!/usr/bin/env bash
+if [[ "$1" == install ]]; then
+	printf 'partial\n' >"${@: -1}"
+	exit 1
+fi
+"$@"
+EOF
+chmod +x "$work/fail-install"
+export DOCKER_MIRROR_PRIVILEGE="$work/fail-install"
+if install_config "$work/merged" "$work/config" true 2>"$work/err"; then
+	printf 'expected staging failure\n' >&2
+	exit 1
+fi
+cmp "$work/original" "$work/config"
+[[ ! -e "$work/config.new" ]]
+grep -Fq '::error title=Docker Hub mirror::install failed' "$work/err"
 printf 'Docker Hub mirror print policy passed\n'

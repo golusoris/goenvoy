@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-repo_root="$(CDPATH='' cd -- "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+repo_root="$(CDPATH='' cd -- "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 scan_root="$repo_root"
 site_arg=""
 while (($# > 0)); do
@@ -13,7 +13,7 @@ while (($# > 0)); do
 			printf '%s requires a path\n' "$1" >&2
 			exit 2
 		}
-		scan_root="$(CDPATH='' cd -- "$2" && pwd)"
+		scan_root="$(CDPATH='' cd -- "$2" && pwd -P)"
 		shift 2
 		;;
 	--site-dir)

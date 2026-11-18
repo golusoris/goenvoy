@@ -123,6 +123,9 @@ expect_failure 'MkDocs output overlaps source' env DOCKER_BIN="$fake_docker" FAK
 	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir .
 expect_failure 'MkDocs output overlaps source' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
 	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir docs/out
+ln -s "$clean_root" "$suite_root/linked-root"
+expect_failure 'MkDocs output overlaps source' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$suite_root/linked-root" --site-dir "$clean_root/docs/out"
 mkdir "$clean_root/foreign"
 printf 'foreign\n' >"$clean_root/foreign/file"
 expect_failure 'MkDocs output refuses nonempty directory' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
