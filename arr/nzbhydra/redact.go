@@ -105,8 +105,8 @@ func appendWrapped(queue []error, err error) []error {
 
 // redactError sanitizes URL errors and hides error trees that may expose the API key.
 func (c *Client) redactError(err error) error {
-	var uerr *url.Error
-	if errors.As(err, &uerr) && any(err) == any(uerr) {
+	// Why: only the root can be a *url.Error to copy; errors.As would search the whole tree unbounded.
+	if uerr, ok := err.(*url.Error); ok { //nolint:errorlint // root identity wanted; tree search is the defect
 		// Why: root identity preserves outer wrappers and joined sentinels for nested URL errors.
 		// Why: copy only the root URL error to sanitize its URL without mutating shared state.
 		err = &url.Error{Op: uerr.Op, URL: c.scrub(redactURL(uerr.URL)), Err: c.scrubError(uerr.Err)}

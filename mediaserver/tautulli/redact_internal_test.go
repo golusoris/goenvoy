@@ -404,3 +404,33 @@ func TestScrubQuotedKey(t *testing.T) {
 		})
 	}
 }
+
+// redactionFanout is a keyless error whose Unwrap returns the previous level twice.
+type redactionFanout struct{ prev error }
+
+// Error returns constant text so only the tree shape costs time.
+func (redactionFanout) Error() string { return "fixture fanout level" }
+
+// Unwrap returns the previous level twice, doubling the tree per level.
+func (e redactionFanout) Unwrap() []error { return []error{e.prev, e.prev} }
+
+// TestRedactErrorFanoutBounded checks that a keyless exponential error tree returns promptly.
+func TestRedactErrorFanoutBounded(t *testing.T) {
+	t.Parallel()
+	c := &Client{apiKey: "placeholder+k/y=1"}
+	var err error
+	err = errors.New("fixture fanout leaf")
+	for range 40 {
+		err = redactionFanout{prev: err}
+	}
+	done := make(chan error, 1)
+	go func() { done <- c.redactError(err) }()
+	select {
+	case got := <-done:
+		if got == nil {
+			t.Error("redactError returned nil for a non-nil error")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("redactError did not return within 2s")
+	}
+}
