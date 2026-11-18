@@ -1,0 +1,9 @@
+name: Configure Docker Hub mirror
+description: Pull Docker Hub images through mirror.gcr.io
+
+runs:
+  using: composite
+  steps:
+    - name: Configure Docker daemon mirror
+      shell: bash
+      run: bash scripts/ci/docker-hub-mirror.sh

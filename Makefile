@@ -160,6 +160,12 @@ doc: ## Local godoc server at :6060
 	@echo "Starting godoc server at http://localhost:6060"
 	@godoc -http=:6060
 
+# Why: docs-site is excluded from verify-all because Docker is not present in every gate environment.
+.PHONY: docs-site
+docs-site: ## Strict mkdocs build of the docs site in the pinned image
+	bash scripts/ci/mkdocs-build-policy_test.sh
+	bash scripts/ci/mkdocs-build.sh
+
 # Praetor declared verification; existing project recipes remain unchanged.
 # Praetor ships one binary under two names; resolve whichever is installed.
 PRAETORCTL ?= $(shell command -v praetorctl 2>/dev/null || command -v standardsctl 2>/dev/null || echo praetorctl)

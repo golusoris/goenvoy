@@ -213,6 +213,8 @@ goenvoy/
 
 ## Guides and reference
 
+- [Documentation site](https://golusoris.github.io/goenvoy/) — published guides,
+  architecture decisions, and upstream API notes.
 - [Principles](docs/principles.md) — coding rules, SEI CERT Go practices, Go
   style, supply-chain commitments, wire protocols, and testing standards.
 - [Architecture decision records](docs/adr/) — Nygard-format records for module
