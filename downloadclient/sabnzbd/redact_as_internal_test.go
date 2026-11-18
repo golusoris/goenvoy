@@ -1,0 +1,439 @@
+package sabnzbd
+
+import (
+	"errors"
+	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+)
+
+// redactAsProbe is a second error type in the tree, used to prove As answers only a URL error target.
+type redactAsProbe struct{ text string }
+
+// Error returns the fixture text.
+func (e *redactAsProbe) Error() string { return e.text }
+
+// assertNoKeyForms reports every raw, query-escaped, or Go-quoted form of key found in text.
+func assertNoKeyForms(t *testing.T, text, key string) {
+	t.Helper()
+	quoted := strconv.Quote(key)
+	for _, form := range []string{key, url.QueryEscape(key), quoted[1 : len(quoted)-1]} {
+		if strings.Contains(text, form) {
+			t.Errorf("key form %q leaked: %s", form, text)
+		}
+	}
+}
+
+// TestRedactedErrorAsURLError checks that errors.As reaches a sanitized copy of a nested URL error and nothing else.
+func TestRedactedErrorAsURLError(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ name, key string }{
+		{name: "plain", key: "plain-key"},
+		{name: "query escaped and quoted", key: `plain-key+k/y="1"`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			checkRedactedErrorAs(t, tc.key)
+		})
+	}
+}
+
+// checkRedactedErrorAs redacts a tree that nests a key-bearing URL error and checks what errors.As reaches.
+func checkRedactedErrorAs(t *testing.T, key string) {
+	t.Helper()
+	c := &Client{apiKey: key}
+	inner := &url.Error{
+		Op:  "Get",
+		URL: "http://h/?apikey=" + url.QueryEscape(key),
+		Err: fmt.Errorf("dial %s %q", key, key),
+	}
+	probe := &redactAsProbe{text: "probe " + key}
+	tree := fmt.Errorf("outer: %w", errors.Join(probe, fmt.Errorf("mid: %w", inner)))
+	var present *redactAsProbe
+	if !errors.As(tree, &present) {
+		t.Fatal("fixture broken: probe missing from the original tree")
+	}
+
+	got := c.redactError(tree)
+	assertNoKeyForms(t, got.Error(), key)
+	var uerr *url.Error
+	if !errors.As(got, &uerr) {
+		t.Fatal("errors.As into *url.Error = false; want true")
+	}
+	if uerr == inner {
+		t.Error("errors.As returned the original URL error, not a copy")
+	}
+	if uerr.Op != inner.Op {
+		t.Errorf("Op = %q; want %q", uerr.Op, inner.Op)
+	}
+	assertNoKeyForms(t, uerr.Error(), key)
+	assertNoKeyForms(t, uerr.URL, key)
+	var hidden *redactAsProbe
+	if errors.As(got, &hidden) {
+		t.Error("errors.As into another tree type = true; want false")
+	}
+}
+
+// TestRedactedErrorAsOpRedaction checks that errors.As yields a copy whose Op and text lack the key held by a nested URL error's Op.
+func TestRedactedErrorAsOpRedaction(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	c := &Client{apiKey: key}
+	inner := &url.Error{Op: "Get " + key, URL: "http://h/", Err: errors.New("fixture transport failure")}
+	tree := fmt.Errorf("outer: %w", errors.Join(&redactAsProbe{text: "probe"}, fmt.Errorf("mid: %w", inner)))
+
+	got := c.redactError(tree)
+	assertNoKeyForms(t, got.Error(), key)
+	var uerr *url.Error
+	if !errors.As(got, &uerr) {
+		t.Fatal("errors.As into *url.Error = false; want true")
+	}
+	if uerr == inner {
+		t.Error("errors.As returned the original URL error, not a copy")
+	}
+	assertNoKeyForms(t, uerr.Op, key)
+	assertNoKeyForms(t, uerr.Error(), key)
+	if inner.Op != "Get "+key {
+		t.Errorf("original Op = %q; the copy must not mutate it", inner.Op)
+	}
+}
+
+// TestRedactedErrorAsTypedNilURLError checks that errors.As skips a typed-nil *url.Error and sanitizes a following valid *url.Error.
+func TestRedactedErrorAsTypedNilURLError(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	var typedNil *url.Error
+	valid := &url.Error{
+		Op:  "Get " + key,
+		URL: "http://h/?apikey=" + url.QueryEscape(key),
+		Err: fmt.Errorf("dial %s", key),
+	}
+	cases := []struct {
+		name  string
+		child error
+		want  bool
+	}{
+		{name: "typed-nil before valid URL error", child: errors.Join(typedNil, valid), want: true},
+		{name: "only typed-nil URL error", child: errors.Join(typedNil), want: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertTypedNilURLErrorAs(t, key, tc.child, valid, tc.want)
+		})
+	}
+}
+
+// assertTypedNilURLErrorAs checks errors.As on a hidden tree wrapping child.
+func assertTypedNilURLErrorAs(t *testing.T, key string, child error, valid *url.Error, want bool) {
+	t.Helper()
+	tree := &redactCycleErr{text: "outer " + key, next: child}
+	got := hiddenRedacted(t, key, tree)
+	assertNoKeyForms(t, got.Error(), key)
+	var uerr *url.Error
+	if matched := errors.As(got, &uerr); matched != want {
+		t.Fatalf("errors.As = %v; want %v", matched, want)
+	}
+	if !want {
+		if uerr != nil {
+			t.Errorf("errors.As target = %v; want nil", uerr)
+		}
+		return
+	}
+	if uerr == nil || uerr == valid {
+		t.Fatalf("errors.As target = %v; want a sanitized copy", uerr)
+	}
+	assertNoKeyForms(t, uerr.Error(), key)
+	assertNoKeyForms(t, uerr.URL, key)
+}
+
+// TestRedactedErrorAsFanoutBounded checks that errors.As on a hidden exponential tree with a key-bearing leaf returns promptly.
+func TestRedactedErrorAsFanoutBounded(t *testing.T) {
+	t.Parallel()
+	c := &Client{apiKey: "plain-key"}
+	var err error
+	err = errors.New("fixture fanout leaf plain-key")
+	for range 40 {
+		err = redactionFanout{prev: err}
+	}
+	done := make(chan bool, 1)
+	go func() {
+		var uerr *url.Error
+		done <- errors.As(c.redactError(err), &uerr)
+	}()
+	select {
+	case found := <-done:
+		if found {
+			t.Error("errors.As found a *url.Error in a tree that holds none")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("errors.As did not return within 2s")
+	}
+}
+
+// redactSliceErr is an uncomparable error type; comparing two values of it with == panics.
+type redactSliceErr []string
+
+// Error returns constant fixture text.
+func (redactSliceErr) Error() string { return "fixture slice error" }
+
+// hiddenRedacted returns the redactedError that scrubError builds for err and fails the test when err is not hidden.
+func hiddenRedacted(t *testing.T, key string, err error) error {
+	t.Helper()
+	got := (&Client{apiKey: key}).scrubError(err)
+	var hidden *redactedError
+	if !errors.As(got, &hidden) {
+		t.Fatalf("scrubError(%v) did not hide the tree", err)
+	}
+	return got
+}
+
+// answerWithinTwoSeconds runs ask and fails the test, instead of hanging, when it does not answer within 2s.
+func answerWithinTwoSeconds(t *testing.T, name string, ask func() bool) bool {
+	t.Helper()
+	done := make(chan bool, 1)
+	go func() { done <- ask() }()
+	select {
+	case got := <-done:
+		return got
+	case <-time.After(2 * time.Second):
+		t.Fatalf("%s did not return within 2s", name)
+		return false
+	}
+}
+
+// TestRedactedErrorSearchesFanoutBounded checks that Timeout, Temporary and errors.Is on a hidden exponential tree return promptly.
+func TestRedactedErrorSearchesFanoutBounded(t *testing.T) {
+	t.Parallel()
+	var err error
+	err = errors.New("fixture fanout leaf")
+	for range 30 {
+		err = redactionFanout{prev: err}
+	}
+	hidden := hiddenRedacted(t, "plain-key", err)
+	absent := errors.New("not in the tree")
+	checks := map[string]func() bool{
+		"Timeout":   func() bool { return hidden.(interface{ Timeout() bool }).Timeout() },     //nolint:forcetypeassert // the wrapper's own method set under test
+		"Temporary": func() bool { return hidden.(interface{ Temporary() bool }).Temporary() }, //nolint:forcetypeassert // the wrapper's own method set under test
+		"Is":        func() bool { return errors.Is(hidden, absent) },
+	}
+	for name, ask := range checks {
+		if answerWithinTwoSeconds(t, name, ask) {
+			t.Errorf("%s = true on a tree with no matching node", name)
+		}
+	}
+}
+
+// TestRedactedErrorIsFindsSentinel checks that errors.Is reaches a sentinel three wraps deep, inside an errors.Join branch, and across a 200-wrap quiet chain, while rejecting an unrelated sentinel.
+func TestRedactedErrorIsFindsSentinel(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	sentinel := errors.New("fixture sentinel")
+	unrelated := errors.New("fixture unrelated sentinel")
+	deep := fmt.Errorf("a %s: %w", key, fmt.Errorf("b: %w", fmt.Errorf("c: %w", sentinel)))
+	joined := errors.Join(errors.New("other branch"), fmt.Errorf("k %s: %w", key, sentinel))
+	chain := sentinel
+	for range 200 {
+		chain = &redactCycleErr{text: "fixture quiet wrap", next: chain}
+	}
+	cases := []struct {
+		name string
+		tree error
+	}{
+		{name: "three wraps deep", tree: deep},
+		{name: "join branch", tree: joined},
+		{name: "long quiet chain", tree: chain},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			hidden := hiddenRedacted(t, key, tc.tree)
+			if !errors.Is(hidden, sentinel) {
+				t.Error("errors.Is(sentinel) = false; want true")
+			}
+			if errors.Is(hidden, unrelated) {
+				t.Error("errors.Is(unrelated) = true; want false")
+			}
+		})
+	}
+}
+
+// redactCycleErr is a single-unwrap error node used to build cyclic unwrap chains.
+type redactCycleErr struct {
+	text string
+	next error
+}
+
+// Error returns the fixture text.
+func (e *redactCycleErr) Error() string { return e.text }
+
+// Unwrap returns the next error in the cycle.
+func (e *redactCycleErr) Unwrap() error { return e.next }
+
+// TestRedactedErrorWalkCycleBounded checks that errors.Is, Timeout, and Temporary terminate on cyclic single-unwrap error chains.
+func TestRedactedErrorWalkCycleBounded(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	unrelated := errors.New("fixture unrelated sentinel")
+	self := &redactCycleErr{text: "self cycle " + key}
+	self.next = self
+	first := &redactCycleErr{text: "cycle node a " + key}
+	second := &redactCycleErr{text: "cycle node b", next: first}
+	first.next = second
+	cases := []struct {
+		name string
+		err  error
+	}{
+		{name: "self cycle", err: self},
+		{name: "two-node cycle", err: first},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertCycleWalkBounded(t, key, tc.err, unrelated)
+		})
+	}
+}
+
+// assertCycleWalkBounded checks that scrubError hides err and that Is, Timeout, and Temporary return false within 2s.
+func assertCycleWalkBounded(t *testing.T, key string, err, unrelated error) {
+	t.Helper()
+	got := (&Client{apiKey: key}).scrubError(err)
+	var hidden *redactedError
+	if !errors.As(got, &hidden) {
+		t.Fatalf("scrubError(%v) = %T; want *redactedError", err, got)
+	}
+	if answerWithinTwoSeconds(t, "Is", func() bool { return errors.Is(got, unrelated) }) {
+		t.Error("errors.Is(unrelated) = true; want false")
+	}
+	if answerWithinTwoSeconds(t, "Timeout", hidden.Timeout) {
+		t.Error("Timeout() = true; want false")
+	}
+	if answerWithinTwoSeconds(t, "Temporary", hidden.Temporary) {
+		t.Error("Temporary() = true; want false")
+	}
+}
+
+// TestRedactedErrorIsUncomparableTarget checks that errors.Is with an uncomparable target reports false and never panics.
+func TestRedactedErrorIsUncomparableTarget(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	leaf := redactSliceErr{"leaf"}
+	hidden := hiddenRedacted(t, key, fmt.Errorf("a %s: %w", key, leaf))
+	if errors.Is(hidden, redactSliceErr{"x"}) {
+		t.Error("errors.Is with an uncomparable target = true; want false")
+	}
+}
+
+// redactIsNode is a tree node that answers errors.Is through its own Is method, for one sentinel it does not equal.
+type redactIsNode struct {
+	text    string
+	matches error
+}
+
+// Error returns the fixture text.
+func (n redactIsNode) Error() string { return n.text }
+
+// Is reports whether target is the one sentinel this node stands for.
+func (n redactIsNode) Is(target error) bool { return target == n.matches }
+
+// TestRedactedErrorIsNodeMethod checks that errors.Is reaches a node that matches only through its own Is method, two wraps deep.
+func TestRedactedErrorIsNodeMethod(t *testing.T) {
+	t.Parallel()
+	const key = "node-key"
+	matched := errors.New("fixture matched sentinel")
+	other := errors.New("fixture other sentinel")
+	node := redactIsNode{text: "node " + key, matches: matched}
+	tree := fmt.Errorf("a %s: %w", key, fmt.Errorf("b: %w", node))
+	hidden := hiddenRedacted(t, key, tree)
+	if !errors.Is(hidden, matched) {
+		t.Error("errors.Is through the node's Is method = false; want true")
+	}
+	if errors.Is(hidden, other) {
+		t.Error("errors.Is with a sentinel the node does not report = true; want false")
+	}
+}
+
+// TestRedactedErrorTypedNilWalk checks that errors.Is, errors.As, Timeout, and Temporary skip typed-nil nodes without panicking.
+func TestRedactedErrorTypedNilWalk(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	cases := []struct {
+		name string
+		tree error
+	}{
+		{name: "cycle wrapping joined typed-nil URL error", tree: &redactCycleErr{text: "outer " + key, next: errors.Join((*url.Error)(nil))}},
+		{name: "single wrap of typed-nil URL error", tree: &redactCycleErr{text: "outer " + key, next: (*url.Error)(nil)}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertTypedNilWalkSafe(t, key, tc.tree)
+		})
+	}
+}
+
+// assertTypedNilWalkSafe checks that Is, As, Timeout, and Temporary return false without panicking on a hidden tree with a typed-nil node.
+func assertTypedNilWalkSafe(t *testing.T, key string, tree error) {
+	t.Helper()
+	got := (&Client{apiKey: key}).scrubError(tree)
+	var hidden *redactedError
+	if !errors.As(got, &hidden) {
+		t.Fatalf("scrubError(%v) = %T; want *redactedError", tree, got)
+	}
+	if errors.Is(got, errors.New("other")) {
+		t.Error("errors.Is = true; want false")
+	}
+	var uerr *url.Error
+	if errors.As(got, &uerr) || uerr != nil {
+		t.Errorf("errors.As = true (%v); want false, nil", uerr)
+	}
+	if hidden.Timeout() {
+		t.Error("Timeout() = true; want false")
+	}
+	if hidden.Temporary() {
+		t.Error("Temporary() = true; want false")
+	}
+}
+
+// TestRedactTypedNilTree checks that redactError and scrubError hide joined or root typed-nil errors with the fixed message without calling Error().
+func TestRedactTypedNilTree(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		err  error
+	}{
+		{name: "joined typed-nil and boom", err: errors.Join((*url.Error)(nil), errors.New("boom"))},
+		{name: "root typed-nil URL error", err: (*url.Error)(nil)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertTypedNilTreeRedacted(t, tc.err)
+		})
+	}
+}
+
+// assertTypedNilTreeRedacted checks carriesKey, scrubError, redactError, and walk behavior on a tree holding a typed-nil error.
+func assertTypedNilTreeRedacted(t *testing.T, err error) {
+	t.Helper()
+	c := &Client{apiKey: "plain-key"}
+	if !c.carriesKey(err) {
+		t.Error("carriesKey = false; want true")
+	}
+	for _, got := range []error{c.scrubError(err), c.redactError(err)} {
+		if got == nil {
+			t.Fatal("redacted error = nil; want non-nil")
+		}
+		if got.Error() != errTreeTooLargeMsg {
+			t.Errorf("Error() = %q; want %q", got.Error(), errTreeTooLargeMsg)
+		}
+		if errors.Is(got, (*url.Error)(nil)) {
+			t.Error("errors.Is matched typed-nil *url.Error; walk must skip it")
+		}
+	}
+}
