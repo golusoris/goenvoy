@@ -47,13 +47,14 @@ type Client struct {
 // It returns an error if baseURL is not a valid HTTP/HTTPS URL.
 func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	baseURL = strings.TrimRight(baseURL, "/")
+	redactor := &Client{apiKey: apiKey}
 
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("tautulli: invalid base URL %q: %w", baseURL, err)
+		return nil, fmt.Errorf("tautulli: invalid base URL %q: %w", redactor.scrub(baseURL), redactor.redactError(err))
 	}
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return nil, fmt.Errorf("tautulli: invalid base URL %q: must be http(s) with a host", baseURL)
+		return nil, fmt.Errorf("tautulli: invalid base URL %q: must be http(s) with a host", redactor.scrub(baseURL))
 	}
 
 	c := &Client{
@@ -90,7 +91,7 @@ type apiResponse struct {
 	} `json:"response"`
 }
 
-// Why: request failures can echo the query key through transport errors and status bodies.
+// get executes a request and sanitizes errors containing the API key.
 func (c *Client) get(ctx context.Context, cmd string, params url.Values) (json.RawMessage, error) {
 	u, err := url.Parse(c.rawBaseURL + "/api/v2")
 	if err != nil {
@@ -128,7 +129,7 @@ func (c *Client) get(ctx context.Context, cmd string, params url.Values) (json.R
 
 	var r apiResponse
 	if err := json.Unmarshal(body, &r); err != nil {
-		return nil, fmt.Errorf("tautulli: decode response: %w", err)
+		return nil, fmt.Errorf("tautulli: decode response: %w", c.scrubError(err))
 	}
 
 	if r.Response.Result != "success" {
@@ -146,7 +147,7 @@ func (c *Client) GetActivity(ctx context.Context) (*Activity, error) {
 	}
 	var a Activity
 	if err := json.Unmarshal(data, &a); err != nil {
-		return nil, fmt.Errorf("tautulli: decode activity: %w", err)
+		return nil, fmt.Errorf("tautulli: decode activity: %w", c.scrubError(err))
 	}
 	return &a, nil
 }
@@ -166,7 +167,7 @@ func (c *Client) GetHistory(ctx context.Context, start, length int) (*HistoryRes
 	}
 	var h HistoryResponse
 	if err := json.Unmarshal(data, &h); err != nil {
-		return nil, fmt.Errorf("tautulli: decode history: %w", err)
+		return nil, fmt.Errorf("tautulli: decode history: %w", c.scrubError(err))
 	}
 	return &h, nil
 }
@@ -179,7 +180,7 @@ func (c *Client) GetLibraries(ctx context.Context) ([]Library, error) {
 	}
 	var libs []Library
 	if err := json.Unmarshal(data, &libs); err != nil {
-		return nil, fmt.Errorf("tautulli: decode libraries: %w", err)
+		return nil, fmt.Errorf("tautulli: decode libraries: %w", c.scrubError(err))
 	}
 	return libs, nil
 }
@@ -193,7 +194,7 @@ func (c *Client) GetLibrary(ctx context.Context, sectionID string) (*LibraryDeta
 	}
 	var lib LibraryDetail
 	if err := json.Unmarshal(data, &lib); err != nil {
-		return nil, fmt.Errorf("tautulli: decode library: %w", err)
+		return nil, fmt.Errorf("tautulli: decode library: %w", c.scrubError(err))
 	}
 	return &lib, nil
 }
@@ -206,7 +207,7 @@ func (c *Client) GetLibraryNames(ctx context.Context) ([]LibraryName, error) {
 	}
 	var names []LibraryName
 	if err := json.Unmarshal(data, &names); err != nil {
-		return nil, fmt.Errorf("tautulli: decode library names: %w", err)
+		return nil, fmt.Errorf("tautulli: decode library names: %w", c.scrubError(err))
 	}
 	return names, nil
 }
@@ -219,7 +220,7 @@ func (c *Client) GetUsers(ctx context.Context) ([]User, error) {
 	}
 	var users []User
 	if err := json.Unmarshal(data, &users); err != nil {
-		return nil, fmt.Errorf("tautulli: decode users: %w", err)
+		return nil, fmt.Errorf("tautulli: decode users: %w", c.scrubError(err))
 	}
 	return users, nil
 }
@@ -233,7 +234,7 @@ func (c *Client) GetUser(ctx context.Context, userID string) (*UserDetail, error
 	}
 	var u UserDetail
 	if err := json.Unmarshal(data, &u); err != nil {
-		return nil, fmt.Errorf("tautulli: decode user: %w", err)
+		return nil, fmt.Errorf("tautulli: decode user: %w", c.scrubError(err))
 	}
 	return &u, nil
 }
@@ -246,7 +247,7 @@ func (c *Client) GetUserNames(ctx context.Context) ([]UserName, error) {
 	}
 	var names []UserName
 	if err := json.Unmarshal(data, &names); err != nil {
-		return nil, fmt.Errorf("tautulli: decode user names: %w", err)
+		return nil, fmt.Errorf("tautulli: decode user names: %w", c.scrubError(err))
 	}
 	return names, nil
 }
@@ -259,7 +260,7 @@ func (c *Client) GetHomeStats(ctx context.Context) ([]HomeStats, error) {
 	}
 	var stats []HomeStats
 	if err := json.Unmarshal(data, &stats); err != nil {
-		return nil, fmt.Errorf("tautulli: decode home stats: %w", err)
+		return nil, fmt.Errorf("tautulli: decode home stats: %w", c.scrubError(err))
 	}
 	return stats, nil
 }
@@ -272,7 +273,7 @@ func (c *Client) GetServerInfo(ctx context.Context) (*ServerInfo, error) {
 	}
 	var info ServerInfo
 	if err := json.Unmarshal(data, &info); err != nil {
-		return nil, fmt.Errorf("tautulli: decode server info: %w", err)
+		return nil, fmt.Errorf("tautulli: decode server info: %w", c.scrubError(err))
 	}
 	return &info, nil
 }
@@ -285,7 +286,7 @@ func (c *Client) GetTautulliInfo(ctx context.Context) (*Info, error) {
 	}
 	var info Info
 	if err := json.Unmarshal(data, &info); err != nil {
-		return nil, fmt.Errorf("tautulli: decode tautulli info: %w", err)
+		return nil, fmt.Errorf("tautulli: decode tautulli info: %w", c.scrubError(err))
 	}
 	return &info, nil
 }
@@ -299,7 +300,7 @@ func (c *Client) GetMetadata(ctx context.Context, ratingKey string) (*ItemMetada
 	}
 	var m ItemMetadata
 	if err := json.Unmarshal(data, &m); err != nil {
-		return nil, fmt.Errorf("tautulli: decode metadata: %w", err)
+		return nil, fmt.Errorf("tautulli: decode metadata: %w", c.scrubError(err))
 	}
 	return &m, nil
 }
@@ -313,7 +314,7 @@ func (c *Client) GetRecentlyAdded(ctx context.Context, count int) (*RecentlyAdde
 	}
 	var r RecentlyAddedResponse
 	if err := json.Unmarshal(data, &r); err != nil {
-		return nil, fmt.Errorf("tautulli: decode recently added: %w", err)
+		return nil, fmt.Errorf("tautulli: decode recently added: %w", c.scrubError(err))
 	}
 	return &r, nil
 }
@@ -327,7 +328,7 @@ func (c *Client) Search(ctx context.Context, query string) (*SearchResults, erro
 	}
 	var s SearchResults
 	if err := json.Unmarshal(data, &s); err != nil {
-		return nil, fmt.Errorf("tautulli: decode search: %w", err)
+		return nil, fmt.Errorf("tautulli: decode search: %w", c.scrubError(err))
 	}
 	return &s, nil
 }
@@ -340,7 +341,7 @@ func (c *Client) ServerStatus(ctx context.Context) (*ServerStatus, error) {
 	}
 	var s ServerStatus
 	if err := json.Unmarshal(data, &s); err != nil {
-		return nil, fmt.Errorf("tautulli: decode server status: %w", err)
+		return nil, fmt.Errorf("tautulli: decode server status: %w", c.scrubError(err))
 	}
 	return &s, nil
 }
@@ -364,7 +365,7 @@ func (c *Client) GetGeoIPLookup(ctx context.Context, ipAddress string) (*GeoIPIn
 	}
 	var g GeoIPInfo
 	if err := json.Unmarshal(data, &g); err != nil {
-		return nil, fmt.Errorf("tautulli: decode geoip: %w", err)
+		return nil, fmt.Errorf("tautulli: decode geoip: %w", c.scrubError(err))
 	}
 	return &g, nil
 }
@@ -378,7 +379,7 @@ func (c *Client) GetUserWatchTimeStats(ctx context.Context, userID string) ([]Wa
 	}
 	var stats []WatchTimeStats
 	if err := json.Unmarshal(data, &stats); err != nil {
-		return nil, fmt.Errorf("tautulli: decode watch time stats: %w", err)
+		return nil, fmt.Errorf("tautulli: decode watch time stats: %w", c.scrubError(err))
 	}
 	return stats, nil
 }
@@ -392,7 +393,7 @@ func (c *Client) GetLibraryWatchTimeStats(ctx context.Context, sectionID string)
 	}
 	var stats []WatchTimeStats
 	if err := json.Unmarshal(data, &stats); err != nil {
-		return nil, fmt.Errorf("tautulli: decode library watch time stats: %w", err)
+		return nil, fmt.Errorf("tautulli: decode library watch time stats: %w", c.scrubError(err))
 	}
 	return stats, nil
 }
