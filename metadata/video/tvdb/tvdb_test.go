@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -1468,60 +1469,154 @@ func checkConcurrentSeries(t *testing.T, ctx context.Context, c *tvdb.Client) {
 	wg.Wait()
 }
 
+const (
+	firstReloginToken  = "test-jwt-token-1"
+	secondReloginToken = "test-jwt-token-2"
+)
+
+// reloginSeriesFixture coordinates the concurrent relogin test server and token tracking.
+type reloginSeriesFixture struct {
+	t             *testing.T
+	seriesArrived chan struct{}
+	releaseHeld   chan struct{}
+	releaseOnce   sync.Once
+	loginCount    atomic.Int32
+	heldOne       atomic.Bool
+	authMu        sync.Mutex
+	lastAuth      string
+}
+
+// release unblocks the held series response if it is still waiting.
+func (f *reloginSeriesFixture) release() {
+	f.releaseOnce.Do(func() {
+		close(f.releaseHeld)
+	})
+}
+
+// lastAuthorization returns the most recent Authorization header seen by /series/1.
+func (f *reloginSeriesFixture) lastAuthorization() string {
+	f.authMu.Lock()
+	defer f.authMu.Unlock()
+	return f.lastAuth
+}
+
+// handleLogin serves distinct tokens for the first and subsequent login calls.
+func (f *reloginSeriesFixture) handleLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	token := firstReloginToken
+	if f.loginCount.Add(1) > 1 {
+		token = secondReloginToken
+	}
+	w.Header().Set("Content-Type", "application/json")
+	body := `{"status":"success","data":{"token":"` + token + `"}}`
+	if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+		f.t.Errorf("tvdb test: write login fixture: %v", err)
+	}
+}
+
+// handleSeries records Authorization, holds the first request until release, and serves /series/1.
+func (f *reloginSeriesFixture) handleSeries(w http.ResponseWriter, r *http.Request) {
+	auth := r.Header.Get("Authorization")
+	if auth != "Bearer "+firstReloginToken && auth != "Bearer "+secondReloginToken {
+		f.t.Errorf("Authorization = %q, want Bearer %s or %s", auth, firstReloginToken, secondReloginToken)
+	}
+	f.authMu.Lock()
+	f.lastAuth = auth
+	f.authMu.Unlock()
+	if f.heldOne.CompareAndSwap(false, true) {
+		f.seriesArrived <- struct{}{}
+		select {
+		case <-f.releaseHeld:
+		case <-r.Context().Done():
+			return
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := io.Copy(w, strings.NewReader(`{"data":{"id":1}}`)); err != nil {
+		f.t.Errorf("tvdb test: write series fixture: %v", err)
+	}
+}
+
 // checkConcurrentSeriesRelogin triggers Login while concurrent GetSeries requests are in flight.
 func checkConcurrentSeriesRelogin(t *testing.T, ctx context.Context, withPIN bool) {
 	t.Helper()
-	seriesArrived := make(chan struct{}, 1)
-	srv := newReloginSeriesServer(t, seriesArrived)
-	defer srv.Close()
+	srv, fixture := newReloginSeriesServer(t)
+	t.Cleanup(srv.Close)
 	c := newConcurrentTestClient(srv.URL, withPIN)
 	if err := c.Login(ctx); err != nil {
 		t.Fatalf("initial Login: %v", err)
 	}
+	workerCtx, cancelWorkers := context.WithCancel(ctx)
 	var wg sync.WaitGroup
+	t.Cleanup(func() {
+		fixture.release()
+		cancelWorkers()
+		wg.Wait()
+	})
 	start := make(chan struct{})
 	for range 8 {
 		wg.Go(func() {
 			<-start
-			for range 4 {
-				series, err := c.GetSeries(ctx, 1)
-				if err != nil || series.ID != 1 {
-					t.Errorf("GetSeries = (%+v, %v), want ID 1 and nil error", series, err)
-					return
-				}
-			}
+			runReloginSeriesWorker(t, workerCtx, c)
 		})
 	}
 	close(start)
 	select {
-	case <-seriesArrived:
+	case <-fixture.seriesArrived:
 	case <-ctx.Done():
 		t.Fatalf("waiting for series request: %v", ctx.Err())
 	}
 	if err := c.Login(ctx); err != nil {
 		t.Fatalf("concurrent Login: %v", err)
 	}
+	fixture.release()
 	wg.Wait()
+	if _, err := c.GetSeries(ctx, 1); err != nil {
+		t.Fatalf("post-relogin GetSeries: %v", err)
+	}
+	if got, want := fixture.lastAuthorization(), "Bearer "+secondReloginToken; got != want {
+		t.Errorf("post-relogin Authorization = %q, want %q", got, want)
+	}
 }
 
-// newReloginSeriesServer serves /login and signals seriesArrived when /series/1 is reached.
-func newReloginSeriesServer(t *testing.T, seriesArrived chan<- struct{}) *httptest.Server {
+// runReloginSeriesWorker issues four GetSeries requests unless the worker context is canceled.
+func runReloginSeriesWorker(t *testing.T, ctx context.Context, c *tvdb.Client) {
 	t.Helper()
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Connection", "close")
-		if r.URL.Path == "/login" {
-			loginHandler(w, r)
+	for range 4 {
+		series, err := c.GetSeries(ctx, 1)
+		if err != nil {
+			if ctx.Err() == nil {
+				t.Errorf("GetSeries: %v", err)
+			}
 			return
 		}
-		select {
-		case seriesArrived <- struct{}{}:
-		default:
+		if series.ID != 1 {
+			t.Errorf("series ID = %d, want 1", series.ID)
+			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		if _, err := io.Copy(w, strings.NewReader(`{"data":{"id":1}}`)); err != nil {
-			t.Errorf("tvdb test: write series fixture: %v", err)
+	}
+}
+
+// newReloginSeriesServer serves /login and holds one /series/1 response until released.
+func newReloginSeriesServer(t *testing.T) (*httptest.Server, *reloginSeriesFixture) {
+	t.Helper()
+	fixture := &reloginSeriesFixture{
+		t:             t,
+		seriesArrived: make(chan struct{}, 1),
+		releaseHeld:   make(chan struct{}),
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Connection", "close")
+		if r.URL.Path == "/login" {
+			fixture.handleLogin(w, r)
+			return
 		}
+		fixture.handleSeries(w, r)
 	}))
+	return srv, fixture
 }
 
 // TestLoginResponseLimit checks login response sizes around the local cap.

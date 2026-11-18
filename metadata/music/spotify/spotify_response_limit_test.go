@@ -20,8 +20,8 @@ func TestNewResponseLimit(t *testing.T) {
 	t.Parallel()
 	const baseURL = "https://spotify.example.test/v1"
 	c := New("", metadata.WithBaseURL(baseURL))
-	if got := c.responseLimit(); got != defaultMaxResponseBytes {
-		t.Errorf("responseLimit() = %d, want %d", got, defaultMaxResponseBytes)
+	if got := c.responseLimit(); got != 32<<20 {
+		t.Errorf("responseLimit() = %d, want %d", got, 32<<20)
 	}
 	if got := c.BaseURL(); got != baseURL {
 		t.Errorf("BaseURL() = %q, want %q", got, baseURL)
@@ -114,10 +114,10 @@ func TestSetMaxResponseBytes(t *testing.T) {
 	for _, tc := range []responseLimitCase{
 		{name: "override_1mib_rejects_2mib", overrides: []int64{oneMiB}, bodySize: 2 << 20, wantErr: "limit 1048576 bytes", wantLimit: oneMiB},
 		{name: "override_1mib_accepts_at_cap", overrides: []int64{oneMiB}, bodySize: oneMiB, wantLimit: oneMiB},
-		{name: "zero_override_restores_default_after_1mib", overrides: []int64{oneMiB, 0}, bodySize: 2 << 20, wantLimit: defaultMaxResponseBytes},
-		{name: "negative_override_restores_default_after_1mib", overrides: []int64{oneMiB, -1}, bodySize: 64, wantLimit: defaultMaxResponseBytes},
+		{name: "zero_override_restores_default_after_1mib", overrides: []int64{oneMiB, 0}, bodySize: 2 << 20, wantLimit: 32 << 20},
+		{name: "negative_override_restores_default_after_1mib", overrides: []int64{oneMiB, -1}, bodySize: 64, wantLimit: 32 << 20},
 		{name: "max_int64_override_decodes_small_body", overrides: []int64{math.MaxInt64}, bodySize: 64, wantLimit: math.MaxInt64},
-		{name: "zero_value_client_without_new", zeroValue: true, bodySize: 64, wantLimit: defaultMaxResponseBytes},
+		{name: "zero_value_client_without_new", zeroValue: true, bodySize: 64, wantLimit: 32 << 20},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -179,22 +179,14 @@ func newLimitTestClient(baseURL string, tc responseLimitCase) *Client {
 	return c
 }
 
-// roundTripFunc adapts a function into an http.RoundTripper for response-body error tests.
-type roundTripFunc func(*http.Request) (*http.Response, error)
-
-// RoundTrip executes the stub HTTP round-trip function.
-func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return f(req)
-}
-
-// errAfterReadCloser yields a fixed payload and then returns err on the final Read.
-type errAfterReadCloser struct {
+// errAfterReader yields a fixed payload and then returns err on the final Read.
+type errAfterReader struct {
 	data string
 	err  error
 }
 
 // Read copies remaining bytes into p and returns err once data is exhausted.
-func (r *errAfterReadCloser) Read(p []byte) (int, error) {
+func (r *errAfterReader) Read(p []byte) (int, error) {
 	n := copy(p, r.data)
 	r.data = r.data[n:]
 	if r.data == "" {
@@ -202,9 +194,6 @@ func (r *errAfterReadCloser) Read(p []byte) (int, error) {
 	}
 	return n, nil
 }
-
-// Close satisfies io.Closer for errAfterReadCloser.
-func (*errAfterReadCloser) Close() error { return nil }
 
 // TestGetResponseLimitReadError checks error precedence when a body read fails at or below the cap.
 func TestGetResponseLimitReadError(t *testing.T) {
@@ -229,24 +218,10 @@ func TestGetResponseLimitReadError(t *testing.T) {
 // checkGetResponseLimitReadError verifies whether the size error or read error wins.
 func checkGetResponseLimitReadError(t *testing.T, bodyBytes int, wantIs, forbidIs error, wantSubstr string) {
 	t.Helper()
-	hc := &http.Client{
-		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Status:     "200 OK",
-				Header:     make(http.Header),
-				Body:       &errAfterReadCloser{data: strings.Repeat("x", bodyBytes), err: io.ErrUnexpectedEOF},
-				Request:    req,
-			}, nil
-		}),
-	}
-	c := New("", metadata.WithHTTPClient(hc))
-	c.SetMaxResponseBytes(16)
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
-	defer cancel()
-	artist, err := c.GetArtist(ctx, "1")
-	if artist != nil {
-		t.Errorf("artist = %v, want nil", artist)
+	r := &errAfterReader{data: strings.Repeat("x", bodyBytes), err: io.ErrUnexpectedEOF}
+	body, err := readCapped(r, 16)
+	if body != nil {
+		t.Errorf("body = %q, want nil", body)
 	}
 	if !errors.Is(err, wantIs) || errors.Is(err, forbidIs) || !strings.Contains(err.Error(), wantSubstr) {
 		t.Errorf("error = %v, want Is(%v), !Is(%v), substring %q", err, wantIs, forbidIs, wantSubstr)
@@ -284,7 +259,7 @@ func TestConcurrentSetMaxResponseBytes(t *testing.T) {
 	}
 	close(start)
 	wg.Wait()
-	if got := c.responseLimit(); got != defaultMaxResponseBytes {
-		t.Errorf("responseLimit() = %d, want %d", got, defaultMaxResponseBytes)
+	if got := c.responseLimit(); got != 32<<20 {
+		t.Errorf("responseLimit() = %d, want %d", got, 32<<20)
 	}
 }
