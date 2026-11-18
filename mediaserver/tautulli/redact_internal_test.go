@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -341,6 +342,65 @@ func TestDecodeErrorRedaction(t *testing.T) {
 				t.Fatal("expected decoder error")
 			}
 			assertSafeText(t, err.Error(), tc.key)
+		})
+	}
+}
+
+// TestRedactQuotedKey checks nested URL errors with Go-quoted keys and preserves joined causes.
+func TestRedactQuotedKey(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ name, key string }{
+		{name: "plain", key: "placeholder"},
+		{name: "quote and backslash", key: `k"y\z`},
+		{name: "control", key: "k\ny\tz"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c := &Client{apiKey: tc.key}
+			original := errors.Join(io.ErrUnexpectedEOF,
+				&url.Error{Op: "Get", URL: "http://h/?apikey=" + tc.key, Err: errors.New("x")})
+			got := c.redactError(original)
+			quoted := strconv.Quote(tc.key)
+			text := got.Error()
+			if strings.Contains(text, tc.key) || strings.Contains(text, quoted[1:len(quoted)-1]) {
+				t.Errorf("key leaked: %s", text)
+			}
+			if !strings.Contains(text, "REDACTED") {
+				t.Error("missing REDACTED")
+			}
+			if !errors.Is(got, io.ErrUnexpectedEOF) {
+				t.Error("lost sentinel")
+			}
+		})
+	}
+}
+
+// TestScrubQuotedKey checks raw, query-escaped, Go-quoted, absent, and empty key forms.
+func TestScrubQuotedKey(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, key, input, want string
+		contains               bool
+	}{
+		{name: "empty", input: "plain", want: "plain"},
+		{name: "absent", key: `k"y\z`, input: "plain", want: "plain"},
+		{name: "plain", key: "placeholder", input: "key=placeholder", want: "key=REDACTED", contains: true},
+		{name: "raw", key: `k"y\z`, input: `key=k"y\z`, want: "key=REDACTED", contains: true},
+		{name: "query", key: `k"y\z`, input: "key=k%22y%5Cz", want: "key=REDACTED", contains: true},
+		{name: "quoted", key: `k"y\z`, input: `key=k\"y\\z`, want: "key=REDACTED", contains: true},
+		{name: "control", key: "k\ny\tz", input: `key=k\ny\tz`, want: "key=REDACTED", contains: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c := &Client{apiKey: tc.key}
+			if got := c.scrub(tc.input); got != tc.want {
+				t.Errorf("scrub = %q; want %q", got, tc.want)
+			}
+			if got := c.containsKey(tc.input); got != tc.contains {
+				t.Errorf("containsKey = %v; want %v", got, tc.contains)
+			}
 		})
 	}
 }
