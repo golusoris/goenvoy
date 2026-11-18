@@ -177,3 +177,195 @@ func checkRedaction(t *testing.T, err error, key, name string, sentinel error, h
 		}
 	}
 }
+
+// TestRedactError checks root URL sanitization without discarding outer error trees.
+func TestRedactError(t *testing.T) {
+	t.Parallel()
+	const key = "placeholder+k/y=1"
+	c := &Client{apiKey: key}
+	inner := errors.New("fixture inner sentinel")
+	uerr := &url.Error{Op: "Get", URL: "http://example.invalid/?apikey=" + url.QueryEscape(key), Err: inner}
+	keyless := errors.Join(io.ErrUnexpectedEOF, errors.New("fixture plain error"))
+	cases := []struct {
+		name      string
+		err       error
+		sentinel  error
+		rootURL   bool
+		unchanged bool
+	}{
+		{name: "root URL", err: uerr, sentinel: inner, rootURL: true},
+		{name: "joined URL", err: errors.Join(io.ErrUnexpectedEOF, uerr), sentinel: io.ErrUnexpectedEOF},
+		{name: "wrapped URL", err: fmt.Errorf("read: %w", uerr), sentinel: inner},
+		{name: "keyless join", err: keyless, sentinel: io.ErrUnexpectedEOF, unchanged: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := c.redactError(tc.err)
+			assertNoKey(t, got.Error(), key)
+			assertSentinel(t, got, tc.sentinel)
+			var matched *url.Error
+			if isURL := errors.As(got, &matched); isURL != tc.rootURL {
+				t.Errorf("root URL type = %v; want %v", isURL, tc.rootURL)
+			}
+			if same := any(got) == any(tc.err); same != tc.unchanged {
+				t.Errorf("same error value = %v; want %v", same, tc.unchanged)
+			}
+		})
+	}
+}
+
+// assertSentinel checks that error redaction preserves the expected cause.
+func assertSentinel(t *testing.T, got, sentinel error) {
+	t.Helper()
+	if !errors.Is(got, sentinel) {
+		t.Error("lost sentinel")
+	}
+}
+
+// TestNewRedaction checks constructor errors with keys embedded in invalid URLs.
+func TestNewRedaction(t *testing.T) {
+	t.Parallel()
+	const key = "placeholder+k/y=1"
+	for _, base := range []string{"http://%zz/", "ftp://example.invalid/", "https:///"} {
+		t.Run(base, func(t *testing.T) {
+			t.Parallel()
+			c, err := New(base+"?raw="+key+"&escaped="+url.QueryEscape(key), key)
+			if c != nil || err == nil {
+				t.Fatalf("New = %v, %v; want nil client and error", c, err)
+			}
+			assertSafeText(t, err.Error(), key)
+		})
+	}
+}
+
+// assertNoKey checks text for raw and query-escaped keys.
+func assertNoKey(t *testing.T, text, key string) {
+	t.Helper()
+	if strings.Contains(text, key) || strings.Contains(text, url.QueryEscape(key)) {
+		t.Errorf("key leaked: %s", text)
+	}
+}
+
+// assertSafeText checks both key forms and the redaction marker.
+func assertSafeText(t *testing.T, text, key string) {
+	t.Helper()
+	assertNoKey(t, text, key)
+	if !strings.Contains(text, "REDACTED") {
+		t.Errorf("missing REDACTED: %s", text)
+	}
+}
+
+// responseTextClient creates a client serving the supplied response text.
+func responseTextClient(t *testing.T, key, body string) *Client {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+			t.Errorf("write response text: %v", err)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	c, err := New(srv.URL, key, WithHTTPClient(srv.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+
+// TestDecodeErrorRedaction checks server text embedded in decoder errors.
+func TestDecodeErrorRedaction(t *testing.T) {
+	t.Parallel()
+	// Why: integer overflow errors echo this oversized numeric fixture key.
+	const numericKey = "1234567890123456789012345678901234567890"
+	cases := []struct {
+		name string
+		key  string
+		body string
+		call func(context.Context, *Client) error
+	}{
+		{name: "get json", key: numericKey, body: numericKey, call: func(ctx context.Context, c *Client) error {
+			var out int
+			return c.getJSON(ctx, "/fixture", nil, &out)
+		}},
+		{name: "post json", key: numericKey, body: numericKey, call: func(ctx context.Context, c *Client) error {
+			var out int
+			return c.postJSON(ctx, "/fixture", nil, &out)
+		}},
+		{name: "xml raw", key: "placeholder+k/y=1", body: `<rss><channel><item><size>placeholder+k/y=1</size></item></channel></rss>`, call: func(ctx context.Context, c *Client) error {
+			_, err := c.Search(ctx, "fixture", nil)
+			return err
+		}},
+		{name: "xml escaped", key: "placeholder+k/y=1", body: `<rss><channel><item><size>placeholder%2Bk%2Fy%3D1</size></item></channel></rss>`, call: func(ctx context.Context, c *Client) error {
+			_, err := c.Search(ctx, "fixture", nil)
+			return err
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c := responseTextClient(t, tc.key, tc.body)
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+			err := tc.call(ctx, c)
+			if err == nil {
+				t.Fatal("expected decoder error")
+			}
+			assertSafeText(t, err.Error(), tc.key)
+		})
+	}
+}
+
+type responseStatusTransport struct {
+	http.RoundTripper
+	status string
+}
+
+// RoundTrip replaces the fixture response status text.
+func (tr responseStatusTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := tr.RoundTripper.RoundTrip(req)
+	if err == nil {
+		resp.StatusCode = http.StatusInternalServerError
+		resp.Status = tr.status
+	}
+	return resp, err
+}
+
+// TestStatusTextRedaction checks server status text exposed through APIError fields.
+func TestStatusTextRedaction(t *testing.T) {
+	t.Parallel()
+	const key = "placeholder+k/y=1"
+	cases := []struct {
+		name string
+		call func(context.Context, *Client) error
+	}{
+		{name: "get", call: func(ctx context.Context, c *Client) error {
+			_, err := c.GetCapabilities(ctx)
+			return err
+		}},
+		{name: "post", call: func(ctx context.Context, c *Client) error {
+			_, err := c.GetStats(ctx, StatsRequest{})
+			return err
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c := responseTextClient(t, key, "fixture failure")
+			c.httpClient.Transport = responseStatusTransport{
+				RoundTripper: c.httpClient.Transport,
+				status:       "500 " + key + " " + url.QueryEscape(key),
+			}
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+			err := tc.call(ctx, c)
+			var apiErr *APIError
+			if !errors.As(err, &apiErr) {
+				t.Fatalf("expected APIError, got %v", err)
+			}
+			assertSafeText(t, apiErr.Status, key)
+			if apiErr.StatusCode != http.StatusInternalServerError {
+				t.Errorf("status code = %d", apiErr.StatusCode)
+			}
+		})
+	}
+}

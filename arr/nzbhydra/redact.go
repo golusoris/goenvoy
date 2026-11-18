@@ -98,9 +98,9 @@ func appendWrapped(queue []error, err error) []error {
 // redactError sanitizes URL errors and hides error trees that may expose the API key.
 func (c *Client) redactError(err error) error {
 	var uerr *url.Error
-	if errors.As(err, &uerr) {
-		// Why: Do and NewRequestWithContext return it unwrapped; a body read error wrapping one loses its outer wrappers.
-		// Why: copy, never mutate an error value net/http or a custom transport may share.
+	if errors.As(err, &uerr) && any(err) == any(uerr) {
+		// Why: root identity preserves outer wrappers and joined sentinels for nested URL errors.
+		// Why: copy only the root URL error to sanitize its URL without mutating shared state.
 		err = &url.Error{Op: uerr.Op, URL: c.scrub(redactURL(uerr.URL)), Err: c.scrubError(uerr.Err)}
 	}
 	return c.scrubError(err)

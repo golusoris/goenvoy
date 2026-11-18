@@ -43,13 +43,14 @@ type Client struct {
 // It returns an error if baseURL is not a valid HTTP/HTTPS URL.
 func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	baseURL = strings.TrimRight(baseURL, "/")
+	redactor := &Client{apiKey: apiKey}
 
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("nzbhydra: invalid base URL %q: %w", baseURL, err)
+		return nil, fmt.Errorf("nzbhydra: invalid base URL %q: %w", redactor.scrub(baseURL), redactor.redactError(err))
 	}
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return nil, fmt.Errorf("nzbhydra: invalid base URL %q: must be http(s) with a host", baseURL)
+		return nil, fmt.Errorf("nzbhydra: invalid base URL %q: must be http(s) with a host", redactor.scrub(baseURL))
 	}
 
 	c := &Client{
@@ -77,7 +78,7 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("nzbhydra: HTTP %d", e.StatusCode)
 }
 
-// Why: all GET request failures must redact the query API key.
+// doGet executes a GET request and sanitizes errors containing the API key.
 func (c *Client) doGet(ctx context.Context, u string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
@@ -96,12 +97,13 @@ func (c *Client) doGet(ctx context.Context, u string) ([]byte, error) {
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: c.scrub(string(data))}
+		return nil, &APIError{StatusCode: resp.StatusCode, Status: c.scrub(resp.Status), Body: c.scrub(string(data))}
 	}
 
 	return data, nil
 }
 
+// getXML requests and decodes XML while sanitizing errors containing the API key.
 func (c *Client) getXML(ctx context.Context, path string, params url.Values, v any) error {
 	if params == nil {
 		params = url.Values{}
@@ -116,12 +118,13 @@ func (c *Client) getXML(ctx context.Context, path string, params url.Values, v a
 
 	if v != nil {
 		if err := xml.Unmarshal(data, v); err != nil {
-			return fmt.Errorf("nzbhydra: decode xml: %w", err)
+			return fmt.Errorf("nzbhydra: decode xml: %w", c.scrubError(err))
 		}
 	}
 	return nil
 }
 
+// getJSON requests and decodes JSON while sanitizing errors containing the API key.
 func (c *Client) getJSON(ctx context.Context, path string, params url.Values, v any) error {
 	if params == nil {
 		params = url.Values{}
@@ -136,13 +139,13 @@ func (c *Client) getJSON(ctx context.Context, path string, params url.Values, v 
 
 	if v != nil {
 		if err := json.Unmarshal(data, v); err != nil {
-			return fmt.Errorf("nzbhydra: decode json: %w", err)
+			return fmt.Errorf("nzbhydra: decode json: %w", c.scrubError(err))
 		}
 	}
 	return nil
 }
 
-// Why: POST request failures must redact the query API key.
+// postJSON executes a POST request and sanitizes errors containing the API key.
 func (c *Client) postJSON(ctx context.Context, path string, body, v any) error {
 	params := url.Values{"apikey": {c.apiKey}}
 	u := c.rawBaseURL + path + "?" + params.Encode()
@@ -175,12 +178,12 @@ func (c *Client) postJSON(ctx context.Context, path string, body, v any) error {
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: c.scrub(string(respData))}
+		return &APIError{StatusCode: resp.StatusCode, Status: c.scrub(resp.Status), Body: c.scrub(string(respData))}
 	}
 
 	if v != nil {
 		if err := json.Unmarshal(respData, v); err != nil {
-			return fmt.Errorf("nzbhydra: decode json: %w", err)
+			return fmt.Errorf("nzbhydra: decode json: %w", c.scrubError(err))
 		}
 	}
 	return nil
