@@ -10,6 +10,9 @@
 //
 // # Usage
 //
-//	client := sabnzbd.New("http://localhost:8080", "your-api-key")
+//	client, err := sabnzbd.New("http://localhost:8080", "your-api-key")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
 //	queue, err := client.GetQueue(ctx)
 package sabnzbd
