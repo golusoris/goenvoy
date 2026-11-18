@@ -193,6 +193,9 @@ func (c *Client) scrubError(err error) error {
 
 // carriesKey reports whether an error tree contains the API key or exceeds the node limit.
 func (c *Client) carriesKey(err error) bool {
+	if err == nil {
+		return false
+	}
 	queue := []error{err}
 	for i := 0; i < maxErrNodes && i < len(queue); i++ {
 		if c.containsKey(queue[i].Error()) {

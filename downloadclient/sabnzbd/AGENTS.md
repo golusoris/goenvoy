@@ -11,7 +11,7 @@
 ## Auth model
 
 API key passed as `apikey` query parameter.
-Transport and status errors redact the API key.
+Transport, status + `New` errors scrubbed: raw, query-escaped, path-escaped, lower-case percent-hex, quoted + JSON-escaped key forms scrubbed; root-only `*url.Error` copy (untouched root keeps identity), `Op` + `URL` scrubbed.
 
 ## Known quirks
 

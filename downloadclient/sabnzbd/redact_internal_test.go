@@ -244,14 +244,47 @@ func assertSentinel(t *testing.T, got, sentinel error) {
 func TestNewRedaction(t *testing.T) {
 	t.Parallel()
 	const key = "placeholder+k/y=1"
-	for _, base := range []string{"http://%zz/", "ftp://example.invalid/", "https:///"} {
-		t.Run(base, func(t *testing.T) {
+	query := "?raw=" + key + "&escaped=" + url.QueryEscape(key)
+	cases := []struct {
+		name, rawURL, apiKey, secret string
+		wantMarker                   bool
+	}{
+		{name: "parse error", rawURL: "http://%zz/" + query, apiKey: key, secret: key},
+		{name: "unsupported scheme", rawURL: "ftp://example.invalid/" + query, apiKey: key, secret: key, wantMarker: true},
+		{name: "empty host", rawURL: "https:///" + query, apiKey: key, secret: key, wantMarker: true},
+		{name: "foreign query key in scheme error", rawURL: "ftp://example.invalid/?apikey=other", apiKey: "k", secret: "other", wantMarker: true},
+		{name: "foreign query key in parse error", rawURL: "http://%zz/?apikey=other", apiKey: "", secret: "other"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			c, err := New(base+"?raw="+key+"&escaped="+url.QueryEscape(key), key)
+			c, err := New(tc.rawURL, tc.apiKey)
 			if c != nil || err == nil {
 				t.Fatalf("New = %v, %v; want nil client and error", c, err)
 			}
-			assertSafeText(t, err.Error(), key)
+			assertNoKey(t, err.Error(), tc.secret)
+			if tc.wantMarker && !strings.Contains(err.Error(), "REDACTED") {
+				t.Errorf("missing REDACTED: %s", err.Error())
+			}
+		})
+	}
+}
+
+// TestCarriesKeyNil checks that carriesKey returns false for a nil error without panicking.
+func TestCarriesKeyNil(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "nil", err: nil, want: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := (&Client{apiKey: "k"}).carriesKey(tc.err); got != tc.want {
+				t.Errorf("carriesKey(%v) = %v; want %v", tc.err, got, tc.want)
+			}
 		})
 	}
 }
