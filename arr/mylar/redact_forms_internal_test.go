@@ -293,6 +293,49 @@ func TestAPIErrorBodyEscapedForms(t *testing.T) {
 	}
 }
 
+// TestAPIErrorBodyMalformedEscapes checks escaped keys and malformed response bodies.
+func TestAPIErrorBodyMalformedEscapes(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ name, key, body, want string }{
+		{"large number", "fixture/part+token", `{"n":1e1000,"error":"fixture\u002fpart+token"}`, "REDACTED"},
+		{"scrub breaks escape", "b123456", `{"noise":"\b123456","error":"\u0062123456"}`, "REDACTED"},
+		{"large number control", "fixture/part+token", `{"n":1e1000,"error":"none"}`, `{"n":1e1000,"error":"none"}`},
+		{"non JSON escaped key", "b123456", `oops \u0062123456`, "REDACTED"},
+		{"surrogate pair", "fixture-key", `{"error":"\ud83d\ude00"}`, `{"error":"\ud83d\ude00"}`},
+		{"lone surrogate", "fixture-key", `{"error":"\ud800"}`, `{"error":"\ud800"}`},
+		{"truncated unicode", "fixture-key", `abc\u00`, `abc\u00`},
+		{"truncated slash", "fixture-key", `abc\`, `abc\`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertAPIErrorEscapedBody(t, tc.key, tc.body, tc.want)
+		})
+	}
+}
+
+// TestUnescapeBody checks tolerant escape decoding and byte preservation.
+func TestUnescapeBody(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ name, input, want string }{
+		{"simple escapes", `\"\\\/\b\f\n\r\t`, "\"\\/\b\f\n\r\t"},
+		{"unicode hex cases", `\u0062\u00e9\u00E9`, "béé"},
+		{"surrogate pair", `\ud83d\ude00`, "😀"},
+		{"lowest pair", `\ud800\udc00`, "\U00010000"},
+		{"lone high", `\ud800x`, "�x"},
+		{"lone low", `\udc00`, "�"},
+		{"invalid and incomplete", `\u00xz\u00\q\`, `\u00xz\u00\q\`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := unescapeBody(tc.input); got != tc.want {
+				t.Errorf("unescapeBody(%q) = %q; want %q", tc.input, got, tc.want)
+			}
+		})
+	}
+}
+
 // assertAPIErrorEscapedBody checks the response body and error text from the public client.
 func assertAPIErrorEscapedBody(t *testing.T, key, body, want string) {
 	t.Helper()

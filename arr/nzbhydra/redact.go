@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf16"
 )
 
 // scrub replaces the raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped API key in s with REDACTED, with hex-digit case of percent escapes ignored.
@@ -31,23 +32,69 @@ func (c *Client) scrub(s string) string {
 	return b.String()
 }
 
-// scrubBody redacts key forms and hides JSON containing an escaped key in any string token.
+// scrubBody redacts key forms and hides bodies containing an escaped key.
 func (c *Client) scrubBody(text string) string {
 	text = c.scrub(text)
-	if c.apiKey == "" || !json.Valid([]byte(text)) {
+	if c.apiKey == "" || !strings.Contains(text, `\`) {
 		return text
 	}
-	decoder := json.NewDecoder(strings.NewReader(text))
-	for range len(text) {
-		token, err := decoder.Token()
-		if err != nil {
-			break
-		}
-		if value, ok := token.(string); ok && c.containsKey(value) {
-			return "REDACTED"
-		}
+	if c.containsKey(unescapeBody(text)) {
+		return "REDACTED"
 	}
 	return text
+}
+
+// unescapeBody decodes recognized escapes while preserving all other bytes.
+func unescapeBody(text string) string {
+	var out strings.Builder
+	out.Grow(len(text))
+	for i := 0; i < len(text); {
+		if text[i] != '\\' || i+1 == len(text) {
+			out.WriteByte(text[i])
+			i++
+			continue
+		}
+		if r, n := bodyUnicodeEscape(text[i:]); n != 0 {
+			out.WriteRune(r)
+			i += n
+			continue
+		}
+		index := strings.IndexByte(`"\/bfnrt`, text[i+1])
+		if index >= 0 {
+			out.WriteByte("\"\\/\b\f\n\r\t"[index])
+			i += 2
+			continue
+		}
+		out.WriteByte(text[i])
+		i++
+	}
+	return out.String()
+}
+
+// bodyUnicodeEscape decodes a Unicode escape and any following surrogate pair.
+func bodyUnicodeEscape(text string) (rune, int) {
+	high, ok := bodyHex4(text)
+	if !ok {
+		return 0, 0
+	}
+	if !utf16.IsSurrogate(high) {
+		return high, 6
+	}
+	if low, ok := bodyHex4(text[6:]); ok {
+		if r := utf16.DecodeRune(high, low); r != '\ufffd' {
+			return r, 12
+		}
+	}
+	return '\ufffd', 6
+}
+
+// bodyHex4 reads one four-digit Unicode escape at the start of text.
+func bodyHex4(text string) (rune, bool) {
+	if len(text) < 6 || text[0:2] != `\u` {
+		return 0, false
+	}
+	value, err := strconv.ParseUint(text[2:6], 16, 16)
+	return rune(value), err == nil
 }
 
 // keyForms returns the distinct raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped forms of the API key, or nil when the key is empty; hex-digit case of percent escapes is matched by nextPercentKey.
