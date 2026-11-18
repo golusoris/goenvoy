@@ -10,8 +10,12 @@
 
 ## Auth model
 
-OAuth2 access token passed as `Authorization: Bearer <token>` — the caller supplies a token obtained via client-credentials or authorization-code flow.
+OAuth2 access token passed as `Authorization: Bearer <token>` — caller supplies token obtained via client-credentials or authorization-code flow.
 
 ## Pagination
 
 Search and list endpoints take `limit` and `offset` query params.
+
+## Response cap
+
+Response body cap: 32 MiB default; `Client.SetMaxResponseBytes(n)` overrides Spotify GET cap (nonpositive keeps default; `metadata.WithMaxResponseBytes` inactive until `metadata` dependency upgrade past `v1.4.4`).

@@ -1430,23 +1430,25 @@ func TestConcurrentGetSeries(t *testing.T) {
 			if withPIN {
 				c = tvdb.NewWithPIN("test-key", "test-pin", metadata.WithBaseURL(srv.URL))
 			}
-			if err := c.Login(t.Context()); err != nil {
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+			if err := c.Login(ctx); err != nil {
 				t.Fatalf("Login: %v", err)
 			}
-			checkConcurrentSeries(t, c)
+			checkConcurrentSeries(t, ctx, c)
 		})
 	}
 }
 
 // Why: synchronize eight callers to expose shared authentication callback races.
-func checkConcurrentSeries(t *testing.T, c *tvdb.Client) {
+func checkConcurrentSeries(t *testing.T, ctx context.Context, c *tvdb.Client) {
 	t.Helper()
 	var wg sync.WaitGroup
 	start := make(chan struct{})
 	for range 8 {
 		wg.Go(func() {
 			<-start
-			series, err := c.GetSeries(t.Context(), 1)
+			series, err := c.GetSeries(ctx, 1)
 			if err != nil {
 				t.Errorf("GetSeries: %v", err)
 				return

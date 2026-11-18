@@ -49,6 +49,23 @@ func New(accessToken string, opts ...metadata.Option) *Client {
 	return c
 }
 
+// SetMaxResponseBytes bounds Spotify GET responses; nonpositive values keep the
+// 32 MiB default, and metadata.WithMaxResponseBytes does not reach this reader
+// until the module depends on a metadata release that carries it.
+func (c *Client) SetMaxResponseBytes(n int64) {
+	if n > 0 {
+		c.maxResponseBytes = n
+	}
+}
+
+// responseLimit returns maxResponseBytes or the 32 MiB default when nonpositive.
+func (c *Client) responseLimit() int64 {
+	if c.maxResponseBytes <= 0 {
+		return defaultMaxResponseBytes
+	}
+	return c.maxResponseBytes
+}
+
 // get executes a GET request, decodes JSON into v, and surfaces response body close errors.
 func (c *Client) get(ctx context.Context, path string, v any) (err error) {
 	u := c.BaseURL() + path
@@ -70,12 +87,13 @@ func (c *Client) get(ctx context.Context, path string, v any) (err error) {
 		}
 	}()
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, c.maxResponseBytes+1))
+	limit := c.responseLimit()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
 	if err != nil {
 		return fmt.Errorf("spotify: read response: %w", err)
 	}
-	if int64(len(body)) > c.maxResponseBytes {
-		return fmt.Errorf("spotify: read response: %w (limit %d bytes)", errResponseTooLarge, c.maxResponseBytes)
+	if int64(len(body)) > limit {
+		return fmt.Errorf("spotify: read response: %w (limit %d bytes)", errResponseTooLarge, limit)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
