@@ -165,7 +165,7 @@ func (e *redactedError) As(target any) bool {
 	for i := 0; i < maxErrNodes && i < len(queue); i++ {
 		if uerr, ok := queue[i].(*url.Error); ok { //nolint:errorlint // first URL error of a bounded walk; errors.As is the unbounded search
 			// Why: hand out a scrubbed copy, never the original that holds the key.
-			*dst = &url.Error{Op: uerr.Op, URL: e.c.scrub(redactURL(uerr.URL)), Err: e.c.scrubError(uerr.Err)}
+			*dst = &url.Error{Op: e.c.scrub(uerr.Op), URL: e.c.scrub(redactURL(uerr.URL)), Err: e.c.scrubError(uerr.Err)}
 			return true
 		}
 		queue = appendWrapped(queue, queue[i])
@@ -237,9 +237,9 @@ func (c *Client) redactError(err error) error {
 	if uerr, ok := err.(*url.Error); ok { //nolint:errorlint // root identity wanted; tree search is the defect
 		// Why: copy only when sanitizing changed the URL text or hid the cause; an untouched root keeps its identity for errors.Is.
 		// Why: a copy never mutates an error value net/http or a custom transport may share.
-		cleanURL := c.scrub(redactURL(uerr.URL))
-		if cleanURL != uerr.URL || (uerr.Err != nil && c.carriesKey(uerr.Err)) {
-			err = &url.Error{Op: uerr.Op, URL: cleanURL, Err: c.scrubError(uerr.Err)}
+		cleanOp, cleanURL := c.scrub(uerr.Op), c.scrub(redactURL(uerr.URL))
+		if cleanOp != uerr.Op || cleanURL != uerr.URL || (uerr.Err != nil && c.carriesKey(uerr.Err)) {
+			err = &url.Error{Op: cleanOp, URL: cleanURL, Err: c.scrubError(uerr.Err)}
 		}
 	}
 	return c.scrubError(err)

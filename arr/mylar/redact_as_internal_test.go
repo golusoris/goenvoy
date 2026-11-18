@@ -78,6 +78,30 @@ func checkRedactedErrorAs(t *testing.T, key string) {
 	}
 }
 
+// TestRedactedErrorAsOpRedaction checks that errors.As yields a copy whose Op and text lack the key held by a nested URL error's Op.
+func TestRedactedErrorAsOpRedaction(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	c := &Client{apiKey: key}
+	inner := &url.Error{Op: "Get " + key, URL: "http://h/", Err: errors.New("fixture transport failure")}
+	tree := fmt.Errorf("outer: %w", errors.Join(&redactAsProbe{text: "probe"}, fmt.Errorf("mid: %w", inner)))
+
+	got := c.redactError(tree)
+	assertNoKeyForms(t, got.Error(), key)
+	var uerr *url.Error
+	if !errors.As(got, &uerr) {
+		t.Fatal("errors.As into *url.Error = false; want true")
+	}
+	if uerr == inner {
+		t.Error("errors.As returned the original URL error, not a copy")
+	}
+	assertNoKeyForms(t, uerr.Op, key)
+	assertNoKeyForms(t, uerr.Error(), key)
+	if inner.Op != "Get "+key {
+		t.Errorf("original Op = %q; the copy must not mutate it", inner.Op)
+	}
+}
+
 // TestRedactedErrorAsFanoutBounded checks that errors.As on a hidden exponential tree with a key-bearing leaf returns promptly.
 func TestRedactedErrorAsFanoutBounded(t *testing.T) {
 	t.Parallel()
