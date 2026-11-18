@@ -163,7 +163,7 @@ type walkFrame struct {
 // walk visits the hidden tree depth-first, in errors.Is order, and stops when visit reports true, the walk exceeds maxWalkSteps nodes, or the tree holds more than maxErrNodes joined errors.
 func (e *redactedError) walk(visit func(error) bool) {
 	// Why: errors.Is and errors.As visit every path, exponential on a fan-out tree; only joined errors spend the maxErrNodes budget, so a long quiet chain stays reachable.
-	stack := []walkFrame{{children: []error{e.err}}}
+	stack := pushNextChild(nil, []error{e.err}, 0)
 	for steps, branches := 0, 0; len(stack) > 0; {
 		steps++
 		// Why: cyclic single-unwrap chain must terminate; bound far above any real chain.
@@ -189,7 +189,10 @@ func (e *redactedError) walk(visit func(error) bool) {
 
 // unwrapChildren returns the direct child slice of err and whether err joins several errors.
 func unwrapChildren(err error) ([]error, bool) {
-	if w := errors.Unwrap(err); w != nil {
+	if isNilError(err) {
+		return nil, false
+	}
+	if w := errors.Unwrap(err); !isNilError(w) {
 		return []error{w}, false
 	}
 	joined, ok := err.(interface{ Unwrap() []error })
@@ -202,17 +205,25 @@ func unwrapChildren(err error) ([]error, bool) {
 // pushNextChild appends a frame positioned at the first non-nil error in children[from:], if any.
 func pushNextChild(stack []walkFrame, children []error, from int) []walkFrame {
 	for i := from; i < len(children); i++ {
-		if children[i] != nil {
+		if !isNilError(children[i]) {
 			return append(stack, walkFrame{children: children, index: i})
 		}
 	}
 	return stack
 }
 
+// isNilError reports whether err is nil or holds a nil pointer, map, slice, function, channel, or interface value.
+func isNilError(err error) bool {
+	if err == nil {
+		return true
+	}
+	return slices.Contains([]reflect.Kind{reflect.Pointer, reflect.Map, reflect.Slice, reflect.Func, reflect.Chan, reflect.Interface}, reflect.ValueOf(err).Kind()) && reflect.ValueOf(err).IsNil()
+}
+
 // As sets target to a sanitized copy of the first *url.Error in the hidden tree and reports false for every other target type, so no key-bearing value escapes.
 func (e *redactedError) As(target any) bool {
 	dst, ok := target.(**url.Error)
-	if !ok {
+	if !ok || isNilError(e.err) {
 		return false
 	}
 	// Why: bounded breadth-first walk over the hidden tree; errors.As on it would search unbounded.
@@ -220,7 +231,7 @@ func (e *redactedError) As(target any) bool {
 	for i := 0; i < maxErrNodes && i < len(queue); i++ {
 		if uerr, ok := queue[i].(*url.Error); ok && uerr != nil { //nolint:errorlint // first URL error of a bounded walk; errors.As is the unbounded search
 			// Why: hand out a scrubbed copy, never the original that holds the key.
-			*dst = &url.Error{Op: e.c.scrub(uerr.Op), URL: e.c.scrub(redactURL(uerr.URL)), Err: e.c.scrubError(uerr.Err)}
+			*dst = &url.Error{Op: e.c.scrub(uerr.Op), URL: e.c.scrub(redactURL(e.c.scrub(uerr.URL))), Err: e.c.scrubError(uerr.Err)}
 			return true
 		}
 		queue = appendWrapped(queue, queue[i])
@@ -244,7 +255,7 @@ const maxWalkSteps = 4096
 // errTreeTooLargeMsg replaces the formatted message of an error tree that exceeds maxErrNodes.
 const errTreeTooLargeMsg = "error tree too large: details redacted"
 
-// scrubError hides error trees that carry the API key or exceed the traversal limit.
+// scrubError hides error trees that carry the API key, hold a typed-nil node, or exceed the traversal limit.
 func (c *Client) scrubError(err error) error {
 	if err == nil {
 		return nil
@@ -258,18 +269,18 @@ func (c *Client) scrubError(err error) error {
 	return &redactedError{msg: c.scrub(err.Error()), err: err, c: c}
 }
 
-// carriesKey reports whether an error tree contains the API key or exceeds the node limit.
+// carriesKey reports whether an error tree contains the API key, holds a typed-nil node, or exceeds the node limit.
 func (c *Client) carriesKey(err error) bool {
 	if err == nil {
 		return false
 	}
-	// Why: a tree past the bound is hidden before Error() can format exponential joined fan-out.
+	// Why: a tree past the bound or holding a typed-nil node is hidden before Error() can format it.
 	if exceedsErrNodes(err) {
 		return true
 	}
 	queue := []error{err}
 	for i := 0; i < maxErrNodes && i < len(queue); i++ {
-		if uerr, ok := queue[i].(*url.Error); (!ok || uerr != nil) && c.containsKey(queue[i].Error()) { //nolint:errorlint // guard typed-nil *url.Error before Error()
+		if c.containsKey(queue[i].Error()) {
 			return true
 		}
 		queue = appendWrapped(queue, queue[i])
@@ -277,13 +288,36 @@ func (c *Client) carriesKey(err error) bool {
 	return false
 }
 
-// exceedsErrNodes reports whether err's unwrap tree holds more than maxErrNodes nodes without formatting any node.
+// exceedsErrNodes reports whether err's unwrap tree holds a typed-nil node or more than maxErrNodes nodes without formatting any node.
 func exceedsErrNodes(err error) bool {
 	queue := []error{err}
 	for i := 0; i < maxErrNodes && i < len(queue); i++ {
+		if hasTypedNilNode(queue[i]) {
+			return true
+		}
 		queue = appendWrapped(queue, queue[i])
 	}
 	return len(queue) > maxErrNodes
+}
+
+// hasTypedNilNode reports whether err is a typed-nil error or directly wraps one.
+func hasTypedNilNode(err error) bool {
+	if isNilError(err) {
+		return true
+	}
+	if w := errors.Unwrap(err); w != nil && isNilError(w) {
+		return true
+	}
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		return false
+	}
+	for _, child := range joined.Unwrap() {
+		if child != nil && isNilError(child) {
+			return true
+		}
+	}
+	return false
 }
 
 // containsKey reports whether s holds the nonempty raw, query-escaped, path-escaped, Go-quoted, or JSON-escaped API key, ignoring hex-digit case in percent escapes of the two URL-escaped forms.
@@ -297,14 +331,11 @@ func (c *Client) containsKey(s string) bool {
 
 // appendWrapped appends non-nil wrapped errors while bounding queue growth.
 func appendWrapped(queue []error, err error) []error {
-	if len(queue) > maxErrNodes {
-		// Why: carriesKey already treats this tree as too large; more entries only cost memory.
+	if len(queue) > maxErrNodes || isNilError(err) {
+		// Why: carriesKey already treats this tree as too large or unsafe; more entries only cost memory.
 		return queue
 	}
-	if uerr, ok := err.(*url.Error); ok && uerr == nil { //nolint:errorlint // typed-nil *url.Error panics inside errors.Unwrap
-		return queue
-	}
-	if w := errors.Unwrap(err); w != nil {
+	if w := errors.Unwrap(err); !isNilError(w) {
 		return append(queue, w)
 	}
 	joined, ok := err.(interface{ Unwrap() []error })
@@ -313,7 +344,7 @@ func appendWrapped(queue []error, err error) []error {
 	}
 	children := joined.Unwrap()
 	for i := 0; i < len(children) && len(queue) <= maxErrNodes; i++ {
-		if children[i] != nil {
+		if !isNilError(children[i]) {
 			queue = append(queue, children[i])
 		}
 	}
@@ -326,33 +357,12 @@ func (c *Client) redactError(err error) error {
 	if uerr, ok := err.(*url.Error); ok && uerr != nil { //nolint:errorlint // root identity wanted; tree search is the defect
 		// Why: copy only when sanitizing changed the URL text or hid the cause; an untouched root keeps its identity for errors.Is.
 		// Why: a copy never mutates an error value net/http or a custom transport may share.
-		cleanOp, cleanURL := c.scrub(uerr.Op), c.scrub(redactURL(uerr.URL))
+		cleanOp, cleanURL := c.scrub(uerr.Op), c.scrub(redactURL(c.scrub(uerr.URL)))
 		if cleanOp != uerr.Op || cleanURL != uerr.URL || (uerr.Err != nil && c.carriesKey(uerr.Err)) {
 			err = &url.Error{Op: cleanOp, URL: cleanURL, Err: c.scrubError(uerr.Err)}
 		}
 	}
 	return c.scrubError(err)
-}
-
-// redactBaseURL drops userinfo and redacts apikey query values, or drops userinfo and the query when parsing fails.
-func redactBaseURL(raw string) string {
-	if u, err := url.Parse(raw); err == nil {
-		u.User = nil
-		return redactURL(u.String())
-	}
-	base := redactURL(raw)
-	scheme, rest, ok := strings.Cut(base, "://")
-	if !ok {
-		return base
-	}
-	end := strings.IndexAny(rest, "/?#")
-	if end < 0 {
-		end = len(rest)
-	}
-	if at := strings.LastIndexByte(rest[:end], '@'); at >= 0 {
-		rest = rest[at+1:]
-	}
-	return scheme + "://" + rest
 }
 
 // redactURL redacts apikey query values or drops the query when parsing fails.

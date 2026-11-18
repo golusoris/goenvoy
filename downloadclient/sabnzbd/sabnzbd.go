@@ -51,18 +51,17 @@ type Client struct {
 	userAgent  string
 }
 
+// errInvalidBaseURLMsg is the fixed key-free error text returned when New rejects a base URL.
+const errInvalidBaseURLMsg = "sabnzbd: invalid base URL: must be http(s) with a host"
+
 // New creates a SABnzbd [Client] for the given base URL and API key.
 // It returns an error if baseURL is not a valid HTTP/HTTPS URL.
 func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	baseURL = strings.TrimRight(baseURL, "/")
-	redactor := &Client{apiKey: apiKey}
 
 	u, err := url.Parse(baseURL)
-	if err != nil {
-		return nil, fmt.Errorf("sabnzbd: invalid base URL %q: %w", redactor.scrub(redactBaseURL(baseURL)), redactor.redactError(err))
-	}
-	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return nil, fmt.Errorf("sabnzbd: invalid base URL %q: must be http(s) with a host", redactor.scrub(redactBaseURL(baseURL)))
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, errors.New(errInvalidBaseURLMsg)
 	}
 
 	c := &Client{

@@ -357,3 +357,83 @@ func TestRedactedErrorIsNodeMethod(t *testing.T) {
 		t.Error("errors.Is with a sentinel the node does not report = true; want false")
 	}
 }
+
+// TestRedactedErrorTypedNilWalk checks that errors.Is, errors.As, Timeout, and Temporary skip typed-nil nodes without panicking.
+func TestRedactedErrorTypedNilWalk(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	cases := []struct {
+		name string
+		tree error
+	}{
+		{name: "cycle wrapping joined typed-nil URL error", tree: &redactCycleErr{text: "outer " + key, next: errors.Join((*url.Error)(nil))}},
+		{name: "single wrap of typed-nil URL error", tree: &redactCycleErr{text: "outer " + key, next: (*url.Error)(nil)}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertTypedNilWalkSafe(t, key, tc.tree)
+		})
+	}
+}
+
+// assertTypedNilWalkSafe checks that Is, As, Timeout, and Temporary return false without panicking on a hidden tree with a typed-nil node.
+func assertTypedNilWalkSafe(t *testing.T, key string, tree error) {
+	t.Helper()
+	got := (&Client{apiKey: key}).scrubError(tree)
+	var hidden *redactedError
+	if !errors.As(got, &hidden) {
+		t.Fatalf("scrubError(%v) = %T; want *redactedError", tree, got)
+	}
+	if errors.Is(got, errors.New("other")) {
+		t.Error("errors.Is = true; want false")
+	}
+	var uerr *url.Error
+	if errors.As(got, &uerr) || uerr != nil {
+		t.Errorf("errors.As = true (%v); want false, nil", uerr)
+	}
+	if hidden.Timeout() {
+		t.Error("Timeout() = true; want false")
+	}
+	if hidden.Temporary() {
+		t.Error("Temporary() = true; want false")
+	}
+}
+
+// TestRedactTypedNilTree checks that redactError and scrubError hide joined or root typed-nil errors with the fixed message without calling Error().
+func TestRedactTypedNilTree(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		err  error
+	}{
+		{name: "joined typed-nil and boom", err: errors.Join((*url.Error)(nil), errors.New("boom"))},
+		{name: "root typed-nil URL error", err: (*url.Error)(nil)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertTypedNilTreeRedacted(t, tc.err)
+		})
+	}
+}
+
+// assertTypedNilTreeRedacted checks carriesKey, scrubError, redactError, and walk behavior on a tree holding a typed-nil error.
+func assertTypedNilTreeRedacted(t *testing.T, err error) {
+	t.Helper()
+	c := &Client{apiKey: "plain-key"}
+	if !c.carriesKey(err) {
+		t.Error("carriesKey = false; want true")
+	}
+	for _, got := range []error{c.scrubError(err), c.redactError(err)} {
+		if got == nil {
+			t.Fatal("redacted error = nil; want non-nil")
+		}
+		if got.Error() != errTreeTooLargeMsg {
+			t.Errorf("Error() = %q; want %q", got.Error(), errTreeTooLargeMsg)
+		}
+		if errors.Is(got, (*url.Error)(nil)) {
+			t.Error("errors.Is matched typed-nil *url.Error; walk must skip it")
+		}
+	}
+}

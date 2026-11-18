@@ -291,3 +291,77 @@ func assertTemporaryForwarded(t *testing.T, c *Client, cause error, rootURL, wan
 		t.Errorf("Temporary() = %v; want %v", gotTemp, want)
 	}
 }
+
+// TestRedactErrorURLPathScrubBeforeParse checks that redactError and errors.As scrub URL paths holding keys with quotes and spaces before URL re-serialization.
+func TestRedactErrorURLPathScrubBeforeParse(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, key, escaped string
+	}{
+		{name: "slash quote and space", key: `plain-key/ "1"`, escaped: "plain-key/%20%221%22"},
+		{name: "query chars quote and space", key: `plain-key+k/y="1" `, escaped: "plain-key+k/y=%221%22%20"},
+		{name: "quote and space", key: `plain-key "1"`, escaped: "plain-key%20%221%22"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertURLPathScrubBeforeParse(t, tc.key, tc.escaped)
+		})
+	}
+}
+
+// assertURLPathScrubBeforeParse checks that root and wrapped URL errors with key in the path omit raw and escaped spellings.
+func assertURLPathScrubBeforeParse(t *testing.T, key, escaped string) {
+	t.Helper()
+	c := &Client{apiKey: key}
+	uerr := &url.Error{
+		Op:  "Get",
+		URL: "http://example.invalid/" + key + "?apikey=other",
+		Err: errors.New("fixture transport failure"),
+	}
+	got := c.redactError(uerr)
+	if got == nil {
+		t.Fatal("redactError = nil; want non-nil")
+	}
+	text := got.Error()
+	for _, leak := range []string{"plain-key", key, escaped, url.PathEscape(key), url.QueryEscape(key)} {
+		if strings.Contains(text, leak) {
+			t.Errorf("redactError leaked %q: %s", leak, text)
+		}
+	}
+	wrapped := c.redactError(fmt.Errorf("outer %s: %w", key, uerr))
+	var matched *url.Error
+	if !errors.As(wrapped, &matched) || matched == nil {
+		t.Fatalf("errors.As = %v; want non-nil *url.Error", matched)
+	}
+	if strings.Contains(matched.URL, "plain-key") || strings.Contains(matched.URL, key) || strings.Contains(matched.URL, escaped) {
+		t.Errorf("matched.URL leaked key: %s", matched.URL)
+	}
+}
+
+// TestIsNilError checks isNilError across nil, typed-nil pointer, non-nil pointer, and value error types.
+func TestIsNilError(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name       string
+		err        error
+		want       bool
+		wantFrames int
+	}{
+		{name: "nil", err: nil, want: true, wantFrames: 0},
+		{name: "typed-nil pointer", err: (*url.Error)(nil), want: true, wantFrames: 0},
+		{name: "non-nil pointer", err: &url.Error{Op: "Get", URL: "http://example.invalid/", Err: errors.New("fixture")}, want: false, wantFrames: 1},
+		{name: "value type", err: redactIsNode{text: "fixture"}, want: false, wantFrames: 1},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := isNilError(tc.err); got != tc.want {
+				t.Errorf("isNilError(%v) = %v; want %v", tc.err, got, tc.want)
+			}
+			if frames := pushNextChild(nil, []error{tc.err}, 0); len(frames) != tc.wantFrames {
+				t.Errorf("len(pushNextChild) = %d; want %d", len(frames), tc.wantFrames)
+			}
+		})
+	}
+}

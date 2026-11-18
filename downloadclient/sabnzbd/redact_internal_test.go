@@ -131,12 +131,6 @@ func TestScrubBoundaries(t *testing.T) {
 	if got := (&Client{}).scrub("plain"); got != "plain" {
 		t.Errorf("empty key: scrub = %q", got)
 	}
-	if got := redactBaseURL("http://user:secret@%zz/?apikey=other"); got != "http://%zz/" {
-		t.Errorf("redactBaseURL parse error = %q; want %q", got, "http://%zz/")
-	}
-	if got := redactBaseURL("http://user:secret@%zz"); got != "http://%zz" {
-		t.Errorf("redactBaseURL host-only parse error = %q; want %q", got, "http://%zz")
-	}
 	c := &Client{apiKey: "placeholder"}
 	original := &url.Error{URL: "?apikey=placeholder", Err: errors.New("placeholder")}
 	assertRedacted(t, c.redactError(original), "placeholder", true)
@@ -301,45 +295,54 @@ func TestNewRedaction(t *testing.T) {
 	t.Parallel()
 	const key = "placeholder+k/y=1"
 	const userKey = "abc:def+xyz"
+	const quotedKey = `plain-key+k/y="1"`
 	oversizedKey := strings.Repeat("k", 300000)
 	query := "?raw=" + key + "&escaped=" + url.QueryEscape(key)
 	cases := []struct {
 		name, rawURL, apiKey, secret string
-		wantMarker                   bool
 	}{
+		{name: "userinfo parse escape", rawURL: "http://user:foreign-pass@%zz/?apikey=other", apiKey: "k", secret: "foreign-pass"},
+		{name: "userinfo bad port", rawURL: "http://user:pw@host:bad/", apiKey: "k", secret: "pw"},
+		{name: "ftp path with quoted key", rawURL: "ftp://example.invalid/" + quotedKey, apiKey: quotedKey, secret: "plain-key"},
 		{name: "parse error", rawURL: "http://%zz/" + query, apiKey: key, secret: key},
-		{name: "unsupported scheme", rawURL: "ftp://example.invalid/" + query, apiKey: key, secret: key, wantMarker: true},
-		{name: "empty host", rawURL: "https:///" + query, apiKey: key, secret: key, wantMarker: true},
-		{name: "foreign query key in scheme error", rawURL: "ftp://example.invalid/?apikey=other", apiKey: "k", secret: "other", wantMarker: true},
+		{name: "unsupported scheme", rawURL: "ftp://example.invalid/" + query, apiKey: key, secret: key},
+		{name: "empty host", rawURL: "https:///" + query, apiKey: key, secret: key},
+		{name: "foreign query key in scheme error", rawURL: "ftp://example.invalid/?apikey=other", apiKey: "k", secret: "other"},
 		{name: "foreign query key in parse error", rawURL: "http://%zz/?apikey=other", apiKey: "", secret: "other"},
-		{name: "oversized key", rawURL: "ftp://example.invalid/?raw=" + oversizedKey, apiKey: oversizedKey, secret: oversizedKey, wantMarker: true},
-		{name: "userinfo password equal to key", rawURL: "ftp://user:" + userKey + "@example.invalid/?apikey=" + url.QueryEscape(userKey), apiKey: userKey, secret: userKey, wantMarker: true},
-		{name: "userinfo foreign password", rawURL: "ftp://user:foreign-pass@example.invalid/?apikey=" + url.QueryEscape(userKey), apiKey: userKey, secret: "foreign-pass", wantMarker: true},
+		{name: "oversized key", rawURL: "ftp://example.invalid/?raw=" + oversizedKey, apiKey: oversizedKey, secret: oversizedKey},
+		{name: "userinfo password equal to key", rawURL: "ftp://user:" + userKey + "@example.invalid/?apikey=" + url.QueryEscape(userKey), apiKey: userKey, secret: userKey},
+		{name: "userinfo foreign password", rawURL: "ftp://user:foreign-pass@example.invalid/?apikey=" + url.QueryEscape(userKey), apiKey: userKey, secret: "foreign-pass"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			assertNewRedaction(t, tc.rawURL, tc.apiKey, tc.secret, tc.wantMarker)
+			assertNewRedaction(t, tc.rawURL, tc.apiKey, tc.secret)
 		})
 	}
 }
 
-// assertNewRedaction checks that New fails on rawURL and leaks neither secret, apiKey, nor userinfo password.
-func assertNewRedaction(t *testing.T, rawURL, apiKey, secret string, wantMarker bool) {
+// assertNewRedaction checks that New fails on rawURL with the fixed message and leaks neither secret, apiKey, nor userinfo.
+func assertNewRedaction(t *testing.T, rawURL, apiKey, secret string) {
 	t.Helper()
 	c, err := New(rawURL, apiKey)
 	if c != nil || err == nil {
 		t.Fatalf("New = %v, %v; want nil client and error", c, err)
 	}
-	assertNoKey(t, err.Error(), secret)
+	text := err.Error()
+	if text != errInvalidBaseURLMsg {
+		t.Errorf("err.Error() = %q; want %q", text, errInvalidBaseURLMsg)
+	}
+	if errors.Unwrap(err) != nil {
+		t.Errorf("errors.Unwrap(err) = %v; want nil", errors.Unwrap(err))
+	}
+	assertNoKey(t, text, secret)
 	if apiKey != "" {
-		assertNoKey(t, err.Error(), apiKey)
+		assertNoKey(t, text, apiKey)
 	}
-	if strings.Contains(err.Error(), "abc%3Adef+xyz") {
-		t.Errorf("re-escaped userinfo password leaked: %s", err.Error())
-	}
-	if wantMarker && !strings.Contains(err.Error(), "REDACTED") {
-		t.Errorf("missing REDACTED: %s", err.Error())
+	for _, token := range []string{"foreign-pass", "pw", "user", "plain-key", "abc%3Adef+xyz"} {
+		if strings.Contains(text, token) {
+			t.Errorf("token %q leaked: %s", token, text)
+		}
 	}
 }
 
