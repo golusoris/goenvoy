@@ -106,14 +106,16 @@ func (c *Client) doRequest(ctx context.Context, u string) ([]byte, error) {
 	return data, nil
 }
 
-// scrub replaces raw and query-escaped occurrences of the API key in s with REDACTED.
+// scrub replaces raw, query-escaped, and quoted occurrences of the API key in s with REDACTED.
 func (c *Client) scrub(s string) string {
 	if c.apiKey == "" {
 		// Why: ReplaceAll with empty old inserts at every rune.
 		return s
 	}
 	s = strings.ReplaceAll(s, c.apiKey, "REDACTED")
-	return strings.ReplaceAll(s, url.QueryEscape(c.apiKey), "REDACTED")
+	s = strings.ReplaceAll(s, url.QueryEscape(c.apiKey), "REDACTED")
+	quoted := strconv.Quote(c.apiKey)
+	return strings.ReplaceAll(s, quoted[1:len(quoted)-1], "REDACTED")
 }
 
 // redactedError presents sanitized message text and hides the error it replaces, whose text holds the API key.
@@ -159,7 +161,7 @@ func (c *Client) scrubError(err error) error {
 	return &redactedError{msg: c.scrub(err.Error()), err: err}
 }
 
-// carriesKey reports whether err or any error it wraps, single or joined, prints the raw or query-escaped API key.
+// carriesKey reports whether err or any error it wraps, single or joined, prints the raw, query-escaped, or quoted API key.
 func (c *Client) carriesKey(err error) bool {
 	queue := []error{err}
 	for i := 0; i < maxErrNodes && i < len(queue); i++ {
@@ -172,10 +174,15 @@ func (c *Client) carriesKey(err error) bool {
 	return len(queue) > maxErrNodes
 }
 
-// containsKey reports whether s holds the raw or query-escaped API key.
+// containsKey reports whether s holds the raw, query-escaped, or quoted API key.
 func (c *Client) containsKey(s string) bool {
 	// Why: strings.Contains with an empty key matches every string.
-	return c.apiKey != "" && (strings.Contains(s, c.apiKey) || strings.Contains(s, url.QueryEscape(c.apiKey)))
+	if c.apiKey == "" {
+		return false
+	}
+	quoted := strconv.Quote(c.apiKey)
+	return strings.Contains(s, c.apiKey) || strings.Contains(s, url.QueryEscape(c.apiKey)) ||
+		strings.Contains(s, quoted[1:len(quoted)-1])
 }
 
 // appendWrapped appends the non-nil errors that err wraps directly, single or joined, to queue, never growing it past maxErrNodes+1 errors.
@@ -200,11 +207,11 @@ func appendWrapped(queue []error, err error) []error {
 	return queue
 }
 
-// redactError redacts the API key from URL errors and scrubs remaining key text.
+// redactError redacts root URL errors and scrubs raw, query-escaped, and quoted API key text.
 func (c *Client) redactError(err error) error {
 	var uerr *url.Error
-	if errors.As(err, &uerr) {
-		// Why: Do and NewRequestWithContext return it unwrapped; a body read error wrapping one loses its outer wrappers.
+	if errors.As(err, &uerr) && any(err) == any(uerr) {
+		// Why: only replace a root URL error, preserving outer wrappers and joined siblings.
 		// Why: copy, never mutate an error value net/http or a custom transport may share.
 		err = &url.Error{Op: uerr.Op, URL: c.scrub(redactURL(uerr.URL)), Err: c.scrubError(uerr.Err)}
 	}
