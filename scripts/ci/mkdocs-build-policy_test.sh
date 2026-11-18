@@ -77,7 +77,11 @@ for arg in "$@"; do
 	previous="$arg"
 done
 [[ -n "$site_mount" ]]
-printf '<html></html>\n' >"$site_mount/index.html"
+if [[ "${FAKE_PARTIAL_FAIL:-false}" == true ]]; then
+	printf 'partial\n' >"$site_mount/asset.css"
+	exit 1
+fi
+printf '%s\n' "${FAKE_INDEX:-<html></html>}" >"$site_mount/index.html"
 EOF
 chmod +x "$fake_docker"
 
@@ -130,6 +134,31 @@ mkdir "$clean_root/foreign"
 printf 'foreign\n' >"$clean_root/foreign/file"
 expect_failure 'MkDocs output refuses nonempty directory' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
 	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir foreign
+target="$clean_root/published"
+expect_failure '' env FAKE_PARTIAL_FAIL=true FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$target"
+if [[ -e "$target" || -n "$(find "$clean_root" -maxdepth 1 -name '.published.*' -print -quit)" ]]; then
+	printf 'failed build left output or staging behind\n' >&2
+	exit 1
+fi
+env FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$target" >/dev/null
+printf 'original asset\n' >"$target/asset.css"
+cp -a "$target" "$suite_root/previous-output"
+expect_failure '' env FAKE_PARTIAL_FAIL=true FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$target"
+if ! diff -r "$suite_root/previous-output" "$target" || \
+	[[ -n "$(find "$clean_root" -maxdepth 1 -name '.published.*' -print -quit)" ]]; then
+	printf 'failed build changed previous output or left staging behind\n' >&2
+	exit 1
+fi
+env FAKE_INDEX=replacement FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$target" >/dev/null
+if [[ "$(cat "$target/index.html")" != replacement || -e "$target/asset.css" ]]; then
+	printf 'successful build did not replace previous output\n' >&2
+	exit 1
+fi
+
 FAKE_SECURITY_OPTIONS='["name=rootless"]' FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
 	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" >/dev/null
 if grep -Fxq -- -u "$fake_log"; then

@@ -55,10 +55,10 @@ if ((doc_count == 0 || doc_count > 8192)); then
 	exit 1
 fi
 
-cleanup_site=false
+target_site=""
+backup_site=""
 if [[ -z "$site_arg" ]]; then
 	site_dir="$(mktemp -d "${TMPDIR:-/tmp}/goenvoy-mkdocs.XXXXXX")"
-	cleanup_site=true
 else
 	if [[ "$site_arg" == /* ]]; then
 		site_dir="$site_arg"
@@ -92,13 +92,33 @@ else
 		printf 'MkDocs output refuses nonempty directory: %s\n' "$site_dir" >&2
 		exit 1
 	fi
-	mkdir -p -- "$site_dir"
-	site_dir="$(CDPATH='' cd -- "$site_dir" && pwd)"
+	if [[ -e "$site_dir" && ! -d "$site_dir" ]]; then
+		printf 'MkDocs output is not a directory: %s\n' "$site_dir" >&2
+		exit 1
+	fi
+	target_site="$site_dir"
+	mkdir -p -- "$(dirname -- "$target_site")"
+	site_dir="$(mktemp -d "$(dirname -- "$target_site")/.$(basename -- "$target_site").XXXXXX")"
 fi
-readonly site_dir
-if [[ "$cleanup_site" == true ]]; then
-	trap 'rm -rf "$site_dir"' EXIT
-fi
+readonly site_dir target_site
+
+# cleanup_site removes temporary output and restores a target if publication failed.
+cleanup_site() {
+	local status=$?
+	if [[ -n "$backup_site" && -d "$backup_site" ]]; then
+		if ! mv -- "$backup_site" "$target_site"; then
+			printf 'MkDocs could not restore output: %s\n' "$target_site" >&2
+			status=1
+		fi
+	fi
+	if [[ -d "$site_dir" ]] && ! rm -rf -- "$site_dir"; then
+		printf 'MkDocs could not remove temporary output: %s\n' "$site_dir" >&2
+		status=1
+	fi
+	# Why: a return value from an EXIT trap never reaches the caller; exit does.
+	exit "$status"
+}
+trap cleanup_site EXIT
 
 docker_bin="${DOCKER_BIN:-}"
 if [[ -z "$docker_bin" ]] && command -v docker >/dev/null; then
@@ -123,6 +143,18 @@ docker_args+=(--tmpfs '/tmp:rw,noexec,nosuid,size=64m' -e NO_MKDOCS_2_WARNING=1
 if [[ ! -f "$site_dir/index.html" ]]; then
 	printf 'MkDocs build produced no index.html\n' >&2
 	exit 1
+fi
+if [[ -n "$target_site" ]]; then
+	chmod 0755 -- "$site_dir"
+	if [[ -d "$target_site" ]]; then
+		backup_site="${site_dir}.backup"
+		mv -- "$target_site" "$backup_site"
+	fi
+	mv -- "$site_dir" "$target_site"
+	if [[ -n "$backup_site" ]]; then
+		rm -rf -- "$backup_site"
+		backup_site=""
+	fi
 fi
 printf 'MkDocs Material %s strict build passed for %d documents\n' \
 	"$MKDOCS_MATERIAL_VERSION" "$doc_count"
