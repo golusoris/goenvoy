@@ -7,3 +7,7 @@ exclude_paths:
   - "tools/figures/checks.mjs"
   - "tools/figures/mkdocs_hook.py"
   - "tools/markdownlint/verify.mjs"
+  # Semgrep rule fixture: its flagged cases must trip the Opengrep rule the
+  # local rule mirrors, so it cannot be clean by construction. The local scan
+  # excludes tools/semgrep for the same reason (Makefile, semgrep-local).
+  - "tools/semgrep/fprint-to-responsewriter.go"
