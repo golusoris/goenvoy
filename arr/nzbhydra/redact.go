@@ -24,6 +24,8 @@ type redactedError struct {
 	msg string
 	// Why: no Unwrap method, so callers cannot reach text that holds the key.
 	err error
+	// Why: As sanitizes a copied URL error with the same key scrub as the message.
+	c *Client
 }
 
 // Error returns the sanitized message.
@@ -37,6 +39,25 @@ func (e *redactedError) Timeout() bool {
 	// Why: url.Error.Timeout type-asserts its Err directly, so the wrapper must forward it.
 	var t interface{ Timeout() bool }
 	return errors.As(e.err, &t) && t.Timeout()
+}
+
+// As sets target to a sanitized copy of the first *url.Error in the hidden tree and reports false for every other target type, so no key-bearing value escapes.
+func (e *redactedError) As(target any) bool {
+	dst, ok := target.(**url.Error)
+	if !ok {
+		return false
+	}
+	// Why: bounded breadth-first walk over the hidden tree; errors.As on it would search unbounded.
+	queue := []error{e.err}
+	for i := 0; i < maxErrNodes && i < len(queue); i++ {
+		if uerr, ok := queue[i].(*url.Error); ok { //nolint:errorlint // first URL error of a bounded walk; errors.As is the unbounded search
+			// Why: hand out a scrubbed copy, never the original that holds the key.
+			*dst = &url.Error{Op: uerr.Op, URL: e.c.scrub(redactURL(uerr.URL)), Err: e.c.scrubError(uerr.Err)}
+			return true
+		}
+		queue = appendWrapped(queue, queue[i])
+	}
+	return false
 }
 
 // Format prints only the sanitized message for every verb and flag.
@@ -54,7 +75,7 @@ func (c *Client) scrubError(err error) error {
 	if err == nil || !c.carriesKey(err) {
 		return err
 	}
-	return &redactedError{msg: c.scrub(err.Error()), err: err}
+	return &redactedError{msg: c.scrub(err.Error()), err: err, c: c}
 }
 
 // carriesKey reports whether an error tree contains the API key or exceeds the node limit.

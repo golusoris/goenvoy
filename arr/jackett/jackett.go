@@ -48,12 +48,14 @@ func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 		return nil, errors.New("jackett: invalid base URL: query or fragment not allowed")
 	}
 
+	// Why: the base URL may carry the key, so errors built before the client exists scrub through a keyed stub.
+	redactor := &Client{apiKey: apiKey}
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("jackett: invalid base URL %q: %w", baseURL, err)
+		return nil, fmt.Errorf("jackett: invalid base URL %q: %w", redactor.scrub(baseURL), redactor.redactError(err))
 	}
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return nil, fmt.Errorf("jackett: invalid base URL %q: must be http(s) with a host", baseURL)
+		return nil, fmt.Errorf("jackett: invalid base URL %q: must be http(s) with a host", redactor.scrub(baseURL))
 	}
 
 	c := &Client{
@@ -100,7 +102,7 @@ func (c *Client) doRequest(ctx context.Context, u string) ([]byte, error) {
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: c.scrub(string(data))}
+		return nil, &APIError{StatusCode: resp.StatusCode, Status: c.scrub(resp.Status), Body: c.scrub(string(data))}
 	}
 
 	return data, nil
@@ -123,6 +125,8 @@ type redactedError struct {
 	msg string
 	// Why: no Unwrap method, so callers cannot reach text that holds the key.
 	err error
+	// Why: As sanitizes a copied URL error with the same key scrub as the message.
+	c *Client
 }
 
 // Error returns the sanitized error message.
@@ -142,6 +146,25 @@ func (e *redactedError) Timeout() bool {
 	return errors.As(e.err, &t) && t.Timeout()
 }
 
+// As sets target to a sanitized copy of the first *url.Error in the hidden tree and reports false for every other target type, so no key-bearing value escapes.
+func (e *redactedError) As(target any) bool {
+	dst, ok := target.(**url.Error)
+	if !ok {
+		return false
+	}
+	// Why: bounded breadth-first walk over the hidden tree; errors.As on it would search unbounded.
+	queue := []error{e.err}
+	for i := 0; i < maxErrNodes && i < len(queue); i++ {
+		if uerr, ok := queue[i].(*url.Error); ok { //nolint:errorlint // first URL error of a bounded walk; errors.As is the unbounded search
+			// Why: hand out a scrubbed copy, never the original that holds the key.
+			*dst = &url.Error{Op: uerr.Op, URL: e.c.scrub(redactURL(uerr.URL)), Err: e.c.scrubError(uerr.Err)}
+			return true
+		}
+		queue = appendWrapped(queue, queue[i])
+	}
+	return false
+}
+
 // Format prints only the sanitized message for every fmt verb and flag, so no verb reaches the hidden error.
 func (e *redactedError) Format(f fmt.State, verb rune) {
 	if _, err := fmt.Fprintf(f, fmt.FormatString(f, verb), e.msg); err != nil {
@@ -158,7 +181,7 @@ func (c *Client) scrubError(err error) error {
 	if err == nil || !c.carriesKey(err) {
 		return err
 	}
-	return &redactedError{msg: c.scrub(err.Error()), err: err}
+	return &redactedError{msg: c.scrub(err.Error()), err: err, c: c}
 }
 
 // carriesKey reports whether err or any error it wraps, single or joined, prints the raw, query-escaped, or quoted API key.
