@@ -127,9 +127,9 @@ func (c *Client) GetArtistAlbums(ctx context.Context, artistID string, limit, of
 
 // GetArtistTopTracks returns top tracks for an artist in a given market.
 //
-// Deprecated: Removed for Development Mode Client IDs created on or after February 11, 2026.
+// Deprecated: Removed for Development Mode Client IDs created on or after February 11, 2026;
+// those Client IDs require extended quota access.
 // Spotify postponed the change for existing Development Mode integrations.
-// Requires extended quota access.
 func (c *Client) GetArtistTopTracks(ctx context.Context, artistID, market string) ([]Track, error) {
 	params := url.Values{}
 	params.Set("market", market)
@@ -198,9 +198,9 @@ func (c *Client) GetAudioFeatures(ctx context.Context, trackID string) (*AudioFe
 
 // GetNewReleases returns new album releases.
 //
-// Deprecated: Removed for Development Mode Client IDs created on or after February 11, 2026.
+// Deprecated: Removed for Development Mode Client IDs created on or after February 11, 2026;
+// those Client IDs require extended quota access.
 // Spotify postponed the change for existing Development Mode integrations.
-// Requires extended quota access.
 func (c *Client) GetNewReleases(ctx context.Context, limit, offset int) (*Paged[AlbumSimple], error) {
 	params := url.Values{}
 	params.Set("limit", strconv.Itoa(limit))
@@ -215,9 +215,9 @@ func (c *Client) GetNewReleases(ctx context.Context, limit, offset int) (*Paged[
 
 // GetCategories returns browse categories.
 //
-// Deprecated: Removed for Development Mode Client IDs created on or after February 11, 2026.
+// Deprecated: Removed for Development Mode Client IDs created on or after February 11, 2026;
+// those Client IDs require extended quota access.
 // Spotify postponed the change for existing Development Mode integrations.
-// Requires extended quota access.
 func (c *Client) GetCategories(ctx context.Context, limit, offset int) (*Paged[Category], error) {
 	params := url.Values{}
 	params.Set("limit", strconv.Itoa(limit))
