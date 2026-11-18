@@ -8,6 +8,7 @@ suite_root="$(mktemp -d "${TMPDIR:-/tmp}/goenvoy-mkdocs-policy.XXXXXX")"
 readonly suite_root
 trap 'rm -rf "$suite_root"' EXIT
 
+# expect_failure runs a command that must fail and print the expected diagnostic.
 expect_failure() {
 	local expected="$1"
 	shift
@@ -22,6 +23,7 @@ expect_failure() {
 	fi
 }
 
+# new_fixture writes a small mkdocs project of the named shape and prints its root.
 new_fixture() {
 	local name="$1"
 	local shape="$2"
