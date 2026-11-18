@@ -179,3 +179,32 @@ func TestRedactedErrorIsUncomparableTarget(t *testing.T) {
 		t.Error("errors.Is with an uncomparable target = true; want false")
 	}
 }
+
+// redactIsNode is a tree node that answers errors.Is through its own Is method, for one sentinel it does not equal.
+type redactIsNode struct {
+	text    string
+	matches error
+}
+
+// Error returns the fixture text.
+func (n redactIsNode) Error() string { return n.text }
+
+// Is reports whether target is the one sentinel this node stands for.
+func (n redactIsNode) Is(target error) bool { return target == n.matches }
+
+// TestRedactedErrorIsNodeMethod checks that errors.Is reaches a node that matches only through its own Is method, two wraps deep.
+func TestRedactedErrorIsNodeMethod(t *testing.T) {
+	t.Parallel()
+	const key = "node-key"
+	matched := errors.New("fixture matched sentinel")
+	other := errors.New("fixture other sentinel")
+	node := redactIsNode{text: "node " + key, matches: matched}
+	tree := fmt.Errorf("a %s: %w", key, fmt.Errorf("b: %w", node))
+	hidden := hiddenRedacted(t, key, tree)
+	if !errors.Is(hidden, matched) {
+		t.Error("errors.Is through the node's Is method = false; want true")
+	}
+	if errors.Is(hidden, other) {
+		t.Error("errors.Is with a sentinel the node does not report = true; want false")
+	}
+}
