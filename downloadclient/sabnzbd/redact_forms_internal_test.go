@@ -25,6 +25,7 @@ func TestRedactErrorRootIdentity(t *testing.T) {
 	}{
 		{name: "keyless", uerr: &url.Error{Op: "Get", URL: "http://example.invalid/path?q=1", Err: sentinel}, keep: true},
 		{name: "key in URL", uerr: &url.Error{Op: "Get", URL: "http://example.invalid/?apikey=" + key, Err: sentinel}},
+		{name: "key in Op", uerr: &url.Error{Op: "Get " + key, URL: "http://example.invalid/", Err: sentinel}},
 		{name: "key in cause", uerr: &url.Error{Op: "Get", URL: "http://example.invalid/", Err: fmt.Errorf("fixture %s: %w", key, sentinel)}},
 	}
 	for _, tc := range cases {
@@ -41,6 +42,10 @@ func assertRootIdentity(t *testing.T, c *Client, uerr *url.Error, sentinel error
 	got := c.redactError(uerr)
 	if same := any(got) == any(uerr); same != keep {
 		t.Errorf("same error value = %v; want %v", same, keep)
+	}
+	// Why: a sanitized root stays a *url.Error copy, not a hidden wrapper, so callers keep Op, URL and Err.
+	if clean, ok := got.(*url.Error); !keep && (!ok || clean.Op != c.scrub(uerr.Op)) { //nolint:errorlint // root type wanted, not a tree search
+		t.Errorf("redacted root = %T; want a *url.Error copy with a scrubbed Op", got)
 	}
 	if keep && !errors.Is(got, uerr) {
 		t.Error("errors.Is lost the original root URL error")
