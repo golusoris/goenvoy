@@ -3,6 +3,7 @@ package tvdb
 import (
 	"net/url"
 	"strconv"
+	"unicode/utf8"
 )
 
 // response is the standard TheTVDB v4 API envelope.
@@ -546,12 +547,21 @@ type APIError struct {
 	RawBody string `json:"-"`
 }
 
+// Error implements the error interface.
 func (e *APIError) Error() string {
 	if e.Message != "" {
 		return "tvdb: " + e.Message
 	}
 	if e.RawBody != "" {
-		return "tvdb: HTTP " + httpStatusText(e.StatusCode) + ": " + e.RawBody
+		body := e.RawBody
+		if len(body) > 512 {
+			end := 512
+			for end > 0 && !utf8.RuneStart(body[end]) {
+				end--
+			}
+			body = body[:end] + "... (truncated)"
+		}
+		return "tvdb: HTTP " + httpStatusText(e.StatusCode) + ": " + body
 	}
 	return "tvdb: HTTP " + httpStatusText(e.StatusCode)
 }
