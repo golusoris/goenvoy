@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -69,20 +70,88 @@ type redactedError struct {
 func (e *redactedError) Error() string { return e.msg }
 
 // Is matches the hidden error without exposing it.
-func (e *redactedError) Is(target error) bool { return errors.Is(e.err, target) }
+func (e *redactedError) Is(target error) bool {
+	// Why: like errors.Is, compare only a comparable target, so an uncomparable one never panics.
+	canCompare := target != nil && reflect.TypeOf(target).Comparable()
+	found := false
+	e.walk(func(node error) bool {
+		if canCompare && node == target {
+			found = true
+		} else if m, ok := node.(interface{ Is(error) bool }); ok && m.Is(target) {
+			found = true
+		}
+		return found
+	})
+	return found
+}
 
 // Timeout reports whether the hidden error timed out.
 func (e *redactedError) Timeout() bool {
-	// Why: url.Error.Timeout type-asserts its Err directly, so the wrapper must forward it.
-	var t interface{ Timeout() bool }
-	return errors.As(e.err, &t) && t.Timeout()
+	// Why: url.Error.Timeout type-asserts its Err directly, so the wrapper must forward the first node that has it.
+	reported := false
+	e.walk(func(node error) bool {
+		t, ok := node.(interface{ Timeout() bool })
+		if ok {
+			reported = t.Timeout()
+		}
+		return ok
+	})
+	return reported
 }
 
 // Temporary reports whether the hidden error is temporary.
 func (e *redactedError) Temporary() bool {
-	// Why: url.Error.Temporary type-asserts its Err directly, so the wrapper must forward it.
-	var t interface{ Temporary() bool }
-	return errors.As(e.err, &t) && t.Temporary()
+	// Why: url.Error.Temporary type-asserts its Err directly, so the wrapper must forward the first node that has it.
+	reported := false
+	e.walk(func(node error) bool {
+		t, ok := node.(interface{ Temporary() bool })
+		if ok {
+			reported = t.Temporary()
+		}
+		return ok
+	})
+	return reported
+}
+
+// walk visits the hidden tree depth-first, in errors.Is order, and stops when visit reports true or the tree holds more than maxErrNodes joined errors.
+func (e *redactedError) walk(visit func(error) bool) {
+	// Why: errors.Is and errors.As visit every path, exponential on a fan-out tree; only joined errors spend the maxErrNodes budget, so a long quiet chain stays reachable.
+	stack := []error{e.err}
+	for branches := 0; len(stack) > 0; {
+		node := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if visit(node) {
+			return
+		}
+		children, joined := wrappedChildren(node)
+		if joined {
+			branches++
+		}
+		if branches > maxErrNodes {
+			return
+		}
+		for i := len(children) - 1; i >= 0; i-- {
+			stack = append(stack, children[i])
+		}
+	}
+}
+
+// wrappedChildren returns the non-nil errors err wraps directly and whether err joins several.
+func wrappedChildren(err error) ([]error, bool) {
+	if w := errors.Unwrap(err); w != nil {
+		return []error{w}, false
+	}
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		return nil, false
+	}
+	var children []error
+	for _, child := range joined.Unwrap() {
+		if child != nil {
+			children = append(children, child)
+		}
+	}
+	return children, true
 }
 
 // As sets target to a sanitized copy of the first *url.Error in the hidden tree and reports false for every other target type, so no key-bearing value escapes.
