@@ -266,17 +266,16 @@ func TestRedactURLErrorNonURLError(t *testing.T) {
 	}
 }
 
-// TestNewDropsUserinfo checks that constructor errors drop userinfo passwords and redact query keys.
+// TestNewDropsUserinfo checks that constructor errors return a fixed message and omit userinfo and keys.
 func TestNewDropsUserinfo(t *testing.T) {
 	t.Parallel()
 	const key = "abc:def+xyz"
 	cases := []struct {
 		name, baseURL, secret string
 	}{
-		{name: "password equal to key with query", baseURL: "ftp://user:abc:def+xyz@example.invalid/?apikey=abc:def+xyz", secret: key},
-		{name: "password equal to key without query", baseURL: "ftp://user:abc:def+xyz@example.invalid", secret: key},
-		{name: "foreign password with query", baseURL: "ftp://user:foreign-pass@example.invalid/?apikey=abc:def+xyz", secret: "foreign-pass"},
-		{name: "foreign password without query", baseURL: "ftp://user:foreign-pass@example.invalid", secret: "foreign-pass"},
+		{name: "password equal to key", baseURL: "ftp://user:abc:def+xyz@example.invalid", secret: key},
+		{name: "foreign password", baseURL: "ftp://user:foreign-pass@example.invalid", secret: "foreign-pass"},
+		{name: "parse failure with foreign password", baseURL: "http://user:foreign-pass@%zz/", secret: "foreign-pass"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -284,25 +283,20 @@ func TestNewDropsUserinfo(t *testing.T) {
 			assertNewDropsUserinfo(t, tc.baseURL, key, tc.secret)
 		})
 	}
-	if got := redactBaseURL("http://user:foreign-pass@%zz/?apikey=" + key); got != "http://%zz/" {
-		t.Errorf("redactBaseURL(unparseable) = %q; want %q", got, "http://%zz/")
-	}
-	if got := redactBaseURL("://%zz"); got != "://%zz" {
-		t.Errorf("redactBaseURL(no host) = %q; want %q", got, "://%zz")
-	}
-	if got := redactBaseURL("%zz"); got != "%zz" {
-		t.Errorf("redactBaseURL(no scheme) = %q; want %q", got, "%zz")
-	}
 }
 
-// assertNewDropsUserinfo checks that New fails on baseURL without leaking key or secret in its error.
+// assertNewDropsUserinfo checks that New fails on baseURL with the fixed message without leaking user, key, or secret.
 func assertNewDropsUserinfo(t *testing.T, baseURL, key, secret string) {
 	t.Helper()
 	c, err := New(baseURL, key)
 	if c != nil || err == nil {
 		t.Fatalf("New(%q) = %v, %v; want nil client and error", baseURL, c, err)
 	}
-	for _, sub := range []string{key, secret, "abc%3Adef+xyz", "abc%3adef+xyz"} {
+	const want = "jackett: invalid base URL: must be http(s) with a host"
+	if err.Error() != want {
+		t.Errorf("err.Error() = %q; want %q", err.Error(), want)
+	}
+	for _, sub := range []string{"user", key, secret, "abc%3Adef+xyz", "abc%3adef+xyz"} {
 		if strings.Contains(err.Error(), sub) {
 			t.Errorf("error leaked %q: %s", sub, err.Error())
 		}

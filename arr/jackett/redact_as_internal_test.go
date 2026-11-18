@@ -289,6 +289,11 @@ func TestRedactedErrorAsTypedNilURLError(t *testing.T) {
 			tree:      &redactCycleErr{text: "outer " + key, next: errors.Join(typedNil)},
 			wantMatch: false,
 		},
+		{
+			name:      "root typed nil URL error",
+			tree:      typedNil,
+			wantMatch: false,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -395,5 +400,113 @@ func TestRedactedErrorIsNodeMethod(t *testing.T) {
 	}
 	if errors.Is(hidden, other) {
 		t.Error("errors.Is with a sentinel the node does not report = true; want false")
+	}
+}
+
+// TestRedactErrorRootPathQuoteAndSpace checks that a root URL error whose path holds a key with quotes and spaces is scrubbed before and after URL parsing.
+func TestRedactErrorRootPathQuoteAndSpace(t *testing.T) {
+	t.Parallel()
+	for _, key := range []string{`k"y z`, `k"y/z 1`} {
+		t.Run(key, func(t *testing.T) {
+			t.Parallel()
+			assertRootPathRedacted(t, key)
+		})
+	}
+}
+
+// assertRootPathRedacted checks that redactError scrubs raw and escaped forms of key from a root URL error's path and query.
+func assertRootPathRedacted(t *testing.T, key string) {
+	t.Helper()
+	c := &Client{apiKey: key}
+	uerr := &url.Error{
+		Op:  "Get",
+		URL: "http://h/" + key + "?apikey=" + key,
+		Err: errors.New("fixture transport failure"),
+	}
+	got := c.redactError(uerr)
+	var clean *url.Error
+	if !errors.As(got, &clean) || clean == nil {
+		t.Fatal("errors.As into *url.Error = false or nil; want non-nil")
+	}
+	for _, text := range []string{got.Error(), clean.URL} {
+		assertNoKeyForms(t, text, key)
+		if strings.Contains(text, url.PathEscape(key)) || strings.Contains(text, "k%22y") {
+			t.Errorf("escaped key leaked: %s", text)
+		}
+	}
+}
+
+// TestRedactErrorTypedNilTree checks that trees holding a typed-nil error return the fixed message without panicking.
+func TestRedactErrorTypedNilTree(t *testing.T) {
+	t.Parallel()
+	c := &Client{apiKey: "plain-key"}
+	tree := errors.Join((*url.Error)(nil), errors.New("boom"))
+	cases := []struct {
+		name string
+		call func(error) error
+	}{
+		{name: "redactError", call: c.redactError},
+		{name: "scrubError", call: c.scrubError},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			for _, input := range []error{tree, (*url.Error)(nil)} {
+				got := tc.call(input)
+				if got == nil {
+					t.Fatalf("%s(%v) = nil; want non-nil", tc.name, input)
+				}
+				if got.Error() != redactedTreeMsg {
+					t.Errorf("%s(%v).Error() = %q; want %q", tc.name, input, got.Error(), redactedTreeMsg)
+				}
+			}
+		})
+	}
+}
+
+// TestRedactedErrorTypedNilWalk checks that Is, As, Timeout, and Temporary skip a typed-nil node without panicking.
+func TestRedactedErrorTypedNilWalk(t *testing.T) {
+	t.Parallel()
+	c := &Client{apiKey: "plain-key"}
+	tree := &redactCycleErr{text: "outer", next: errors.Join((*url.Error)(nil))}
+	got := c.redactError(tree)
+	if errors.Is(got, errors.New("unrelated")) {
+		t.Error("errors.Is = true; want false")
+	}
+	var uerr *url.Error
+	if errors.As(got, &uerr) || uerr != nil {
+		t.Errorf("errors.As = true or non-nil (%v); want false and nil", uerr)
+	}
+	if got.(interface{ Timeout() bool }).Timeout() { //nolint:forcetypeassert // wrapper method set under test
+		t.Error("Timeout() = true; want false")
+	}
+	if got.(interface{ Temporary() bool }).Temporary() { //nolint:forcetypeassert // wrapper method set under test
+		t.Error("Temporary() = true; want false")
+	}
+}
+
+// TestIsNilError checks nil detection across untyped nil, typed-nil values, non-nil pointers, and value errors.
+func TestIsNilError(t *testing.T) {
+	t.Parallel()
+	var typedNil *url.Error
+	var sliceNil redactSliceErr
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{name: "nil", err: nil, want: true},
+		{name: "typed-nil pointer", err: typedNil, want: true},
+		{name: "typed-nil slice", err: sliceNil, want: true},
+		{name: "non-nil pointer", err: &url.Error{Op: "Get", URL: "http://h/", Err: errors.New("x")}, want: false},
+		{name: "value type", err: redactIsNode{text: "v"}, want: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := isNilError(tc.err); got != tc.want {
+				t.Errorf("isNilError(%v) = %v; want %v", tc.err, got, tc.want)
+			}
+		})
 	}
 }
