@@ -4,17 +4,20 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
-// scrub replaces the raw and query-escaped API key with REDACTED.
+// scrub replaces the raw, query-escaped, and Go-quoted API key with REDACTED.
 func (c *Client) scrub(s string) string {
 	if c.apiKey == "" {
 		// Why: ReplaceAll with empty old inserts at every rune.
 		return s
 	}
 	s = strings.ReplaceAll(s, c.apiKey, "REDACTED")
-	return strings.ReplaceAll(s, url.QueryEscape(c.apiKey), "REDACTED")
+	s = strings.ReplaceAll(s, url.QueryEscape(c.apiKey), "REDACTED")
+	quoted := strconv.Quote(c.apiKey)
+	return strings.ReplaceAll(s, quoted[1:len(quoted)-1], "REDACTED")
 }
 
 type redactedError struct {
@@ -67,10 +70,15 @@ func (c *Client) carriesKey(err error) bool {
 	return len(queue) > maxErrNodes
 }
 
-// containsKey reports whether s contains the nonempty raw or query-escaped API key.
+// containsKey reports whether s contains the nonempty raw, query-escaped, or Go-quoted API key.
 func (c *Client) containsKey(s string) bool {
 	// Why: strings.Contains with an empty key matches every string.
-	return c.apiKey != "" && (strings.Contains(s, c.apiKey) || strings.Contains(s, url.QueryEscape(c.apiKey)))
+	if c.apiKey == "" {
+		return false
+	}
+	quoted := strconv.Quote(c.apiKey)
+	return strings.Contains(s, c.apiKey) || strings.Contains(s, url.QueryEscape(c.apiKey)) ||
+		strings.Contains(s, quoted[1:len(quoted)-1])
 }
 
 // appendWrapped appends non-nil wrapped errors while bounding queue growth.
