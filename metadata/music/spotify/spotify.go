@@ -6,20 +6,30 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/golusoris/goenvoy/metadata"
 )
 
 const defaultBaseURL = "https://api.spotify.com/v1"
 
-// Client is a Spotify Web API client.
+// Why: match metadata's 32 MiB cap; required v1.4.4 has no shared bounded reader.
+const defaultMaxResponseBytes = 32 << 20
+
+var errResponseTooLarge = errors.New("response too large")
+
+// Client is a Spotify Web API client. A Client must not be copied after first
+// use because it holds atomic state; keep the pointer returned by [New], or
+// call [New] again for an independent client.
 type Client struct {
 	*metadata.BaseClient
-	accessToken string
+	accessToken      string
+	maxResponseBytes atomic.Int64
 }
 
 // APIError is returned when the API responds with a non-2xx status.
@@ -37,10 +47,46 @@ func (e *APIError) Error() string {
 func New(accessToken string, opts ...metadata.Option) *Client {
 	bc := metadata.NewBaseClient(defaultBaseURL, "spotify", opts...)
 	c := &Client{BaseClient: bc, accessToken: accessToken}
+	c.maxResponseBytes.Store(defaultMaxResponseBytes)
 	bc.SetAuth(func(req *http.Request) {
 		req.Header.Set("Authorization", "Bearer "+accessToken)
 	})
 	return c
+}
+
+// SetMaxResponseBytes sets the response body size limit for Spotify GET
+// responses. It is safe for concurrent use; nonpositive values restore the
+// 32 MiB default.
+func (c *Client) SetMaxResponseBytes(n int64) {
+	if n > 0 {
+		c.maxResponseBytes.Store(n)
+		return
+	}
+	c.maxResponseBytes.Store(0)
+}
+
+// responseLimit returns maxResponseBytes or the 32 MiB default when nonpositive.
+func (c *Client) responseLimit() int64 {
+	if limit := c.maxResponseBytes.Load(); limit > 0 {
+		return limit
+	}
+	return defaultMaxResponseBytes
+}
+
+// readCapped reads up to limit bytes from r and rejects responses exceeding limit.
+func readCapped(r io.Reader, limit int64) ([]byte, error) {
+	readLimit := limit
+	if limit < math.MaxInt64 {
+		readLimit = limit + 1
+	}
+	body, err := io.ReadAll(io.LimitReader(r, readLimit))
+	if int64(len(body)) > limit {
+		return nil, fmt.Errorf("spotify: read response: %w (limit %d bytes)", errResponseTooLarge, limit)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("spotify: read response: %w", err)
+	}
+	return body, nil
 }
 
 // get executes a GET request, decodes JSON into v, and surfaces response body close errors.
@@ -64,9 +110,9 @@ func (c *Client) get(ctx context.Context, path string, v any) (err error) {
 		}
 	}()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := readCapped(resp.Body, c.responseLimit())
 	if err != nil {
-		return fmt.Errorf("spotify: read response: %w", err)
+		return err
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
@@ -117,6 +163,10 @@ func (c *Client) GetArtistAlbums(ctx context.Context, artistID string, limit, of
 }
 
 // GetArtistTopTracks returns top tracks for an artist in a given market.
+//
+// Deprecated: Removed for Development Mode Client IDs created on or after February 11, 2026;
+// those Client IDs require extended quota access.
+// Spotify postponed the change for existing Development Mode integrations.
 func (c *Client) GetArtistTopTracks(ctx context.Context, artistID, market string) ([]Track, error) {
 	params := url.Values{}
 	params.Set("market", market)
@@ -129,6 +179,9 @@ func (c *Client) GetArtistTopTracks(ctx context.Context, artistID, market string
 }
 
 // GetRelatedArtists returns artists related to the given artist.
+//
+// Deprecated: Not listed as available for Development Mode apps in the February 2026 changelog;
+// requires extended quota access.
 func (c *Client) GetRelatedArtists(ctx context.Context, artistID string) ([]Artist, error) {
 	var resp relatedArtistsResp
 	if err := c.get(ctx, "/artists/"+url.PathEscape(artistID)+"/related-artists", &resp); err != nil {
@@ -169,6 +222,9 @@ func (c *Client) GetTrack(ctx context.Context, id string) (*Track, error) {
 }
 
 // GetAudioFeatures returns audio features for a track.
+//
+// Deprecated: Not listed as available for Development Mode apps in the February 2026 changelog;
+// requires extended quota access.
 func (c *Client) GetAudioFeatures(ctx context.Context, trackID string) (*AudioFeatures, error) {
 	var features AudioFeatures
 	if err := c.get(ctx, "/audio-features/"+url.PathEscape(trackID), &features); err != nil {
@@ -178,6 +234,10 @@ func (c *Client) GetAudioFeatures(ctx context.Context, trackID string) (*AudioFe
 }
 
 // GetNewReleases returns new album releases.
+//
+// Deprecated: Removed for Development Mode Client IDs created on or after February 11, 2026;
+// those Client IDs require extended quota access.
+// Spotify postponed the change for existing Development Mode integrations.
 func (c *Client) GetNewReleases(ctx context.Context, limit, offset int) (*Paged[AlbumSimple], error) {
 	params := url.Values{}
 	params.Set("limit", strconv.Itoa(limit))
@@ -191,6 +251,10 @@ func (c *Client) GetNewReleases(ctx context.Context, limit, offset int) (*Paged[
 }
 
 // GetCategories returns browse categories.
+//
+// Deprecated: Removed for Development Mode Client IDs created on or after February 11, 2026;
+// those Client IDs require extended quota access.
+// Spotify postponed the change for existing Development Mode integrations.
 func (c *Client) GetCategories(ctx context.Context, limit, offset int) (*Paged[Category], error) {
 	params := url.Values{}
 	params.Set("limit", strconv.Itoa(limit))
@@ -204,6 +268,9 @@ func (c *Client) GetCategories(ctx context.Context, limit, offset int) (*Paged[C
 }
 
 // GetRecommendations returns track recommendations based on seed artists, genres, and tracks.
+//
+// Deprecated: Not listed as available for Development Mode apps in the February 2026 changelog;
+// requires extended quota access.
 func (c *Client) GetRecommendations(ctx context.Context, seeds RecommendationSeeds) (*Recommendations, error) {
 	params := url.Values{}
 	if len(seeds.SeedArtists) > 0 {
