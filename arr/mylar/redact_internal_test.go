@@ -242,7 +242,53 @@ func TestNewRedaction(t *testing.T) {
 			if c != nil || err == nil {
 				t.Fatalf("New = %v, %v; want nil client and error", c, err)
 			}
+			if base == "http://%zz/" {
+				assertNoKey(t, err.Error(), key)
+				return
+			}
 			assertSafeText(t, err.Error(), key)
+		})
+	}
+}
+
+// TestNewRedactsForeignQueryKey checks that constructor errors strip a query apikey different from the client key.
+func TestNewRedactsForeignQueryKey(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, baseURL, key string
+	}{
+		{name: "unsupported scheme", baseURL: "ftp://example.invalid/?apikey=other", key: "k"},
+		{name: "parse failure", baseURL: "http://%zz/?apikey=other", key: ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := New(tc.baseURL, tc.key)
+			if c != nil || err == nil {
+				t.Fatalf("New(%q) = %v, %v; want nil client and error", tc.baseURL, c, err)
+			}
+			if strings.Contains(err.Error(), "other") {
+				t.Errorf("error leaked query key: %s", err.Error())
+			}
+		})
+	}
+}
+
+// TestCarriesKeyNil checks that a nil error never reports a key or panics.
+func TestCarriesKeyNil(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, key string
+	}{
+		{name: "keyed client", key: "k"},
+		{name: "empty key", key: ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if (&Client{apiKey: tc.key}).carriesKey(nil) {
+				t.Error("carriesKey(nil) = true; want false")
+			}
 		})
 	}
 }

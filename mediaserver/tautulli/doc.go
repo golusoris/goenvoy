@@ -11,7 +11,10 @@
 //
 // # Usage
 //
-//	client := tautulli.New("http://localhost:8181", "your-api-key")
+//	client, err := tautulli.New("http://localhost:8181", "your-api-key")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
 //	activity, err := client.GetActivity(ctx)
 //	if err != nil {
 //		log.Fatal(err)

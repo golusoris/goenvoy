@@ -296,6 +296,9 @@ func (c *Client) scrubError(err error) error {
 
 // carriesKey reports whether err or any error it wraps, single or joined, prints the raw, query-escaped, or quoted API key.
 func (c *Client) carriesKey(err error) bool {
+	if err == nil {
+		return false
+	}
 	queue := []error{err}
 	for i := 0; i < maxErrNodes && i < len(queue); i++ {
 		if c.containsKey(queue[i].Error()) {

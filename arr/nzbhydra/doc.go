@@ -6,6 +6,9 @@
 //
 // Usage:
 //
-//	c := nzbhydra.New("http://localhost:5076", "your-api-key")
+//	c, err := nzbhydra.New("http://localhost:5076", "your-api-key")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
 //	results, err := c.Search(context.Background(), "ubuntu", nil)
 package nzbhydra

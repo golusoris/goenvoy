@@ -13,23 +13,43 @@ import (
 // TestNewRedactsBaseURLKey checks that constructor errors hold no form of the API key.
 func TestNewRedactsBaseURLKey(t *testing.T) {
 	t.Parallel()
-	const key = "plain-key"
-	cases := []struct{ name, baseURL string }{
-		{name: "scheme and host", baseURL: "ftp://plain-key"},
-		{name: "parse failure", baseURL: "http://h/%zz/plain-key"},
-		{name: "parse failure in host", baseURL: "http://plain-key:80x"},
+	cases := []struct{ name, baseURL, key, forbid string }{
+		{name: "scheme and host", baseURL: "ftp://plain-key", key: "plain-key", forbid: "plain-key"},
+		{name: "parse failure", baseURL: "http://h/%zz/plain-key", key: "plain-key", forbid: "plain-key"},
+		{name: "parse failure in host", baseURL: "http://plain-key:80x", key: "plain-key", forbid: "plain-key"},
+		{name: "foreign query key on scheme failure", baseURL: "ftp://example.invalid/?apikey=other", key: "k", forbid: "other"},
+		{name: "foreign query key on parse failure", baseURL: "http://%zz/?apikey=other", key: "", forbid: "other"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			c, err := New(tc.baseURL, key)
+			c, err := New(tc.baseURL, tc.key)
 			if err == nil {
 				t.Fatalf("New(%q) = %v, nil; want error", tc.baseURL, c)
 			}
-			assertNoKeyForms(t, err.Error(), key)
-			assertNoKeyForms(t, fmt.Sprintf("%+v %#v", err, err), key)
+			assertNoKeyForms(t, err.Error(), tc.forbid)
+			assertNoKeyForms(t, fmt.Sprintf("%+v %#v", err, err), tc.forbid)
 			for i, link := 0, err; link != nil && i < maxErrNodes; i, link = i+1, errors.Unwrap(link) {
-				assertNoKeyForms(t, link.Error(), key)
+				assertNoKeyForms(t, link.Error(), tc.forbid)
+			}
+		})
+	}
+}
+
+// TestCarriesKeyNil checks that a nil error never reports a key or panics.
+func TestCarriesKeyNil(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, key string
+	}{
+		{name: "keyed client", key: "k"},
+		{name: "empty key", key: ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if (&Client{apiKey: tc.key}).carriesKey(nil) {
+				t.Error("carriesKey(nil) = true; want false")
 			}
 		})
 	}

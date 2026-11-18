@@ -5,6 +5,9 @@
 //
 // Usage:
 //
-//	c := mylar.New("http://localhost:8090", "your-api-key")
+//	c, err := mylar.New("http://localhost:8090", "your-api-key")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
 //	comics, err := c.GetIndex(context.Background())
 package mylar
