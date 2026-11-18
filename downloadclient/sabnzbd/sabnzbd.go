@@ -51,17 +51,17 @@ type Client struct {
 	userAgent  string
 }
 
+// errInvalidBaseURLMsg is the fixed key-free error text returned when New rejects a base URL.
+const errInvalidBaseURLMsg = "sabnzbd: invalid base URL: must be http(s) with a host"
+
 // New creates a SABnzbd [Client] for the given base URL and API key.
 // It returns an error if baseURL is not a valid HTTP/HTTPS URL.
 func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	baseURL = strings.TrimRight(baseURL, "/")
 
 	u, err := url.Parse(baseURL)
-	if err != nil {
-		return nil, fmt.Errorf("sabnzbd: invalid base URL %q: %w", baseURL, err)
-	}
-	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return nil, fmt.Errorf("sabnzbd: invalid base URL %q: must be http(s) with a host", baseURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return nil, errors.New(errInvalidBaseURLMsg)
 	}
 
 	c := &Client{
@@ -86,19 +86,19 @@ func (e *APIError) Error() string {
 }
 
 // decodeResponse inspects the response for API errors and unmarshals into dst.
-func decodeResponse(body []byte, dst any) error {
-	// Check for SABnzbd error responses like {"status": false, "error": "..."}
+func (c *Client) decodeResponse(body []byte, dst any) error {
+	// Why: SABnzbd may report application failures in an HTTP 200 response.
 	var errCheck struct {
 		Status bool   `json:"status"`
 		Error  string `json:"error"`
 	}
 	if json.Unmarshal(body, &errCheck) == nil && errCheck.Error != "" {
-		return &APIError{Message: errCheck.Error}
+		return &APIError{Message: c.scrub(errCheck.Error)}
 	}
 
 	if dst != nil {
 		if err := json.Unmarshal(body, dst); err != nil {
-			return fmt.Errorf("sabnzbd: decode response: %w", err)
+			return fmt.Errorf("sabnzbd: decode response: %w", c.scrubError(err))
 		}
 	}
 	return nil
@@ -116,30 +116,30 @@ func (c *Client) get(ctx context.Context, mode string, params url.Values, dst an
 	reqURL := c.baseURL + "/api?" + params.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
-		return fmt.Errorf("sabnzbd: create request: %w", err)
+		return fmt.Errorf("sabnzbd: create request: %w", c.redactError(err))
 	}
 	req.Header.Set("User-Agent", c.userAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("sabnzbd: GET %s: %w", mode, err)
+		return fmt.Errorf("sabnzbd: GET %s: %w", mode, c.redactError(err))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("sabnzbd: HTTP %d: read body: %w", resp.StatusCode, err)
+			return fmt.Errorf("sabnzbd: HTTP %d: read body: %w", resp.StatusCode, c.redactError(err))
 		}
-		return fmt.Errorf("sabnzbd: HTTP %d: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("sabnzbd: HTTP %d: %s", resp.StatusCode, c.scrub(string(body)))
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("sabnzbd: read response: %w", err)
+		return fmt.Errorf("sabnzbd: read response: %w", c.redactError(err))
 	}
 
-	return decodeResponse(body, dst)
+	return c.decodeResponse(body, dst)
 }
 
 // Queue methods.
