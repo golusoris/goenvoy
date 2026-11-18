@@ -165,7 +165,7 @@ func checkRedaction(t *testing.T, err error, key, name string, sentinel error, h
 	}
 }
 
-// TestRedactError checks root URL sanitization without discarding outer error trees.
+// TestRedactError checks root URL sanitization without discarding outer error trees; errors.As reaches a sanitized nested URL error.
 func TestRedactError(t *testing.T) {
 	t.Parallel()
 	const key = "placeholder+k/y=1"
@@ -177,12 +177,12 @@ func TestRedactError(t *testing.T) {
 		name      string
 		err       error
 		sentinel  error
-		rootURL   bool
+		hasURL    bool
 		unchanged bool
 	}{
-		{name: "root URL", err: uerr, sentinel: inner, rootURL: true},
-		{name: "joined URL", err: errors.Join(io.ErrUnexpectedEOF, uerr), sentinel: io.ErrUnexpectedEOF},
-		{name: "wrapped URL", err: fmt.Errorf("read: %w", uerr), sentinel: inner},
+		{name: "root URL", err: uerr, sentinel: inner, hasURL: true},
+		{name: "joined URL", err: errors.Join(io.ErrUnexpectedEOF, uerr), sentinel: io.ErrUnexpectedEOF, hasURL: true},
+		{name: "wrapped URL", err: fmt.Errorf("read: %w", uerr), sentinel: inner, hasURL: true},
 		{name: "keyless join", err: keyless, sentinel: io.ErrUnexpectedEOF, unchanged: true},
 	}
 	for _, tc := range cases {
@@ -192,8 +192,8 @@ func TestRedactError(t *testing.T) {
 			assertNoKey(t, got.Error(), key)
 			assertSentinel(t, got, tc.sentinel)
 			var matched *url.Error
-			if isURL := errors.As(got, &matched); isURL != tc.rootURL {
-				t.Errorf("root URL type = %v; want %v", isURL, tc.rootURL)
+			if isURL := errors.As(got, &matched); isURL != tc.hasURL {
+				t.Errorf("URL error reachable = %v; want %v", isURL, tc.hasURL)
 			}
 			if same := any(got) == any(tc.err); same != tc.unchanged {
 				t.Errorf("same error value = %v; want %v", same, tc.unchanged)
