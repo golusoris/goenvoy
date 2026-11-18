@@ -55,13 +55,14 @@ type Client struct {
 // It returns an error if baseURL is not a valid HTTP/HTTPS URL.
 func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	baseURL = strings.TrimRight(baseURL, "/")
+	redactor := &Client{apiKey: apiKey}
 
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("sabnzbd: invalid base URL %q: %w", baseURL, err)
+		return nil, fmt.Errorf("sabnzbd: invalid base URL %q: %w", redactor.scrub(baseURL), redactor.redactError(err))
 	}
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return nil, fmt.Errorf("sabnzbd: invalid base URL %q: must be http(s) with a host", baseURL)
+		return nil, fmt.Errorf("sabnzbd: invalid base URL %q: must be http(s) with a host", redactor.scrub(baseURL))
 	}
 
 	c := &Client{
@@ -86,19 +87,19 @@ func (e *APIError) Error() string {
 }
 
 // decodeResponse inspects the response for API errors and unmarshals into dst.
-func decodeResponse(body []byte, dst any) error {
-	// Check for SABnzbd error responses like {"status": false, "error": "..."}
+func (c *Client) decodeResponse(body []byte, dst any) error {
+	// Why: SABnzbd may report application failures in an HTTP 200 response.
 	var errCheck struct {
 		Status bool   `json:"status"`
 		Error  string `json:"error"`
 	}
 	if json.Unmarshal(body, &errCheck) == nil && errCheck.Error != "" {
-		return &APIError{Message: errCheck.Error}
+		return &APIError{Message: c.scrub(errCheck.Error)}
 	}
 
 	if dst != nil {
 		if err := json.Unmarshal(body, dst); err != nil {
-			return fmt.Errorf("sabnzbd: decode response: %w", err)
+			return fmt.Errorf("sabnzbd: decode response: %w", c.scrubError(err))
 		}
 	}
 	return nil
@@ -139,7 +140,7 @@ func (c *Client) get(ctx context.Context, mode string, params url.Values, dst an
 		return fmt.Errorf("sabnzbd: read response: %w", c.redactError(err))
 	}
 
-	return decodeResponse(body, dst)
+	return c.decodeResponse(body, dst)
 }
 
 // Queue methods.
