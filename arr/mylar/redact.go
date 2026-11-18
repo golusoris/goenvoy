@@ -1,23 +1,38 @@
 package mylar
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 )
 
-// scrub replaces the raw, query-escaped, and Go-quoted API key with REDACTED.
+// scrub replaces the raw, query-escaped, Go-quoted, and JSON-escaped API key in s with REDACTED.
 func (c *Client) scrub(s string) string {
-	if c.apiKey == "" {
-		// Why: ReplaceAll with empty old inserts at every rune.
-		return s
+	for _, form := range c.keyForms() {
+		s = strings.ReplaceAll(s, form, "REDACTED")
 	}
-	s = strings.ReplaceAll(s, c.apiKey, "REDACTED")
-	s = strings.ReplaceAll(s, url.QueryEscape(c.apiKey), "REDACTED")
+	return s
+}
+
+// keyForms returns the distinct raw, query-escaped, Go-quoted, and JSON-escaped forms of the API key, or nil when the key is empty.
+func (c *Client) keyForms() []string {
+	// Why: ReplaceAll with an empty old inserts at every rune and Contains with an empty key matches every string.
+	if c.apiKey == "" {
+		return nil
+	}
 	quoted := strconv.Quote(c.apiKey)
-	return strings.ReplaceAll(s, quoted[1:len(quoted)-1], "REDACTED")
+	forms := []string{c.apiKey, url.QueryEscape(c.apiKey), quoted[1 : len(quoted)-1]}
+	// Why: encoding/json writes <, >, &, U+2028 and U+2029 as \uXXXX escapes that no other form matches.
+	if b, err := json.Marshal(c.apiKey); err == nil {
+		if form := string(b[1 : len(b)-1]); !slices.Contains(forms, form) {
+			forms = append(forms, form)
+		}
+	}
+	return forms
 }
 
 type redactedError struct {
@@ -91,15 +106,9 @@ func (c *Client) carriesKey(err error) bool {
 	return len(queue) > maxErrNodes
 }
 
-// containsKey reports whether s contains the nonempty raw, query-escaped, or Go-quoted API key.
+// containsKey reports whether s holds the nonempty raw, query-escaped, Go-quoted, or JSON-escaped API key.
 func (c *Client) containsKey(s string) bool {
-	// Why: strings.Contains with an empty key matches every string.
-	if c.apiKey == "" {
-		return false
-	}
-	quoted := strconv.Quote(c.apiKey)
-	return strings.Contains(s, c.apiKey) || strings.Contains(s, url.QueryEscape(c.apiKey)) ||
-		strings.Contains(s, quoted[1:len(quoted)-1])
+	return slices.ContainsFunc(c.keyForms(), func(form string) bool { return strings.Contains(s, form) })
 }
 
 // appendWrapped appends non-nil wrapped errors while bounding queue growth.
@@ -128,9 +137,12 @@ func appendWrapped(queue []error, err error) []error {
 func (c *Client) redactError(err error) error {
 	// Why: only the root can be a *url.Error to copy; errors.As would search the whole tree unbounded.
 	if uerr, ok := err.(*url.Error); ok { //nolint:errorlint // root identity wanted; tree search is the defect
-		// Why: root identity preserves outer wrappers and joined sentinels for nested URL errors.
-		// Why: copy only the root URL error to sanitize its URL without mutating shared state.
-		err = &url.Error{Op: uerr.Op, URL: c.scrub(redactURL(uerr.URL)), Err: c.scrubError(uerr.Err)}
+		// Why: copy only when sanitizing changed the URL text or hid the cause; an untouched root keeps its identity for errors.Is.
+		// Why: a copy never mutates an error value net/http or a custom transport may share.
+		cleanURL := c.scrub(redactURL(uerr.URL))
+		if cleanURL != uerr.URL || (uerr.Err != nil && c.carriesKey(uerr.Err)) {
+			err = &url.Error{Op: uerr.Op, URL: cleanURL, Err: c.scrubError(uerr.Err)}
+		}
 	}
 	return c.scrubError(err)
 }
