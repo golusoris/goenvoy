@@ -109,3 +109,126 @@ func TestAPIErrorJSONFormRedaction(t *testing.T) {
 		}
 	}
 }
+
+// TestScrubPercentVariants checks that lower-case hex and path-escaped spellings of the API key are scrubbed and detected.
+func TestScrubPercentVariants(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ name, key, text, want string }{
+		{name: "lower-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2bk%2fy%3d1", want: "apikey=REDACTED"},
+		{name: "upper-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2Bk%2Fy%3D1", want: "apikey=REDACTED"},
+		{name: "path-escaped space", key: "fixture key", text: "fixture%20key", want: "REDACTED"},
+		{name: "query-escaped space", key: "fixture key", text: "fixture+key", want: "REDACTED"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertScrubbed(t, &Client{apiKey: tc.key}, tc.text, tc.want)
+		})
+	}
+}
+
+// assertScrubbed checks the scrubbed text, the absence of every key form in it, and detection in the input.
+func assertScrubbed(t *testing.T, c *Client, text, want string) {
+	t.Helper()
+	got := c.scrub(text)
+	if got != want {
+		t.Errorf("scrub(%q) = %q; want %q", text, got, want)
+	}
+	for _, form := range c.keyForms() {
+		if strings.Contains(got, form) {
+			t.Errorf("scrub kept key form %q: %s", form, got)
+		}
+	}
+	if !c.containsKey(text) {
+		t.Errorf("containsKey(%q) = false; want true", text)
+	}
+	if c.containsKey(got) {
+		t.Errorf("containsKey(%q) = true; want false", got)
+	}
+}
+
+// TestKeyFormsDistinct checks that a key whose escaped forms all equal the raw key yields one form.
+func TestKeyFormsDistinct(t *testing.T) {
+	t.Parallel()
+	forms := (&Client{apiKey: "Plain-Key"}).keyForms()
+	if len(forms) != 1 || forms[0] != "Plain-Key" {
+		t.Errorf("keyForms() = %q; want [Plain-Key]", forms)
+	}
+}
+
+// TestAPIErrorPercentVariantRedaction checks that a status body holding a lower- or upper-case percent-hex key is scrubbed.
+func TestAPIErrorPercentVariantRedaction(t *testing.T) {
+	t.Parallel()
+	const key = "fixture+k/y=1"
+	cases := []struct{ name, spelling string }{
+		{name: "lower-case hex", spelling: "fixture%2bk%2fy%3d1"},
+		{name: "upper-case hex", spelling: "fixture%2Bk%2Fy%3D1"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			apiErr := percentFormAPIError(t, key, tc.spelling)
+			for _, text := range []string{apiErr.Body, apiErr.Error()} {
+				if strings.Contains(text, key) || strings.Contains(text, tc.spelling) {
+					t.Errorf("key leaked: %s", text)
+				}
+			}
+		})
+	}
+}
+
+// percentFormAPIError returns the APIError for a 500 response whose body echoes spelling.
+func percentFormAPIError(t *testing.T, key, spelling string) *APIError {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		if _, err := fmt.Fprint(w, "apikey="+spelling); err != nil {
+			t.Errorf("mylar test: write percent form response: %v", err)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	c, err := New(srv.URL, key, WithHTTPClient(srv.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	var out any
+	err = c.get(ctx, "fixture", nil, &out)
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected APIError, got %v", err)
+	}
+	return apiErr
+}
+
+// temporaryCause is a fixture error whose Temporary method returns a fixed value.
+type temporaryCause struct{ temporary bool }
+
+func (temporaryCause) Error() string { return "fixture cause" }
+
+func (e temporaryCause) Temporary() bool { return e.temporary }
+
+// TestRedactedErrorTemporary checks that the wrapper forwards Temporary from the hidden error.
+func TestRedactedErrorTemporary(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name  string
+		cause error
+		want  bool
+	}{
+		{name: "temporary cause", cause: temporaryCause{temporary: true}, want: true},
+		{name: "permanent cause", cause: temporaryCause{temporary: false}, want: false},
+		{name: "wrapped temporary cause", cause: fmt.Errorf("fixture wrap: %w", temporaryCause{temporary: true}), want: true},
+		{name: "cause without method", cause: errors.New("fixture plain"), want: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			e := &redactedError{msg: "fixture", err: tc.cause, c: &Client{apiKey: "fixture-key"}}
+			if got := e.Temporary(); got != tc.want {
+				t.Errorf("Temporary() = %v; want %v", got, tc.want)
+			}
+		})
+	}
+}

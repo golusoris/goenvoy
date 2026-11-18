@@ -109,7 +109,7 @@ func (c *Client) doRequest(ctx context.Context, u string) ([]byte, error) {
 	return data, nil
 }
 
-// scrub replaces the raw, query-escaped, Go-quoted, and JSON-escaped API key in s with REDACTED.
+// scrub replaces the raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped API key in s with REDACTED, including upper- and lower-case percent-hex spellings of the two escaped forms.
 func (c *Client) scrub(s string) string {
 	for _, form := range c.keyForms() {
 		s = strings.ReplaceAll(s, form, "REDACTED")
@@ -117,21 +117,43 @@ func (c *Client) scrub(s string) string {
 	return s
 }
 
-// keyForms returns the distinct raw, query-escaped, Go-quoted, and JSON-escaped forms of the API key, or nil when the key is empty.
+// keyForms returns the distinct raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped forms of the API key, plus lower-case percent-hex variants of the query-escaped and path-escaped forms, or nil when the key is empty.
 func (c *Client) keyForms() []string {
 	// Why: ReplaceAll with an empty old inserts at every rune and Contains with an empty key matches every string.
 	if c.apiKey == "" {
 		return nil
 	}
 	quoted := strconv.Quote(c.apiKey)
-	forms := []string{c.apiKey, url.QueryEscape(c.apiKey), quoted[1 : len(quoted)-1]}
+	query, path := url.QueryEscape(c.apiKey), url.PathEscape(c.apiKey)
+	// Why: a server that echoes the request URL may write lower-case hex or path escaping, which url.QueryEscape alone never matches.
+	candidates := []string{c.apiKey, query, path, lowerPercentHex(query), lowerPercentHex(path), quoted[1 : len(quoted)-1]}
 	// Why: encoding/json writes <, >, &, U+2028 and U+2029 as \uXXXX escapes that no other form matches.
 	if b, err := json.Marshal(c.apiKey); err == nil {
-		if form := string(b[1 : len(b)-1]); !slices.Contains(forms, form) {
+		candidates = append(candidates, string(b[1:len(b)-1]))
+	}
+	forms := make([]string, 0, len(candidates))
+	for _, form := range candidates {
+		if !slices.Contains(forms, form) {
 			forms = append(forms, form)
 		}
 	}
 	return forms
+}
+
+// lowerPercentHex returns s with the two hex digits after every percent sign in lower case; other bytes stay unchanged.
+func lowerPercentHex(s string) string {
+	b := []byte(s)
+	for i := 0; i+2 < len(b); i++ {
+		if b[i] != '%' {
+			continue
+		}
+		for j := i + 1; j <= i+2; j++ {
+			if b[j] >= 'A' && b[j] <= 'F' {
+				b[j] += 'a' - 'A'
+			}
+		}
+	}
+	return string(b)
 }
 
 // redactedError presents sanitized message text and hides the error it replaces, whose text holds the API key.
@@ -158,6 +180,13 @@ func (e *redactedError) Timeout() bool {
 	// Why: url.Error.Timeout type-asserts its Err directly, so the wrapper must forward it.
 	var t interface{ Timeout() bool }
 	return errors.As(e.err, &t) && t.Timeout()
+}
+
+// Temporary reports whether the hidden error is temporary.
+func (e *redactedError) Temporary() bool {
+	// Why: url.Error.Temporary type-asserts its Err directly, so the wrapper must forward it.
+	var t interface{ Temporary() bool }
+	return errors.As(e.err, &t) && t.Temporary()
 }
 
 // As sets target to a sanitized copy of the first *url.Error in the hidden tree and reports false for every other target type, so no key-bearing value escapes.
@@ -211,7 +240,7 @@ func (c *Client) carriesKey(err error) bool {
 	return len(queue) > maxErrNodes
 }
 
-// containsKey reports whether s holds the nonempty raw, query-escaped, Go-quoted, or JSON-escaped API key.
+// containsKey reports whether s holds the nonempty raw, query-escaped, path-escaped, Go-quoted, or JSON-escaped API key, in upper- or lower-case percent-hex spelling.
 func (c *Client) containsKey(s string) bool {
 	return slices.ContainsFunc(c.keyForms(), func(form string) bool { return strings.Contains(s, form) })
 }
