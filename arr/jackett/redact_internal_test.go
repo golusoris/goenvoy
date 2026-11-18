@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -113,52 +115,130 @@ func TestDoRequestCreateRequestRedactsAPIKey(t *testing.T) {
 	}
 }
 
-// TestScrub verifies that scrub redacts raw and escaped keys and handles boundary cases.
+// TestScrub verifies scrubbing and detection of raw, query-escaped, and quoted keys, absent text, and empty keys.
 func TestScrub(t *testing.T) {
 	t.Parallel()
 
+	const special = `k"y\z`
+	const control = "key\n\tvalue"
+	quoted := strconv.Quote("plain-key")
 	cases := []struct {
-		name   string
-		apiKey string
-		input  string
-		want   string
+		name, key, input, want string
+		contains               bool
 	}{
-		{
-			name:   "empty key boundary leaves input unchanged",
-			apiKey: "",
-			input:  "http://example.com/api?foo=bar",
-			want:   "http://example.com/api?foo=bar",
-		},
-		{
-			name:   "raw key replaced",
-			apiKey: "my-secret-key",
-			input:  "error with my-secret-key present",
-			want:   "error with REDACTED present",
-		},
-		{
-			name:   "query escaped key replaced",
-			apiKey: "key with spaces&symbols+",
-			input:  "url: ?key=" + url.QueryEscape("key with spaces&symbols+"),
-			want:   "url: ?key=REDACTED",
-		},
-		{
-			name:   "text without key unchanged",
-			apiKey: "secret",
-			input:  "plain error message",
-			want:   "plain error message",
-		},
+		{"plain raw", "plain-key", "before plain-key after", "before REDACTED after", true},
+		{"plain query", "plain-key", "before " + url.QueryEscape("plain-key") + " after", "before REDACTED after", true},
+		{"plain quoted", "plain-key", "before " + quoted[1:len(quoted)-1] + " after", "before REDACTED after", true},
+		{"special raw", special, "before " + special + " after", "before REDACTED after", true},
+		{"special query", special, "before " + url.QueryEscape(special) + " after", "before REDACTED after", true},
+		{"special quoted", special, `before k\"y\\z after`, "before REDACTED after", true},
+		{"control raw", control, "before " + control + " after", "before REDACTED after", true},
+		{"control query", control, "before " + url.QueryEscape(control) + " after", "before REDACTED after", true},
+		{"control quoted", control, `before key\n\tvalue after`, "before REDACTED after", true},
+		{"absent", special, "plain error message", "plain error message", false},
+		{"empty input", control, "", "", false},
+		{"empty key", "", "plain error message", "plain error message", false},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			c := &Client{apiKey: tc.apiKey}
-			got := c.scrub(tc.input)
-			if got != tc.want {
-				t.Errorf("c.scrub(%q) = %q, want %q", tc.input, got, tc.want)
+			c := &Client{apiKey: tc.key}
+			if got := c.scrub(tc.input); got != tc.want {
+				t.Errorf("scrub(%q) = %q, want %q", tc.input, got, tc.want)
+			}
+			if got := c.containsKey(tc.input); got != tc.contains {
+				t.Errorf("containsKey(%q) = %v, want %v", tc.input, got, tc.contains)
 			}
 		})
 	}
+}
+
+// TestRedactErrorWrappers verifies that joined and wrapped URL errors retain their identities and redact all key forms.
+func TestRedactErrorWrappers(t *testing.T) {
+	t.Parallel()
+
+	for _, key := range []string{"plain-key", `k"y\z`, "key\n\tvalue"} {
+		t.Run(key, func(t *testing.T) {
+			t.Parallel()
+			checkRedactErrorWrappers(t, key)
+		})
+	}
+}
+
+// checkRedactErrorWrappers checks wrapper text and errors.Is identities after redaction.
+func checkRedactErrorWrappers(t *testing.T, key string) {
+	t.Helper()
+
+	uerr := &url.Error{Op: "Get", URL: "http://h/?apikey=" + key, Err: errors.New("x")}
+	cases := []struct {
+		name, prefix string
+		err, target  error
+	}{
+		{"joined", io.ErrUnexpectedEOF.Error(), errors.Join(io.ErrUnexpectedEOF, uerr), io.ErrUnexpectedEOF},
+		{"wrapped", "read: ", fmt.Errorf("read: %w", uerr), uerr},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := (&Client{apiKey: key}).redactError(tc.err)
+			checkRedactedKeyForms(t, got.Error(), key)
+			if !strings.HasPrefix(got.Error(), tc.prefix) {
+				t.Errorf("error = %q, want prefix %q", got, tc.prefix)
+			}
+			if !errors.Is(got, tc.err) || !errors.Is(got, tc.target) {
+				t.Errorf("errors.Is lost the root error or target %v", tc.target)
+			}
+		})
+	}
+}
+
+// checkRedactedKeyForms checks that text contains REDACTED and no raw, query-escaped, or quoted key.
+func checkRedactedKeyForms(t *testing.T, text, key string) {
+	t.Helper()
+
+	quoted := strconv.Quote(key)
+	for _, form := range []string{key, url.QueryEscape(key), quoted[1 : len(quoted)-1]} {
+		if strings.Contains(text, form) {
+			t.Errorf("error contains key form %q: %q", form, text)
+		}
+	}
+	if !strings.Contains(text, "REDACTED") {
+		t.Errorf("error lacks REDACTED: %q", text)
+	}
+}
+
+// TestRedactErrorRootURL verifies that root URL errors are sanitized copies, retaining their underlying errors.
+func TestRedactErrorRootURL(t *testing.T) {
+	t.Parallel()
+
+	for _, key := range []string{"plain-key", `k"y\z`, "key\n\tvalue"} {
+		t.Run(key, func(t *testing.T) {
+			t.Parallel()
+			checkRedactErrorRootURL(t, key)
+		})
+	}
+}
+
+// checkRedactErrorRootURL checks the copied URL error and the unchanged original.
+func checkRedactErrorRootURL(t *testing.T, key string) {
+	t.Helper()
+
+	rawURL := "http://h/?apikey=" + url.QueryEscape(key)
+	inner := errors.New("x")
+	uerr := &url.Error{Op: "Get", URL: rawURL, Err: inner}
+	got := (&Client{apiKey: key}).redactError(uerr)
+	var clean *url.Error
+	if !errors.As(got, &clean) || any(got) != any(clean) {
+		t.Fatalf("redactError = %T, want *url.Error", got)
+	}
+	if clean == uerr || uerr.URL != rawURL {
+		t.Error("redactError did not preserve the original URL error")
+	}
+	if clean.URL != "http://h/?apikey=REDACTED" || clean.Op != uerr.Op || !errors.Is(got, inner) {
+		t.Errorf("redactError = %#v, want sanitized URL with original operation and underlying error", clean)
+	}
+	checkRedactedKeyForms(t, got.Error(), key)
 }
 
 // TestRedactURLErrorNonURLError verifies that non-url.Error values and nil are returned unchanged.
