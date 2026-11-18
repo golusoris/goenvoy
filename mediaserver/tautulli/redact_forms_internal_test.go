@@ -339,7 +339,7 @@ func assertAPIErrorEscapedBody(t *testing.T, key, body, want string) {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		if _, err := w.Write([]byte(body)); err != nil {
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
 			t.Errorf("write response: %v", err)
 		}
 	}))
@@ -409,7 +409,7 @@ func TestAPIErrorEnvelopeJSONMessage(t *testing.T) {
 	const key = "fixture/part+token"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		body := `{"response":{"result":"error","message":"{\"error\":\"fixture\\u002fpart+token\"}","data":null}}`
-		if _, err := w.Write([]byte(body)); err != nil {
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
 			t.Errorf("write response: %v", err)
 		}
 	}))

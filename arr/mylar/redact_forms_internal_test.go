@@ -341,7 +341,7 @@ func assertAPIErrorEscapedBody(t *testing.T, key, body, want string) {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		if _, err := w.Write([]byte(body)); err != nil {
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
 			t.Errorf("write response: %v", err)
 		}
 	}))
