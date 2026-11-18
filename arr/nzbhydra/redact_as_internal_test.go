@@ -179,17 +179,83 @@ func TestRedactedErrorSearchesFanoutBounded(t *testing.T) {
 	}
 }
 
-// TestRedactedErrorIsFindsSentinel checks that errors.Is reaches a sentinel three wraps deep and one inside an errors.Join branch.
+// redactCycleErr is a single-unwrap error whose Unwrap returns a cycle.
+type redactCycleErr struct {
+	text string
+	next error
+}
+
+// Error returns the fixture text.
+func (e *redactCycleErr) Error() string { return e.text }
+
+// Unwrap returns the next error in the cycle.
+func (e *redactCycleErr) Unwrap() error { return e.next }
+
+// TestRedactedErrorWalkCycle checks that errors.Is, Timeout, and Temporary terminate on cyclic single-unwrap chains.
+func TestRedactedErrorWalkCycle(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	unrelated := errors.New("unrelated sentinel")
+	self := &redactCycleErr{text: "self " + key}
+	self.next = self
+	first := &redactCycleErr{text: "first " + key}
+	second := &redactCycleErr{text: "second", next: first}
+	first.next = second
+	cases := []struct {
+		name string
+		err  error
+	}{
+		{name: "self cycle", err: self},
+		{name: "two-node cycle", err: first},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := hiddenRedacted(t, key, tc.err)
+			if errors.Is(got, unrelated) {
+				t.Error("errors.Is(got, unrelated) = true; want false")
+			}
+			if got.(interface{ Timeout() bool }).Timeout() { //nolint:forcetypeassert // wrapper method set under test
+				t.Error("Timeout() = true; want false")
+			}
+			if got.(interface{ Temporary() bool }).Temporary() { //nolint:forcetypeassert // wrapper method set under test
+				t.Error("Temporary() = true; want false")
+			}
+		})
+	}
+}
+
+// TestRedactedErrorIsFindsSentinel checks that errors.Is reaches a sentinel three wraps deep, inside an errors.Join branch, and across a 200-wrap quiet chain.
 func TestRedactedErrorIsFindsSentinel(t *testing.T) {
 	t.Parallel()
 	const key = "plain-key"
 	sentinel := errors.New("fixture sentinel")
+	unrelatedSentinel := errors.New("unrelated sentinel")
 	deep := fmt.Errorf("a %s: %w", key, fmt.Errorf("b: %w", fmt.Errorf("c: %w", sentinel)))
 	joined := errors.Join(errors.New("other branch"), fmt.Errorf("k %s: %w", key, sentinel))
-	for name, tree := range map[string]error{"three wraps deep": deep, "join branch": joined} {
-		if !errors.Is(hiddenRedacted(t, key, tree), sentinel) {
-			t.Errorf("%s: errors.Is = false; want true", name)
-		}
+	longChain := fmt.Errorf("leaf %s: %w", key, sentinel)
+	for range 200 {
+		longChain = fmt.Errorf("wrap: %w", longChain)
+	}
+	cases := []struct {
+		name string
+		tree error
+	}{
+		{name: "three wraps deep", tree: deep},
+		{name: "join branch", tree: joined},
+		{name: "long quiet chain", tree: longChain},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			hidden := hiddenRedacted(t, key, tc.tree)
+			if !errors.Is(hidden, sentinel) {
+				t.Error("errors.Is(hidden, sentinel) = false; want true")
+			}
+			if errors.Is(hidden, unrelatedSentinel) {
+				t.Error("errors.Is(hidden, unrelatedSentinel) = true; want false")
+			}
+		})
 	}
 }
 

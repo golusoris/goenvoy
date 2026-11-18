@@ -115,12 +115,13 @@ func TestAPIErrorJSONFormRedaction(t *testing.T) {
 	}
 }
 
-// TestScrubPercentVariants checks that lower-case hex and path-escaped spellings of the API key are scrubbed and detected.
+// TestScrubPercentVariants checks that lower-case, upper-case, and mixed-case hex and path-escaped spellings of the API key are scrubbed and detected.
 func TestScrubPercentVariants(t *testing.T) {
 	t.Parallel()
 	cases := []struct{ name, key, text, want string }{
 		{name: "lower-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2bk%2fy%3d1", want: "apikey=REDACTED"},
 		{name: "upper-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2Bk%2Fy%3D1", want: "apikey=REDACTED"},
+		{name: "mixed-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2Bk%2fy%3D1", want: "apikey=REDACTED"},
 		{name: "path-escaped space", key: "fixture key", text: "fixture%20key", want: "REDACTED"},
 		{name: "query-escaped space", key: "fixture key", text: "fixture+key", want: "REDACTED"},
 	}
@@ -161,13 +162,14 @@ func TestKeyFormsDistinct(t *testing.T) {
 	}
 }
 
-// TestAPIErrorPercentVariantRedaction checks that a status body holding a lower- or upper-case percent-hex key is scrubbed.
+// TestAPIErrorPercentVariantRedaction checks that a status body holding a lower-, upper-, or mixed-case percent-hex key is scrubbed.
 func TestAPIErrorPercentVariantRedaction(t *testing.T) {
 	t.Parallel()
 	const key = "fixture+k/y=1"
 	cases := []struct{ name, spelling string }{
 		{name: "lower-case hex", spelling: "fixture%2bk%2fy%3d1"},
 		{name: "upper-case hex", spelling: "fixture%2Bk%2Fy%3D1"},
+		{name: "mixed-case hex", spelling: "fixture%2Bk%2fy%3D1"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -207,32 +209,62 @@ func percentFormAPIError(t *testing.T, key, spelling string) *APIError {
 }
 
 // temporaryCause is a fixture error whose Temporary method returns a fixed value.
-type temporaryCause struct{ temporary bool }
+type temporaryCause struct {
+	text      string
+	temporary bool
+}
 
-func (temporaryCause) Error() string { return "fixture cause" }
+// Error returns the fixture error text.
+func (e temporaryCause) Error() string { return e.text }
 
+// Temporary reports the configured temporary state.
 func (e temporaryCause) Temporary() bool { return e.temporary }
 
 // TestRedactedErrorTemporary checks that the wrapper forwards Temporary from the hidden error.
 func TestRedactedErrorTemporary(t *testing.T) {
 	t.Parallel()
+	const key = "fixture-key"
+	c := &Client{apiKey: key}
 	cases := []struct {
 		name  string
 		cause error
+		root  bool
 		want  bool
 	}{
-		{name: "temporary cause", cause: temporaryCause{temporary: true}, want: true},
-		{name: "permanent cause", cause: temporaryCause{temporary: false}, want: false},
-		{name: "wrapped temporary cause", cause: fmt.Errorf("fixture wrap: %w", temporaryCause{temporary: true}), want: true},
-		{name: "cause without method", cause: errors.New("fixture plain"), want: false},
+		{name: "temporary cause", cause: temporaryCause{text: "fixture " + key, temporary: true}, want: true},
+		{name: "permanent cause", cause: temporaryCause{text: "fixture " + key, temporary: false}, want: false},
+		{name: "wrapped temporary cause", cause: fmt.Errorf("fixture %s: %w", key, temporaryCause{text: "fixture cause", temporary: true}), want: true},
+		{name: "cause without method", cause: errors.New("fixture " + key), want: false},
+		{name: "root url error temporary cause", cause: &url.Error{Op: "Get", URL: "http://example.invalid/", Err: temporaryCause{text: "fixture " + key, temporary: true}}, root: true, want: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			e := &redactedError{msg: "fixture", err: tc.cause, c: &Client{apiKey: "fixture-key"}}
-			if got := e.Temporary(); got != tc.want {
-				t.Errorf("Temporary() = %v; want %v", got, tc.want)
-			}
+			assertTemporaryRedacted(t, c, tc.cause, tc.root, tc.want)
 		})
+	}
+}
+
+// assertTemporaryRedacted checks the wrapper type and Temporary result from scrubError or redactError.
+func assertTemporaryRedacted(t *testing.T, c *Client, cause error, root, want bool) {
+	t.Helper()
+	if root {
+		got := c.redactError(cause)
+		uerr, ok := got.(*url.Error) //nolint:errorlint // root type assertion wanted, not a tree search
+		if !ok {
+			t.Fatalf("redactError(%T) = %T; want *url.Error", cause, got)
+		}
+		if gotTemp := uerr.Temporary(); gotTemp != want {
+			t.Errorf("Temporary() = %v; want %v", gotTemp, want)
+		}
+		return
+	}
+	got := c.scrubError(cause)
+	hidden, ok := got.(*redactedError) //nolint:errorlint // wrapper type assertion wanted
+	if !ok {
+		t.Fatalf("scrubError(%T) = %T; want *redactedError", cause, got)
+	}
+	if gotTemp := hidden.Temporary(); gotTemp != want {
+		t.Errorf("Temporary() = %v; want %v", gotTemp, want)
 	}
 }
