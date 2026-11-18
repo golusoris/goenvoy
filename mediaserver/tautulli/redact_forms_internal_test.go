@@ -123,6 +123,8 @@ func TestScrubPercentVariants(t *testing.T) {
 		{name: "upper-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2Bk%2Fy%3D1", want: "apikey=REDACTED"},
 		{name: "mixed-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2Bk%2fy%3D1", want: "apikey=REDACTED"},
 		{name: "path-escaped space", key: "fixture key", text: "fixture%20key", want: "REDACTED"},
+		{name: "URL path lower hex", key: `k"/z?`, text: "k%22/z%3f", want: "REDACTED"},
+		{name: "URL path mixed hex", key: `k"y/z 1`, text: "k%22y/z%201", want: "REDACTED"},
 		{name: "query-escaped space", key: "fixture key", text: "fixture+key", want: "REDACTED"},
 	}
 	for _, tc := range cases {
@@ -275,6 +277,7 @@ func TestAPIErrorBodyEscapedForms(t *testing.T) {
 	const key = "fixture/part+token"
 	cases := []struct{ name, body, want string }{
 		{"solidus", `{"error":"fixture\/part+token"}`, `{"error":"REDACTED"}`},
+		{"unicode percent query", `{"error":"apikey=fixture\u00252Fpart\u00252Btoken"}`, "REDACTED"},
 		{"unicode value", `{"error":"fixture\u002fpart+token"}`, "REDACTED"},
 		{"unicode object key", `{"fixture\u002fpart+token":"error"}`, "REDACTED"},
 		{"unrelated JSON", `{"error":"other"}`, `{"error":"other"}`},
@@ -312,7 +315,74 @@ func assertAPIErrorEscapedBody(t *testing.T, key, body, want string) {
 	if apiErr.RawBody != want {
 		t.Errorf("body = %q; want %q", apiErr.RawBody, want)
 	}
-	if strings.Contains(err.Error(), key) || strings.Contains(apiErr.RawBody, key) {
+	if (&Client{apiKey: key}).containsKey(err.Error()) || strings.Contains(apiErr.RawBody, key) {
 		t.Error("key leaked")
+	}
+}
+
+// TestTransportURLPathKeyRedaction checks a closed server error for a key in the URL path.
+func TestTransportURLPathKeyRedaction(t *testing.T) {
+	t.Parallel()
+	const key = `k"y/z 1`
+	const escaped = `k%22y/z%201`
+	cases := []struct{ name, path string }{
+		{"raw path", key},
+		{"escaped path", escaped},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertTransportURLPathKeyRedaction(t, key, escaped, tc.path)
+		})
+	}
+}
+
+// assertTransportURLPathKeyRedaction checks the error and URL from a closed server.
+func assertTransportURLPathKeyRedaction(t *testing.T, key, escaped, path string) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	srv.Close()
+	c, err := New(srv.URL+"/"+path, key, WithHTTPClient(srv.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	_, err = c.GetActivity(ctx)
+	var uerr *url.Error
+	if !errors.As(err, &uerr) {
+		t.Fatalf("expected URL error, got %v", err)
+	}
+	for _, text := range []string{err.Error(), uerr.URL} {
+		if strings.Contains(text, key) || strings.Contains(text, escaped) {
+			t.Errorf("key leaked: %s", text)
+		}
+	}
+}
+
+// TestAPIErrorEnvelopeJSONMessage checks JSON text inside an HTTP 200 error message.
+func TestAPIErrorEnvelopeJSONMessage(t *testing.T) {
+	t.Parallel()
+	const key = "fixture/part+token"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		body := `{"response":{"result":"error","message":"{\"error\":\"fixture\\u002fpart+token\"}","data":null}}`
+		if _, err := w.Write([]byte(body)); err != nil {
+			t.Errorf("write response: %v", err)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	c, err := New(srv.URL, key, WithHTTPClient(srv.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	_, err = c.GetActivity(ctx)
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected APIError, got %v", err)
+	}
+	if apiErr.RawBody != "REDACTED" {
+		t.Errorf("body = %q; want REDACTED", apiErr.RawBody)
 	}
 }

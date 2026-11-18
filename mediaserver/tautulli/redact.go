@@ -43,7 +43,7 @@ func (c *Client) scrubBody(text string) string {
 		if err != nil {
 			break
 		}
-		if value, ok := token.(string); ok && strings.Contains(value, c.apiKey) {
+		if value, ok := token.(string); ok && c.containsKey(value) {
 			return "REDACTED"
 		}
 	}
@@ -58,7 +58,7 @@ func (c *Client) keyForms() []string {
 	}
 	quoted := strconv.Quote(c.apiKey)
 	query, path := url.QueryEscape(c.apiKey), url.PathEscape(c.apiKey)
-	candidates := []string{c.apiKey, query, path, quoted[1 : len(quoted)-1]}
+	candidates := []string{c.apiKey, query, path, (&url.URL{Path: c.apiKey}).EscapedPath(), quoted[1 : len(quoted)-1]}
 	// Why: encoding/json writes <, >, &, U+2028 and U+2029 as \uXXXX escapes that no other form matches.
 	if b, err := json.Marshal(c.apiKey); err == nil {
 		encoded := string(b[1 : len(b)-1])
@@ -76,18 +76,23 @@ func (c *Client) keyForms() []string {
 	return forms
 }
 
-// nextPercentKey returns the byte span of the next query-escaped or path-escaped API key match in s with percent-escape hex case ignored, or -1, -1 when absent.
+// nextPercentKey returns the byte span of the next query-escaped, path-escaped, or URL-path-escaped API key match in s with percent-escape hex case ignored, or -1, -1 when absent.
 func (c *Client) nextPercentKey(s string) (int, int) {
 	if c.apiKey == "" {
 		return -1, -1
 	}
-	query, path := url.QueryEscape(c.apiKey), url.PathEscape(c.apiKey)
-	for i := range len(s) {
-		if i+len(query) <= len(s) && matchPercentForm(s[i:i+len(query)], query) {
-			return i, i + len(query)
+	candidates := []string{url.QueryEscape(c.apiKey), url.PathEscape(c.apiKey), (&url.URL{Path: c.apiKey}).EscapedPath()}
+	forms := make([]string, 0, len(candidates))
+	for _, form := range candidates {
+		if !slices.Contains(forms, form) {
+			forms = append(forms, form)
 		}
-		if path != query && i+len(path) <= len(s) && matchPercentForm(s[i:i+len(path)], path) {
-			return i, i + len(path)
+	}
+	for i := range len(s) {
+		for _, form := range forms {
+			if i+len(form) <= len(s) && matchPercentForm(s[i:i+len(form)], form) {
+				return i, i + len(form)
+			}
 		}
 	}
 	return -1, -1

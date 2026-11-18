@@ -133,7 +133,7 @@ func (c *Client) get(ctx context.Context, cmd string, params url.Values) (json.R
 	}
 
 	if r.Response.Result != "success" {
-		return nil, &APIError{StatusCode: resp.StatusCode, RawBody: c.scrub(r.Response.Message)}
+		return nil, &APIError{StatusCode: resp.StatusCode, RawBody: c.scrubBody(r.Response.Message)}
 	}
 
 	return r.Response.Data, nil
