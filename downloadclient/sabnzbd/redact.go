@@ -5,12 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
 )
 
-// scrub replaces the raw, query-escaped, Go-quoted, and JSON-escaped API key in s with REDACTED.
+// scrub replaces the raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped API key in s with REDACTED, including upper- and lower-case percent-hex spellings of the two escaped forms.
 func (c *Client) scrub(s string) string {
 	for _, form := range c.keyForms() {
 		s = strings.ReplaceAll(s, form, "REDACTED")
@@ -18,21 +19,43 @@ func (c *Client) scrub(s string) string {
 	return s
 }
 
-// keyForms returns the distinct raw, query-escaped, Go-quoted, and JSON-escaped forms of the API key, or nil when the key is empty.
+// keyForms returns the distinct raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped forms of the API key, plus lower-case percent-hex variants of the query-escaped and path-escaped forms, or nil when the key is empty.
 func (c *Client) keyForms() []string {
 	// Why: ReplaceAll with an empty old inserts at every rune and Contains with an empty key matches every string.
 	if c.apiKey == "" {
 		return nil
 	}
 	quoted := strconv.Quote(c.apiKey)
-	forms := []string{c.apiKey, url.QueryEscape(c.apiKey), quoted[1 : len(quoted)-1]}
+	query, path := url.QueryEscape(c.apiKey), url.PathEscape(c.apiKey)
+	// Why: a server that echoes the request URL may write lower-case hex or path escaping, which url.QueryEscape alone never matches.
+	candidates := []string{c.apiKey, query, path, lowerPercentHex(query), lowerPercentHex(path), quoted[1 : len(quoted)-1]}
 	// Why: encoding/json writes <, >, &, U+2028 and U+2029 as \uXXXX escapes that no other form matches.
 	if b, err := json.Marshal(c.apiKey); err == nil {
-		if form := string(b[1 : len(b)-1]); !slices.Contains(forms, form) {
+		candidates = append(candidates, string(b[1:len(b)-1]))
+	}
+	forms := make([]string, 0, len(candidates))
+	for _, form := range candidates {
+		if !slices.Contains(forms, form) {
 			forms = append(forms, form)
 		}
 	}
 	return forms
+}
+
+// lowerPercentHex returns s with the two hex digits after every percent sign in lower case; other bytes stay unchanged.
+func lowerPercentHex(s string) string {
+	b := []byte(s)
+	for i := 0; i+2 < len(b); i++ {
+		if b[i] != '%' {
+			continue
+		}
+		for j := i + 1; j <= i+2; j++ {
+			if b[j] >= 'A' && b[j] <= 'F' {
+				b[j] += 'a' - 'A'
+			}
+		}
+	}
+	return string(b)
 }
 
 type redactedError struct {
@@ -47,13 +70,88 @@ type redactedError struct {
 func (e *redactedError) Error() string { return e.msg }
 
 // Is matches the hidden error without exposing it.
-func (e *redactedError) Is(target error) bool { return errors.Is(e.err, target) }
+func (e *redactedError) Is(target error) bool {
+	// Why: like errors.Is, compare only a comparable target, so an uncomparable one never panics.
+	canCompare := target != nil && reflect.TypeOf(target).Comparable()
+	found := false
+	e.walk(func(node error) bool {
+		if canCompare && node == target {
+			found = true
+		} else if m, ok := node.(interface{ Is(error) bool }); ok && m.Is(target) {
+			found = true
+		}
+		return found
+	})
+	return found
+}
 
 // Timeout reports whether the hidden error timed out.
 func (e *redactedError) Timeout() bool {
-	// Why: url.Error.Timeout type-asserts its Err directly, so the wrapper must forward it.
-	var t interface{ Timeout() bool }
-	return errors.As(e.err, &t) && t.Timeout()
+	// Why: url.Error.Timeout type-asserts its Err directly, so the wrapper must forward the first node that has it.
+	reported := false
+	e.walk(func(node error) bool {
+		t, ok := node.(interface{ Timeout() bool })
+		if ok {
+			reported = t.Timeout()
+		}
+		return ok
+	})
+	return reported
+}
+
+// Temporary reports whether the hidden error is temporary.
+func (e *redactedError) Temporary() bool {
+	// Why: url.Error.Temporary type-asserts its Err directly, so the wrapper must forward the first node that has it.
+	reported := false
+	e.walk(func(node error) bool {
+		t, ok := node.(interface{ Temporary() bool })
+		if ok {
+			reported = t.Temporary()
+		}
+		return ok
+	})
+	return reported
+}
+
+// walk visits the hidden tree depth-first, in errors.Is order, and stops when visit reports true or the tree holds more than maxErrNodes joined errors.
+func (e *redactedError) walk(visit func(error) bool) {
+	// Why: errors.Is and errors.As visit every path, exponential on a fan-out tree; only joined errors spend the maxErrNodes budget, so a long quiet chain stays reachable.
+	stack := []error{e.err}
+	for branches := 0; len(stack) > 0; {
+		node := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if visit(node) {
+			return
+		}
+		children, joined := wrappedChildren(node)
+		if joined {
+			branches++
+		}
+		if branches > maxErrNodes {
+			return
+		}
+		for i := len(children) - 1; i >= 0; i-- {
+			stack = append(stack, children[i])
+		}
+	}
+}
+
+// wrappedChildren returns the non-nil errors err wraps directly and whether err joins several.
+func wrappedChildren(err error) ([]error, bool) {
+	if w := errors.Unwrap(err); w != nil {
+		return []error{w}, false
+	}
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		return nil, false
+	}
+	var children []error
+	for _, child := range joined.Unwrap() {
+		if child != nil {
+			children = append(children, child)
+		}
+	}
+	return children, true
 }
 
 // As sets target to a sanitized copy of the first *url.Error in the hidden tree and reports false for every other target type, so no key-bearing value escapes.
@@ -106,7 +204,7 @@ func (c *Client) carriesKey(err error) bool {
 	return len(queue) > maxErrNodes
 }
 
-// containsKey reports whether s holds the nonempty raw, query-escaped, Go-quoted, or JSON-escaped API key.
+// containsKey reports whether s holds the nonempty raw, query-escaped, path-escaped, Go-quoted, or JSON-escaped API key, in upper- or lower-case percent-hex spelling.
 func (c *Client) containsKey(s string) bool {
 	return slices.ContainsFunc(c.keyForms(), func(form string) bool { return strings.Contains(s, form) })
 }

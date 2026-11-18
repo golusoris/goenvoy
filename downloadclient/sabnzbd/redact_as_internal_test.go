@@ -101,3 +101,110 @@ func TestRedactedErrorAsFanoutBounded(t *testing.T) {
 		t.Fatal("errors.As did not return within 2s")
 	}
 }
+
+// redactSliceErr is an uncomparable error type; comparing two values of it with == panics.
+type redactSliceErr []string
+
+// Error returns constant fixture text.
+func (redactSliceErr) Error() string { return "fixture slice error" }
+
+// hiddenRedacted returns the redactedError that scrubError builds for err and fails the test when err is not hidden.
+func hiddenRedacted(t *testing.T, key string, err error) error {
+	t.Helper()
+	got := (&Client{apiKey: key}).scrubError(err)
+	var hidden *redactedError
+	if !errors.As(got, &hidden) {
+		t.Fatalf("scrubError(%v) did not hide the tree", err)
+	}
+	return got
+}
+
+// answerWithinTwoSeconds runs ask and fails the test, instead of hanging, when it does not answer within 2s.
+func answerWithinTwoSeconds(t *testing.T, name string, ask func() bool) bool {
+	t.Helper()
+	done := make(chan bool, 1)
+	go func() { done <- ask() }()
+	select {
+	case got := <-done:
+		return got
+	case <-time.After(2 * time.Second):
+		t.Fatalf("%s did not return within 2s", name)
+		return false
+	}
+}
+
+// TestRedactedErrorSearchesFanoutBounded checks that Timeout, Temporary and errors.Is on a hidden exponential tree return promptly.
+func TestRedactedErrorSearchesFanoutBounded(t *testing.T) {
+	t.Parallel()
+	var err error
+	err = errors.New("fixture fanout leaf")
+	for range 30 {
+		err = redactionFanout{prev: err}
+	}
+	hidden := hiddenRedacted(t, "plain-key", err)
+	absent := errors.New("not in the tree")
+	checks := map[string]func() bool{
+		"Timeout":   func() bool { return hidden.(interface{ Timeout() bool }).Timeout() },     //nolint:forcetypeassert // the wrapper's own method set under test
+		"Temporary": func() bool { return hidden.(interface{ Temporary() bool }).Temporary() }, //nolint:forcetypeassert // the wrapper's own method set under test
+		"Is":        func() bool { return errors.Is(hidden, absent) },
+	}
+	for name, ask := range checks {
+		if answerWithinTwoSeconds(t, name, ask) {
+			t.Errorf("%s = true on a tree with no matching node", name)
+		}
+	}
+}
+
+// TestRedactedErrorIsFindsSentinel checks that errors.Is reaches a sentinel three wraps deep and one inside an errors.Join branch.
+func TestRedactedErrorIsFindsSentinel(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	sentinel := errors.New("fixture sentinel")
+	deep := fmt.Errorf("a %s: %w", key, fmt.Errorf("b: %w", fmt.Errorf("c: %w", sentinel)))
+	joined := errors.Join(errors.New("other branch"), fmt.Errorf("k %s: %w", key, sentinel))
+	for name, tree := range map[string]error{"three wraps deep": deep, "join branch": joined} {
+		if !errors.Is(hiddenRedacted(t, key, tree), sentinel) {
+			t.Errorf("%s: errors.Is = false; want true", name)
+		}
+	}
+}
+
+// TestRedactedErrorIsUncomparableTarget checks that errors.Is with an uncomparable target reports false and never panics.
+func TestRedactedErrorIsUncomparableTarget(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	leaf := redactSliceErr{"leaf"}
+	hidden := hiddenRedacted(t, key, fmt.Errorf("a %s: %w", key, leaf))
+	if errors.Is(hidden, redactSliceErr{"x"}) {
+		t.Error("errors.Is with an uncomparable target = true; want false")
+	}
+}
+
+// redactIsNode is a tree node that answers errors.Is through its own Is method, for one sentinel it does not equal.
+type redactIsNode struct {
+	text    string
+	matches error
+}
+
+// Error returns the fixture text.
+func (n redactIsNode) Error() string { return n.text }
+
+// Is reports whether target is the one sentinel this node stands for.
+func (n redactIsNode) Is(target error) bool { return target == n.matches }
+
+// TestRedactedErrorIsNodeMethod checks that errors.Is reaches a node that matches only through its own Is method, two wraps deep.
+func TestRedactedErrorIsNodeMethod(t *testing.T) {
+	t.Parallel()
+	const key = "node-key"
+	matched := errors.New("fixture matched sentinel")
+	other := errors.New("fixture other sentinel")
+	node := redactIsNode{text: "node " + key, matches: matched}
+	tree := fmt.Errorf("a %s: %w", key, fmt.Errorf("b: %w", node))
+	hidden := hiddenRedacted(t, key, tree)
+	if !errors.Is(hidden, matched) {
+		t.Error("errors.Is through the node's Is method = false; want true")
+	}
+	if errors.Is(hidden, other) {
+		t.Error("errors.Is with a sentinel the node does not report = true; want false")
+	}
+}
