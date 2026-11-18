@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
+	"unicode/utf8"
 )
 
 const (
@@ -16,7 +19,12 @@ const (
 	DefaultTimeout = 30 * time.Second
 	// DefaultUserAgent is the default User-Agent header for all providers.
 	DefaultUserAgent = "goenvoy/0.0.1"
+	// DefaultMaxResponseBytes is the default response body limit of 32 MiB.
+	DefaultMaxResponseBytes int64 = 32 << 20
 )
+
+// ErrResponseTooLarge indicates that a response body exceeds the configured limit.
+var ErrResponseTooLarge = errors.New("response too large")
 
 // AuthFunc is called before each HTTP request to apply provider-specific
 // authentication (e.g. setting headers or query parameters).
@@ -45,16 +53,26 @@ func WithBaseURL(u string) Option {
 	return func(b *BaseClient) { b.baseURL = u }
 }
 
+// WithMaxResponseBytes sets the response body limit; nonpositive values keep the default.
+func WithMaxResponseBytes(n int64) Option {
+	return func(b *BaseClient) {
+		if n > 0 {
+			b.maxResponseBytes = n
+		}
+	}
+}
+
 // BaseClient is a shared low-level HTTP client for metadata providers.
 // Providers embed BaseClient and use its methods to avoid duplicating
 // HTTP plumbing. The [AuthFunc] hook is called on every request to
 // apply provider-specific authentication.
 type BaseClient struct {
-	httpClient *http.Client
-	baseURL    string
-	userAgent  string
-	pkgName    string
-	authFunc   AuthFunc
+	httpClient       *http.Client
+	baseURL          string
+	userAgent        string
+	pkgName          string
+	authFunc         AuthFunc
+	maxResponseBytes int64
 }
 
 // NewBaseClient creates a [BaseClient] with the given default base URL and
@@ -62,10 +80,11 @@ type BaseClient struct {
 // configure HTTP client, timeout, user agent, or base URL.
 func NewBaseClient(defaultBaseURL, pkgName string, opts ...Option) *BaseClient {
 	c := &BaseClient{
-		httpClient: &http.Client{Timeout: DefaultTimeout, Transport: sharedTransport},
-		baseURL:    defaultBaseURL,
-		userAgent:  DefaultUserAgent,
-		pkgName:    pkgName,
+		httpClient:       &http.Client{Timeout: DefaultTimeout, Transport: sharedTransport},
+		baseURL:          defaultBaseURL,
+		userAgent:        DefaultUserAgent,
+		pkgName:          pkgName,
+		maxResponseBytes: DefaultMaxResponseBytes,
 	}
 	for _, o := range opts {
 		o(c)
@@ -107,9 +126,9 @@ func (c *BaseClient) DoRaw(ctx context.Context, method, path string, body io.Rea
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := c.readResponse(resp.Body)
 	if err != nil {
-		return nil, 0, fmt.Errorf("%s: read response: %w", c.pkgName, err)
+		return nil, 0, err
 	}
 
 	return respBody, resp.StatusCode, nil
@@ -136,9 +155,9 @@ func (c *BaseClient) DoRawURL(ctx context.Context, method, rawURL string, body i
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := c.readResponse(resp.Body)
 	if err != nil {
-		return nil, 0, fmt.Errorf("%s: read response: %w", c.pkgName, err)
+		return nil, 0, err
 	}
 
 	return respBody, resp.StatusCode, nil
@@ -209,12 +228,28 @@ func (c *BaseClient) DoJSON(ctx context.Context, method, path string, payload, d
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := c.readResponse(resp.Body)
 	if err != nil {
-		return fmt.Errorf("%s: read response: %w", c.pkgName, err)
+		return err
 	}
 
 	return c.decodeResponse(resp.StatusCode, body, dst)
+}
+
+// Why: bound response allocation and preserve one error contract for all request paths.
+func (c *BaseClient) readResponse(body io.Reader) ([]byte, error) {
+	readLimit := c.maxResponseBytes
+	if readLimit < math.MaxInt64 {
+		readLimit++
+	}
+	data, err := io.ReadAll(io.LimitReader(body, readLimit))
+	if int64(len(data)) > c.maxResponseBytes {
+		return nil, fmt.Errorf("%s: read response: %w (limit %d bytes)", c.pkgName, ErrResponseTooLarge, c.maxResponseBytes)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%s: read response: %w", c.pkgName, err)
+	}
+	return data, nil
 }
 
 // APIError is returned when a metadata provider API responds with a non-2xx
@@ -231,7 +266,15 @@ type APIError struct {
 // Error implements the error interface.
 func (e *APIError) Error() string {
 	if e.RawBody != "" {
-		return e.pkgName + ": HTTP " + strconv.Itoa(e.StatusCode) + ": " + e.RawBody
+		body := e.RawBody
+		if len(body) > 512 {
+			end := 512
+			for end > 0 && !utf8.RuneStart(body[end]) {
+				end--
+			}
+			body = body[:end] + "... (truncated)"
+		}
+		return e.pkgName + ": HTTP " + strconv.Itoa(e.StatusCode) + ": " + body
 	}
 	return e.pkgName + ": HTTP " + strconv.Itoa(e.StatusCode)
 }
