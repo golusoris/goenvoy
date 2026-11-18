@@ -179,17 +179,93 @@ func TestRedactedErrorSearchesFanoutBounded(t *testing.T) {
 	}
 }
 
-// TestRedactedErrorIsFindsSentinel checks that errors.Is reaches a sentinel three wraps deep and one inside an errors.Join branch.
+// TestRedactedErrorIsFindsSentinel checks that errors.Is reaches a sentinel three wraps deep, inside an errors.Join branch, and across a 200-wrap quiet chain, while rejecting an unrelated sentinel.
 func TestRedactedErrorIsFindsSentinel(t *testing.T) {
 	t.Parallel()
 	const key = "plain-key"
 	sentinel := errors.New("fixture sentinel")
+	unrelated := errors.New("fixture unrelated sentinel")
 	deep := fmt.Errorf("a %s: %w", key, fmt.Errorf("b: %w", fmt.Errorf("c: %w", sentinel)))
 	joined := errors.Join(errors.New("other branch"), fmt.Errorf("k %s: %w", key, sentinel))
-	for name, tree := range map[string]error{"three wraps deep": deep, "join branch": joined} {
-		if !errors.Is(hiddenRedacted(t, key, tree), sentinel) {
-			t.Errorf("%s: errors.Is = false; want true", name)
-		}
+	chain := fmt.Errorf("leaf %s: %w", key, sentinel)
+	for range 200 {
+		chain = fmt.Errorf("wrap: %w", chain)
+	}
+	cases := []struct {
+		name string
+		tree error
+	}{
+		{name: "three wraps deep", tree: deep},
+		{name: "join branch", tree: joined},
+		{name: "long quiet chain", tree: chain},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			hidden := hiddenRedacted(t, key, tc.tree)
+			if !errors.Is(hidden, sentinel) {
+				t.Error("errors.Is(sentinel) = false; want true")
+			}
+			if errors.Is(hidden, unrelated) {
+				t.Error("errors.Is(unrelated) = true; want false")
+			}
+		})
+	}
+}
+
+// redactCycleErr is a single-unwrap error node used to build cyclic unwrap chains.
+type redactCycleErr struct {
+	text string
+	next error
+}
+
+// Error returns the fixture text.
+func (e *redactCycleErr) Error() string { return e.text }
+
+// Unwrap returns the next error in the cycle.
+func (e *redactCycleErr) Unwrap() error { return e.next }
+
+// TestRedactedErrorWalkCycleBounded checks that errors.Is, Timeout, and Temporary terminate on cyclic single-unwrap error chains.
+func TestRedactedErrorWalkCycleBounded(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	unrelated := errors.New("fixture unrelated sentinel")
+	self := &redactCycleErr{text: "self cycle " + key}
+	self.next = self
+	first := &redactCycleErr{text: "cycle node a " + key}
+	second := &redactCycleErr{text: "cycle node b", next: first}
+	first.next = second
+	cases := []struct {
+		name string
+		err  error
+	}{
+		{name: "self cycle", err: self},
+		{name: "two-node cycle", err: first},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertCycleWalkBounded(t, key, tc.err, unrelated)
+		})
+	}
+}
+
+// assertCycleWalkBounded checks that scrubError hides err and that Is, Timeout, and Temporary return false.
+func assertCycleWalkBounded(t *testing.T, key string, err, unrelated error) {
+	t.Helper()
+	got := (&Client{apiKey: key}).scrubError(err)
+	var hidden *redactedError
+	if !errors.As(got, &hidden) {
+		t.Fatalf("scrubError(%v) = %T; want *redactedError", err, got)
+	}
+	if errors.Is(got, unrelated) {
+		t.Error("errors.Is(unrelated) = true; want false")
+	}
+	if hidden.Timeout() {
+		t.Error("Timeout() = true; want false")
+	}
+	if hidden.Temporary() {
+		t.Error("Temporary() = true; want false")
 	}
 }
 

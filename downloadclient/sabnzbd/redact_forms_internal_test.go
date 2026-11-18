@@ -135,12 +135,14 @@ func checkJSONFormResponse(t *testing.T, key, escaped string, status int, body s
 	}
 }
 
-// TestScrubPercentVariants checks that lower-case hex and path-escaped spellings of the API key are scrubbed and detected.
+// TestScrubPercentVariants checks that lower-case, upper-case, and mixed-case percent-hex and path-escaped spellings of the API key are scrubbed and detected.
 func TestScrubPercentVariants(t *testing.T) {
 	t.Parallel()
 	cases := []struct{ name, key, text, want string }{
 		{name: "lower-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2bk%2fy%3d1", want: "apikey=REDACTED"},
 		{name: "upper-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2Bk%2Fy%3D1", want: "apikey=REDACTED"},
+		{name: "mixed-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2Bk%2fy%3D1", want: "apikey=REDACTED"},
+		{name: "path-escaped mixed-case hex", key: "fixture+k/y=1", text: "apikey=fixture+k%2fy=1", want: "apikey=REDACTED"},
 		{name: "path-escaped space", key: "fixture key", text: "fixture%20key", want: "REDACTED"},
 		{name: "query-escaped space", key: "fixture key", text: "fixture+key", want: "REDACTED"},
 	}
@@ -172,31 +174,45 @@ func assertScrubbed(t *testing.T, c *Client, text, want string) {
 	}
 }
 
-// TestAPIErrorPercentVariantRedaction checks that a status body holding a lower- or upper-case percent-hex key is scrubbed.
+// TestAPIErrorPercentVariantRedaction checks that a status body or application error holding a lower-, upper-, or mixed-case percent-hex key is scrubbed.
 func TestAPIErrorPercentVariantRedaction(t *testing.T) {
 	t.Parallel()
 	const key = "fixture+k/y=1"
-	cases := []struct{ name, spelling string }{
-		{name: "lower-case hex", spelling: "fixture%2bk%2fy%3d1"},
-		{name: "upper-case hex", spelling: "fixture%2Bk%2Fy%3D1"},
+	cases := []struct {
+		name, spelling string
+		status         int
+		body           string
+	}{
+		{name: "lower-case hex", spelling: "fixture%2bk%2fy%3d1", status: http.StatusInternalServerError, body: "apikey=fixture%2bk%2fy%3d1"},
+		{name: "upper-case hex", spelling: "fixture%2Bk%2Fy%3D1", status: http.StatusInternalServerError, body: "apikey=fixture%2Bk%2Fy%3D1"},
+		{name: "mixed-case status body", spelling: "fixture%2Bk%2fy%3D1", status: http.StatusInternalServerError, body: "apikey=fixture%2Bk%2fy%3D1"},
+		{name: "mixed-case application error", spelling: "fixture%2Bk%2fy%3D1", status: http.StatusOK, body: `{"status":false,"error":"apikey=fixture%2Bk%2fy%3D1"}`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			text := percentFormError(t, key, tc.spelling).Error()
+			err := percentFormError(t, key, tc.status, tc.body)
+			text := err.Error()
 			if strings.Contains(text, key) || strings.Contains(text, tc.spelling) {
 				t.Errorf("key leaked: %s", text)
+			}
+			if !strings.Contains(text, "REDACTED") {
+				t.Errorf("err = %q; want REDACTED marker", text)
+			}
+			var apiErr *APIError
+			if tc.status == http.StatusOK && !errors.As(err, &apiErr) {
+				t.Errorf("expected APIError, got %v", err)
 			}
 		})
 	}
 }
 
-// percentFormError returns the GetQueue error for a 500 response whose body echoes spelling.
-func percentFormError(t *testing.T, key, spelling string) error {
+// percentFormError returns the GetQueue error for a response with status and body.
+func percentFormError(t *testing.T, key string, status int, body string) error {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		if _, err := io.Copy(w, strings.NewReader("apikey="+spelling)); err != nil {
+		w.WriteHeader(status)
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
 			t.Errorf("sabnzbd test: write percent form response: %v", err)
 		}
 	}))
@@ -214,35 +230,64 @@ func percentFormError(t *testing.T, key, spelling string) error {
 	return err
 }
 
-// temporaryCause is a fixture error whose Temporary method returns a fixed value.
+// temporaryCause is a key-bearing fixture error whose Temporary method returns a fixed value.
 type temporaryCause struct{ temporary bool }
 
-// Error returns constant fixture text.
-func (temporaryCause) Error() string { return "fixture cause" }
+// Error returns fixture text holding the placeholder key so scrubError wraps it.
+func (temporaryCause) Error() string { return "fixture cause fixture-key" }
 
 // Temporary returns the fixed value.
 func (e temporaryCause) Temporary() bool { return e.temporary }
 
-// TestRedactedErrorTemporary checks that the wrapper forwards Temporary from the hidden error.
+// TestRedactedErrorTemporary checks that wrappers built by scrubError and redactError forward Temporary from the hidden error.
 func TestRedactedErrorTemporary(t *testing.T) {
 	t.Parallel()
+	const key = "fixture-key"
 	cases := []struct {
-		name  string
-		cause error
-		want  bool
+		name    string
+		cause   error
+		rootURL bool
+		want    bool
 	}{
 		{name: "temporary cause", cause: temporaryCause{temporary: true}, want: true},
 		{name: "permanent cause", cause: temporaryCause{temporary: false}, want: false},
 		{name: "wrapped temporary cause", cause: fmt.Errorf("fixture wrap: %w", temporaryCause{temporary: true}), want: true},
-		{name: "cause without method", cause: errors.New("fixture plain"), want: false},
+		{name: "cause without method", cause: errors.New("fixture plain " + key), want: false},
+		{name: "root url.Error temporary cause", cause: &url.Error{Op: "Get", URL: "http://example.invalid/", Err: temporaryCause{temporary: true}}, rootURL: true, want: true},
+		{name: "root url.Error permanent cause", cause: &url.Error{Op: "Get", URL: "http://example.invalid/", Err: temporaryCause{temporary: false}}, rootURL: true, want: false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			e := &redactedError{msg: "fixture", err: tc.cause, c: &Client{apiKey: "fixture-key"}}
-			if got := e.Temporary(); got != tc.want {
-				t.Errorf("Temporary() = %v; want %v", got, tc.want)
-			}
+			assertTemporaryForwarded(t, &Client{apiKey: key}, tc.cause, tc.rootURL, tc.want)
 		})
+	}
+}
+
+// assertTemporaryForwarded checks that scrubError or redactError hides the key-bearing cause and forwards Temporary.
+func assertTemporaryForwarded(t *testing.T, c *Client, cause error, rootURL, want bool) {
+	t.Helper()
+	if rootURL {
+		got := c.redactError(cause)
+		uerr, ok := got.(*url.Error) //nolint:errorlint // root *url.Error identity required
+		if !ok {
+			t.Fatalf("redactError(%v) = %T; want *url.Error", cause, got)
+		}
+		var hidden *redactedError
+		if !errors.As(uerr.Err, &hidden) {
+			t.Fatalf("uerr.Err = %T; want *redactedError", uerr.Err)
+		}
+		if gotTemp := uerr.Temporary(); gotTemp != want {
+			t.Errorf("uerr.Temporary() = %v; want %v", gotTemp, want)
+		}
+		return
+	}
+	got := c.scrubError(cause)
+	var hidden *redactedError
+	if !errors.As(got, &hidden) {
+		t.Fatalf("scrubError(%v) = %T; want *redactedError", cause, got)
+	}
+	if gotTemp := hidden.Temporary(); gotTemp != want {
+		t.Errorf("Temporary() = %v; want %v", gotTemp, want)
 	}
 }

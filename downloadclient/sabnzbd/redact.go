@@ -6,20 +6,24 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 )
 
-// scrub replaces the raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped API key in s with REDACTED, including upper- and lower-case percent-hex spellings of the two escaped forms.
+// scrub replaces the raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped API key in s with REDACTED, ignoring hex-digit case in percent escapes of the two URL-escaped forms.
 func (c *Client) scrub(s string) string {
 	for _, form := range c.keyForms() {
 		s = strings.ReplaceAll(s, form, "REDACTED")
 	}
+	if re := c.percentPattern(); re != nil {
+		s = re.ReplaceAllLiteralString(s, "REDACTED")
+	}
 	return s
 }
 
-// keyForms returns the distinct raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped forms of the API key, plus lower-case percent-hex variants of the query-escaped and path-escaped forms, or nil when the key is empty.
+// keyForms returns the distinct literal raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped forms of the API key, or nil when the key is empty; hex-digit case of percent escapes is ignored by percentPattern.
 func (c *Client) keyForms() []string {
 	// Why: ReplaceAll with an empty old inserts at every rune and Contains with an empty key matches every string.
 	if c.apiKey == "" {
@@ -27,8 +31,8 @@ func (c *Client) keyForms() []string {
 	}
 	quoted := strconv.Quote(c.apiKey)
 	query, path := url.QueryEscape(c.apiKey), url.PathEscape(c.apiKey)
-	// Why: a server that echoes the request URL may write lower-case hex or path escaping, which url.QueryEscape alone never matches.
-	candidates := []string{c.apiKey, query, path, lowerPercentHex(query), lowerPercentHex(path), quoted[1 : len(quoted)-1]}
+	// Why: a server that echoes the request URL may write query or path escaping.
+	candidates := []string{c.apiKey, query, path, quoted[1 : len(quoted)-1]}
 	// Why: encoding/json writes <, >, &, U+2028 and U+2029 as \uXXXX escapes that no other form matches.
 	if b, err := json.Marshal(c.apiKey); err == nil {
 		candidates = append(candidates, string(b[1:len(b)-1]))
@@ -42,20 +46,39 @@ func (c *Client) keyForms() []string {
 	return forms
 }
 
-// lowerPercentHex returns s with the two hex digits after every percent sign in lower case; other bytes stay unchanged.
-func lowerPercentHex(s string) string {
-	b := []byte(s)
-	for i := 0; i+2 < len(b); i++ {
-		if b[i] != '%' {
+// percentPattern returns a regular expression matching the query-escaped and path-escaped API key with case-insensitive percent-hex digits, or nil when the key is empty.
+func (c *Client) percentPattern() *regexp.Regexp {
+	if c.apiKey == "" {
+		return nil
+	}
+	query, path := url.QueryEscape(c.apiKey), url.PathEscape(c.apiKey)
+	expr := percentRegexp(query)
+	if path != query {
+		expr += "|" + percentRegexp(path)
+	}
+	return regexp.MustCompile(expr)
+}
+
+// percentRegexp builds a regular expression for an escaped key that ignores hex-digit case inside percent triplets.
+func percentRegexp(escaped string) string {
+	var b strings.Builder
+	for i := 0; i < len(escaped); i++ {
+		if escaped[i] == '%' && i+2 < len(escaped) {
+			b.WriteString("%" + hexBytePattern(escaped[i+1]) + hexBytePattern(escaped[i+2]))
+			i += 2
 			continue
 		}
-		for j := i + 1; j <= i+2; j++ {
-			if b[j] >= 'A' && b[j] <= 'F' {
-				b[j] += 'a' - 'A'
-			}
-		}
+		b.WriteString(regexp.QuoteMeta(escaped[i : i+1]))
 	}
-	return string(b)
+	return b.String()
+}
+
+// hexBytePattern returns a two-letter character class for an upper-case hex letter, or the literal byte.
+func hexBytePattern(ch byte) string {
+	if ch >= 'A' && ch <= 'F' {
+		return string([]byte{'[', ch + ('a' - 'A'), ch, ']'})
+	}
+	return string(ch)
 }
 
 type redactedError struct {
@@ -113,11 +136,16 @@ func (e *redactedError) Temporary() bool {
 	return reported
 }
 
-// walk visits the hidden tree depth-first, in errors.Is order, and stops when visit reports true or the tree holds more than maxErrNodes joined errors.
+// walk visits the hidden tree depth-first, in errors.Is order, and stops when visit reports true, the walk exceeds maxWalkSteps nodes, or the tree holds more than maxErrNodes joined errors.
 func (e *redactedError) walk(visit func(error) bool) {
 	// Why: errors.Is and errors.As visit every path, exponential on a fan-out tree; only joined errors spend the maxErrNodes budget, so a long quiet chain stays reachable.
 	stack := []error{e.err}
-	for branches := 0; len(stack) > 0; {
+	for steps, branches := 0, 0; len(stack) > 0; {
+		steps++
+		// Why: cyclic single-unwrap chain must terminate; bound far above any real chain.
+		if steps > maxWalkSteps {
+			return
+		}
 		node := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		if visit(node) {
@@ -183,6 +211,9 @@ func (e *redactedError) Format(f fmt.State, verb rune) {
 
 const maxErrNodes = 64
 
+// maxWalkSteps bounds the total nodes visited by redactedError.walk across single-unwrap chains.
+const maxWalkSteps = 4096
+
 // scrubError hides error trees that carry the API key or exceed the traversal limit.
 func (c *Client) scrubError(err error) error {
 	if err == nil || !c.carriesKey(err) {
@@ -207,9 +238,13 @@ func (c *Client) carriesKey(err error) bool {
 	return len(queue) > maxErrNodes
 }
 
-// containsKey reports whether s holds the nonempty raw, query-escaped, path-escaped, Go-quoted, or JSON-escaped API key, in upper- or lower-case percent-hex spelling.
+// containsKey reports whether s holds the nonempty raw, query-escaped, path-escaped, Go-quoted, or JSON-escaped API key, ignoring hex-digit case in percent escapes of the two URL-escaped forms.
 func (c *Client) containsKey(s string) bool {
-	return slices.ContainsFunc(c.keyForms(), func(form string) bool { return strings.Contains(s, form) })
+	if slices.ContainsFunc(c.keyForms(), func(form string) bool { return strings.Contains(s, form) }) {
+		return true
+	}
+	re := c.percentPattern()
+	return re != nil && re.MatchString(s)
 }
 
 // appendWrapped appends non-nil wrapped errors while bounding queue growth.
