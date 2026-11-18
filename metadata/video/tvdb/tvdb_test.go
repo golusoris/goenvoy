@@ -1418,7 +1418,7 @@ func TestGetPersonTranslation(t *testing.T) {
 	}
 }
 
-// TestConcurrentGetSeries checks concurrent requests through both constructors.
+// TestConcurrentGetSeries checks concurrent requests and concurrent relogin through both constructors.
 func TestConcurrentGetSeries(t *testing.T) {
 	t.Parallel()
 	for _, withPIN := range []bool{false, true} {
@@ -1426,18 +1426,24 @@ func TestConcurrentGetSeries(t *testing.T) {
 			t.Parallel()
 			srv := newTestServer(t, "/series/1", map[string]any{"data": map[string]any{"id": 1}})
 			defer srv.Close()
-			c := newClient(t, srv)
-			if withPIN {
-				c = tvdb.NewWithPIN("test-key", "test-pin", metadata.WithBaseURL(srv.URL))
-			}
+			c := newConcurrentTestClient(srv.URL, withPIN)
 			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 			defer cancel()
 			if err := c.Login(ctx); err != nil {
 				t.Fatalf("Login: %v", err)
 			}
 			checkConcurrentSeries(t, ctx, c)
+			checkConcurrentSeriesRelogin(t, ctx, withPIN)
 		})
 	}
+}
+
+// newConcurrentTestClient creates a client with or without a subscriber PIN for concurrency tests.
+func newConcurrentTestClient(baseURL string, withPIN bool) *tvdb.Client {
+	if withPIN {
+		return tvdb.NewWithPIN("test-key", "test-pin", metadata.WithBaseURL(baseURL))
+	}
+	return tvdb.New("test-api-key", metadata.WithBaseURL(baseURL))
 }
 
 // Why: synchronize eight callers to expose shared authentication callback races.
@@ -1460,6 +1466,62 @@ func checkConcurrentSeries(t *testing.T, ctx context.Context, c *tvdb.Client) {
 	}
 	close(start)
 	wg.Wait()
+}
+
+// checkConcurrentSeriesRelogin triggers Login while concurrent GetSeries requests are in flight.
+func checkConcurrentSeriesRelogin(t *testing.T, ctx context.Context, withPIN bool) {
+	t.Helper()
+	seriesArrived := make(chan struct{}, 1)
+	srv := newReloginSeriesServer(t, seriesArrived)
+	defer srv.Close()
+	c := newConcurrentTestClient(srv.URL, withPIN)
+	if err := c.Login(ctx); err != nil {
+		t.Fatalf("initial Login: %v", err)
+	}
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	for range 8 {
+		wg.Go(func() {
+			<-start
+			for range 4 {
+				series, err := c.GetSeries(ctx, 1)
+				if err != nil || series.ID != 1 {
+					t.Errorf("GetSeries = (%+v, %v), want ID 1 and nil error", series, err)
+					return
+				}
+			}
+		})
+	}
+	close(start)
+	select {
+	case <-seriesArrived:
+	case <-ctx.Done():
+		t.Fatalf("waiting for series request: %v", ctx.Err())
+	}
+	if err := c.Login(ctx); err != nil {
+		t.Fatalf("concurrent Login: %v", err)
+	}
+	wg.Wait()
+}
+
+// newReloginSeriesServer serves /login and signals seriesArrived when /series/1 is reached.
+func newReloginSeriesServer(t *testing.T, seriesArrived chan<- struct{}) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Connection", "close")
+		if r.URL.Path == "/login" {
+			loginHandler(w, r)
+			return
+		}
+		select {
+		case seriesArrived <- struct{}{}:
+		default:
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if _, err := io.Copy(w, strings.NewReader(`{"data":{"id":1}}`)); err != nil {
+			t.Errorf("tvdb test: write series fixture: %v", err)
+		}
+	}))
 }
 
 // TestLoginResponseLimit checks login response sizes around the local cap.

@@ -27,7 +27,9 @@ func Example() {
 // ExampleClient_SetMaxResponseBytes configures the response body cap for Spotify requests.
 func ExampleClient_SetMaxResponseBytes() {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = io.Copy(w, strings.NewReader(`{"id":"1","name":"Spotify Artist"}`))
+		if _, err := io.Copy(w, strings.NewReader(`{"id":"1","name":"Spotify Artist"}`)); err != nil {
+			http.Error(w, "fixture write failed", http.StatusInternalServerError)
+		}
 	}))
 	defer srv.Close()
 

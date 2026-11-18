@@ -6,10 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/golusoris/goenvoy/metadata"
 )
@@ -25,7 +27,7 @@ var errResponseTooLarge = errors.New("response too large")
 type Client struct {
 	*metadata.BaseClient
 	accessToken      string
-	maxResponseBytes int64
+	maxResponseBytes atomic.Int64
 }
 
 // APIError is returned when the API responds with a non-2xx status.
@@ -42,28 +44,31 @@ func (e *APIError) Error() string {
 // New creates a Spotify [Client] with the given OAuth2 access token.
 func New(accessToken string, opts ...metadata.Option) *Client {
 	bc := metadata.NewBaseClient(defaultBaseURL, "spotify", opts...)
-	c := &Client{BaseClient: bc, accessToken: accessToken, maxResponseBytes: defaultMaxResponseBytes}
+	c := &Client{BaseClient: bc, accessToken: accessToken}
+	c.maxResponseBytes.Store(defaultMaxResponseBytes)
 	bc.SetAuth(func(req *http.Request) {
 		req.Header.Set("Authorization", "Bearer "+accessToken)
 	})
 	return c
 }
 
-// SetMaxResponseBytes bounds Spotify GET responses; nonpositive values keep the
-// 32 MiB default, and metadata.WithMaxResponseBytes does not reach this reader
-// until the module depends on a metadata release that carries it.
+// SetMaxResponseBytes sets the response body size limit for Spotify GET
+// responses. It is safe for concurrent use; nonpositive values restore the
+// 32 MiB default.
 func (c *Client) SetMaxResponseBytes(n int64) {
 	if n > 0 {
-		c.maxResponseBytes = n
+		c.maxResponseBytes.Store(n)
+		return
 	}
+	c.maxResponseBytes.Store(0)
 }
 
 // responseLimit returns maxResponseBytes or the 32 MiB default when nonpositive.
 func (c *Client) responseLimit() int64 {
-	if c.maxResponseBytes <= 0 {
-		return defaultMaxResponseBytes
+	if limit := c.maxResponseBytes.Load(); limit > 0 {
+		return limit
 	}
-	return c.maxResponseBytes
+	return defaultMaxResponseBytes
 }
 
 // get executes a GET request, decodes JSON into v, and surfaces response body close errors.
@@ -88,12 +93,16 @@ func (c *Client) get(ctx context.Context, path string, v any) (err error) {
 	}()
 
 	limit := c.responseLimit()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
-	if err != nil {
-		return fmt.Errorf("spotify: read response: %w", err)
+	readLimit := limit
+	if limit < math.MaxInt64 {
+		readLimit = limit + 1
 	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, readLimit))
 	if int64(len(body)) > limit {
 		return fmt.Errorf("spotify: read response: %w (limit %d bytes)", errResponseTooLarge, limit)
+	}
+	if err != nil {
+		return fmt.Errorf("spotify: read response: %w", err)
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {

@@ -18,4 +18,4 @@ Search and list endpoints take `limit` and `offset` query params.
 
 ## Response cap
 
-Response body cap: 32 MiB default; `Client.SetMaxResponseBytes(n)` overrides Spotify GET cap (nonpositive keeps default; `metadata.WithMaxResponseBytes` inactive until `metadata` dependency upgrade past `v1.4.4`).
+Response body cap: 32 MiB default; `Client.SetMaxResponseBytes(n)` = cap for Spotify GET bodies (own request path, `metadata.WithMaxResponseBytes` does not reach it); nonpositive restores default.
