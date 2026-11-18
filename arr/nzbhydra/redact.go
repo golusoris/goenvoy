@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -17,13 +16,22 @@ func (c *Client) scrub(s string) string {
 	for _, form := range c.keyForms() {
 		s = strings.ReplaceAll(s, form, "REDACTED")
 	}
-	if re := c.keyPattern(); re != nil {
-		s = re.ReplaceAllLiteralString(s, "REDACTED")
+	start, end := c.nextPercentKey(s)
+	if start < 0 {
+		return s
 	}
-	return s
+	var b strings.Builder
+	for steps, maxSpans := 0, len(s); steps < maxSpans && start >= 0; steps++ {
+		b.WriteString(s[:start])
+		b.WriteString("REDACTED")
+		s = s[end:]
+		start, end = c.nextPercentKey(s)
+	}
+	b.WriteString(s)
+	return b.String()
 }
 
-// keyForms returns the distinct raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped forms of the API key, or nil when the key is empty; hex-digit case of percent escapes is ignored by keyPattern.
+// keyForms returns the distinct raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped forms of the API key, or nil when the key is empty; hex-digit case of percent escapes is matched by nextPercentKey.
 func (c *Client) keyForms() []string {
 	// Why: ReplaceAll with an empty old inserts at every rune and Contains with an empty key matches every string.
 	if c.apiKey == "" {
@@ -45,40 +53,40 @@ func (c *Client) keyForms() []string {
 	return forms
 }
 
-// keyPattern returns a regular expression matching the query-escaped and path-escaped API key with case-insensitive percent-escape hex digits, or nil when the key is empty.
-func (c *Client) keyPattern() *regexp.Regexp {
+// nextPercentKey returns the byte span of the next query-escaped or path-escaped API key match in s with percent-escape hex case ignored, or -1, -1 when absent.
+func (c *Client) nextPercentKey(s string) (int, int) {
 	if c.apiKey == "" {
-		return nil
+		return -1, -1
 	}
-	query, path := percentPattern(url.QueryEscape(c.apiKey)), percentPattern(url.PathEscape(c.apiKey))
-	if query == path {
-		return regexp.MustCompile(query)
-	}
-	return regexp.MustCompile(query + "|" + path)
-}
-
-// percentPattern returns a regular expression matching escaped with case-insensitive percent-escape hex digits.
-func percentPattern(escaped string) string {
-	out := make([]byte, 0, len(escaped)*2)
-	for i := 0; i < len(escaped); i++ {
-		if escaped[i] == '%' && i+2 < len(escaped) {
-			out = append(out, '%')
-			out = appendHexClass(out, escaped[i+1])
-			out = appendHexClass(out, escaped[i+2])
-			i += 2
-			continue
+	query, path := url.QueryEscape(c.apiKey), url.PathEscape(c.apiKey)
+	for i := range len(s) {
+		if i+len(query) <= len(s) && matchPercentForm(s[i:i+len(query)], query) {
+			return i, i + len(query)
 		}
-		out = append(out, regexp.QuoteMeta(escaped[i:i+1])...)
+		if path != query && i+len(path) <= len(s) && matchPercentForm(s[i:i+len(path)], path) {
+			return i, i + len(path)
+		}
 	}
-	return string(out)
+	return -1, -1
 }
 
-// appendHexClass appends a two-letter case class for an upper-case hex letter or d itself.
-func appendHexClass(out []byte, d byte) []byte {
-	if d >= 'A' && d <= 'F' {
-		return append(out, '[', d+'a'-'A', d, ']')
+// matchPercentForm reports whether s (of length len(form)) equals form, ignoring hex-digit case for the two bytes after each '%' in form.
+func matchPercentForm(s, form string) bool {
+	for i, hex := 0, 0; i < len(form); i++ {
+		got, want := s[i], form[i]
+		if hex > 0 {
+			hex--
+			if got >= 'a' && got <= 'f' {
+				got -= 'a' - 'A'
+			}
+		} else if want == '%' {
+			hex = 2
+		}
+		if got != want {
+			return false
+		}
 	}
-	return append(out, d)
+	return true
 }
 
 type redactedError struct {
@@ -140,14 +148,10 @@ func (e *redactedError) Temporary() bool {
 func (e *redactedError) walk(visit func(error) bool) {
 	// Why: errors.Is and errors.As visit every path, exponential on a fan-out tree; only joined errors spend the maxErrNodes budget, so a long quiet chain stays reachable.
 	// Why: cyclic single-unwrap chain must terminate; bound far above any real chain.
-	stack := []error{e.err}
-	for steps, branches := 0, 0; len(stack) > 0; {
-		steps++
-		if steps > maxWalkSteps {
-			return
-		}
-		node := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
+	stack := [][]error{{e.err}}
+	for steps, branches := 0, 0; steps < maxWalkSteps && len(stack) > 0; steps++ {
+		var node error
+		node, stack = popWalkNode(stack)
 		if visit(node) {
 			return
 		}
@@ -158,13 +162,24 @@ func (e *redactedError) walk(visit func(error) bool) {
 		if branches > maxErrNodes {
 			return
 		}
-		for i := len(children) - 1; i >= 0; i-- {
-			stack = append(stack, children[i])
+		if children != nil {
+			stack = append(stack, children)
 		}
 	}
 }
 
-// wrappedChildren returns the non-nil errors err wraps directly and whether err joins several.
+// popWalkNode pops the next non-nil node from the top slice of stack.
+func popWalkNode(stack [][]error) (error, [][]error) {
+	top := stack[len(stack)-1]
+	node := top[0]
+	if rest := trimNilErrors(top[1:]); rest != nil {
+		stack[len(stack)-1] = rest
+		return node, stack
+	}
+	return node, stack[:len(stack)-1]
+}
+
+// wrappedChildren returns the non-nil child slice err wraps directly and whether err joins several.
 func wrappedChildren(err error) ([]error, bool) {
 	if w := errors.Unwrap(err); w != nil {
 		return []error{w}, false
@@ -173,13 +188,17 @@ func wrappedChildren(err error) ([]error, bool) {
 	if !ok {
 		return nil, false
 	}
-	var children []error
-	for _, child := range joined.Unwrap() {
-		if child != nil {
-			children = append(children, child)
+	return trimNilErrors(joined.Unwrap()), true
+}
+
+// trimNilErrors returns errs starting at its first non-nil element, or nil when none exists.
+func trimNilErrors(errs []error) []error {
+	for i := range len(errs) {
+		if errs[i] != nil {
+			return errs[i:]
 		}
 	}
-	return children, true
+	return nil
 }
 
 // As sets target to a sanitized copy of the first *url.Error in the hidden tree and reports false for every other target type, so no key-bearing value escapes.
@@ -191,7 +210,7 @@ func (e *redactedError) As(target any) bool {
 	// Why: bounded breadth-first walk over the hidden tree; errors.As on it would search unbounded.
 	queue := []error{e.err}
 	for i := 0; i < maxErrNodes && i < len(queue); i++ {
-		if uerr, ok := queue[i].(*url.Error); ok { //nolint:errorlint // first URL error of a bounded walk; errors.As is the unbounded search
+		if uerr, ok := queue[i].(*url.Error); ok && uerr != nil { //nolint:errorlint // first URL error of a bounded walk; errors.As is the unbounded search
 			// Why: hand out a scrubbed copy, never the original that holds the key.
 			*dst = &url.Error{Op: e.c.scrub(uerr.Op), URL: e.c.scrub(redactURL(uerr.URL)), Err: e.c.scrubError(uerr.Err)}
 			return true
@@ -215,28 +234,46 @@ const maxErrNodes = 64
 // maxWalkSteps bounds the total nodes visited by walk so cyclic unwrap chains terminate.
 const maxWalkSteps = 4096
 
+// redactedTreeMsg is the replacement message when an error tree exceeds maxErrNodes.
+const redactedTreeMsg = "error tree too large: details redacted"
+
 // scrubError hides error trees that carry the API key or exceed the traversal limit.
 func (c *Client) scrubError(err error) error {
-	if err == nil || !c.carriesKey(err) {
+	carry, tooLarge := c.checkErrorTree(err)
+	if !carry {
 		return err
+	}
+	if tooLarge {
+		return &redactedError{msg: redactedTreeMsg, err: err, c: c}
 	}
 	return &redactedError{msg: c.scrub(err.Error()), err: err, c: c}
 }
 
 // carriesKey reports whether an error tree contains the API key or exceeds the node limit.
 func (c *Client) carriesKey(err error) bool {
+	carry, _ := c.checkErrorTree(err)
+	return carry
+}
+
+// checkErrorTree reports whether err carries the API key or exceeds maxErrNodes, and whether it exceeded maxErrNodes.
+func (c *Client) checkErrorTree(err error) (bool, bool) {
 	if err == nil {
-		return false
+		return false, false
 	}
 	queue := []error{err}
 	for i := 0; i < maxErrNodes && i < len(queue); i++ {
-		if c.containsKey(queue[i].Error()) {
-			return true
-		}
 		queue = appendWrapped(queue, queue[i])
 	}
-	// Why: a tree past the bound is hidden, never trusted unread.
-	return len(queue) > maxErrNodes
+	if len(queue) > maxErrNodes {
+		// Why: a tree past the bound is hidden unread; formatting a fan-out root can be exponential.
+		return true, true
+	}
+	for _, node := range queue {
+		if c.containsKey(node.Error()) {
+			return true, false
+		}
+	}
+	return false, false
 }
 
 // containsKey reports whether s holds the nonempty raw, query-escaped, path-escaped, Go-quoted, or JSON-escaped API key, with hex-digit case of percent escapes ignored.
@@ -244,14 +281,17 @@ func (c *Client) containsKey(s string) bool {
 	if slices.ContainsFunc(c.keyForms(), func(form string) bool { return strings.Contains(s, form) }) {
 		return true
 	}
-	re := c.keyPattern()
-	return re != nil && re.MatchString(s)
+	start, _ := c.nextPercentKey(s)
+	return start >= 0
 }
 
 // appendWrapped appends non-nil wrapped errors while bounding queue growth.
 func appendWrapped(queue []error, err error) []error {
 	if len(queue) > maxErrNodes {
 		// Why: carriesKey already treats this tree as too large; more entries only cost memory.
+		return queue
+	}
+	if uerr, ok := err.(*url.Error); ok && uerr == nil { //nolint:errorlint // guard typed-nil node before Unwrap dereferences it
 		return queue
 	}
 	if w := errors.Unwrap(err); w != nil {
@@ -282,6 +322,27 @@ func (c *Client) redactError(err error) error {
 		}
 	}
 	return c.scrubError(err)
+}
+
+// redactBaseURL drops userinfo and redacts apikey query values from raw for constructor diagnostics.
+func redactBaseURL(raw string) string {
+	if u, err := url.Parse(raw); err == nil {
+		u.User = nil
+		return redactURL(u.String())
+	}
+	base := redactURL(raw)
+	scheme, rest, ok := strings.Cut(base, "://")
+	if !ok {
+		return base
+	}
+	end := strings.IndexAny(rest, "/?#")
+	if end < 0 {
+		end = len(rest)
+	}
+	if at := strings.LastIndexByte(rest[:end], '@'); at >= 0 {
+		return scheme + "://" + rest[at+1:]
+	}
+	return base
 }
 
 // redactURL redacts apikey query values or drops the query when parsing fails.

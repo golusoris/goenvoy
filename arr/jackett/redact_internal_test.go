@@ -190,6 +190,11 @@ func checkRedactErrorWrappers(t *testing.T, key string) {
 			if !errors.Is(got, tc.err) || !errors.Is(got, tc.target) {
 				t.Errorf("errors.Is lost the root error or target %v", tc.target)
 			}
+			var matched *url.Error
+			if !errors.As(got, &matched) || matched == nil {
+				t.Fatal("errors.As into *url.Error = false or nil; want non-nil")
+			}
+			checkRedactedKeyForms(t, matched.URL, key)
 		})
 	}
 }
@@ -255,6 +260,79 @@ func TestRedactURLErrorNonURLError(t *testing.T) {
 
 	if gotNil := c.redactError(nil); gotNil != nil {
 		t.Errorf("c.redactError(nil) = %v, want nil", gotNil)
+	}
+	if gotNil := c.scrubError(nil); gotNil != nil {
+		t.Errorf("c.scrubError(nil) = %v, want nil", gotNil)
+	}
+}
+
+// TestNewDropsUserinfo checks that constructor errors drop userinfo passwords and redact query keys.
+func TestNewDropsUserinfo(t *testing.T) {
+	t.Parallel()
+	const key = "abc:def+xyz"
+	cases := []struct {
+		name, baseURL, secret string
+	}{
+		{name: "password equal to key with query", baseURL: "ftp://user:abc:def+xyz@example.invalid/?apikey=abc:def+xyz", secret: key},
+		{name: "password equal to key without query", baseURL: "ftp://user:abc:def+xyz@example.invalid", secret: key},
+		{name: "foreign password with query", baseURL: "ftp://user:foreign-pass@example.invalid/?apikey=abc:def+xyz", secret: "foreign-pass"},
+		{name: "foreign password without query", baseURL: "ftp://user:foreign-pass@example.invalid", secret: "foreign-pass"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertNewDropsUserinfo(t, tc.baseURL, key, tc.secret)
+		})
+	}
+	if got := redactBaseURL("http://user:foreign-pass@%zz/?apikey=" + key); got != "http://%zz/" {
+		t.Errorf("redactBaseURL(unparseable) = %q; want %q", got, "http://%zz/")
+	}
+	if got := redactBaseURL("://%zz"); got != "://%zz" {
+		t.Errorf("redactBaseURL(no host) = %q; want %q", got, "://%zz")
+	}
+	if got := redactBaseURL("%zz"); got != "%zz" {
+		t.Errorf("redactBaseURL(no scheme) = %q; want %q", got, "%zz")
+	}
+}
+
+// assertNewDropsUserinfo checks that New fails on baseURL without leaking key or secret in its error.
+func assertNewDropsUserinfo(t *testing.T, baseURL, key, secret string) {
+	t.Helper()
+	c, err := New(baseURL, key)
+	if c != nil || err == nil {
+		t.Fatalf("New(%q) = %v, %v; want nil client and error", baseURL, c, err)
+	}
+	for _, sub := range []string{key, secret, "abc%3Adef+xyz", "abc%3adef+xyz"} {
+		if strings.Contains(err.Error(), sub) {
+			t.Errorf("error leaked %q: %s", sub, err.Error())
+		}
+	}
+}
+
+// TestNewOversizedKey checks that an oversized API key does not panic during constructor error scrubbing.
+func TestNewOversizedKey(t *testing.T) {
+	t.Parallel()
+	key := strings.Repeat("k+", 150000)
+	cases := []struct {
+		name, baseURL string
+	}{
+		{name: "unsupported scheme", baseURL: "ftp://example.invalid/" + key},
+		{name: "parse failure", baseURL: "http://%zz/" + key},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := New(tc.baseURL, key)
+			if c != nil {
+				t.Errorf("New() client = %v; want nil", c)
+			}
+			if err == nil {
+				t.Fatal("New() error = nil; want non-nil")
+			}
+			if strings.Contains(err.Error(), key) || strings.Contains(err.Error(), url.QueryEscape(key)) {
+				t.Error("New() error leaked oversized key")
+			}
+		})
 	}
 }
 

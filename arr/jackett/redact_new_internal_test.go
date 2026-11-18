@@ -48,8 +48,15 @@ func TestCarriesKeyNil(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			if (&Client{apiKey: tc.key}).carriesKey(nil) {
+			c := &Client{apiKey: tc.key}
+			if c.carriesKey(nil) {
 				t.Error("carriesKey(nil) = true; want false")
+			}
+			if got := c.redactError(nil); got != nil {
+				t.Errorf("redactError(nil) = %v; want nil", got)
+			}
+			if got := c.scrubError(nil); got != nil {
+				t.Errorf("scrubError(nil) = %v; want nil", got)
 			}
 		})
 	}

@@ -51,10 +51,10 @@ func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("tautulli: invalid base URL %q: %w", redactor.scrub(redactURL(baseURL)), redactor.redactError(err))
+		return nil, fmt.Errorf("tautulli: invalid base URL %q: %w", redactor.scrub(redactBaseURL(baseURL)), redactor.redactError(err))
 	}
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return nil, fmt.Errorf("tautulli: invalid base URL %q: must be http(s) with a host", redactor.scrub(redactURL(baseURL)))
+		return nil, fmt.Errorf("tautulli: invalid base URL %q: must be http(s) with a host", redactor.scrub(redactBaseURL(baseURL)))
 	}
 
 	c := &Client{
