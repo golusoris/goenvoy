@@ -131,6 +131,12 @@ func TestScrubBoundaries(t *testing.T) {
 	if got := (&Client{}).scrub("plain"); got != "plain" {
 		t.Errorf("empty key: scrub = %q", got)
 	}
+	if got := redactBaseURL("http://user:secret@%zz/?apikey=other"); got != "http://%zz/" {
+		t.Errorf("redactBaseURL parse error = %q; want %q", got, "http://%zz/")
+	}
+	if got := redactBaseURL("http://user:secret@%zz"); got != "http://%zz" {
+		t.Errorf("redactBaseURL host-only parse error = %q; want %q", got, "http://%zz")
+	}
 	c := &Client{apiKey: "placeholder"}
 	original := &url.Error{URL: "?apikey=placeholder", Err: errors.New("placeholder")}
 	assertRedacted(t, c.redactError(original), "placeholder", true)
@@ -195,11 +201,23 @@ func TestRedactError(t *testing.T) {
 			if isURL := errors.As(got, &matched); isURL != tc.hasURL {
 				t.Errorf("URL error reachable = %v; want %v", isURL, tc.hasURL)
 			}
+			if tc.hasURL {
+				assertMatchedURLError(t, matched, key)
+			}
 			if same := any(got) == any(tc.err); same != tc.unchanged {
 				t.Errorf("same error value = %v; want %v", same, tc.unchanged)
 			}
 		})
 	}
+}
+
+// assertMatchedURLError checks that a matched *url.Error is non-nil and its URL is free of key.
+func assertMatchedURLError(t *testing.T, matched *url.Error, key string) {
+	t.Helper()
+	if matched == nil {
+		t.Fatal("matched *url.Error = nil; want non-nil")
+	}
+	assertNoKey(t, matched.URL, key)
 }
 
 // redactionFanout is a keyless error whose Unwrap returns the previous level twice.
@@ -232,6 +250,44 @@ func TestRedactErrorFanoutBounded(t *testing.T) {
 	}
 }
 
+// TestJoinFanoutKeyLeafBounded checks that a 40-level errors.Join fan-out over a key-bearing leaf returns the fixed message promptly.
+func TestJoinFanoutKeyLeafBounded(t *testing.T) {
+	t.Parallel()
+	const key = "placeholder+k/y=1"
+	c := &Client{apiKey: key}
+	err := errors.New("fixture fanout leaf " + key)
+	for range 40 {
+		err = errors.Join(err, err)
+	}
+	cases := []struct {
+		name string
+		call func(error) error
+	}{
+		{name: "scrubError", call: c.scrubError},
+		{name: "redactError", call: c.redactError},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var got error
+			if !answerWithinTwoSeconds(t, tc.name, func() bool {
+				got = tc.call(err)
+				return got != nil
+			}) {
+				t.Fatalf("%s returned nil", tc.name)
+			}
+			var hidden *redactedError
+			if !errors.As(got, &hidden) {
+				t.Fatalf("%s = %T; want *redactedError", tc.name, got)
+			}
+			if got.Error() != errTreeTooLargeMsg {
+				t.Errorf("Error() = %q; want %q", got.Error(), errTreeTooLargeMsg)
+			}
+			assertNoKey(t, got.Error(), key)
+		})
+	}
+}
+
 // assertSentinel checks that error redaction preserves the expected cause.
 func assertSentinel(t *testing.T, got, sentinel error) {
 	t.Helper()
@@ -240,10 +296,12 @@ func assertSentinel(t *testing.T, got, sentinel error) {
 	}
 }
 
-// TestNewRedaction checks constructor errors with keys embedded in invalid URLs.
+// TestNewRedaction checks constructor errors with keys and userinfo embedded in invalid URLs.
 func TestNewRedaction(t *testing.T) {
 	t.Parallel()
 	const key = "placeholder+k/y=1"
+	const userKey = "abc:def+xyz"
+	oversizedKey := strings.Repeat("k", 300000)
 	query := "?raw=" + key + "&escaped=" + url.QueryEscape(key)
 	cases := []struct {
 		name, rawURL, apiKey, secret string
@@ -254,23 +312,38 @@ func TestNewRedaction(t *testing.T) {
 		{name: "empty host", rawURL: "https:///" + query, apiKey: key, secret: key, wantMarker: true},
 		{name: "foreign query key in scheme error", rawURL: "ftp://example.invalid/?apikey=other", apiKey: "k", secret: "other", wantMarker: true},
 		{name: "foreign query key in parse error", rawURL: "http://%zz/?apikey=other", apiKey: "", secret: "other"},
+		{name: "oversized key", rawURL: "ftp://example.invalid/?raw=" + oversizedKey, apiKey: oversizedKey, secret: oversizedKey, wantMarker: true},
+		{name: "userinfo password equal to key", rawURL: "ftp://user:" + userKey + "@example.invalid/?apikey=" + url.QueryEscape(userKey), apiKey: userKey, secret: userKey, wantMarker: true},
+		{name: "userinfo foreign password", rawURL: "ftp://user:foreign-pass@example.invalid/?apikey=" + url.QueryEscape(userKey), apiKey: userKey, secret: "foreign-pass", wantMarker: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			c, err := New(tc.rawURL, tc.apiKey)
-			if c != nil || err == nil {
-				t.Fatalf("New = %v, %v; want nil client and error", c, err)
-			}
-			assertNoKey(t, err.Error(), tc.secret)
-			if tc.wantMarker && !strings.Contains(err.Error(), "REDACTED") {
-				t.Errorf("missing REDACTED: %s", err.Error())
-			}
+			assertNewRedaction(t, tc.rawURL, tc.apiKey, tc.secret, tc.wantMarker)
 		})
 	}
 }
 
-// TestCarriesKeyNil checks that carriesKey returns false for a nil error without panicking.
+// assertNewRedaction checks that New fails on rawURL and leaks neither secret, apiKey, nor userinfo password.
+func assertNewRedaction(t *testing.T, rawURL, apiKey, secret string, wantMarker bool) {
+	t.Helper()
+	c, err := New(rawURL, apiKey)
+	if c != nil || err == nil {
+		t.Fatalf("New = %v, %v; want nil client and error", c, err)
+	}
+	assertNoKey(t, err.Error(), secret)
+	if apiKey != "" {
+		assertNoKey(t, err.Error(), apiKey)
+	}
+	if strings.Contains(err.Error(), "abc%3Adef+xyz") {
+		t.Errorf("re-escaped userinfo password leaked: %s", err.Error())
+	}
+	if wantMarker && !strings.Contains(err.Error(), "REDACTED") {
+		t.Errorf("missing REDACTED: %s", err.Error())
+	}
+}
+
+// TestCarriesKeyNil checks that carriesKey, scrubError, and redactError handle a nil error without panicking.
 func TestCarriesKeyNil(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
@@ -282,8 +355,15 @@ func TestCarriesKeyNil(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			if got := (&Client{apiKey: "k"}).carriesKey(tc.err); got != tc.want {
+			c := &Client{apiKey: "k"}
+			if got := c.carriesKey(tc.err); got != tc.want {
 				t.Errorf("carriesKey(%v) = %v; want %v", tc.err, got, tc.want)
+			}
+			if got := c.scrubError(tc.err); got != nil {
+				t.Errorf("scrubError(%v) = %v; want nil", tc.err, got)
+			}
+			if got := c.redactError(tc.err); got != nil {
+				t.Errorf("redactError(%v) = %v; want nil", tc.err, got)
 			}
 		})
 	}

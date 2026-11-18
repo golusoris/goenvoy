@@ -102,6 +102,55 @@ func TestRedactedErrorAsOpRedaction(t *testing.T) {
 	}
 }
 
+// TestRedactedErrorAsTypedNilURLError checks that errors.As skips a typed-nil *url.Error and sanitizes a following valid *url.Error.
+func TestRedactedErrorAsTypedNilURLError(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	var typedNil *url.Error
+	valid := &url.Error{
+		Op:  "Get " + key,
+		URL: "http://h/?apikey=" + url.QueryEscape(key),
+		Err: fmt.Errorf("dial %s", key),
+	}
+	cases := []struct {
+		name  string
+		child error
+		want  bool
+	}{
+		{name: "typed-nil before valid URL error", child: errors.Join(typedNil, valid), want: true},
+		{name: "only typed-nil URL error", child: errors.Join(typedNil), want: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertTypedNilURLErrorAs(t, key, tc.child, valid, tc.want)
+		})
+	}
+}
+
+// assertTypedNilURLErrorAs checks errors.As on a hidden tree wrapping child.
+func assertTypedNilURLErrorAs(t *testing.T, key string, child error, valid *url.Error, want bool) {
+	t.Helper()
+	tree := &redactCycleErr{text: "outer " + key, next: child}
+	got := hiddenRedacted(t, key, tree)
+	assertNoKeyForms(t, got.Error(), key)
+	var uerr *url.Error
+	if matched := errors.As(got, &uerr); matched != want {
+		t.Fatalf("errors.As = %v; want %v", matched, want)
+	}
+	if !want {
+		if uerr != nil {
+			t.Errorf("errors.As target = %v; want nil", uerr)
+		}
+		return
+	}
+	if uerr == nil || uerr == valid {
+		t.Fatalf("errors.As target = %v; want a sanitized copy", uerr)
+	}
+	assertNoKeyForms(t, uerr.Error(), key)
+	assertNoKeyForms(t, uerr.URL, key)
+}
+
 // TestRedactedErrorAsFanoutBounded checks that errors.As on a hidden exponential tree with a key-bearing leaf returns promptly.
 func TestRedactedErrorAsFanoutBounded(t *testing.T) {
 	t.Parallel()
@@ -187,9 +236,9 @@ func TestRedactedErrorIsFindsSentinel(t *testing.T) {
 	unrelated := errors.New("fixture unrelated sentinel")
 	deep := fmt.Errorf("a %s: %w", key, fmt.Errorf("b: %w", fmt.Errorf("c: %w", sentinel)))
 	joined := errors.Join(errors.New("other branch"), fmt.Errorf("k %s: %w", key, sentinel))
-	chain := fmt.Errorf("leaf %s: %w", key, sentinel)
+	chain := sentinel
 	for range 200 {
-		chain = fmt.Errorf("wrap: %w", chain)
+		chain = &redactCycleErr{text: "fixture quiet wrap", next: chain}
 	}
 	cases := []struct {
 		name string
@@ -250,7 +299,7 @@ func TestRedactedErrorWalkCycleBounded(t *testing.T) {
 	}
 }
 
-// assertCycleWalkBounded checks that scrubError hides err and that Is, Timeout, and Temporary return false.
+// assertCycleWalkBounded checks that scrubError hides err and that Is, Timeout, and Temporary return false within 2s.
 func assertCycleWalkBounded(t *testing.T, key string, err, unrelated error) {
 	t.Helper()
 	got := (&Client{apiKey: key}).scrubError(err)
@@ -258,13 +307,13 @@ func assertCycleWalkBounded(t *testing.T, key string, err, unrelated error) {
 	if !errors.As(got, &hidden) {
 		t.Fatalf("scrubError(%v) = %T; want *redactedError", err, got)
 	}
-	if errors.Is(got, unrelated) {
+	if answerWithinTwoSeconds(t, "Is", func() bool { return errors.Is(got, unrelated) }) {
 		t.Error("errors.Is(unrelated) = true; want false")
 	}
-	if hidden.Timeout() {
+	if answerWithinTwoSeconds(t, "Timeout", hidden.Timeout) {
 		t.Error("Timeout() = true; want false")
 	}
-	if hidden.Temporary() {
+	if answerWithinTwoSeconds(t, "Temporary", hidden.Temporary) {
 		t.Error("Temporary() = true; want false")
 	}
 }
