@@ -37,13 +37,14 @@ type Client struct {
 // It returns an error if baseURL is not a valid HTTP/HTTPS URL.
 func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	baseURL = strings.TrimRight(baseURL, "/")
+	redactor := &Client{apiKey: apiKey}
 
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("mylar: invalid base URL %q: %w", baseURL, err)
+		return nil, fmt.Errorf("mylar: invalid base URL %q: %w", redactor.scrub(baseURL), redactor.redactError(err))
 	}
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return nil, fmt.Errorf("mylar: invalid base URL %q: must be http(s) with a host", baseURL)
+		return nil, fmt.Errorf("mylar: invalid base URL %q: must be http(s) with a host", redactor.scrub(baseURL))
 	}
 
 	c := &Client{
@@ -71,7 +72,7 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("mylar: HTTP %d", e.StatusCode)
 }
 
-// Why: request failures can echo the query key through transport errors and status bodies.
+// get executes a request and sanitizes errors containing the API key.
 func (c *Client) get(ctx context.Context, cmd string, params url.Values, v any) error {
 	if params == nil {
 		params = url.Values{}
@@ -98,12 +99,12 @@ func (c *Client) get(ctx context.Context, cmd string, params url.Values, v any) 
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{StatusCode: resp.StatusCode, Status: resp.Status, Body: c.scrub(string(data))}
+		return &APIError{StatusCode: resp.StatusCode, Status: c.scrub(resp.Status), Body: c.scrub(string(data))}
 	}
 
 	if v != nil {
 		if err := json.Unmarshal(data, v); err != nil {
-			return fmt.Errorf("mylar: decode %s: %w", cmd, err)
+			return fmt.Errorf("mylar: decode %s: %w", cmd, c.scrubError(err))
 		}
 	}
 
