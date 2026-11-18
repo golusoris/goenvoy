@@ -1,0 +1,24 @@
+rules:
+  - id: fprint-to-responsewriter
+    message: "Mirrors Codacy rule go.lang.security.audit.xss.no-fprintf-to-responsewriter. Build the bytes first and write them with io.Copy(w, strings.NewReader(body)) or w.Write, checking the error with t.Errorf in tests."
+    severity: ERROR
+    languages: [go]
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              func $F(..., $W http.ResponseWriter, ...) {
+                ...
+              }
+          - pattern-inside: |
+              func(..., $W http.ResponseWriter, ...) {
+                ...
+              }
+          - pattern-inside: |
+              func ($S $RT) $F(..., $W http.ResponseWriter, ...) {
+                ...
+              }
+      - metavariable-regex:
+          metavariable: $P
+          regex: ^Fprint
+      - pattern-not: fmt.$P($W, "...")
+      - pattern: fmt.$P($W, ...)
