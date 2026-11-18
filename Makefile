@@ -164,6 +164,7 @@ doc: ## Local godoc server at :6060
 .PHONY: docs-site
 docs-site: ## Strict mkdocs build of the docs site in the pinned image
 	bash scripts/ci/mkdocs-build-policy_test.sh
+	bash scripts/ci/docker-hub-mirror_test.sh
 	bash scripts/ci/mkdocs-build.sh
 
 # Praetor declared verification; existing project recipes remain unchanged.

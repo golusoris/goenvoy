@@ -58,7 +58,11 @@ fake_docker="$suite_root/docker"
 cat >"$fake_docker" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-printf '%s\n' "$*" >"${FAKE_DOCKER_LOG:?}"
+if [[ "${1:-}" == info ]]; then
+	printf '%s\n' "${FAKE_SECURITY_OPTIONS:-[]}" 
+	exit 0
+fi
+printf '%s\n' "$@" >"${FAKE_DOCKER_LOG:?}"
 if [[ "${FAKE_DOCKER_FAIL:-false}" == true ]]; then
 	printf 'synthetic Docker failure\n' >&2
 	exit 9
@@ -81,17 +85,54 @@ clean_root="$(new_fixture fake-clean negative/clean-page.md)"
 fake_log="$suite_root/docker.log"
 FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
 	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" >/dev/null
-for required in \
-	'--network none' \
-	'--read-only' \
-	'--cap-drop ALL' \
-	'squidfunk/mkdocs-material:9.7.7@sha256:51b87149d227691486b5f08993d28c65ca7e4990010664b697265b8e6fcd5287' \
-	'build --strict --config-file /docs/mkdocs.yml --site-dir /site'; do
-	if ! grep -Fq -- "$required" "$fake_log"; then
-		printf 'MkDocs Docker contract lacks: %s\n' "$required" >&2
+# shellcheck source=/dev/null
+. "$repo_root/tools/tool-versions.env"
+if [[ ! "$MKDOCS_MATERIAL_IMAGE_DIGEST" =~ ^sha256:[[:xdigit:]]{64}$ ]]; then
+	printf 'invalid MkDocs image digest\n' >&2
+	exit 1
+fi
+for required in --read-only --strict "squidfunk/mkdocs-material:${MKDOCS_MATERIAL_VERSION}@${MKDOCS_MATERIAL_IMAGE_DIGEST}" -u; do
+	if ! grep -Fxq -- "$required" "$fake_log"; then
+		printf 'MkDocs Docker contract lacks token: %s\n' "$required" >&2
 		exit 1
 	fi
 done
+if ! awk 'prev == "--network" && $0 == "none" { found = 1 } { prev = $0 } END { exit !found }' "$fake_log"; then
+	printf 'MkDocs Docker contract lacks --network none\n' >&2
+	exit 1
+fi
+
+(cd "$suite_root" && CDPATH=. FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root fake-clean >/dev/null)
+printf 'docs_dir: manual\n' >>"$clean_root/mkdocs.yml"
+expect_failure 'MkDocs refuses docs_dir: manual' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root"
+sed -i '/^docs_dir: manual$/d' "$clean_root/mkdocs.yml"
+printf '"docs_dir": manual  \n' >>"$clean_root/mkdocs.yml"
+expect_failure 'MkDocs refuses docs_dir: manual' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root"
+sed -i '/^"docs_dir": manual  $/d' "$clean_root/mkdocs.yml"
+printf 'docs_dir: docs  # default\n' >>"$clean_root/mkdocs.yml"
+env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" >/dev/null
+sed -i '/^docs_dir: docs  # default$/d' "$clean_root/mkdocs.yml"
+ln -s docs "$clean_root/site"
+expect_failure 'MkDocs output refuses symlink' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir site/.
+expect_failure 'MkDocs output overlaps source' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir .
+expect_failure 'MkDocs output overlaps source' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir docs/out
+mkdir "$clean_root/foreign"
+printf 'foreign\n' >"$clean_root/foreign/file"
+expect_failure 'MkDocs output refuses nonempty directory' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir foreign
+FAKE_SECURITY_OPTIONS='["name=rootless"]' FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" >/dev/null
+if grep -Fxq -- -u "$fake_log"; then
+	printf 'rootless Docker must omit -u\n' >&2
+	exit 1
+fi
 
 failure_root="$(new_fixture docker-failure negative/clean-page.md)"
 expect_failure 'synthetic Docker failure' \

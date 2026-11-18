@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
+# Rootless Docker maps container root to the caller; rootful Docker uses the caller UID and GID.
 
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+repo_root="$(CDPATH='' cd -- "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 scan_root="$repo_root"
 site_arg=""
 while (($# > 0)); do
@@ -12,7 +13,7 @@ while (($# > 0)); do
 			printf '%s requires a path\n' "$1" >&2
 			exit 2
 		}
-		scan_root="$(cd "$2" && pwd)"
+		scan_root="$(CDPATH='' cd -- "$2" && pwd)"
 		shift 2
 		;;
 	--site-dir)
@@ -38,6 +39,11 @@ if [[ ! -f "$scan_root/mkdocs.yml" || ! -d "$scan_root/docs" ]]; then
 	printf 'MkDocs requires mkdocs.yml and docs/: %s\n' "$scan_root" >&2
 	exit 1
 fi
+docs_dir="$(awk '/^["\047]?docs_dir["\047]?[[:space:]]*:/ { sub(/^[^:]*:[[:space:]]*/, ""); sub(/[[:space:]]+#.*/, ""); sub(/[[:space:]]+$/, ""); print "value:" $0 }' "$scan_root/mkdocs.yml")"
+if [[ -n "$docs_dir" && "$docs_dir" != value:docs && "$docs_dir" != "value:'docs'" && "$docs_dir" != 'value:"docs"' ]]; then
+	printf 'MkDocs refuses docs_dir: %s\n' "${docs_dir#value:}" >&2
+	exit 1
+fi
 if symlink="$(find "$scan_root/docs" "$scan_root/mkdocs.yml" -type l -print -quit)" && \
 	[[ -n "$symlink" ]]; then
 	printf 'MkDocs build refuses symlink input: %s\n' "$symlink" >&2
@@ -59,12 +65,35 @@ else
 	else
 		site_dir="$scan_root/$site_arg"
 	fi
-	if [[ -L "$site_dir" ]]; then
-		printf 'MkDocs output refuses symlink: %s\n' "$site_dir" >&2
+	IFS=/ read -r -a components <<<"$site_dir"
+	if ((${#components[@]} > 64)); then
+		printf 'MkDocs output exceeds 64 path components\n' >&2
 		exit 1
 	fi
-	mkdir -p "$site_dir"
-	site_dir="$(cd "$site_dir" && pwd)"
+	resolved=""
+	for component in "${components[@]}"; do
+		case "$component" in
+		""|.) continue ;;
+		..) resolved="${resolved%/*}" ;;
+		*) resolved="$resolved/$component" ;;
+		esac
+		if [[ -L "$resolved" ]]; then
+			printf 'MkDocs output refuses symlink: %s\n' "$resolved" >&2
+			exit 1
+		fi
+	done
+	site_dir="${resolved:-/}"
+	if [[ "$site_dir" == "$scan_root" || "$site_dir" == "$scan_root/docs" || "$site_dir" == "$scan_root/docs/"* || "$scan_root" == "$site_dir/"* || "$site_dir" == / ]]; then
+		printf 'MkDocs output overlaps source: %s\n' "$site_dir" >&2
+		exit 1
+	fi
+	if [[ -d "$site_dir" && -n "$(find "$site_dir" -mindepth 1 -maxdepth 1 -print -quit)" ]] && \
+		{ [[ ! -f "$site_dir/index.html" ]] || [[ -e "$site_dir/mkdocs.yml" || -e "$site_dir/.git" ]]; }; then
+		printf 'MkDocs output refuses nonempty directory: %s\n' "$site_dir" >&2
+		exit 1
+	fi
+	mkdir -p -- "$site_dir"
+	site_dir="$(CDPATH='' cd -- "$site_dir" && pwd)"
 fi
 readonly site_dir
 if [[ "$cleanup_site" == true ]]; then
@@ -81,18 +110,15 @@ if [[ -z "$docker_bin" || ! -x "$docker_bin" ]]; then
 fi
 
 image="squidfunk/mkdocs-material:${MKDOCS_MATERIAL_VERSION}@${MKDOCS_MATERIAL_IMAGE_DIGEST}"
-"$docker_bin" run --rm \
-	--network none \
-	--read-only \
-	--cap-drop ALL \
-	--security-opt no-new-privileges \
-	-u "$(id -u):$(id -g)" \
-	--tmpfs /tmp:rw,noexec,nosuid,size=64m \
-	-e NO_MKDOCS_2_WARNING=1 \
-	-v "$scan_root:/docs:ro" \
-	-v "$site_dir:/site" \
-	-w /docs \
-	"$image" build --strict --config-file /docs/mkdocs.yml --site-dir /site
+security_options="$("$docker_bin" info --format '{{json .SecurityOptions}}')"
+docker_args=(run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges)
+if [[ "$security_options" != *rootless* ]]; then
+	docker_args+=(-u "$(id -u):$(id -g)")
+fi
+docker_args+=(--tmpfs '/tmp:rw,noexec,nosuid,size=64m' -e NO_MKDOCS_2_WARNING=1
+	-v "$scan_root:/docs:ro" -v "$site_dir:/site" -w /docs
+	"$image" build --strict --config-file /docs/mkdocs.yml --site-dir /site)
+"$docker_bin" "${docker_args[@]}"
 
 if [[ ! -f "$site_dir/index.html" ]]; then
 	printf 'MkDocs build produced no index.html\n' >&2

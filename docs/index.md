@@ -18,9 +18,11 @@ Install any service client module directly with `go get`:
 go get github.com/golusoris/goenvoy/arr/sonarr
 ```
 
-Every client constructor follows `New(baseURL, apiKey, opts...)`, accepts
-functional options (`WithHTTPClient`, `WithTimeout`, `WithHeader`), and takes a
-`context.Context` as the first argument to every I/O method.
+Most client constructors follow `New(baseURL, apiKey, opts...)`. Some differ:
+`kitsu.New` takes options only, and `nzbget.New` takes a base URL, username, and
+password. See [ADR-0003](adr/0003-new-constructor-shape.md) and the
+[package reference](https://pkg.go.dev/github.com/golusoris/goenvoy) for exact
+signatures. I/O methods take `context.Context` as their first argument.
 
 ## Documentation map
 

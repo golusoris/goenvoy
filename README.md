@@ -12,9 +12,9 @@
   [![Release](https://img.shields.io/badge/Release-Releases-3b82f6?style=for-the-badge&labelColor=111a35)](https://github.com/golusoris/goenvoy/releases)
   [![Go](https://img.shields.io/badge/Go-1.26+-06b6d4?style=for-the-badge&logo=go&logoColor=white&labelColor=111a35)](https://go.dev)
   <!-- 2 CI/build -->
-  [![CI](https://img.shields.io/badge/CI-workflow-1f883d?style=for-the-badge&labelColor=111a35&logo=githubactions&logoColor=white)](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml)
+  [![CI](https://img.shields.io/github/actions/workflow/status/golusoris/goenvoy/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml)
   <!-- 3 security/scorecard -->
-  [![Security](https://img.shields.io/badge/Security-scan-1f883d?style=for-the-badge&labelColor=111a35)](https://github.com/golusoris/goenvoy/actions/workflows/security-scan.yml)
+  [![Security](https://img.shields.io/github/actions/workflow/status/golusoris/goenvoy/security-scan.yml?branch=main&style=for-the-badge&label=Security)](https://github.com/golusoris/goenvoy/actions/workflows/security-scan.yml)
   [![OpenSSF Scorecard](https://img.shields.io/badge/OpenSSF-Scorecard-06b6d4?style=for-the-badge&labelColor=111a35)](https://scorecard.dev/viewer/?uri=github.com/golusoris/goenvoy)
   [![OpenSSF Best Practices](https://img.shields.io/badge/OpenSSF-Best_Practices-06b6d4?style=for-the-badge&labelColor=111a35)](https://www.bestpractices.dev/projects/15901)
   [![Codacy](https://img.shields.io/badge/Codacy-dashboard-06b6d4?style=for-the-badge&labelColor=111a35&logo=codacy&logoColor=white)](https://app.codacy.com/gh/golusoris/goenvoy/dashboard)
@@ -57,8 +57,10 @@ one service API. It is pronounced "go-EN-voy" (/ɡoʊ ˈɛnvɔɪ/).
   cancellation and timeouts ([docs/principles.md](docs/principles.md)).
 - **Functional options** — `WithHTTPClient`, `WithTimeout`, `WithHeader`, and
   service-specific options ([ADR-0004](docs/adr/0004-functional-options.md)).
-- **Type-safe errors** — each module defines an `APIError` with status code,
-  message, and body ([ADR-0005](docs/adr/0005-api-error-type.md)).
+- **Type-safe errors** — modules commonly expose `APIError`, with fields that
+  vary by service; for example, NZBGet exposes an RPC code and message. See
+  [ADR-0005](docs/adr/0005-api-error-type.md) and the
+  [package reference](https://pkg.go.dev/github.com/golusoris/goenvoy/downloadclient/nzbget#APIError).
 - **OAuth2 support** — device code, authorisation code, PKCE, and refresh flows
   where applicable ([ADR-0007](docs/adr/0007-oauth2-flows.md)).
 - **Thoroughly tested** — `httptest`-based unit tests with the race detector
@@ -118,9 +120,11 @@ func main() {
 }
 ```
 
-Each service module follows the same pattern: `New(baseURL, apiKey)` returning
-typed methods that take a `context.Context`
-([ADR-0003](docs/adr/0003-new-constructor-shape.md)).
+Most clients follow `New(baseURL, apiKey, opts...)`; some differ. For example,
+`kitsu.New` takes options only, while `nzbget.New` takes a base URL, username,
+and password. See [ADR-0003](docs/adr/0003-new-constructor-shape.md) and each
+[package reference](https://pkg.go.dev/github.com/golusoris/goenvoy) for the
+exact signature.
 
 ## At a glance
 
@@ -277,8 +281,9 @@ are tracked in [docs/upstream/](docs/upstream/).
   ([ADR-0002](docs/adr/0002-per-module-semver.md)) via `<path>/vX.Y.Z` tags.
 - Every release ships cosign-signed checksums, an SPDX SBOM, and SLSA Level 3
   provenance ([.github/workflows/release.yml](.github/workflows/release.yml)).
-- Every merged commit passes `golangci-lint`, `gosec`, `govulncheck`, and
-  race-enabled tests across all modules
+- Pull requests run `golangci-lint`, `gosec`, `govulncheck`, and race-enabled
+  tests for each changed module. Changes to `ci.yml`, `.golangci.yml`, or
+  `tools/coverage-thresholds.json` run all modules
   ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 - [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) define agent-assisted
   development conventions.

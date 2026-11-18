@@ -11,6 +11,16 @@ on:
       - .github/actions/docker-hub-mirror/**
       - tools/tool-versions.env
       - .github/workflows/docs.yml
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - docs/**
+      - mkdocs.yml
+      - scripts/ci/mkdocs-build.sh
+      - scripts/ci/docker-hub-mirror.sh
+      - .github/actions/docker-hub-mirror/**
+      - tools/tool-versions.env
+      - .github/workflows/docs.yml
   workflow_dispatch:
 
 permissions:
@@ -19,7 +29,7 @@ permissions:
 # Allow one concurrent deployment; don't cancel an in-progress one so a
 # published site is never left half-deployed.
 concurrency:
-  group: pages
+  group: ${{ github.ref == 'refs/heads/main' && 'pages' || format('docs-{0}', github.ref) }}
   cancel-in-progress: false
 
 jobs:
@@ -34,18 +44,21 @@ jobs:
         uses: ./.github/actions/docker-hub-mirror
 
       - name: Configure Pages
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
 
       - name: Build site from immutable tooling
         run: bash scripts/ci/mkdocs-build.sh --site-dir site
 
       - name: Upload artifact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: site
 
   deploy:
     name: Deploy to GitHub Pages
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-26.04
     timeout-minutes: 10

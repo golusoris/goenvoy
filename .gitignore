@@ -31,7 +31,7 @@ Thumbs.db
 
 # Build output
 dist/
-site/
+/site/
 
 # Claude Code runtime state (personal, machine-local).
 .claude/settings.local.json
