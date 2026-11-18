@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -86,7 +87,7 @@ func TestAPIErrorJSONFormRedaction(t *testing.T) {
 	const escaped = `fixture\u003ckey`
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		if _, err := fmt.Fprint(w, `{"error":"`+escaped+`"}`); err != nil {
+		if _, err := io.Copy(w, strings.NewReader(`{"error":"`+escaped+`"}`)); err != nil {
 			t.Errorf("jackett test: write JSON form response: %v", err)
 		}
 	}))
@@ -181,7 +182,7 @@ func percentFormAPIError(t *testing.T, key, spelling string) *APIError {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		if _, err := fmt.Fprint(w, "apikey="+spelling); err != nil {
+		if _, err := io.Copy(w, strings.NewReader("apikey="+spelling)); err != nil {
 			t.Errorf("jackett test: write percent form response: %v", err)
 		}
 	}))
