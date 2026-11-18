@@ -3,6 +3,7 @@ package jackett
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"strconv"
 	"strings"
@@ -506,6 +507,61 @@ func TestIsNilError(t *testing.T) {
 			t.Parallel()
 			if got := isNilError(tc.err); got != tc.want {
 				t.Errorf("isNilError(%v) = %v; want %v", tc.err, got, tc.want)
+			}
+		})
+	}
+}
+
+// redactAsClassifier supplies classifiers through a custom As method.
+type redactAsClassifier struct{}
+
+// Error returns the fixture error text.
+func (redactAsClassifier) Error() string { return "classifier" }
+
+// As supplies the requested classifier.
+func (redactAsClassifier) As(target any) bool {
+	switch dst := target.(type) {
+	case *interface{ Timeout() bool }:
+		*dst = redactClassifier{}
+		return true
+	case *interface{ Temporary() bool }:
+		*dst = redactClassifier{}
+		return true
+	}
+	return false
+}
+
+// redactClassifier answers both classification methods.
+type redactClassifier struct{}
+
+// Timeout reports a timeout.
+func (redactClassifier) Timeout() bool { return true }
+
+// Temporary reports a temporary error.
+func (redactClassifier) Temporary() bool { return true }
+
+// TestRedactedErrorClassifiers checks custom As and URL errors with nil and non-nil causes.
+func TestRedactedErrorClassifiers(t *testing.T) {
+	t.Parallel()
+	const key = "fixture/part+token"
+	cases := []struct {
+		name  string
+		cause error
+		want  bool
+	}{
+		{"custom As", redactAsClassifier{}, true},
+		{"typed nil URL cause", &url.Error{Op: "Get", URL: "http://h/", Err: (*net.DNSError)(nil)}, false},
+		{"URL cause", &url.Error{Op: "Get", URL: "http://h/", Err: &net.DNSError{IsTimeout: true, IsTemporary: true}}, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := hiddenRedacted(t, key, errors.Join(errors.New(key), tc.cause))
+			if value := got.(interface{ Timeout() bool }).Timeout(); value != tc.want { //nolint:forcetypeassert // wrapper method under test
+				t.Errorf("Timeout() = %v; want %v", value, tc.want)
+			}
+			if value := got.(interface{ Temporary() bool }).Temporary(); value != tc.want { //nolint:forcetypeassert // wrapper method under test
+				t.Errorf("Temporary() = %v; want %v", value, tc.want)
 			}
 		})
 	}

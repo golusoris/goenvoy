@@ -124,7 +124,7 @@ func (c *Client) get(ctx context.Context, cmd string, params url.Values) (json.R
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &APIError{StatusCode: resp.StatusCode, RawBody: c.scrub(string(body))}
+		return nil, &APIError{StatusCode: resp.StatusCode, RawBody: c.scrubBody(string(body))}
 	}
 
 	var r apiResponse

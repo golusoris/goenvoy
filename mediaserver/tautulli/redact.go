@@ -31,6 +31,25 @@ func (c *Client) scrub(s string) string {
 	return b.String()
 }
 
+// scrubBody redacts key forms and hides JSON containing an escaped key in any string token.
+func (c *Client) scrubBody(text string) string {
+	text = c.scrub(text)
+	if c.apiKey == "" || !json.Valid([]byte(text)) {
+		return text
+	}
+	decoder := json.NewDecoder(strings.NewReader(text))
+	for range len(text) {
+		token, err := decoder.Token()
+		if err != nil {
+			break
+		}
+		if value, ok := token.(string); ok && strings.Contains(value, c.apiKey) {
+			return "REDACTED"
+		}
+	}
+	return text
+}
+
 // keyForms returns the distinct raw, query-escaped, path-escaped, Go-quoted, and JSON-escaped forms of the API key, or nil when the key is empty; hex-digit case of percent escapes is matched by nextPercentKey.
 func (c *Client) keyForms() []string {
 	// Why: ReplaceAll with an empty old inserts at every rune and Contains with an empty key matches every string.
@@ -42,7 +61,11 @@ func (c *Client) keyForms() []string {
 	candidates := []string{c.apiKey, query, path, quoted[1 : len(quoted)-1]}
 	// Why: encoding/json writes <, >, &, U+2028 and U+2029 as \uXXXX escapes that no other form matches.
 	if b, err := json.Marshal(c.apiKey); err == nil {
-		candidates = append(candidates, string(b[1:len(b)-1]))
+		encoded := string(b[1 : len(b)-1])
+		candidates = append(candidates, encoded)
+		if strings.Contains(c.apiKey, "/") {
+			candidates = append(candidates, strings.ReplaceAll(encoded, "/", `\/`))
+		}
 	}
 	forms := make([]string, 0, len(candidates))
 	for _, form := range candidates {
@@ -116,12 +139,19 @@ func (e *redactedError) Is(target error) bool {
 	return found
 }
 
-// Timeout reports whether the hidden error timed out.
+// Timeout reports whether the underlying error timed out.
 func (e *redactedError) Timeout() bool {
-	// Why: url.Error.Timeout type-asserts its Err directly, so the wrapper must forward the first node that has it.
 	reported := false
 	e.walk(func(node error) bool {
+		if _, ok := node.(*url.Error); ok { //nolint:errorlint // skip the URL wrapper and visit its cause
+			return false
+		}
 		t, ok := node.(interface{ Timeout() bool })
+		if !ok {
+			if a, hasAs := node.(interface{ As(any) bool }); hasAs {
+				ok = a.As(&t) && !isNilValue(t)
+			}
+		}
 		if ok {
 			reported = t.Timeout()
 		}
@@ -132,10 +162,17 @@ func (e *redactedError) Timeout() bool {
 
 // Temporary reports whether the hidden error is temporary.
 func (e *redactedError) Temporary() bool {
-	// Why: url.Error.Temporary type-asserts its Err directly, so the wrapper must forward the first node that has it.
 	reported := false
 	e.walk(func(node error) bool {
+		if _, ok := node.(*url.Error); ok { //nolint:errorlint // skip the URL wrapper and visit its cause
+			return false
+		}
 		t, ok := node.(interface{ Temporary() bool })
+		if !ok {
+			if a, hasAs := node.(interface{ As(any) bool }); hasAs {
+				ok = a.As(&t) && !isNilValue(t)
+			}
+		}
 		if ok {
 			reported = t.Temporary()
 		}
@@ -209,17 +246,22 @@ func trimNilErrors(errs []error) []error {
 
 // isNilError reports whether err is nil or holds a nil pointer, map, slice, function, channel, or interface.
 func isNilError(err error) bool {
-	if err == nil {
+	return isNilValue(err)
+}
+
+// isNilValue reports whether value is nil or holds a nil pointer, map, slice, function, channel, or interface.
+func isNilValue(value any) bool {
+	if value == nil {
 		return true
 	}
-	v := reflect.ValueOf(err)
+	v := reflect.ValueOf(value)
 	if slices.Contains([]reflect.Kind{reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice}, v.Kind()) {
 		return v.IsNil()
 	}
 	return false
 }
 
-// As sets target to a sanitized copy of the first *url.Error in the hidden tree and reports false for every other target type, so no key-bearing value escapes.
+// As sets target to a sanitized copy of the first *url.Error among the first 64 breadth-first queued nodes; deeper URL errors are not found. The structural key scan examines 64 breadth-first nodes, while Is, Timeout, and Temporary visit at most 4096 nodes and 64 joined errors.
 func (e *redactedError) As(target any) bool {
 	dst, ok := target.(**url.Error)
 	if !ok {

@@ -270,3 +270,51 @@ func assertTemporaryRedacted(t *testing.T, c *Client, cause error, root, want bo
 		t.Errorf("Temporary() = %v; want %v", gotTemp, want)
 	}
 }
+
+// TestAPIErrorBodyEscapedForms checks JSON token and plain text redaction through the public client.
+func TestAPIErrorBodyEscapedForms(t *testing.T) {
+	t.Parallel()
+	const key = "fixture/part+token"
+	cases := []struct{ name, body, want string }{
+		{"solidus", `{"error":"fixture\/part+token"}`, `{"error":"REDACTED"}`},
+		{"unicode value", `{"error":"fixture\u002fpart+token"}`, "REDACTED"},
+		{"unicode object key", `{"fixture\u002fpart+token":"error"}`, "REDACTED"},
+		{"unrelated JSON", `{"error":"other"}`, `{"error":"other"}`},
+		{"plain text", "before fixture/part+token after", "before REDACTED after"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertAPIErrorEscapedBody(t, key, tc.body, tc.want)
+		})
+	}
+}
+
+// assertAPIErrorEscapedBody checks the response body and error text from the public client.
+func assertAPIErrorEscapedBody(t *testing.T, key, body, want string) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		if _, err := io.WriteString(w, body); err != nil {
+			t.Errorf("write response: %v", err)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	c, err := New(srv.URL, key, WithHTTPClient(srv.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	_, err = c.GetIndex(ctx)
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected APIError, got %v", err)
+	}
+	if apiErr.Body != want {
+		t.Errorf("body = %q; want %q", apiErr.Body, want)
+	}
+	if strings.Contains(err.Error(), key) || strings.Contains(apiErr.Body, key) {
+		t.Error("key leaked")
+	}
+}

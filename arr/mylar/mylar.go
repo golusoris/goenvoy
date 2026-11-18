@@ -99,7 +99,7 @@ func (c *Client) get(ctx context.Context, cmd string, params url.Values, v any) 
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{StatusCode: resp.StatusCode, Status: c.scrub(resp.Status), Body: c.scrub(string(data))}
+		return &APIError{StatusCode: resp.StatusCode, Status: c.scrub(resp.Status), Body: c.scrubBody(string(data))}
 	}
 
 	if v != nil {

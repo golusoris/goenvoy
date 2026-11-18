@@ -97,7 +97,7 @@ func (c *Client) doGet(ctx context.Context, u string) ([]byte, error) {
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &APIError{StatusCode: resp.StatusCode, Status: c.scrub(resp.Status), Body: c.scrub(string(data))}
+		return nil, &APIError{StatusCode: resp.StatusCode, Status: c.scrub(resp.Status), Body: c.scrubBody(string(data))}
 	}
 
 	return data, nil
@@ -178,7 +178,7 @@ func (c *Client) postJSON(ctx context.Context, path string, body, v any) error {
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{StatusCode: resp.StatusCode, Status: c.scrub(resp.Status), Body: c.scrub(string(respData))}
+		return &APIError{StatusCode: resp.StatusCode, Status: c.scrub(resp.Status), Body: c.scrubBody(string(respData))}
 	}
 
 	if v != nil {
