@@ -119,6 +119,13 @@ else
 		printf 'MkDocs output overlaps source: %s\n' "$target_site" >&2
 		exit 1
 	fi
+	mkdir -p -- "$(dirname -- "$target_site")"
+	lock_dir="$(dirname -- "$target_site")/.$(basename -- "$target_site").lock"
+	if ! mkdir -- "$lock_dir" 2>/dev/null; then
+		printf 'MkDocs output is locked by another build: %s\n' "$lock_dir" >&2
+		exit 1
+	fi
+	lock_held=true
 	if [[ -d "$target_site" && -n "$(find "$target_site" -mindepth 1 -maxdepth 1 -print -quit)" ]] && \
 		{ [[ ! -f "$target_site/index.html" ]] || [[ -e "$target_site/mkdocs.yml" || -e "$target_site/.git" ]]; }; then
 		printf 'MkDocs output refuses nonempty directory: %s\n' "$target_site" >&2
@@ -128,13 +135,6 @@ else
 		printf 'MkDocs output is not a directory: %s\n' "$target_site" >&2
 		exit 1
 	fi
-	mkdir -p -- "$(dirname -- "$target_site")"
-	lock_dir="$(dirname -- "$target_site")/.$(basename -- "$target_site").lock"
-	if ! mkdir -- "$lock_dir" 2>/dev/null; then
-		printf 'MkDocs output is locked by another build: %s\n' "$lock_dir" >&2
-		exit 1
-	fi
-	lock_held=true
 	if [[ -d "$target_site" ]]; then
 		if ! target_identity="$(dir_identity "$target_site")"; then
 			printf 'MkDocs output identity is unreadable: %s\n' "$target_site" >&2

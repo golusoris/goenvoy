@@ -6,6 +6,43 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 script="$root/scripts/ci/docker-hub-mirror.sh"
 
+# check_no_inplace_privileged_write rejects unapproved privileged commands and redirects.
+check_no_inplace_privileged_write() {
+	awk '
+		BEGIN {
+			prefix = "(^|[;&|([:space:]])(" "su" "do" "|\"\\$" "privilege\")"
+			command = prefix "[[:space:]]+[^[:space:];|&]+"
+		}
+		FNR > 100000 { print FILENAME ":" FNR; failed = 1; nextfile }
+		/^[[:space:]]*#/ { next }
+		{
+			line = $0
+			while (match(line, command)) {
+				call = substr(line, RSTART, RLENGTH)
+				sub(prefix "[[:space:]]+", "", call)
+				rest = substr(line, RSTART + RLENGTH)
+				split(rest, segments, /[;|&]/)
+				if (call !~ /^(install|mv|rm|chown|chmod|test|cat|systemctl)$/ || segments[1] ~ />/) {
+					print FILENAME ":" FNR
+					failed = 1
+				}
+				line = rest
+			}
+		}
+		END { exit failed }
+	' "$@"
+}
+
+printf '%s %s\n' 'sudo' 'cp a b' >"$work/unsafe"
+if check_no_inplace_privileged_write "$work/unsafe" >"$work/scan"; then
+	printf 'expected privileged copy rejection\n' >&2
+	exit 1
+fi
+grep -Fxq "$work/unsafe:1" "$work/scan"
+printf '%s %s\n' 'sudo' 'install a b.new' 'sudo' 'mv b.new b' >"$work/staged"
+check_no_inplace_privileged_write "$work/staged"
+check_no_inplace_privileged_write "$root"/scripts/ci/*.sh
+
 # expect_rejected checks the exit code for an invalid input file or mirror.
 expect_rejected() {
 	local expected="$1" file="$2" status=0

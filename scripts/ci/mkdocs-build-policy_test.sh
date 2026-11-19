@@ -145,6 +145,40 @@ mkdir "$clean_root/foreign"
 printf 'foreign\n' >"$clean_root/foreign/file"
 expect_failure 'MkDocs output refuses nonempty directory' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
 	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir foreign
+if [[ "$(cat "$clean_root/foreign/file")" != foreign || \
+	"$(find "$clean_root/foreign" -mindepth 1 -maxdepth 1 | wc -l)" -ne 1 || \
+	-n "$(find "$clean_root" -maxdepth 1 -name '.foreign.*' -print -quit)" ]]; then
+	printf 'refused nonempty target changed or left lock or staging\n' >&2
+	exit 1
+fi
+printf 'file target\n' >"$clean_root/file-target"
+expect_failure 'MkDocs output is not a directory' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir file-target
+if [[ "$(cat "$clean_root/file-target")" != 'file target' || \
+	-n "$(find "$clean_root" -maxdepth 1 -name '.file-target.*' -print -quit)" ]]; then
+	printf 'refused file target changed or left lock or staging\n' >&2
+	exit 1
+fi
+mkdir "$suite_root/race-bin"
+cat >"$suite_root/race-bin/mkdir" <<'EOF'
+#!/usr/bin/env bash
+if [[ "${1:-}" == -- && "${2:-}" == "$RACE_LOCK" ]]; then
+	command -p mkdir -- "$RACE_TARGET"
+	printf 'race marker\n' >"$RACE_TARGET/file"
+fi
+command -p mkdir "$@"
+EOF
+chmod +x "$suite_root/race-bin/mkdir"
+race_target="$clean_root/race-target"
+expect_failure 'MkDocs output refuses nonempty directory' \
+	env PATH="$suite_root/race-bin:$PATH" RACE_TARGET="$race_target" RACE_LOCK="$clean_root/.race-target.lock" \
+	FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$race_target"
+if [[ "$(cat "$race_target/file")" != 'race marker' || \
+	-n "$(find "$clean_root" -maxdepth 1 -name '.race-target.*' -print -quit)" ]]; then
+	printf 'race target changed or left lock or staging\n' >&2
+	exit 1
+fi
 target="$clean_root/published"
 target_lock="$clean_root/.published.lock"
 mkdir "$target_lock"

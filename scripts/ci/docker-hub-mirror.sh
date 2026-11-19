@@ -97,7 +97,7 @@ fi
 restore_config() {
 	local outcome='configuration restored'
 	if [[ "$previous" == true ]]; then
-		if ! sudo cp "$work/previous" "$conf"; then
+		if ! install_config "$work/previous" "$conf" true; then
 			outcome='restoring the previous configuration failed'
 		fi
 	elif ! sudo rm -f "$conf"; then

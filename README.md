@@ -51,8 +51,8 @@ one service API. It is pronounced "go-EN-voy" (/ɡoʊ ˈɛnvɔɪ/).
 
 ## Why goenvoy
 
-- **Pure stdlib** — zero external dependencies, using only `net/http` and
-  `encoding/json` ([ADR-0001](docs/adr/0001-pure-stdlib.md)).
+- **Pure stdlib** — zero external dependencies, using only Go's standard
+  library ([ADR-0001](docs/adr/0001-pure-stdlib.md)).
 - **Context-aware** — every request method takes `context.Context` for
   cancellation and timeouts ([docs/principles.md](docs/principles.md)).
 - **Functional options** — `WithHTTPClient`, `WithTimeout`, `WithHeader`, and
