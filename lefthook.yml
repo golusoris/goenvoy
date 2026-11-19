@@ -54,8 +54,8 @@ pre-push:
       run: >-
         if command -v gitleaks >/dev/null 2>&1; then sh
         .config/lefthook/engine.sh security secrets; else echo gitleaks is not
-        installed, install it with go install
-        github.com/zricethezav/gitleaks/v8@v8.30.1 >&2; exit 1; fi
+        installed, install the version pinned as GITLEAKS_VERSION in
+        tools/tool-versions.env >&2; exit 1; fi
     docstrings:
       use_stdin: true
       run: sh .config/lefthook/engine.sh docstrings check --pre-push

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Exercise shared pin literal checks against tracked fixture files.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+. "$HERE/testlib.sh"
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+mkdir -p "$WORK/tools" "$WORK/nested"
+GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$WORK" init -q
+cat > "$WORK/tools/tool-versions.env" <<'PINS'
+TOOL_VERSION=2.47.6
+IMAGE_DIGEST=sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+PINS
+printf 'clean\n' > "$WORK/example.txt"
+printf '2.47.6\n' > "$WORK/nested/CHANGELOG.md"
+GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$WORK" add tools/tool-versions.env example.txt nested/CHANGELOG.md
+SUT=(bash "$HERE/pin-literals.sh" "$WORK/tools/tool-versions.env" "$WORK")
+expect_pass clean "${SUT[@]}"
+printf 'first\nversion 2.47.6\n' > "$WORK/example.txt"
+expect_refusal version 'example.txt:2: TOOL_VERSION literal duplicated' "${SUT[@]}"
+printf 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890\n' > "$WORK/example.txt"
+expect_refusal digest 'example.txt:1: IMAGE_DIGEST literal duplicated' "${SUT[@]}"
+printf '12.47.60\n' > "$WORK/example.txt"
+expect_pass longer_number "${SUT[@]}"
+: > "$WORK/tools/tool-versions.env"
+expect_refusal empty 'pin file' "${SUT[@]}"
+expect_pass repository bash "$HERE/pin-literals.sh"
+echo 'pin-literals: all planted cases pass'
