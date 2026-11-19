@@ -151,6 +151,7 @@ release-config-check: ## Release-please config matches its generator and carries
 release-scripts-check: ## Release manifest, tagging, notes, publishing and release-PR CI scripts: planted cases, then the manifest
 	bash tools/testlib_test.sh
 	bash tools/pin-literals_test.sh
+	bash tools/privileged-write_test.sh
 	bash tools/readme-module-count_test.sh
 	bash tools/release-manifest_test.sh
 	bash tools/release-manifest.sh check
