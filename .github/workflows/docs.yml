@@ -8,6 +8,8 @@ on:
       - mkdocs.yml
       - scripts/ci/mkdocs-build.sh
       - scripts/ci/docker-hub-mirror.sh
+      - scripts/ci/mkdocs-build-policy_test.sh
+      - scripts/ci/docker-hub-mirror_test.sh
       - .github/actions/docker-hub-mirror/**
       - tools/tool-versions.env
       - .github/workflows/docs.yml
@@ -18,6 +20,8 @@ on:
       - mkdocs.yml
       - scripts/ci/mkdocs-build.sh
       - scripts/ci/docker-hub-mirror.sh
+      - scripts/ci/mkdocs-build-policy_test.sh
+      - scripts/ci/docker-hub-mirror_test.sh
       - .github/actions/docker-hub-mirror/**
       - tools/tool-versions.env
       - .github/workflows/docs.yml
@@ -40,6 +44,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Why: both tests drive the scripts through a stub engine, so they run before the runner's Docker daemon is touched.
+      - name: Mirror script refuses its planted cases
+        run: bash scripts/ci/docker-hub-mirror_test.sh
+      - name: Site build script refuses its planted cases
+        run: bash scripts/ci/mkdocs-build-policy_test.sh
       - name: Pull Docker Hub images through mirror.gcr.io
         uses: ./.github/actions/docker-hub-mirror
 
