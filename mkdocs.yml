@@ -1,0 +1,133 @@
+site_name: goenvoy
+site_description: Pure-stdlib Go client libraries for media automation, metadata, and download service APIs.
+site_url: https://golusoris.github.io/goenvoy/
+repo_url: https://github.com/golusoris/goenvoy
+repo_name: golusoris/goenvoy
+docs_dir: docs
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.details
+
+nav:
+  - Home: index.md
+  - Principles: principles.md
+  - Triage runbook: triage-runbook.md
+  - Architecture Decisions:
+      - Overview: adr/README.md
+      - "ADR-0001 — Pure stdlib, no external dependencies": adr/0001-pure-stdlib.md
+      - "ADR-0002 — Per-module independent semver": adr/0002-per-module-semver.md
+      - "ADR-0003 — New(baseURL, apiKey string, opts ...Option) (*Client, error)": adr/0003-new-constructor-shape.md
+      - "ADR-0004 — Functional-options configuration": adr/0004-functional-options.md
+      - "ADR-0005 — Per-module APIError struct": adr/0005-api-error-type.md
+      - "ADR-0006 — httptest-only tests — no live API calls": adr/0006-httptest-only-tests.md
+      - "ADR-0007 — OAuth2 flow helpers — device / auth-code / PKCE / refresh": adr/0007-oauth2-flows.md
+      - "ADR-0008 — JSON-RPC / XML-RPC / GraphQL clients use the same patterns": adr/0008-non-rest-wire-protocols.md
+      - "ADR-0009 — Drop committed replace ../ directives in favour of go.work": adr/0009-local-replace-directives.md
+      - Template: adr/0000-template.md
+  - Upstream API notes:
+      - anime:
+          - Shoko Server: upstream/anime-shoko.md
+      - arr:
+          - Autobrr: upstream/arr-autobrr.md
+          - Bazarr: upstream/arr-bazarr.md
+          - Cleanuparr: upstream/arr-cleanuparr.md
+          - Jackett: upstream/arr-jackett.md
+          - Lidarr: upstream/arr-lidarr.md
+          - Mylar3: upstream/arr-mylar.md
+          - NZBHydra2: upstream/arr-nzbhydra.md
+          - Prowlarr: upstream/arr-prowlarr.md
+          - Radarr: upstream/arr-radarr.md
+          - Readarr: upstream/arr-readarr.md
+          - Seerr: upstream/arr-seerr.md
+          - Sonarr: upstream/arr-sonarr.md
+          - Whisparr: upstream/arr-whisparr.md
+      - downloadclient:
+          - Deluge: upstream/downloadclient-deluge.md
+          - NZBGet: upstream/downloadclient-nzbget.md
+          - qBittorrent: upstream/downloadclient-qbit.md
+          - rTorrent: upstream/downloadclient-rtorrent.md
+          - SABnzbd: upstream/downloadclient-sabnzbd.md
+          - Transmission: upstream/downloadclient-transmission.md
+      - mediaserver:
+          - Audiobookshelf: upstream/mediaserver-audiobookshelf.md
+          - Emby: upstream/mediaserver-emby.md
+          - Jellyfin: upstream/mediaserver-jellyfin.md
+          - Kavita: upstream/mediaserver-kavita.md
+          - Komga: upstream/mediaserver-komga.md
+          - Navidrome: upstream/mediaserver-navidrome.md
+          - Plex: upstream/mediaserver-plex.md
+          - Stash: upstream/mediaserver-stash.md
+          - Tautulli: upstream/mediaserver-tautulli.md
+          - Tdarr: upstream/mediaserver-tdarr.md
+      - metadata:
+          - StashBox: upstream/metadata-adult-stashbox.md
+          - ThePornDB: upstream/metadata-adult-tpdb.md
+          - AniDB: upstream/metadata-anime-anidb.md
+          - AniList: upstream/metadata-anime-anilist.md
+          - Kitsu: upstream/metadata-anime-kitsu.md
+          - MyAnimeList: upstream/metadata-anime-mal.md
+          - Google Books: upstream/metadata-book-googlebooks.md
+          - Open Library: upstream/metadata-book-openlibrary.md
+          - Hasheous: upstream/metadata-game-hasheous.md
+          - IGDB: upstream/metadata-game-igdb.md
+          - LaunchBox: upstream/metadata-game-launchbox.md
+          - MobyGames: upstream/metadata-game-mobygames.md
+          - RAWG: upstream/metadata-game-rawg.md
+          - RetroAchievements: upstream/metadata-game-retroachievements.md
+          - ScreenScraper: upstream/metadata-game-screenscraper.md
+          - Steam: upstream/metadata-game-steam.md
+          - SteamGridDB: upstream/metadata-game-steamgriddb.md
+          - TheAudioDB: upstream/metadata-music-audiodb.md
+          - Deezer: upstream/metadata-music-deezer.md
+          - Discogs: upstream/metadata-music-discogs.md
+          - Last.fm: upstream/metadata-music-lastfm.md
+          - MusicBrainz: upstream/metadata-music-musicbrainz.md
+          - Spotify: upstream/metadata-music-spotify.md
+          - Letterboxd: upstream/metadata-tracking-letterboxd.md
+          - ListenBrainz: upstream/metadata-tracking-listenbrainz.md
+          - SIMKL: upstream/metadata-tracking-simkl.md
+          - Trakt: upstream/metadata-tracking-trakt.md
+          - Fanart.tv: upstream/metadata-video-fanart.md
+          - OMDb: upstream/metadata-video-omdb.md
+          - OpenSubtitles: upstream/metadata-video-opensubtitles.md
+          - TMDB: upstream/metadata-video-tmdb.md
+          - TheTVDB: upstream/metadata-video-tvdb.md
+          - TVmaze: upstream/metadata-video-tvmaze.md
+      - tools:
+          - FlareSolverr: upstream/tools-flaresolverr.md
+
+plugins:
+  - search

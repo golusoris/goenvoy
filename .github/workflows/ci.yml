@@ -100,6 +100,8 @@ jobs:
         run: bash tools/workflow-ready_test.sh
       - name: Release-please config matches its generator and the PR template
         run: bash tools/release-config_test.sh
+      - name: Documented module count matches the release manifest
+        run: bash tools/readme-module-count_test.sh
 
   # The upstream OpenAPI spec pins (upstream/specs.yaml): the checker refuses
   # its planted cases, then every pinned file must still have its sha256.
