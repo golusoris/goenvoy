@@ -33,9 +33,16 @@ while IFS= read -r -d '' file; do
     {
       line = $0
       while (match(tolower(line), command)) {
+        start = RSTART
         call = substr(line, RSTART, RLENGTH)
         rest = substr(line, RSTART + RLENGTH)
         match(tolower(call), prefix "[[:space:]]+")
+        candidate = tolower(substr(call, 1, RLENGTH))
+        gsub(/[^a-z0-9_]/, "", candidate)
+        if (candidate ~ "^su" "do_(askpass|command|editor|gid|home|prompt|ps1|tty|uid|user)$") {
+          line = substr(line, start + RLENGTH - 1)
+          continue
+        }
         call = substr(call, RLENGTH + 1)
         split(rest, segments, /[;|&]/)
         install_ok = 0
