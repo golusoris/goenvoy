@@ -49,6 +49,8 @@ printf '"\044%s" install -m 0644 "\044%s" "\044%s"\n' privilege source target.ne
 expect_pass variable_staged "${SUT[@]}"
 printf '%s\n' 'sudo'' install -d -m 0755 /etc/x' > "$WORK/a.sh"
 expect_pass install_directory "${SUT[@]}"
+printf '%s\134\n%s\n' 'sudo'' install -d -m 0755 ' '  /etc/x' > "$WORK/a.sh"
+expect_pass install_directory_continuation "${SUT[@]}"
 printf '%s\n' 'install a /etc/x' > "$WORK/a.sh"
 expect_pass unprivileged_install "${SUT[@]}"
 printf "%s\n" 'sudo'' install -m 0644 a b.new' 'sudo'' mv -f b.new b' > "$WORK/a.sh"

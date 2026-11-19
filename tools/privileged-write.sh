@@ -56,7 +56,6 @@ while IFS= read -r -d '' file; do
           }
           if (last ~ /^".*"$/ || last ~ /^\047.*\047$/) last = substr(last, 2, length(last) - 2)
           if (last ~ /\.new$/) install_ok = 1
-          if (segments[1] ~ /\\[[:space:]]*$/) install_ok = 0
         }
         if (call !~ /^(install|mv|rm|chown|chmod|test|cat|systemctl)$/ || segments[1] ~ />/ || (call == "install" && !install_ok)) {
           print FILENAME ":" FNR
