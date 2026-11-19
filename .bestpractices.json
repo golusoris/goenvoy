@@ -1,6 +1,6 @@
 {
 	"description_good_status": "Met",
-	"description_good_justification": "The repository README succinctly describes goenvoy as a multi-module monorepo collection of pure-stdlib Go client libraries for media automation, metadata, and download service APIs covering 69 modules across 63+ services. Evidence: https://github.com/golusoris/goenvoy/blob/main/README.md#L39-L51",
+	"description_good_justification": "The repository README succinctly describes goenvoy as a multi-module monorepo collection of pure-stdlib Go client libraries for media automation, metadata, and download service APIs covering 71 modules across 63+ services. Evidence: https://github.com/golusoris/goenvoy/blob/main/README.md#L39-L51",
 	"interact_status": "Met",
 	"interact_justification": "The README explains how to install packages via go get, while CONTRIBUTING.md and GitHub issue templates detail how to submit bug reports, feature requests, and code contributions. Evidence: https://github.com/golusoris/goenvoy/blob/main/README.md#L63-L76 https://github.com/golusoris/goenvoy/blob/main/CONTRIBUTING.md#L57-L72 https://github.com/golusoris/goenvoy/blob/main/.github/ISSUE_TEMPLATE/bug_report.yml https://github.com/golusoris/goenvoy/blob/main/.github/ISSUE_TEMPLATE/feature_request.yml",
 	"contribution_status": "Met",
@@ -60,7 +60,7 @@
 	"vulnerability_report_response_status": "N/A",
 	"vulnerability_report_response_justification": "No vulnerability report was received in the last 6 months (no security advisories, GitHub API checked 2026-10-25). The response targets are in SECURITY.md. Evidence: https://github.com/golusoris/goenvoy/blob/main/SECURITY.md#L3-L9",
 	"build_status": "Met",
-	"build_justification": "The project provides a working automated build system using standard GNU Make and Go toolchain commands to compile all 69 modules from source. Evidence: https://github.com/golusoris/goenvoy/blob/main/Makefile#L95-L100 https://github.com/golusoris/goenvoy/blob/main/README.md#L173-L188 https://github.com/golusoris/goenvoy/blob/main/.github/workflows/ci.yml#L209-L236",
+	"build_justification": "The project provides a working automated build system using standard GNU Make and Go toolchain commands to compile all 71 modules from source. Evidence: https://github.com/golusoris/goenvoy/blob/main/Makefile#L95-L100 https://github.com/golusoris/goenvoy/blob/main/README.md#L173-L188 https://github.com/golusoris/goenvoy/blob/main/.github/workflows/ci.yml#L209-L236",
 	"build_common_tools_status": "Met",
 	"build_common_tools_justification": "The software is built using standard, widely adopted tools in the Go ecosystem including GNU Make and the standard Go compiler (go build). Evidence: https://github.com/golusoris/goenvoy/blob/main/Makefile#L95-L100 https://github.com/golusoris/goenvoy/blob/main/README.md#L36 https://github.com/golusoris/goenvoy/blob/main/CONTRIBUTING.md#L57-L72",
 	"build_floss_tools_status": "Met",
