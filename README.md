@@ -235,7 +235,7 @@ goenvoy/
 Requires Go 1.26+. See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
 
 ```bash
-# Set up workspace (local dev, links all 70 modules)
+# Set up workspace (local dev, links every module in the tree)
 go work init && find . -name 'go.mod' -not -path './.workingdir/*' -exec dirname {} \; | xargs go work use
 
 # Run all tests

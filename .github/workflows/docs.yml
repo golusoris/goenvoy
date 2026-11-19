@@ -64,6 +64,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       pages: write
+      # nosemgrep: codacy.yaml.security.hard-coded-tokens -- OIDC permission name required by deploy-pages, no token value.
       id-token: write
       contents: read
     environment:
