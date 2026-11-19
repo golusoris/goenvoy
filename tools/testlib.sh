@@ -2,6 +2,10 @@
 # Why: shared test assertions for tools/ test scripts.
 set -euo pipefail
 
+# Why: a git hook exports its repository and index; a fixture repository built by a test must never read or write them.
+mapfile -t git_local_env < <(git rev-parse --local-env-vars)
+unset "${git_local_env[@]}" git_local_env
+
 # expect_refusal NAME NEEDLE CMD...: assert command fails and error message contains needle.
 expect_refusal() {
   local name="$1" needle="$2" out
