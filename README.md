@@ -12,12 +12,12 @@
   [![Release](https://img.shields.io/badge/Release-Releases-3b82f6?style=for-the-badge&labelColor=111a35)](https://github.com/golusoris/goenvoy/releases)
   [![Go](https://img.shields.io/badge/Go-1.26+-06b6d4?style=for-the-badge&logo=go&logoColor=white&labelColor=111a35)](https://go.dev)
   <!-- 2 CI/build -->
-  [![CI](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml)
+  [![CI](https://img.shields.io/github/actions/workflow/status/golusoris/goenvoy/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml)
   <!-- 3 security/scorecard -->
-  [![Security](https://github.com/golusoris/goenvoy/actions/workflows/security-scan.yml/badge.svg?branch=main&event=push)](https://github.com/golusoris/goenvoy/actions/workflows/security-scan.yml)
+  [![Security](https://img.shields.io/github/actions/workflow/status/golusoris/goenvoy/security-scan.yml?branch=main&style=for-the-badge&label=Security)](https://github.com/golusoris/goenvoy/actions/workflows/security-scan.yml)
   [![OpenSSF Scorecard](https://img.shields.io/badge/OpenSSF-Scorecard-06b6d4?style=for-the-badge&labelColor=111a35)](https://scorecard.dev/viewer/?uri=github.com/golusoris/goenvoy)
-  [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15901/badge)](https://www.bestpractices.dev/projects/15901)
-  [![Codacy](https://app.codacy.com/project/badge/Grade/40988f0fd89c4cd5a17c857fe5bac649)](https://app.codacy.com/gh/golusoris/goenvoy/dashboard)
+  [![OpenSSF Best Practices](https://img.shields.io/badge/OpenSSF-Best_Practices-06b6d4?style=for-the-badge&labelColor=111a35)](https://www.bestpractices.dev/projects/15901)
+  [![Codacy](https://img.shields.io/badge/Codacy-dashboard-06b6d4?style=for-the-badge&labelColor=111a35&logo=codacy&logoColor=white)](https://app.codacy.com/gh/golusoris/goenvoy/dashboard)
   [![CodeRabbit](https://img.shields.io/badge/Reviews-CodeRabbit-8b5cf6?style=for-the-badge&logo=coderabbit&logoColor=white&labelColor=111a35)](https://coderabbit.ai)
   <!-- 4 standards -->
   [![HISS-21](https://img.shields.io/badge/Standards-HISS--21-06b6d4?style=for-the-badge&logo=nasa&labelColor=111a35)](AGENTS.md)
@@ -31,27 +31,41 @@
 
   **Pure-stdlib Go client libraries for media automation, metadata, and download APIs**
 
-  *69 modules covering 63+ services in a multi-module monorepo with zero external dependencies*
+  *71 modules covering 63+ services in a multi-module monorepo with zero external dependencies*
 
 </div>
 
 goenvoy is a collection of Go client libraries for media automation, metadata,
-and download service APIs — 69 modules covering 63+ services. Designed as a
+and download service APIs — 71 modules covering 63+ services. Designed as a
 multi-module monorepo, it allows importing only what you need, from a single
 library to an entire category, using only Go's standard library.
 
-**[📖 Principles](docs/principles.md)** · [Architecture Decisions](docs/adr/) · [Contributing](CONTRIBUTING.md)
+The name **goenvoy** combines **Go** and **envoy** — a messenger sent to deal
+with another party on someone's behalf, which is the role each module plays for
+one service API. It is pronounced "go-EN-voy" (/ɡoʊ ˈɛnvɔɪ/).
+
+**[Principles](docs/principles.md)** · [Architecture Decisions](docs/adr/) ·
+[Contributing](CONTRIBUTING.md)
 
 ---
 
 ## Why goenvoy
 
-- **Pure stdlib** — zero external dependencies, just `net/http` and `encoding/json`
-- **Context-aware** — every method takes `context.Context` for cancellation and timeouts
-- **Functional options** — `WithHTTPClient`, `WithTimeout`, `WithHeader` and service-specific options
-- **Type-safe errors** — each module defines an `APIError` with status code, message, and body
-- **OAuth2 support** — device code, authorization code, PKCE, and refresh flows where applicable
-- **Thoroughly tested** — httptest-based tests, race detector enabled, no live API calls
+- **Pure stdlib** — zero external dependencies, using only Go's standard
+  library ([ADR-0001](docs/adr/0001-pure-stdlib.md)).
+- **Context-aware** — every request method takes `context.Context` for
+  cancellation and timeouts ([docs/principles.md](docs/principles.md)).
+- **Functional options** — `WithHTTPClient`, `WithTimeout`, `WithHeader`, and
+  service-specific options ([ADR-0004](docs/adr/0004-functional-options.md)).
+- **Type-safe errors** — modules commonly expose `APIError`, with fields that
+  vary by service; for example, NZBGet exposes an RPC code and message. See
+  [ADR-0005](docs/adr/0005-api-error-type.md) and the
+  [package reference](https://pkg.go.dev/github.com/golusoris/goenvoy/downloadclient/nzbget#APIError).
+- **OAuth2 support** — device code, authorisation code, PKCE, and refresh flows
+  where applicable ([ADR-0007](docs/adr/0007-oauth2-flows.md)).
+- **Thoroughly tested** — `httptest`-based unit tests with the race detector
+  enabled and no live API calls
+  ([ADR-0006](docs/adr/0006-httptest-only-tests.md)).
 
 ## Get started
 
@@ -106,9 +120,35 @@ func main() {
 }
 ```
 
-Each service module follows the same pattern: `New(baseURL, apiKey) → typed methods with context`.
+Most clients follow `New(baseURL, apiKey, opts...)`; some differ. For example,
+`kitsu.New` takes options only, while `nzbget.New` takes a base URL, username,
+and password. See [ADR-0003](docs/adr/0003-new-constructor-shape.md) and each
+[package reference](https://pkg.go.dev/github.com/golusoris/goenvoy) for the
+exact signature.
 
 ## At a glance
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'ui-sans-serif, Segoe UI, Helvetica, Arial, sans-serif', 'fontSize': '15px', 'primaryColor': '#111a35', 'primaryTextColor': '#e2e8f0', 'primaryBorderColor': '#3b82f6', 'lineColor': '#3b82f6', 'edgeLabelBackground': '#111a35', 'tertiaryColor': '#0b1020'}}}%%
+flowchart TD
+    classDef input fill:#0b1020,stroke:#06b6d4,stroke-width:2px,color:#e2e8f0
+    classDef step fill:#111a35,stroke:#3b82f6,stroke-width:2px,color:#e2e8f0
+    classDef decide fill:#111a35,stroke:#8b5cf6,stroke-width:2px,color:#e2e8f0
+
+    app["Your Go program<br/>context.Context + Options"]:::input
+    arr["Arr stack<br/>arr/sonarr"]:::step
+    meta["Metadata<br/>metadata/video/tmdb"]:::step
+    dl["Download clients<br/>downloadclient/qbit"]:::step
+    ms["Media servers<br/>mediaserver/plex"]:::step
+    anime["Anime<br/>anime/shoko"]:::step
+    shared["Category shared types<br/>arr · metadata · downloadclient<br/>mediaserver · anime"]:::decide
+    stdlib["Go stdlib transport<br/>net/http · encoding/json"]:::step
+    api["Service HTTP API<br/>REST · RPC · GraphQL"]:::input
+
+    app --> arr & meta & dl & ms & anime
+    arr & meta & dl & ms & anime --> shared
+    shared --> stdlib --> api
+```
 
 ### Categories
 
@@ -123,7 +163,8 @@ Each service module follows the same pattern: `New(baseURL, apiKey) → typed me
 
 ### Structure
 
-Each category has a base module with shared types, plus sub-modules for individual services:
+Each category has a base module with shared types, plus sub-modules for
+individual services:
 
 ```text
 goenvoy/
@@ -174,12 +215,27 @@ goenvoy/
 │   └── shoko/        # Shoko Server client
 ```
 
+## Guides and reference
+
+- [Documentation site](https://golusoris.github.io/goenvoy/) — published guides,
+  architecture decisions, and upstream API notes.
+- [Principles](docs/principles.md) — coding rules, SEI CERT Go practices, Go
+  style, supply-chain commitments, wire protocols, and testing standards.
+- [Architecture decision records](docs/adr/) — Nygard-format records for module
+  boundaries, constructors, functional options, error types, and OAuth2 flows.
+- [Upstream API references](docs/upstream/) — per-service upstream API
+  documentation URLs, target versions, and verification dates.
+- [Issue and PR triage runbook](docs/triage-runbook.md) — maintainer workflow
+  for reviewing issues, pull requests, and automated checks.
+- [Go package reference](https://pkg.go.dev/github.com/golusoris/goenvoy) —
+  generated API documentation and runnable examples on `pkg.go.dev`.
+
 ## Contribute
 
 Requires Go 1.26+. See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
 
 ```bash
-# Set up workspace (local dev, links all 63 modules)
+# Set up workspace (local dev, links every module in the tree)
 go work init && find . -name 'go.mod' -not -path './.workingdir/*' -exec dirname {} \; | xargs go work use
 
 # Run all tests
@@ -197,30 +253,42 @@ make fmt-all
 
 ## Support
 
-If goenvoy saves you time, a coffee helps ☕
+If goenvoy saves you time, you can support maintenance through
+[GitHub Sponsors](https://github.com/sponsors/lusoris) or
+[Ko-fi](https://ko-fi.com/lusoris).
 
-<p align="left">
-  <a href="https://ko-fi.com/lusoris" target="_blank">
-    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi" />
-  </a>
-  &nbsp;&nbsp;
-  <a href="https://github.com/sponsors/lusoris" target="_blank">
-    <img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?style=flat-square&logo=github&logoColor=white" alt="GitHub Sponsors" />
-  </a>
-</p>
+## Roadmap and releases
+
+Each module is versioned and released independently using per-module Git tags
+of the form `<category>/<service>/vX.Y.Z` (see
+[ADR-0002](docs/adr/0002-per-module-semver.md)).
+[release-please](.github/workflows/release-please.yml) writes release notes and
+each module's `CHANGELOG.md` from Conventional Commit subjects. The root
+[CHANGELOG.md](CHANGELOG.md) holds repository-wide changes from before that.
+Published releases and supply-chain attestations are available on the
+[GitHub Releases](https://github.com/golusoris/goenvoy/releases) page.
 
 ## Upstream and licence
 
-[MIT](LICENSE)
+goenvoy is an original multi-module Go library collection released under the
+[MIT Licence](LICENSE). Target upstream service versions and documentation links
+are tracked in [docs/upstream/](docs/upstream/).
 
-## Standards & Governance
+## Standards and governance
 
-- Pure stdlib (ADR-0001). `depguard` in CI enforces.
-- Per-module independent semver (ADR-0002). Tags: `<path>/vX.Y.Z`.
-- Every release: cosign-signed checksums + SPDX SBOM + SLSA-L3 provenance.
-- Every merged commit: 0 lint / 0 gosec / 0 govulncheck / race-green across all modules.
-- [AGENTS.md](AGENTS.md) / [CLAUDE.md](CLAUDE.md) for agent-assisted development conventions.
-- `docs/adr/` for all architectural decisions (Nygard format).
+- Pure stdlib ([ADR-0001](docs/adr/0001-pure-stdlib.md)), enforced in CI by
+  `depguard`.
+- Per-module independent semantic versioning
+  ([ADR-0002](docs/adr/0002-per-module-semver.md)) via `<path>/vX.Y.Z` tags.
+- Every release ships cosign-signed checksums, an SPDX SBOM, and SLSA Level 3
+  provenance ([.github/workflows/release.yml](.github/workflows/release.yml)).
+- Pull requests run `golangci-lint`, `gosec`, `govulncheck`, and race-enabled
+  tests for each changed module. Changes to `ci.yml`, `.golangci.yml`, or
+  `tools/coverage-thresholds.json` run all modules
+  ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+- [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md) define agent-assisted
+  development conventions.
+- [docs/adr/](docs/adr/) records architectural decisions in Nygard format.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 

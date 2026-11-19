@@ -1,6 +1,6 @@
 # Principles — goenvoy
 
-This is goenvoy's **foundational contract**. The equivalent of golusoris's `PLAN.md §2`, re-cut for a pure-stdlib multi-module client-lib collection. [AGENTS.md](../AGENTS.md) and [CLAUDE.md](../CLAUDE.md) cite this file as the authoritative reference. Any deviation requires a PR comment with justification.
+This is goenvoy's **foundational contract**. The equivalent of golusoris's `PLAN.md §2`, re-cut for a pure-stdlib multi-module client-lib collection. [AGENTS.md](https://github.com/golusoris/goenvoy/blob/main/AGENTS.md) and [CLAUDE.md](https://github.com/golusoris/goenvoy/blob/main/CLAUDE.md) cite this file as the authoritative reference. Any deviation requires a PR comment with justification.
 
 Structure mirrors golusoris §2 so reviewers can move between the two repos without re-orienting.
 
@@ -54,7 +54,7 @@ Adopted. Particular vigilance for a client-lib collection:
 
 C4 diagrams are omitted — each module is a single-file HTTP client with no sub-system architecture to diagram.
 
-**ADRs** live in [`docs/adr/`](adr/), Nygard format, one decision per file. Retroactively backfilled records capture every convention that's currently implicit:
+**ADRs** live in [`docs/adr/`](adr/README.md), Nygard format, one decision per file. Retroactively backfilled records capture every convention that's currently implicit:
 
 | ADR | Title | Status |
 | --- | --- | --- |
