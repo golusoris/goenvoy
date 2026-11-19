@@ -60,7 +60,12 @@ target_site=""
 backup_site=""
 lock_dir=""
 lock_held=false
-had_target_site=false
+target_identity=""
+
+# dir_identity prints a directory's device and inode.
+dir_identity() {
+	stat -c '%d:%i' -- "$1" 2>/dev/null || stat -f '%d:%i' -- "$1" 2>/dev/null
+}
 
 # cleanup_site removes temporary output and restores a target if publication failed.
 cleanup_site() {
@@ -131,11 +136,14 @@ else
 	fi
 	lock_held=true
 	if [[ -d "$target_site" ]]; then
-		had_target_site=true
+		if ! target_identity="$(dir_identity "$target_site")"; then
+			printf 'MkDocs output identity is unreadable: %s\n' "$target_site" >&2
+			exit 1
+		fi
 	fi
 	site_dir="$(mktemp -d "$(dirname -- "$target_site")/.$(basename -- "$target_site").XXXXXX")"
 fi
-readonly site_dir target_site lock_dir lock_held had_target_site
+readonly site_dir target_site lock_dir lock_held target_identity
 
 docker_bin="${DOCKER_BIN:-}"
 if [[ -z "$docker_bin" ]] && command -v docker >/dev/null; then
@@ -163,7 +171,12 @@ if [[ ! -f "$site_dir/index.html" ]]; then
 fi
 if [[ -n "$target_site" ]]; then
 	chmod 0755 -- "$site_dir"
-	if [[ "$had_target_site" == true && -d "$target_site" ]]; then
+	if [[ -n "$target_identity" ]]; then
+		if [[ ! -d "$target_site" ]] || ! current_identity="$(dir_identity "$target_site")" || \
+			[[ "$current_identity" != "$target_identity" ]]; then
+			printf 'MkDocs output changed during the build: %s\n' "$target_site" >&2
+			exit 1
+		fi
 		backup_site="${site_dir}.backup"
 		mv -- "$target_site" "$backup_site"
 	fi

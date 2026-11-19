@@ -80,6 +80,14 @@ done
 if [[ -n "${FAKE_APPEAR_TARGET:-}" ]]; then
 	mkdir -p -- "$FAKE_APPEAR_TARGET"
 fi
+if [[ -n "${FAKE_REPLACE_TARGET:-}" ]]; then
+	mv -- "$FAKE_REPLACE_TARGET" "${FAKE_REPLACE_TARGET}.original"
+	mkdir -- "$FAKE_REPLACE_TARGET"
+	printf 'replacement marker\n' >"$FAKE_REPLACE_TARGET/marker"
+fi
+if [[ -n "${FAKE_REMOVE_TARGET:-}" ]]; then
+	rm -rf -- "$FAKE_REMOVE_TARGET"
+fi
 if [[ "${FAKE_PARTIAL_FAIL:-false}" == true ]]; then
 	printf 'partial\n' >"$site_mount/asset.css"
 	exit 1
@@ -176,6 +184,27 @@ if [[ "$(cat "$target/index.html")" != replacement || -e "$target/asset.css" || 
 	printf 'successful build did not replace previous output\n' >&2
 	exit 1
 fi
+cp -a "$target" "$suite_root/before-replacement"
+expect_failure "MkDocs output changed during the build: $target" \
+	env FAKE_REPLACE_TARGET="$target" FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$target"
+if [[ "$(cat "$target/marker")" != 'replacement marker' ]] || \
+	[[ "$(find "$target" -mindepth 1 -maxdepth 1 | wc -l)" -ne 1 ]] || \
+	! diff -r "$suite_root/before-replacement" "$target.original" || \
+	[[ -n "$(find "$clean_root" -maxdepth 1 -name '.published.*' -print -quit)" ]]; then
+	printf 'replacement changed or original, lock, or staging was not preserved correctly\n' >&2
+	exit 1
+fi
+rm -rf -- "$target"
+mv -- "$target.original" "$target"
+expect_failure "MkDocs output changed during the build: $target" \
+	env FAKE_REMOVE_TARGET="$target" FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$target"
+if [[ -e "$target" || -L "$target" || -n "$(find "$clean_root" -maxdepth 1 -name '.published.*' -print -quit)" ]]; then
+	printf 'removed target reappeared or lock or staging remained\n' >&2
+	exit 1
+fi
+cp -a "$suite_root/before-replacement" "$target"
 appeared_target="$clean_root/appeared"
 expect_failure "MkDocs output appeared during the build: $appeared_target" \
 	env FAKE_APPEAR_TARGET="$appeared_target" FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
