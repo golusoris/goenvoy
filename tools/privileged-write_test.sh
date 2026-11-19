@@ -12,6 +12,16 @@ GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$WORK" init -q
 printf "clean\n" > "$WORK/a.sh"
 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 git -C "$WORK" add a.sh
 SUT=(bash "$HERE/privileged-write.sh" "$WORK")
+printf '%s\n' 'sudo'' install {-t,/etc} source target.new' > "$WORK/a.sh"
+expect_refusal brace_option "a.sh:1:" "${SUT[@]}"
+printf '%s\n' 'sudo'' install $''opts a b.new' > "$WORK/a.sh"
+expect_refusal unquoted_variable "a.sh:1:" "${SUT[@]}"
+printf '%s\n' 'sudo'' install a /etc/x*.new' > "$WORK/a.sh"
+expect_refusal glob_destination "a.sh:1:" "${SUT[@]}"
+printf '%s\n' 'sudo'' install -m 0644 "$''source" "$''target.new"' > "$WORK/a.sh"
+expect_pass quoted_variables "${SUT[@]}"
+printf '%s\n' 'sudo'' install -m u=rw,go=r a b.new' > "$WORK/a.sh"
+expect_pass symbolic_mode "${SUT[@]}"
 printf "%s\n" 'sudo'' cp a b' > "$WORK/a.sh"
 expect_refusal copy "a.sh:1:" "${SUT[@]}"
 printf '%s\044%s\n' '"' 'privilege" cp a b' > "$WORK/a.sh"

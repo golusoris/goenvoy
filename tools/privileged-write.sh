@@ -52,6 +52,7 @@ while IFS= read -r -d '' file; do
           word = ""
           started = 0
           quote = ""
+          refused = 0
           segment = segments[1]
           for (pos = 1; pos <= length(segment); pos++) {
             char = substr(segment, pos, 1)
@@ -65,8 +66,9 @@ while IFS= read -r -d '' file; do
                 else word = word char next_char
               } else if (char == "\"") quote = ""
               else word = word char
-            } else if (char == "\\" && pos < length(segment)) {
-              word = word substr(segment, ++pos, 1)
+            } else if (char == "\\") {
+              if (pos < length(segment)) word = word substr(segment, ++pos, 1)
+              else word = word char
               started = 1
             } else if (char == "\047" || char == "\"") {
               quote = char
@@ -78,13 +80,14 @@ while IFS= read -r -d '' file; do
             } else if (char == "#" && !started) {
               break
             } else {
+              if (char !~ /^[[:alnum:]_./:=,@%+-]$/) refused = 1
               word = word char
               started = 1
             }
           }
           if (started) args[++count_args] = word
           last = ""
-          refused = (quote != "")
+          if (quote != "") refused = 1
           directory = 0
           for (i = 1; i <= count_args; i++) {
             if (args[i] == "") continue
