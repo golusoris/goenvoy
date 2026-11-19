@@ -149,6 +149,7 @@ release-config-check: ## Release-please config matches its generator and carries
 
 .PHONY: release-scripts-check
 release-scripts-check: ## Release manifest, tagging, notes, publishing and release-PR CI scripts: planted cases, then the manifest
+	bash tools/readme-module-count_test.sh
 	bash tools/release-manifest_test.sh
 	bash tools/release-manifest.sh check
 	bash tools/release-pr-ci_test.sh

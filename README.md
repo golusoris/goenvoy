@@ -31,12 +31,12 @@
 
   **Pure-stdlib Go client libraries for media automation, metadata, and download APIs**
 
-  *70 modules covering 63+ services in a multi-module monorepo with zero external dependencies*
+  *71 modules covering 63+ services in a multi-module monorepo with zero external dependencies*
 
 </div>
 
 goenvoy is a collection of Go client libraries for media automation, metadata,
-and download service APIs — 70 modules covering 63+ services. Designed as a
+and download service APIs — 71 modules covering 63+ services. Designed as a
 multi-module monorepo, it allows importing only what you need, from a single
 library to an entire category, using only Go's standard library.
 
@@ -263,7 +263,8 @@ Each module is versioned and released independently using per-module Git tags
 of the form `<category>/<service>/vX.Y.Z` (see
 [ADR-0002](docs/adr/0002-per-module-semver.md)).
 [release-please](.github/workflows/release-please.yml) writes release notes and
-updates [CHANGELOG.md](CHANGELOG.md) from Conventional Commit subjects.
+each module's `CHANGELOG.md` from Conventional Commit subjects. The root
+[CHANGELOG.md](CHANGELOG.md) holds repository-wide changes from before that.
 Published releases and supply-chain attestations are available on the
 [GitHub Releases](https://github.com/golusoris/goenvoy/releases) page.
 

@@ -1,7 +1,7 @@
 # goenvoy
 
 goenvoy is a collection of pure-stdlib Go client libraries for media
-automation, metadata, and download service APIs — 70 modules covering 63+
+automation, metadata, and download service APIs — 71 modules covering 63+
 services in a multi-module monorepo with zero external dependencies. Each
 service lives in its own independently versioned Go module so applications
 import only what they need.
