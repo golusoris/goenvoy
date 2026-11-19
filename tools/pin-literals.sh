@@ -23,8 +23,11 @@ scan_file() {
         pos = index(line, value)
         if (!pos) break
         start = offset + pos
+        # Why: a dot continues the number only with a digit on its far side, so "2.47.6." at a sentence end still counts as a copy.
         before = start > 1 ? substr($0, start - 1, 1) : ""
+        if (before == "." && substr($0, start - 2, 1) !~ /[0-9]/) before = ""
         after = substr($0, start + length(value), 1)
+        if (after == "." && substr($0, start + length(value) + 1, 1) !~ /[0-9]/) after = ""
         if (digest || (before !~ /[0-9.]/ && after !~ /[0-9.]/)) {
           printf "%s:%d: %s literal duplicated outside tools/tool-versions.env\n", path, NR, name
           found = 1

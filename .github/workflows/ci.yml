@@ -100,6 +100,8 @@ jobs:
         run: bash tools/workflow-ready_test.sh
       - name: Release-please config matches its generator and the PR template
         run: bash tools/release-config_test.sh
+      - name: Pinned versions and digests live only in the pin file
+        run: bash tools/pin-literals_test.sh
 
   # The upstream OpenAPI spec pins (upstream/specs.yaml): the checker refuses
   # its planted cases, then every pinned file must still have its sha256.
