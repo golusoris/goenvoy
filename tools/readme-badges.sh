@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Verify that GitHub Actions workflow badges and links in top-level Markdown
-# files point at workflow files that exist under .github/workflows.
+# Verify workflow links in top-level Markdown and reject Shields workflow/status
+# badges, which display the last default-branch run.
 #   usage: tools/readme-badges.sh --repo owner/name [root]
 set -euo pipefail
 
@@ -81,6 +81,10 @@ for f in "${files[@]}"; do
   readarray -t lines <"$f"
   for ((lnum = 1; lnum <= ${#lines[@]}; lnum++)); do
     line="${lines[lnum - 1]}"
+    if [[ "$line" == *img.shields.io/github/actions/workflow/status/* ]]; then
+      printf 'readme-badges: %s:%s: shields workflow/status badge reads the last default-branch run; use a static badge\n' "$rel" "$lnum" >&2
+      misses=$((misses + 1))
+    fi
     if [[ "$line" != *actions/workflows* ]]; then
       continue
     fi

@@ -6,7 +6,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=tools/testlib.sh
+# shellcheck source=tools/testlib.sh disable=SC1091
 . "$HERE/testlib.sh"
 # Why: callers can override the script path to test copies in other directories.
 SUT=(bash "${SCRIPT_PATH:-$HERE/readme-badges.sh}")
@@ -203,6 +203,26 @@ cat <<'EOF' > "$WORK/case_o/README.md"
 <a href='https://github.com/acme/widgets/actions/workflows/missing.yml'>CI</a>
 EOF
 expect_refusal "case_o: single-quoted href full URL acme/widgets missing" "missing.yml" "${SUT[@]}" --repo acme/widgets "$WORK/case_o"
+
+# Case (p): shields workflow status with an existing workflow -> 1
+mkdir -p "$WORK/case_p/.github/workflows"
+touch "$WORK/case_p/.github/workflows/ci.yml"
+cat <<'EOF' > "$WORK/case_p/README.md"
+# Project
+[![CI](https://img.shields.io/github/actions/workflow/status/acme/widgets/ci.yml)](https://github.com/acme/widgets/actions/workflows/ci.yml)
+EOF
+expect_refusal "case_p: shields workflow status" "README.md:2: shields workflow/status" "${SUT[@]}" --repo acme/widgets "$WORK/case_p"
+
+# Case (q): static shields badges -> 0
+mkdir -p "$WORK/case_q"
+printf '%s\n' '[![Go](https://img.shields.io/badge/Go-1.26-blue)](https://example.com)' > "$WORK/case_q/README.md"
+expect_output "case_q: static badge" "readme-badges: 0 workflow references ok" "${SUT[@]}" --repo acme/widgets "$WORK/case_q"
+
+# Case (r): shields workflow status in another top-level file -> 1
+mkdir -p "$WORK/case_r"
+printf '%s\n' '# Project' > "$WORK/case_r/README.md"
+printf '%s\n' 'https://img.shields.io/github/actions/workflow/status/acme/widgets/ci.yml' > "$WORK/case_r/CONTRIBUTING.md"
+expect_refusal "case_r: shields in contributing" "CONTRIBUTING.md:1: shields workflow/status" "${SUT[@]}" --repo acme/widgets "$WORK/case_r"
 
 # Case (u): no --repo -> exit status exactly 2 and output names --repo
 mkdir -p "$WORK/case_u"
