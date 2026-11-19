@@ -51,6 +51,16 @@ while IFS= read -r -d '' file; do
           last = ""
           for (i = 1; i <= count_args; i++) {
             if (args[i] == "") continue
+            if (args[i] ~ /^#/) break
+            if (args[i] == "--target-directory" || args[i] ~ /^--target-directory=/ || args[i] ~ /^-[^-gmoSt]*t/) {
+              install_ok = 0
+              last = ""
+              break
+            }
+            if (args[i] ~ /^-[^-]*[gmoS]$/ || args[i] ~ /^--(group|mode|owner|suffix|strip-program)$/) {
+              i++
+              continue
+            }
             if (args[i] == "-d" || args[i] == "--directory") install_ok = 1
             last = args[i]
           }
