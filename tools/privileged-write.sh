@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Detect privileged in-place writes; privileged install must stage to .new
 # or create directories. Only allow listed commands without redirects.
+# Bash splits words on space and tab only.
 set -euo pipefail
 
 if (( $# > 1 )); then
@@ -29,7 +30,7 @@ while IFS= read -r -d '' file; do
       command = prefix "[[:space:]]+[^[:space:];|&]+"
     }
     FNR > 100000 { print FILENAME ":" FNR; failed = 1; nextfile }
-    /^[[:space:]]*#/ { next }
+    /^[ \t]*#/ { next }
     {
       line = $0
       while (match(tolower(line), command)) {
@@ -73,7 +74,7 @@ while IFS= read -r -d '' file; do
             } else if (char == "\047" || char == "\"") {
               quote = char
               started = 1
-            } else if (char ~ /[[:space:]]/) {
+            } else if (char == " " || char == "\t") {
               if (started) args[++count_args] = word
               word = ""
               started = 0
