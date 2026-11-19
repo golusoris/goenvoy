@@ -149,6 +149,9 @@ release-config-check: ## Release-please config matches its generator and carries
 
 .PHONY: release-scripts-check
 release-scripts-check: ## Release manifest, tagging, notes, publishing and release-PR CI scripts: planted cases, then the manifest
+	bash tools/testlib_test.sh
+	bash tools/pin-literals_test.sh
+	bash tools/readme-module-count_test.sh
 	bash tools/release-manifest_test.sh
 	bash tools/release-manifest.sh check
 	bash tools/release-pr-ci_test.sh
@@ -159,6 +162,13 @@ release-scripts-check: ## Release manifest, tagging, notes, publishing and relea
 doc: ## Local godoc server at :6060
 	@echo "Starting godoc server at http://localhost:6060"
 	@godoc -http=:6060
+
+# Why: docs-site is excluded from verify-all because Docker is not present in every gate environment.
+.PHONY: docs-site
+docs-site: ## Strict mkdocs build of the docs site in the pinned image
+	bash scripts/ci/mkdocs-build-policy_test.sh
+	bash scripts/ci/docker-hub-mirror_test.sh
+	bash scripts/ci/mkdocs-build.sh
 
 # Praetor declared verification; existing project recipes remain unchanged.
 # Praetor ships one binary under two names; resolve whichever is installed.
