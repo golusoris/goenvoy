@@ -51,6 +51,8 @@ for line in "${pin_lines[@]}"; do
   digest=0
   case "$value" in sha256:*) value="${value#sha256:}"; digest=1 ;; esac
   if [ -z "$value" ]; then printf 'empty digest in pin file: %s\n' "$name" >&2; exit 1; fi
+  # Why: allow-list of value characters; a quoted value or a trailing comment would be searched as written and miss real copies.
+  case "$value" in *[!A-Za-z0-9._-]*) printf 'unsupported pin value for %s: only letters, digits, dot, underscore and hyphen\n' "$name" >&2; exit 1 ;; esac
   while IFS= read -r -d '' file; do
     case "$file" in CHANGELOG.md|*/CHANGELOG.md) continue ;; esac
     [ "$ROOT/$file" != "$PIN_FILE" ] || continue
