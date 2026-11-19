@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Detect privileged in-place writes: only allow listed commands without redirects.
+# Detect privileged in-place writes; privileged install must stage to .new
+# or create directories. Only allow listed commands without redirects.
 set -euo pipefail
 
 if (( $# > 1 )); then
@@ -22,19 +23,35 @@ while IFS= read -r -d '' file; do
   count=$((count + 1))
   if awk '
     BEGIN {
-      prefix = "(^|[;&|([:space:]])(" "su" "do" "|\"\\$" "privilege\")"
+      name = "[a-z_][a-z0-9_]*" "(su" "do|privi" "lege)[a-z0-9_]*|" "(su" "do|privi" "lege)[a-z0-9_]*"
+      variable = "\\$(" name ")|\\$\\{(" name ")\\}|\\$\\((" name ")\\)"
+      prefix = "(^|[;&|([:space:]])(" "su" "do|do" "as|" variable "|\"(" variable ")\")"
       command = prefix "[[:space:]]+[^[:space:];|&]+"
     }
     FNR > 100000 { print FILENAME ":" FNR; failed = 1; nextfile }
     /^[[:space:]]*#/ { next }
     {
       line = $0
-      while (match(line, command)) {
+      while (match(tolower(line), command)) {
         call = substr(line, RSTART, RLENGTH)
-        sub(prefix "[[:space:]]+", "", call)
         rest = substr(line, RSTART + RLENGTH)
+        match(tolower(call), prefix "[[:space:]]+")
+        call = substr(call, RLENGTH + 1)
         split(rest, segments, /[;|&]/)
-        if (call !~ /^(install|mv|rm|chown|chmod|test|cat|systemctl)$/ || segments[1] ~ />/) {
+        install_ok = 0
+        if (call == "install") {
+          count_args = split(segments[1], args, /[[:space:]]+/)
+          last = ""
+          for (i = 1; i <= count_args; i++) {
+            if (args[i] == "") continue
+            if (args[i] == "-d" || args[i] == "--directory") install_ok = 1
+            last = args[i]
+          }
+          if (last ~ /^".*"$/ || last ~ /^\047.*\047$/) last = substr(last, 2, length(last) - 2)
+          if (last ~ /\.new$/) install_ok = 1
+          if (segments[1] ~ /\\[[:space:]]*$/) install_ok = 0
+        }
+        if (call !~ /^(install|mv|rm|chown|chmod|test|cat|systemctl)$/ || segments[1] ~ />/ || (call == "install" && !install_ok)) {
           print FILENAME ":" FNR
           failed = 1
         }
