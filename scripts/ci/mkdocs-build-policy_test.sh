@@ -77,6 +77,9 @@ for arg in "$@"; do
 	previous="$arg"
 done
 [[ -n "$site_mount" ]]
+if [[ -n "${FAKE_APPEAR_TARGET:-}" ]]; then
+	mkdir -p -- "$FAKE_APPEAR_TARGET"
+fi
 if [[ "${FAKE_PARTIAL_FAIL:-false}" == true ]]; then
 	printf 'partial\n' >"$site_mount/asset.css"
 	exit 1
@@ -135,28 +138,78 @@ printf 'foreign\n' >"$clean_root/foreign/file"
 expect_failure 'MkDocs output refuses nonempty directory' env DOCKER_BIN="$fake_docker" FAKE_DOCKER_LOG="$fake_log" \
 	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir foreign
 target="$clean_root/published"
+target_lock="$clean_root/.published.lock"
+mkdir "$target_lock"
+expect_failure "MkDocs output is locked by another build: $target_lock" \
+	env FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$target"
+if [[ -e "$target" || ! -d "$target_lock" || \
+	-n "$(find "$clean_root" -maxdepth 1 -name '.published.*' ! -name '.published.lock' -print -quit)" ]]; then
+	printf 'locked build touched target, lock, or staging\n' >&2
+	exit 1
+fi
+rmdir "$target_lock"
 expect_failure '' env FAKE_PARTIAL_FAIL=true FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
 	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$target"
-if [[ -e "$target" || -n "$(find "$clean_root" -maxdepth 1 -name '.published.*' -print -quit)" ]]; then
-	printf 'failed build left output or staging behind\n' >&2
+if [[ -e "$target" || -e "$target_lock" || -n "$(find "$clean_root" -maxdepth 1 -name '.published.*' -print -quit)" ]]; then
+	printf 'failed build left output, lock, or staging behind\n' >&2
 	exit 1
 fi
 env FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
 	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$target" >/dev/null
+if [[ -e "$target_lock" || -n "$(find "$clean_root" -maxdepth 1 -name '.published.*' -print -quit)" ]]; then
+	printf 'successful build left lock or staging behind\n' >&2
+	exit 1
+fi
 printf 'original asset\n' >"$target/asset.css"
 cp -a "$target" "$suite_root/previous-output"
 expect_failure '' env FAKE_PARTIAL_FAIL=true FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
 	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$target"
-if ! diff -r "$suite_root/previous-output" "$target" || \
+if ! diff -r "$suite_root/previous-output" "$target" || [[ -e "$target_lock" ]] || \
 	[[ -n "$(find "$clean_root" -maxdepth 1 -name '.published.*' -print -quit)" ]]; then
 	printf 'failed build changed previous output or left staging behind\n' >&2
 	exit 1
 fi
 env FAKE_INDEX=replacement FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
 	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$target" >/dev/null
-if [[ "$(cat "$target/index.html")" != replacement || -e "$target/asset.css" ]]; then
+if [[ "$(cat "$target/index.html")" != replacement || -e "$target/asset.css" || -e "$target_lock" ]]; then
 	printf 'successful build did not replace previous output\n' >&2
 	exit 1
+fi
+appeared_target="$clean_root/appeared"
+expect_failure "MkDocs output appeared during the build: $appeared_target" \
+	env FAKE_APPEAR_TARGET="$appeared_target" FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
+	bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$appeared_target"
+if [[ ! -d "$appeared_target" || -n "$(find "$appeared_target" -mindepth 1 -print -quit)" || \
+	-n "$(find "$clean_root" -maxdepth 1 -name '.appeared.*' -print -quit)" ]]; then
+	printf 'appeared target holds nested output or staging remained\n' >&2
+	exit 1
+fi
+if ((EUID == 0)); then
+	printf 'skipping non-writable backup removal test as root\n'
+else
+	mkdir -p "$target/readonly"
+	printf 'pinned\n' >"$target/readonly/file"
+	chmod 0555 "$target/readonly"
+	if removal_output="$(env FAKE_INDEX=published-after-readonly FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \
+		bash "$repo_root/scripts/ci/mkdocs-build.sh" --root "$clean_root" --site-dir "$target" 2>&1)"; then
+		chmod -R u+w "$clean_root"
+		printf 'expected failure when earlier output cannot be removed\n' >&2
+		exit 1
+	fi
+	chmod -R u+w "$clean_root"
+	if [[ "$removal_output" != *"MkDocs could not remove earlier output:"* || \
+		"$removal_output" == *"MkDocs could not restore output:"* ]]; then
+		printf 'unexpected diagnostic on backup removal failure: %s\n' "$removal_output" >&2
+		exit 1
+	fi
+	if [[ "$(cat "$target/index.html")" != published-after-readonly || \
+		-n "$(find "$target" -mindepth 1 -maxdepth 1 -name '*.backup' -print -quit)" || \
+		-e "$target/readonly" ]]; then
+		printf 'failed backup removal corrupted published target\n' >&2
+		exit 1
+	fi
+	rm -rf "$clean_root"/.published.*.backup
 fi
 
 FAKE_SECURITY_OPTIONS='["name=rootless"]' FAKE_DOCKER_LOG="$fake_log" DOCKER_BIN="$fake_docker" \

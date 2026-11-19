@@ -55,17 +55,44 @@ if ((doc_count == 0 || doc_count > 8192)); then
 	exit 1
 fi
 
+site_dir=""
 target_site=""
 backup_site=""
+lock_dir=""
+lock_held=false
+had_target_site=false
+
+# cleanup_site removes temporary output and restores a target if publication failed.
+cleanup_site() {
+	local status=$?
+	if [[ -n "$backup_site" && -d "$backup_site" ]]; then
+		if [[ -e "$target_site" || -L "$target_site" ]] || ! mv -- "$backup_site" "$target_site"; then
+			printf 'MkDocs could not restore output: %s\n' "$target_site" >&2
+			status=1
+		fi
+	fi
+	if [[ -n "$site_dir" && -d "$site_dir" ]] && ! rm -rf -- "$site_dir"; then
+		printf 'MkDocs could not remove temporary output: %s\n' "$site_dir" >&2
+		status=1
+	fi
+	if [[ "$lock_held" == true && -n "$lock_dir" && -d "$lock_dir" ]] && ! rmdir -- "$lock_dir"; then
+		printf 'MkDocs could not remove lock: %s\n' "$lock_dir" >&2
+		status=1
+	fi
+	# Why: a return value from an EXIT trap never reaches the caller; exit does.
+	exit "$status"
+}
+trap cleanup_site EXIT
+
 if [[ -z "$site_arg" ]]; then
 	site_dir="$(mktemp -d "${TMPDIR:-/tmp}/goenvoy-mkdocs.XXXXXX")"
 else
 	if [[ "$site_arg" == /* ]]; then
-		site_dir="$site_arg"
+		target_site="$site_arg"
 	else
-		site_dir="$scan_root/$site_arg"
+		target_site="$scan_root/$site_arg"
 	fi
-	IFS=/ read -r -a components <<<"$site_dir"
+	IFS=/ read -r -a components <<<"$target_site"
 	if ((${#components[@]} > 64)); then
 		printf 'MkDocs output exceeds 64 path components\n' >&2
 		exit 1
@@ -82,43 +109,33 @@ else
 			exit 1
 		fi
 	done
-	site_dir="${resolved:-/}"
-	if [[ "$site_dir" == "$scan_root" || "$site_dir" == "$scan_root/docs" || "$site_dir" == "$scan_root/docs/"* || "$scan_root" == "$site_dir/"* || "$site_dir" == / ]]; then
-		printf 'MkDocs output overlaps source: %s\n' "$site_dir" >&2
+	target_site="${resolved:-/}"
+	if [[ "$target_site" == "$scan_root" || "$target_site" == "$scan_root/docs" || "$target_site" == "$scan_root/docs/"* || "$scan_root" == "$target_site/"* || "$target_site" == / ]]; then
+		printf 'MkDocs output overlaps source: %s\n' "$target_site" >&2
 		exit 1
 	fi
-	if [[ -d "$site_dir" && -n "$(find "$site_dir" -mindepth 1 -maxdepth 1 -print -quit)" ]] && \
-		{ [[ ! -f "$site_dir/index.html" ]] || [[ -e "$site_dir/mkdocs.yml" || -e "$site_dir/.git" ]]; }; then
-		printf 'MkDocs output refuses nonempty directory: %s\n' "$site_dir" >&2
+	if [[ -d "$target_site" && -n "$(find "$target_site" -mindepth 1 -maxdepth 1 -print -quit)" ]] && \
+		{ [[ ! -f "$target_site/index.html" ]] || [[ -e "$target_site/mkdocs.yml" || -e "$target_site/.git" ]]; }; then
+		printf 'MkDocs output refuses nonempty directory: %s\n' "$target_site" >&2
 		exit 1
 	fi
-	if [[ -e "$site_dir" && ! -d "$site_dir" ]]; then
-		printf 'MkDocs output is not a directory: %s\n' "$site_dir" >&2
+	if [[ -e "$target_site" && ! -d "$target_site" ]]; then
+		printf 'MkDocs output is not a directory: %s\n' "$target_site" >&2
 		exit 1
 	fi
-	target_site="$site_dir"
 	mkdir -p -- "$(dirname -- "$target_site")"
+	lock_dir="$(dirname -- "$target_site")/.$(basename -- "$target_site").lock"
+	if ! mkdir -- "$lock_dir" 2>/dev/null; then
+		printf 'MkDocs output is locked by another build: %s\n' "$lock_dir" >&2
+		exit 1
+	fi
+	lock_held=true
+	if [[ -d "$target_site" ]]; then
+		had_target_site=true
+	fi
 	site_dir="$(mktemp -d "$(dirname -- "$target_site")/.$(basename -- "$target_site").XXXXXX")"
 fi
-readonly site_dir target_site
-
-# cleanup_site removes temporary output and restores a target if publication failed.
-cleanup_site() {
-	local status=$?
-	if [[ -n "$backup_site" && -d "$backup_site" ]]; then
-		if ! mv -- "$backup_site" "$target_site"; then
-			printf 'MkDocs could not restore output: %s\n' "$target_site" >&2
-			status=1
-		fi
-	fi
-	if [[ -d "$site_dir" ]] && ! rm -rf -- "$site_dir"; then
-		printf 'MkDocs could not remove temporary output: %s\n' "$site_dir" >&2
-		status=1
-	fi
-	# Why: a return value from an EXIT trap never reaches the caller; exit does.
-	exit "$status"
-}
-trap cleanup_site EXIT
+readonly site_dir target_site lock_dir lock_held had_target_site
 
 docker_bin="${DOCKER_BIN:-}"
 if [[ -z "$docker_bin" ]] && command -v docker >/dev/null; then
@@ -146,14 +163,22 @@ if [[ ! -f "$site_dir/index.html" ]]; then
 fi
 if [[ -n "$target_site" ]]; then
 	chmod 0755 -- "$site_dir"
-	if [[ -d "$target_site" ]]; then
+	if [[ "$had_target_site" == true && -d "$target_site" ]]; then
 		backup_site="${site_dir}.backup"
 		mv -- "$target_site" "$backup_site"
 	fi
+	if [[ -e "$target_site" || -L "$target_site" ]]; then
+		printf 'MkDocs output appeared during the build: %s\n' "$target_site" >&2
+		exit 1
+	fi
 	mv -- "$site_dir" "$target_site"
 	if [[ -n "$backup_site" ]]; then
-		rm -rf -- "$backup_site"
+		old_site="$backup_site"
 		backup_site=""
+		if ! rm -rf -- "$old_site"; then
+			printf 'MkDocs could not remove earlier output: %s\n' "$old_site" >&2
+			exit 1
+		fi
 	fi
 fi
 printf 'MkDocs Material %s strict build passed for %d documents\n' \
