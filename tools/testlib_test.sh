@@ -3,6 +3,9 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Why: sourced before the first git command, so this test builds its own fixtures apart from an exported repository too.
+# shellcheck source=/dev/null
+. "$HERE/testlib.sh"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/caller" "$WORK/fixture"
@@ -16,8 +19,6 @@ GIT_DIR="$WORK/caller/.git" GIT_INDEX_FILE="$WORK/caller/.git/index" GIT_WORK_TR
     git -C "$2" init -q
     git -C "$2" add probe.txt
   ' _ "$HERE" "$WORK/fixture"
-# shellcheck source=tools/testlib.sh
-. "$HERE/testlib.sh"
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 expect_output caller_index_untouched '' git -C "$WORK/caller" ls-files
 expect_output fixture_owns_file 'probe.txt' git -C "$WORK/fixture" ls-files
