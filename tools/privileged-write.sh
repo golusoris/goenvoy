@@ -49,23 +49,37 @@ while IFS= read -r -d '' file; do
         if (call == "install") {
           count_args = split(segments[1], args, /[[:space:]]+/)
           last = ""
+          refused = 0
+          directory = 0
           for (i = 1; i <= count_args; i++) {
             if (args[i] == "") continue
             if (args[i] ~ /^#/) break
-            if (args[i] == "--target-directory" || args[i] ~ /^--target-directory=/ || args[i] ~ /^-[^-gmoSt]*t/) {
-              install_ok = 0
-              last = ""
+            if (args[i] !~ /^-/) {
+              last = args[i]
+            } else if (args[i] == "--directory") {
+              directory = 1
+            } else if (args[i] ~ /^--(compare|preserve-timestamps|verbose|strip|no-target-directory)$/) {
+              continue
+            } else if (args[i] ~ /^--(mode|owner|group)=./) {
+              continue
+            } else if (args[i] ~ /^--(mode|owner|group)$/) {
+              i++
+            } else if (args[i] ~ /^-[CDTdpsv]+$/) {
+              if (args[i] ~ /d/) directory = 1
+            } else if (args[i] ~ /^-[CDTdpsv]*[gmo]$/) {
+              if (args[i] ~ /d/) directory = 1
+              i++
+            } else if (args[i] ~ /^-[CDTdpsv]*[gmo].+$/) {
+              flags = args[i]
+              sub(/[gmo].*$/, "", flags)
+              if (flags ~ /d/) directory = 1
+            } else {
+              refused = 1
               break
             }
-            if (args[i] ~ /^-[^-]*[gmoS]$/ || args[i] ~ /^--(group|mode|owner|suffix|strip-program)$/) {
-              i++
-              continue
-            }
-            if (args[i] == "-d" || args[i] == "--directory") install_ok = 1
-            last = args[i]
           }
           if (last ~ /^".*"$/ || last ~ /^\047.*\047$/) last = substr(last, 2, length(last) - 2)
-          if (last ~ /\.new$/) install_ok = 1
+          if (!refused && (directory || last ~ /\.new$/)) install_ok = 1
         }
         if (call !~ /^(install|mv|rm|chown|chmod|test|cat|systemctl)$/ || segments[1] ~ />/ || (call == "install" && !install_ok)) {
           print FILENAME ":" FNR
