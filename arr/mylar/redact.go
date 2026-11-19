@@ -313,7 +313,7 @@ func isNilValue(value any) bool {
 	return false
 }
 
-// As sets target to a sanitized copy of the first *url.Error among the first 64 breadth-first queued nodes; deeper URL errors are not found. The structural key scan examines 64 breadth-first nodes, while Is, Timeout, and Temporary visit at most 4096 nodes and 64 joined errors.
+// As sets target to a sanitized copy, with an opaque cause, of the first *url.Error among the first 64 breadth-first queued nodes; deeper URL errors are not found. The structural key scan examines 64 breadth-first nodes, while Is, Timeout, and Temporary visit at most 4096 nodes and 64 joined errors.
 func (e *redactedError) As(target any) bool {
 	dst, ok := target.(**url.Error)
 	if !ok {
@@ -324,7 +324,7 @@ func (e *redactedError) As(target any) bool {
 	for i := 0; i < maxErrNodes && i < len(queue); i++ {
 		if uerr, ok := queue[i].(*url.Error); ok && uerr != nil { //nolint:errorlint // first URL error of a bounded walk; errors.As is the unbounded search
 			// Why: hand out a scrubbed copy, never the original that holds the key.
-			*dst = &url.Error{Op: e.c.scrub(uerr.Op), URL: e.c.scrub(redactURL(e.c.scrub(uerr.URL))), Err: e.c.scrubError(uerr.Err)}
+			*dst = &url.Error{Op: e.c.scrub(uerr.Op), URL: e.c.scrub(redactURL(e.c.scrub(uerr.URL))), Err: e.c.hideCause(uerr.Err)}
 			return true
 		}
 		queue = appendWrapped(queue, queue[i])
@@ -356,6 +356,17 @@ func (c *Client) scrubError(err error) error {
 		return err
 	}
 	if tooLarge {
+		return &redactedError{msg: redactedTreeMsg, err: err, c: c}
+	}
+	return &redactedError{msg: c.scrub(err.Error()), err: err, c: c}
+}
+
+// hideCause wraps a recovered URL error cause in an opaque error with no Unwrap method.
+func (c *Client) hideCause(err error) error {
+	if isNilError(err) {
+		return nil
+	}
+	if _, tooLarge := c.checkErrorTree(err); tooLarge {
 		return &redactedError{msg: redactedTreeMsg, err: err, c: c}
 	}
 	return &redactedError{msg: c.scrub(err.Error()), err: err, c: c}

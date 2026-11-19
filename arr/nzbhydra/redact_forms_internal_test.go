@@ -408,3 +408,97 @@ func assertTransportURLPathKeyRedaction(t *testing.T, key, escaped, path string)
 		}
 	}
 }
+
+// tokenCause is a fixture error with clean message text and an exported key-bearing field.
+type tokenCause struct {
+	Token   string
+	msg     string
+	err     error
+	timeout bool
+}
+
+// Error returns key-free text and dereferences e so a typed-nil call would panic.
+func (e *tokenCause) Error() string {
+	if e.msg != "" {
+		return e.msg
+	}
+	return "fixture transport cause"
+}
+
+// Unwrap returns the wrapped sentinel error.
+func (e *tokenCause) Unwrap() error { return e.err }
+
+// Timeout reports whether the fixture cause timed out.
+func (e *tokenCause) Timeout() bool { return e.timeout }
+
+// hiddenCauseCase defines one test case for URL error causes recovered via errors.As.
+type hiddenCauseCase struct {
+	name        string
+	cause       error
+	sentinel    error
+	wantNilErr  bool
+	wantTimeout bool
+}
+
+// TestRedactedErrorAsHidesCause checks that a recovered URL error copy wraps its cause in an opaque error.
+func TestRedactedErrorAsHidesCause(t *testing.T) {
+	t.Parallel()
+	const key = "fixture-key"
+	c := &Client{apiKey: key}
+	sentinel := errors.New("fixture transport failure")
+	cases := []hiddenCauseCase{
+		{name: "wrapped sentinel cause", cause: &tokenCause{Token: key, err: sentinel}, sentinel: sentinel},
+		{name: "direct sentinel cause", cause: sentinel, sentinel: sentinel},
+		{name: "timeout cause", cause: &tokenCause{Token: key, timeout: true}, wantTimeout: true},
+		{name: "nil cause", cause: nil, wantNilErr: true},
+		{name: "typed-nil cause", cause: (*tokenCause)(nil), wantNilErr: true},
+		{name: "wrapped typed-nil cause", cause: fmt.Errorf("wrap: %w", (*tokenCause)(nil))},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertHiddenURLCause(t, c, key, tc)
+		})
+	}
+}
+
+// assertHiddenURLCause checks that errors.As on a hidden URL error hides the underlying cause tree.
+func assertHiddenURLCause(t *testing.T, c *Client, key string, tc hiddenCauseCase) {
+	t.Helper()
+	hidden := c.redactError(fmt.Errorf("outer: %w", &url.Error{Op: "Get", URL: "http://example.invalid/?apikey=" + key, Err: tc.cause}))
+	var uerr *url.Error
+	if !errors.As(hidden, &uerr) || uerr == nil {
+		t.Fatal("errors.As into *url.Error = false or nil; want non-nil")
+	}
+	if c.containsKey(uerr.Error()) || strings.Contains(uerr.Error(), key) {
+		t.Errorf("uerr.Error() leaked key: %s", uerr.Error())
+	}
+	if tc.wantNilErr {
+		if uerr.Err != nil {
+			t.Errorf("uerr.Err = %v; want nil", uerr.Err)
+		}
+		return
+	}
+	assertOpaqueURLCause(t, uerr, tc)
+}
+
+// assertOpaqueURLCause checks that a non-nil URL error cause is opaque while preserving Is and Timeout.
+func assertOpaqueURLCause(t *testing.T, uerr *url.Error, tc hiddenCauseCase) {
+	t.Helper()
+	if _, ok := uerr.Err.(*tokenCause); ok { //nolint:errorlint // verify direct type assertion on uerr.Err fails
+		t.Error("uerr.Err exposed *tokenCause")
+	}
+	if _, ok := errors.Unwrap(uerr).(*tokenCause); ok { //nolint:errorlint // verify type assertion on errors.Unwrap(uerr) fails
+		t.Error("errors.Unwrap(uerr) exposed *tokenCause")
+	}
+	var typedCause *tokenCause
+	if errors.As(uerr.Err, &typedCause) {
+		t.Errorf("errors.As(uerr.Err, &typedCause) = true (%v); want false", typedCause)
+	}
+	if tc.sentinel != nil && !errors.Is(uerr, tc.sentinel) {
+		t.Error("errors.Is(uerr, sentinel) = false; want true")
+	}
+	if uerr.Timeout() != tc.wantTimeout {
+		t.Errorf("uerr.Timeout() = %v; want %v", uerr.Timeout(), tc.wantTimeout)
+	}
+}
