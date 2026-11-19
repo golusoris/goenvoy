@@ -53,6 +53,8 @@ for line in "${pin_lines[@]}"; do
   pins=$((pins + 1))
   digest=0
   case "$value" in sha256:*) value="${value#sha256:}"; digest=1 ;; esac
+  # Why: a checksum pinned without the prefix is still a digest; any copy counts, whatever stands next to it.
+  case "$value" in *[!0-9a-f]*) ;; *) if [ "${#value}" -ge 40 ]; then digest=1; fi ;; esac
   if [ -z "$value" ]; then printf 'empty digest in pin file: %s\n' "$name" >&2; exit 1; fi
   # Why: allow-list of value characters; a quoted value or a trailing comment would be searched as written and miss real copies.
   case "$value" in *[!A-Za-z0-9._-]*) printf 'unsupported pin value for %s: only letters, digits, dot, underscore and hyphen\n' "$name" >&2; exit 1 ;; esac
