@@ -58,12 +58,16 @@ while IFS= read -r -d '' file; do
             if (quote == "\047") {
               if (char == "\047") quote = ""
               else word = word char
+            } else if (quote == "\"") {
+              if (char == "\\" && pos < length(segment)) {
+                next_char = substr(segment, ++pos, 1)
+                if (index("$`\"\\", next_char)) word = word next_char
+                else word = word char next_char
+              } else if (char == "\"") quote = ""
+              else word = word char
             } else if (char == "\\" && pos < length(segment)) {
               word = word substr(segment, ++pos, 1)
               started = 1
-            } else if (quote == "\"") {
-              if (char == "\"") quote = ""
-              else word = word char
             } else if (char == "\047" || char == "\"") {
               quote = char
               started = 1
