@@ -47,13 +47,43 @@ while IFS= read -r -d '' file; do
         split(rest, segments, /[;|&]/)
         install_ok = 0
         if (call == "install") {
-          count_args = split(segments[1], args, /[[:space:]]+/)
+          delete args
+          count_args = 0
+          word = ""
+          started = 0
+          quote = ""
+          segment = segments[1]
+          for (pos = 1; pos <= length(segment); pos++) {
+            char = substr(segment, pos, 1)
+            if (quote == "\047") {
+              if (char == "\047") quote = ""
+              else word = word char
+            } else if (char == "\\" && pos < length(segment)) {
+              word = word substr(segment, ++pos, 1)
+              started = 1
+            } else if (quote == "\"") {
+              if (char == "\"") quote = ""
+              else word = word char
+            } else if (char == "\047" || char == "\"") {
+              quote = char
+              started = 1
+            } else if (char ~ /[[:space:]]/) {
+              if (started) args[++count_args] = word
+              word = ""
+              started = 0
+            } else if (char == "#" && !started) {
+              break
+            } else {
+              word = word char
+              started = 1
+            }
+          }
+          if (started) args[++count_args] = word
           last = ""
-          refused = 0
+          refused = (quote != "")
           directory = 0
           for (i = 1; i <= count_args; i++) {
             if (args[i] == "") continue
-            if (args[i] ~ /^#/) break
             if (args[i] !~ /^-/) {
               last = args[i]
             } else if (args[i] == "--directory") {
@@ -78,7 +108,6 @@ while IFS= read -r -d '' file; do
               break
             }
           }
-          if (last ~ /^".*"$/ || last ~ /^\047.*\047$/) last = substr(last, 2, length(last) - 2)
           if (!refused && (directory || last ~ /\.new$/)) install_ok = 1
         }
         if (call !~ /^(install|mv|rm|chown|chmod|test|cat|systemctl)$/ || segments[1] ~ />/ || (call == "install" && !install_ok)) {
