@@ -260,6 +260,34 @@ mkdir -p "$WORK/case_z"
 printf '%s\n' '<!-- praetor:readme-governance:start -->' 'https://img.shields.io/github/actions/workflow/status/acme/widgets/ci.yml' '<!-- praetor:readme-governance:end -->' > "$WORK/case_z/README.md"
 expect_refusal "case_z: shields status inside governance" "README.md:2: shields workflow/status" "${SUT[@]}" --repo acme/widgets "$WORK/case_z"
 
+# Case (aa): unclosed governance block -> 1, naming its start.
+mkdir -p "$WORK/case_aa/.github/workflows"
+touch "$WORK/case_aa/.github/workflows/ci.yml"
+printf '%s\n' '<!-- praetor:readme-governance:start -->' 'https://github.com/acme/widgets/actions/workflows/ci.yml/badge.svg' > "$WORK/case_aa/README.md"
+expect_status "case_aa: unclosed governance" 1 "README.md:1: unclosed governance block" --repo acme/widgets "$WORK/case_aa"
+
+# Case (ab): marker words in prose do not open governance -> 1.
+mkdir -p "$WORK/case_ab/.github/workflows"
+touch "$WORK/case_ab/.github/workflows/ci.yml"
+printf '%s\n' 'Discuss <!-- praetor:readme-governance:start --> here.' 'https://github.com/acme/widgets/actions/workflows/ci.yml/badge.svg' > "$WORK/case_ab/README.md"
+expect_status "case_ab: marker in prose" 1 "README.md:2: workflow status badge" --repo acme/widgets "$WORK/case_ab"
+
+# Case (ac): stray governance end -> 1.
+mkdir -p "$WORK/case_ac"
+printf '%s\n' '<!-- praetor:readme-governance:end -->' > "$WORK/case_ac/README.md"
+expect_status "case_ac: stray governance end" 1 "README.md:1: governance end without start" --repo acme/widgets "$WORK/case_ac"
+
+# Case (ad): nested governance start -> 1.
+mkdir -p "$WORK/case_ad"
+printf '%s\n' '<!-- praetor:readme-governance:start -->' '<!-- praetor:readme-governance:start -->' '<!-- praetor:readme-governance:end -->' > "$WORK/case_ad/README.md"
+expect_status "case_ad: nested governance start" 1 "README.md:2: governance start inside block" --repo acme/widgets "$WORK/case_ad"
+
+# Case (ae): whitespace around marker lines -> 0.
+mkdir -p "$WORK/case_ae/.github/workflows"
+touch "$WORK/case_ae/.github/workflows/ci.yml"
+printf '%s\n' '  <!-- praetor:readme-governance:start -->  ' 'https://github.com/acme/widgets/actions/workflows/ci.yml/badge.svg' '  <!-- praetor:readme-governance:end -->  ' > "$WORK/case_ae/README.md"
+expect_output "case_ae: whitespace around markers" "readme-badges: 1 workflow references ok" "${SUT[@]}" --repo acme/widgets "$WORK/case_ae"
+
 # Real check on the repo root -> 0
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
 expect_pattern "repo: real check" "workflow references ok" --repo golusoris/goenvoy "$REPO_ROOT"
