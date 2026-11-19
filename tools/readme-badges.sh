@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Verify workflow links in top-level Markdown and reject Shields workflow/status
-# badges, which display the last default-branch run.
+# Verify workflow links and reject Shields actions workflow/status badges everywhere.
+# Reject legacy Shields and native workflow status badges outside governance blocks.
 #   usage: tools/readme-badges.sh --repo owner/name [root]
 set -euo pipefail
 
@@ -79,10 +79,21 @@ ok_refs=0
 for f in "${files[@]}"; do
   rel="${f#"$ROOT"/}"
   readarray -t lines <"$f"
+  in_governance=0
   for ((lnum = 1; lnum <= ${#lines[@]}; lnum++)); do
     line="${lines[lnum - 1]}"
+    if [[ "$line" == *praetor:readme-governance:start* ]]; then
+      in_governance=1
+    fi
+    if [[ "$line" == *praetor:readme-governance:end* ]]; then
+      in_governance=0
+    fi
     if [[ "$line" == *img.shields.io/github/actions/workflow/status/* ]]; then
       printf 'readme-badges: %s:%s: shields workflow/status badge reads the last default-branch run; use a static badge\n' "$rel" "$lnum" >&2
+      misses=$((misses + 1))
+    fi
+    if [ "$in_governance" -eq 0 ] && [[ "$line" == *img.shields.io/github/workflow/status/* || "$line" =~ actions/workflows/[A-Za-z0-9._-]+/badge\.svg ]]; then
+      printf 'readme-badges: %s:%s: workflow status badge reads the last default-branch run; use a static badge\n' "$rel" "$lnum" >&2
       misses=$((misses + 1))
     fi
     if [[ "$line" != *actions/workflows* ]]; then

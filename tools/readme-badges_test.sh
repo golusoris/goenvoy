@@ -62,7 +62,9 @@ touch "$WORK/case_a/.github/workflows/ci.yml"
 cat <<'EOF' > "$WORK/case_a/README.md"
 # Project
 
+<!-- praetor:readme-governance:start -->
 [![CI](https://github.com/acme/widgets/actions/workflows/ci.yml/badge.svg)](https://github.com/acme/widgets/actions/workflows/ci.yml)
+<!-- praetor:readme-governance:end -->
 EOF
 expect_output "case_a: badge to existing workflow" "readme-badges: 2 workflow references ok" "${SUT[@]}" --repo acme/widgets "$WORK/case_a"
 
@@ -153,7 +155,9 @@ mkdir -p "$WORK/case_j/.github/workflows"
 cat <<'EOF' > "$WORK/case_j/README.md"
 # Project
 
+<!-- praetor:readme-governance:start -->
 [![External](https://github.com/other/repo/actions/workflows/missing.yml/badge.svg)](https://example.com)
+<!-- praetor:readme-governance:end -->
 EOF
 expect_output "case_j: badge of other repo ignored" "readme-badges: 0 workflow references ok" "${SUT[@]}" --repo acme/widgets "$WORK/case_j"
 
@@ -233,6 +237,28 @@ expect_status "case_u: no --repo" 2 "--repo" "$WORK/case_u"
 mkdir -p "$WORK/case_v"
 touch "$WORK/case_v/README.md"
 expect_status "case_v: --repo with no slash" 2 "" --repo widgets "$WORK/case_v"
+
+# Case (w): native status badge outside governance -> 1.
+mkdir -p "$WORK/case_w/.github/workflows"
+touch "$WORK/case_w/.github/workflows/ci.yml"
+printf '%s\n' '# Project' 'https://github.com/acme/widgets/actions/workflows/ci.yml/badge.svg' > "$WORK/case_w/README.md"
+expect_refusal "case_w: native status badge" "README.md:2: workflow status badge" "${SUT[@]}" --repo acme/widgets "$WORK/case_w"
+
+# Case (x): legacy shields status badge -> 1.
+mkdir -p "$WORK/case_x"
+printf '%s\n' 'https://img.shields.io/github/workflow/status/acme/widgets/CI' > "$WORK/case_x/README.md"
+expect_refusal "case_x: legacy shields status badge" "README.md:1: workflow status badge" "${SUT[@]}" --repo acme/widgets "$WORK/case_x"
+
+# Case (y): native badge after governance closes -> 1.
+mkdir -p "$WORK/case_y/.github/workflows"
+touch "$WORK/case_y/.github/workflows/ci.yml"
+printf '%s\n' '<!-- praetor:readme-governance:start -->' '<!-- praetor:readme-governance:end -->' 'https://github.com/acme/widgets/actions/workflows/ci.yml/badge.svg' > "$WORK/case_y/README.md"
+expect_refusal "case_y: native badge after governance" "README.md:3: workflow status badge" "${SUT[@]}" --repo acme/widgets "$WORK/case_y"
+
+# Case (z): current shields status badge inside governance -> 1.
+mkdir -p "$WORK/case_z"
+printf '%s\n' '<!-- praetor:readme-governance:start -->' 'https://img.shields.io/github/actions/workflow/status/acme/widgets/ci.yml' '<!-- praetor:readme-governance:end -->' > "$WORK/case_z/README.md"
+expect_refusal "case_z: shields status inside governance" "README.md:2: shields workflow/status" "${SUT[@]}" --repo acme/widgets "$WORK/case_z"
 
 # Real check on the repo root -> 0
 REPO_ROOT="$(cd "$HERE/.." && pwd)"
