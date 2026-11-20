@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.6](https://github.com/golusoris/goenvoy/compare/arr/jackett/v2.0.5...arr/jackett/v2.0.6) (2026-11-20)
+
+
+### Bug Fixes
+
+* **arr/jackett:** keep wrapped error chains and redact the quoted key ([49a4fac](https://github.com/golusoris/goenvoy/commit/49a4fac303c5fe5a3ab4bf5ebf877dedba3c8dc8))
+
 ## [2.0.5](https://github.com/golusoris/goenvoy/compare/arr/jackett/v2.0.4...arr/jackett/v2.0.5) (2026-11-12)
 
 

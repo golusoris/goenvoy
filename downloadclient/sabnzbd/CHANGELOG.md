@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.3](https://github.com/golusoris/goenvoy/compare/downloadclient/sabnzbd/v2.1.2...downloadclient/sabnzbd/v2.1.3) (2026-11-20)
+
+
+### Bug Fixes
+
+* **downloadclient/sabnzbd:** redact API key in errors ([7f9c34b](https://github.com/golusoris/goenvoy/commit/7f9c34bae1f2fae710139d39699e70b37d436deb))
+
 ## [2.1.2](https://github.com/golusoris/goenvoy/compare/downloadclient/sabnzbd/v2.1.1...downloadclient/sabnzbd/v2.1.2) (2026-11-12)
 
 

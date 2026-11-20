@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.4](https://github.com/golusoris/goenvoy/compare/mediaserver/tautulli/v2.0.3...mediaserver/tautulli/v2.0.4) (2026-11-20)
+
+
+### Bug Fixes
+
+* **mediaserver/tautulli:** redact API key in errors ([5b69b62](https://github.com/golusoris/goenvoy/commit/5b69b62a7797a8d5e3d1b164f5f3c0b09bba569a))
+
 ## [2.0.3](https://github.com/golusoris/goenvoy/compare/mediaserver/tautulli/v2.0.2...mediaserver/tautulli/v2.0.3) (2026-11-12)
 
 

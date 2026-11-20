@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.4](https://github.com/golusoris/goenvoy/compare/arr/nzbhydra/v2.0.3...arr/nzbhydra/v2.0.4) (2026-11-20)
+
+
+### Bug Fixes
+
+* **arr/nzbhydra:** redact API key in errors ([bcfabf9](https://github.com/golusoris/goenvoy/commit/bcfabf9b38d374eefa54986ac61f058faf654c4e))
+
 ## [2.0.3](https://github.com/golusoris/goenvoy/compare/arr/nzbhydra/v2.0.2...arr/nzbhydra/v2.0.3) (2026-11-12)
 
 
