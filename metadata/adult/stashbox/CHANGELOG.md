@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.2](https://github.com/golusoris/goenvoy/compare/metadata/adult/stashbox/v2.2.1...metadata/adult/stashbox/v2.2.2) (2026-11-20)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.4 ([#332](https://github.com/golusoris/goenvoy/issues/332)) ([e992339](https://github.com/golusoris/goenvoy/commit/e992339f5d68ca31acecf2c6c3b6ee03cf457476))
+
 ## [2.2.1](https://github.com/golusoris/goenvoy/compare/metadata/adult/stashbox/v2.2.0...metadata/adult/stashbox/v2.2.1) (2026-11-12)
 
 

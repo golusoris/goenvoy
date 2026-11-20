@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.9](https://github.com/golusoris/goenvoy/compare/metadata/game/steamgriddb/v1.0.8...metadata/game/steamgriddb/v1.0.9) (2026-11-20)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.4 ([#332](https://github.com/golusoris/goenvoy/issues/332)) ([e992339](https://github.com/golusoris/goenvoy/commit/e992339f5d68ca31acecf2c6c3b6ee03cf457476))
+
 ## [1.0.8](https://github.com/golusoris/goenvoy/compare/metadata/game/steamgriddb/v1.0.7...metadata/game/steamgriddb/v1.0.8) (2026-11-12)
 
 

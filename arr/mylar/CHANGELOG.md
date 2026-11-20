@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.4](https://github.com/golusoris/goenvoy/compare/arr/mylar/v3.0.3...arr/mylar/v3.0.4) (2026-11-20)
+
+
+### Bug Fixes
+
+* **arr/mylar:** redact API key in errors ([4763809](https://github.com/golusoris/goenvoy/commit/47638099acd11d452e19de4c71a68a93efe09de6))
+
 ## [3.0.3](https://github.com/golusoris/goenvoy/compare/arr/mylar/v3.0.2...arr/mylar/v3.0.3) (2026-11-12)
 
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.8](https://github.com/golusoris/goenvoy/compare/metadata/video/tvdb/v1.3.7...metadata/video/tvdb/v1.3.8) (2026-11-20)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.4 ([#332](https://github.com/golusoris/goenvoy/issues/332)) ([e992339](https://github.com/golusoris/goenvoy/commit/e992339f5d68ca31acecf2c6c3b6ee03cf457476))
+* **metadata:** cap response bodies and fix the TVDB auth race ([e38ae3c](https://github.com/golusoris/goenvoy/commit/e38ae3c9c57372aa8f63e96d77cd5cb1a22b3867)), closes [#321](https://github.com/golusoris/goenvoy/issues/321) [#322](https://github.com/golusoris/goenvoy/issues/322)
+
 ## [1.3.7](https://github.com/golusoris/goenvoy/compare/metadata/video/tvdb/v1.3.6...metadata/video/tvdb/v1.3.7) (2026-11-12)
 
 

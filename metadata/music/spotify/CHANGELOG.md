@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.8](https://github.com/golusoris/goenvoy/compare/metadata/music/spotify/v1.3.7...metadata/music/spotify/v1.3.8) (2026-11-20)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.4 ([#332](https://github.com/golusoris/goenvoy/issues/332)) ([e992339](https://github.com/golusoris/goenvoy/commit/e992339f5d68ca31acecf2c6c3b6ee03cf457476))
+* **metadata/music/spotify:** cap response reads and mark removed endpoints ([97c86a8](https://github.com/golusoris/goenvoy/commit/97c86a8aa692739d5b6f18791388dee037ef3edb)), closes [#322](https://github.com/golusoris/goenvoy/issues/322) [#329](https://github.com/golusoris/goenvoy/issues/329)
+
 ## [1.3.7](https://github.com/golusoris/goenvoy/compare/metadata/music/spotify/v1.3.6...metadata/music/spotify/v1.3.7) (2026-11-12)
 
 
