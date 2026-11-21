@@ -8,9 +8,10 @@
 # value of PRAETOR_REF declared in a workflow under .github/workflows ("PRAETOR_REF: <ref>" or
 # "PRAETOR_REF=<ref>"), a PRAETOR_COMMIT declaration holding exactly 40 lowercase hexadecimal
 # characters, or the uses ref of praetor-adopt / reusable workflows
-# ("uses: cordanaLLM/praetor/.github/actions/praetor-adopt@<ref>" or
-# "uses: cordanaLLM/praetor/.github/workflows/<workflow>@<ref>"), the same declaration a hosted
-# Standards job installs the engine from with "go install <module>/cmd/standardsctl@${PRAETOR_REF}".
+# ("uses: tekmora/praetor/.github/actions/praetor-adopt@<ref>" or
+# "uses: tekmora/praetor/.github/workflows/<workflow>@<ref>", also accepted under cordanaLLM),
+# the same declaration a hosted Standards job uses to install the engine with
+# "go install <module>/cmd/standardsctl@${PRAETOR_REF}".
 # A PRAETOR_REF pin is a commit id of 7 to 40 hexadecimal digits or a release tag such as v1.2.3;
 # a branch name moves, so it is no pin. A non-pin uses ref such as @main is treated as unpinned
 # (running the engine on PATH). An invalid PRAETOR_COMMIT is noted and ignored.
@@ -115,7 +116,7 @@ uses_pins() {                                                      #
     [ -e "$file" ] || continue                                     #
     [ -r "$file" ] || refuse "workflow file $file is not readable" #
     #
-    tr -d '\r' <"$file" | sed -n -e 's/^[[:space:]]*-[[:space:]]*uses:[[:space:]]*//p' -e 's/^[[:space:]]*uses:[[:space:]]*//p' | sed -e 's/[[:space:]]*#.*$//' -e "s/^[\"']//" -e "s/[\"'][[:space:]]*\$//" -e 's/[[:space:]]*$//' | sed -n -e 's/^[Cc][Oo][Rr][Dd][Aa][Nn][Aa][Ll][Ll][Mm]\/[Pp][Rr][Aa][Ee][Tt][Oo][Rr]\/\.github\/actions\/praetor-adopt@\(..*\)$/\1/p' -e 's/^[Cc][Oo][Rr][Dd][Aa][Nn][Aa][Ll][Ll][Mm]\/[Pp][Rr][Aa][Ee][Tt][Oo][Rr]\/\.github\/workflows\/[^@[:space:]]*@\(..*\)$/\1/p' | while read -r value; do #
+    tr -d '\r' <"$file" | sed -n -e 's/^[[:space:]]*-[[:space:]]*uses:[[:space:]]*//p' -e 's/^[[:space:]]*uses:[[:space:]]*//p' | sed -e 's/[[:space:]]*#.*$//' -e "s/^[\"']//" -e "s/[\"'][[:space:]]*\$//" -e 's/[[:space:]]*$//' | sed -En -e 's#^([Tt][Ee][Kk][Mm][Oo][Rr][Aa]/[Pp][Rr][Aa][Ee][Tt][Oo][Rr]|[Cc][Oo][Rr][Dd][Aa][Nn][Aa][Ll][Ll][Mm]/[Pp][Rr][Aa][Ee][Tt][Oo][Rr])/\.github/actions/praetor-adopt@(.+)$#\2#p' -e 's#^([Tt][Ee][Kk][Mm][Oo][Rr][Aa]/[Pp][Rr][Aa][Ee][Tt][Oo][Rr]|[Cc][Oo][Rr][Dd][Aa][Nn][Aa][Ll][Ll][Mm]/[Pp][Rr][Aa][Ee][Tt][Oo][Rr])/\.github/workflows/[^@[:space:]]*@(.+)$#\2#p' | while read -r value; do #
       #
       if fault=$(pin_fault "$value"); then :; else printf '%s\tPRAETOR_REF\t%s\n' "$file" "$value"; fi #
       #
