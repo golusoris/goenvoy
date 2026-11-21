@@ -3,7 +3,7 @@
 
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable MD013 -->
-# golusoris/goenvoy Agent Operating Harness
+# plurano/goenvoy Agent Operating Harness
 
 Before concluding any turn:
 

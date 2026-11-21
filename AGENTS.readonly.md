@@ -1,6 +1,6 @@
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable MD013 -->
-# golusoris/goenvoy Agent Operating Harness
+# plurano/goenvoy Agent Operating Harness
 
 Run read-only: file edits, state mutations, commits prohibited. Mutating steps dropped; prohibitions kept.
 

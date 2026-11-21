@@ -1,5 +1,5 @@
 {
-  "name": "golusoris/goenvoy",
+  "name": "plurano/goenvoy",
   "build": {
     "dockerfile": "Dockerfile.praetor",
     "context": "."

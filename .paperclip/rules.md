@@ -1,4 +1,4 @@
-# Paperclip Operating Rules (golusoris/goenvoy)
+# Paperclip Operating Rules (plurano/goenvoy)
 
 ## Operating Contract
 

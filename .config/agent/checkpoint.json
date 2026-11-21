@@ -7,7 +7,7 @@
   "publish": false,
   "remote": "origin",
   "base": "main",
-  "repository": "golusoris/goenvoy",
+  "repository": "plurano/goenvoy",
   "branch_prefixes": [
     "checkpoint/",
     "audit/",
