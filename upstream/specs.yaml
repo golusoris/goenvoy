@@ -23,8 +23,8 @@ specs:
     module: arr/sonarr
   - name: radarr
     repository: Radarr/Radarr
-    tag: v6.4.4.10685
-    commit: a96bf7c3ecb23cb76993770727285dc17a613fbc
+    tag: v7.0.3.10918
+    commit: af772b051ac27a0615c7f8b7f78622b6dc183be0
     path: src/Radarr.Api.V3/openapi.json
     sha256: 95ea9062485118d6a8abed8250b9bfbf94e4de0f55e9c5611da6805864f9a26e
     license: GPL-3.0
