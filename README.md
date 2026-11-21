@@ -9,15 +9,15 @@
 
   <!-- README-STANDARD badge block: one group, fixed order (docs/README-STANDARD.md) -->
   <!-- 1 release/version -->
-  [![Release](https://img.shields.io/badge/Release-Releases-3b82f6?style=for-the-badge&labelColor=111a35)](https://github.com/golusoris/goenvoy/releases)
+  [![Release](https://img.shields.io/badge/Release-Releases-3b82f6?style=for-the-badge&labelColor=111a35)](https://github.com/plurano/goenvoy/releases)
   [![Go](https://img.shields.io/badge/Go-1.26+-06b6d4?style=for-the-badge&logo=go&logoColor=white&labelColor=111a35)](https://go.dev)
   <!-- 2 CI/build -->
-  [![CI](https://img.shields.io/github/actions/workflow/status/golusoris/goenvoy/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/golusoris/goenvoy/actions/workflows/ci.yml)
+  [![CI](https://img.shields.io/github/actions/workflow/status/plurano/goenvoy/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/plurano/goenvoy/actions/workflows/ci.yml)
   <!-- 3 security/scorecard -->
-  [![Security](https://img.shields.io/github/actions/workflow/status/golusoris/goenvoy/security-scan.yml?branch=main&style=for-the-badge&label=Security)](https://github.com/golusoris/goenvoy/actions/workflows/security-scan.yml)
-  [![OpenSSF Scorecard](https://img.shields.io/badge/OpenSSF-Scorecard-06b6d4?style=for-the-badge&labelColor=111a35)](https://scorecard.dev/viewer/?uri=github.com/golusoris/goenvoy)
+  [![Security](https://img.shields.io/github/actions/workflow/status/plurano/goenvoy/security-scan.yml?branch=main&style=for-the-badge&label=Security)](https://github.com/plurano/goenvoy/actions/workflows/security-scan.yml)
+  [![OpenSSF Scorecard](https://img.shields.io/badge/OpenSSF-Scorecard-06b6d4?style=for-the-badge&labelColor=111a35)](https://scorecard.dev/viewer/?uri=github.com/plurano/goenvoy)
   [![OpenSSF Best Practices](https://img.shields.io/badge/OpenSSF-Best_Practices-06b6d4?style=for-the-badge&labelColor=111a35)](https://www.bestpractices.dev/projects/15901)
-  [![Codacy](https://img.shields.io/badge/Codacy-dashboard-06b6d4?style=for-the-badge&labelColor=111a35&logo=codacy&logoColor=white)](https://app.codacy.com/gh/golusoris/goenvoy/dashboard)
+  [![Codacy](https://img.shields.io/badge/Codacy-dashboard-06b6d4?style=for-the-badge&labelColor=111a35&logo=codacy&logoColor=white)](https://app.codacy.com/gh/plurano/goenvoy/dashboard)
   [![CodeRabbit](https://img.shields.io/badge/Reviews-CodeRabbit-8b5cf6?style=for-the-badge&logo=coderabbit&logoColor=white&labelColor=111a35)](https://coderabbit.ai)
   <!-- 4 standards -->
   [![HISS-21](https://img.shields.io/badge/Standards-HISS--21-06b6d4?style=for-the-badge&logo=nasa&labelColor=111a35)](AGENTS.md)
@@ -217,7 +217,7 @@ goenvoy/
 
 ## Guides and reference
 
-- [Documentation site](https://golusoris.github.io/goenvoy/) — published guides,
+- [Documentation site](https://plurano.github.io/goenvoy/) — published guides,
   architecture decisions, and upstream API notes.
 - [Principles](docs/principles.md) — coding rules, SEI CERT Go practices, Go
   style, supply-chain commitments, wire protocols, and testing standards.
@@ -266,7 +266,7 @@ of the form `<category>/<service>/vX.Y.Z` (see
 each module's `CHANGELOG.md` from Conventional Commit subjects. The root
 [CHANGELOG.md](CHANGELOG.md) holds repository-wide changes from before that.
 Published releases and supply-chain attestations are available on the
-[GitHub Releases](https://github.com/golusoris/goenvoy/releases) page.
+[GitHub Releases](https://github.com/plurano/goenvoy/releases) page.
 
 ## Upstream and licence
 
@@ -313,6 +313,6 @@ private scratch-link policy.
 **Debt Baseline**: `.standards-baseline.json` anchors the debt ratchet at
 5 recorded infractions; audit forbids growth.
 
-[praetor-docs-badge]: https://github.com/golusoris/goenvoy/actions/workflows/praetor-docs.yml/badge.svg
-[praetor-docs-runs]: https://github.com/golusoris/goenvoy/actions/workflows/praetor-docs.yml
+[praetor-docs-badge]: https://github.com/plurano/goenvoy/actions/workflows/praetor-docs.yml/badge.svg
+[praetor-docs-runs]: https://github.com/plurano/goenvoy/actions/workflows/praetor-docs.yml
 <!-- praetor:readme-governance:end -->

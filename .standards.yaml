@@ -1,7 +1,7 @@
 ---
 version: 1
 repository:
-  owner: golusoris
+  owner: plurano
   name: goenvoy
   visibility: public
   description: "Go client libraries for media automation, metadata, and download APIs — 62 zero-dependency modules"
@@ -57,7 +57,7 @@ documentation:
 exceptions:
   - rule: declared-linters
     tool: golangci-lint
-    reason: 'category D: golangci-lint runs in the pinned reusable workflow golusoris/golusoris ci-go.yml (ci.yml job ci, golangci-version v2.13.2); audit does not read remote reusable workflows; manifest caps expiry at 90 days'
+    reason: 'category D: golangci-lint runs in the pinned reusable workflow plurano/golusoris ci-go.yml (ci.yml job ci, golangci-version v2.13.2); audit does not read remote reusable workflows; manifest caps expiry at 90 days'
     expires: "2027-01-16"
   - rule: HISS-19
     path: arr/jackett/jackett.go

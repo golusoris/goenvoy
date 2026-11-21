@@ -1,6 +1,6 @@
 # Principles — goenvoy
 
-This is goenvoy's **foundational contract**. The equivalent of golusoris's `PLAN.md §2`, re-cut for a pure-stdlib multi-module client-lib collection. [AGENTS.md](https://github.com/golusoris/goenvoy/blob/main/AGENTS.md) and [CLAUDE.md](https://github.com/golusoris/goenvoy/blob/main/CLAUDE.md) cite this file as the authoritative reference. Any deviation requires a PR comment with justification.
+This is goenvoy's **foundational contract**. The equivalent of golusoris's `PLAN.md §2`, re-cut for a pure-stdlib multi-module client-lib collection. [AGENTS.md](https://github.com/plurano/goenvoy/blob/main/AGENTS.md) and [CLAUDE.md](https://github.com/plurano/goenvoy/blob/main/CLAUDE.md) cite this file as the authoritative reference. Any deviation requires a PR comment with justification.
 
 Structure mirrors golusoris §2 so reviewers can move between the two repos without re-orienting.
 

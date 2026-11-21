@@ -34,14 +34,14 @@ signatures. I/O methods take `context.Context` as their first argument.
 - **[Architecture Decisions](adr/README.md)** — Nygard-format records for
   module boundaries, constructors, functional options, error types, and OAuth2
   flows.
-- **[Upstream API notes](https://github.com/golusoris/goenvoy/tree/main/docs/upstream)**
+- **[Upstream API notes](https://github.com/plurano/goenvoy/tree/main/docs/upstream)**
   — per-service upstream API documentation URLs, target versions, and
   verification dates, grouped by category in the site navigation (for example,
   [Sonarr](upstream/arr-sonarr.md)).
 - **[Go package reference](https://pkg.go.dev/github.com/golusoris/goenvoy)**
   — generated API documentation and runnable examples on `pkg.go.dev`.
-- **[Contributing](https://github.com/golusoris/goenvoy/blob/main/CONTRIBUTING.md)**
+- **[Contributing](https://github.com/plurano/goenvoy/blob/main/CONTRIBUTING.md)**
   — Conventional Commits, CI gates, local development commands, and release
   workflow.
 
-The source lives on [GitHub](https://github.com/golusoris/goenvoy).
+The source lives on [GitHub](https://github.com/plurano/goenvoy).

@@ -31,7 +31,7 @@ Use this skill only when the user asks for a hand-cut tag of a version the relea
    git push origin "<module>/<version>"
    ```
 7. Dispatch the release run for the pushed tag, `gh workflow run release.yml --ref main -f tag="<module>/<version>"`, wait briefly, then report the run URL with `gh run list --workflow=release.yml --event=workflow_dispatch --limit=1 --json url,status,conclusion`.
-8. Tell the user to watch the run. When it completes, a signed GH Release with the tarball, checksums, .sig, .pem, and SBOM will be published at `https://github.com/golusoris/goenvoy/releases/tag/<module>/<version>`.
+8. Tell the user to watch the run. When it completes, a signed GH Release with the source tarball, the checksums file and the SPDX SBOM, each with a `.sigstore.json` Sigstore bundle, will be published at `https://github.com/plurano/goenvoy/releases/tag/<module>/<version>`.
 9. Remind the user: to consume the new version from another module in this monorepo, bump the `require` line in that module's `go.mod` and run `go mod tidy`.
 
 ## Don't

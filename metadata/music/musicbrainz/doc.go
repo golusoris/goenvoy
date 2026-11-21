@@ -7,7 +7,7 @@
 // # Authentication
 //
 // No API key is required. However, MusicBrainz requires a meaningful User-Agent
-// string for identification. The default is "goenvoy/0.0.1 (https://github.com/golusoris/goenvoy)".
+// string for identification. The default is "goenvoy/0.0.1 (https://github.com/plurano/goenvoy)".
 //
 // # Rate Limiting
 //
