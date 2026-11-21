@@ -1,8 +1,8 @@
 name: CI
 
 # Per-module Go gates (lint, gosec, govulncheck, race test + coverage, build)
-# delegate to golusoris/golusoris's reusable ci-go.yml, one call per module in
-# the `discover` matrix (golusoris/golusoris#184). apidiff stays local: this
+# delegate to plurano/golusoris's reusable ci-go.yml, one call per module in
+# the `discover` matrix (plurano/golusoris#184). apidiff stays local: this
 # repo tags each module independently (release-please, tag-separator "/", e.g.
 # anime/shoko/v1.2.3), and ci-go.yml's apidiff job only knows a single global
 # `git describe` tag, which would compare against an unrelated module's most
