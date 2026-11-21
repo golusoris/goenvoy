@@ -52,8 +52,8 @@ specs:
     license: GPL-3.0
   - name: chaptarr
     repository: Chaptarr/chaptarr
-    tag: v0.9.965
-    commit: e67374f4b3fed01bbf08f18672add944062fcb49
+    tag: v0.9.1000
+    commit: 04c1ed1fba2ba08b72ea5e80f85578eaa076ffe3
     path: src/Chaptarr.Api.V1/openapi.json
     sha256: 1444bc8e56f39a741070b4434a63dea7a18b9ef7e6f0f2fb105a2882a2a352d6
     license: GPL-3.0
