@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.8](https://github.com/plurano/goenvoy/compare/downloadclient/queue/v1.1.7...downloadclient/queue/v1.1.8) (2026-11-21)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/downloadclient/sabnzbd/v2 to v2.1.3 ([#366](https://github.com/plurano/goenvoy/issues/366)) ([f2942ab](https://github.com/plurano/goenvoy/commit/f2942ab334990a3087a917c1a2c6070eb0fca19a))
+
 ## [1.1.7](https://github.com/golusoris/goenvoy/compare/downloadclient/queue/v1.1.6...downloadclient/queue/v1.1.7) (2026-11-20)
 
 
