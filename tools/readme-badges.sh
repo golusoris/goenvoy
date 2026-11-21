@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Verify that GitHub Actions workflow badges and links in top-level Markdown
-# files point at workflow files that exist under .github/workflows.
+# Verify workflow links and reject Shields actions workflow/status badges everywhere.
+# Reject legacy Shields and native workflow status badges outside governance blocks.
 #   usage: tools/readme-badges.sh --repo owner/name [root]
 set -euo pipefail
 
@@ -79,8 +79,36 @@ ok_refs=0
 for f in "${files[@]}"; do
   rel="${f#"$ROOT"/}"
   readarray -t lines <"$f"
+  in_governance=0
   for ((lnum = 1; lnum <= ${#lines[@]}; lnum++)); do
     line="${lines[lnum - 1]}"
+    marker="${line#"${line%%[![:space:]]*}"}"
+    marker="${marker%"${marker##*[![:space:]]}"}"
+    if [[ "$marker" == '<!-- praetor:readme-governance:start -->' ]]; then
+      if [ "$in_governance" -eq 1 ]; then
+        printf 'readme-badges: %s:%s: governance start inside block\n' "$rel" "$lnum" >&2
+        misses=$((misses + 1))
+      else
+        in_governance=1
+        governance_start="$lnum"
+      fi
+    fi
+    if [[ "$marker" == '<!-- praetor:readme-governance:end -->' ]]; then
+      if [ "$in_governance" -eq 0 ]; then
+        printf 'readme-badges: %s:%s: governance end without start\n' "$rel" "$lnum" >&2
+        misses=$((misses + 1))
+      else
+        in_governance=0
+      fi
+    fi
+    if [[ "$line" == *img.shields.io/github/actions/workflow/status/* ]]; then
+      printf 'readme-badges: %s:%s: shields workflow/status badge reads the last default-branch run; use a static badge\n' "$rel" "$lnum" >&2
+      misses=$((misses + 1))
+    fi
+    if [ "$in_governance" -eq 0 ] && [[ "$line" == *img.shields.io/github/workflow/status/* || "$line" =~ actions/workflows/[A-Za-z0-9._-]+/badge\.svg ]]; then
+      printf 'readme-badges: %s:%s: workflow status badge reads the last default-branch run; use a static badge\n' "$rel" "$lnum" >&2
+      misses=$((misses + 1))
+    fi
     if [[ "$line" != *actions/workflows* ]]; then
       continue
     fi
@@ -113,6 +141,10 @@ for f in "${files[@]}"; do
       fi
     done
   done
+  if [ "$in_governance" -eq 1 ]; then
+    printf 'readme-badges: %s:%s: unclosed governance block\n' "$rel" "$governance_start" >&2
+    misses=$((misses + 1))
+  fi
 done
 
 if [ "$misses" -gt 0 ]; then

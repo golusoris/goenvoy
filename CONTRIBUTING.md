@@ -57,7 +57,7 @@ And repo-wide:
 ## Local development
 
 ```bash
-# Set up workspace (links all 69 modules)
+# Set up workspace (links all 71 modules)
 go work init && find . -name 'go.mod' -not -path './.workingdir/*' -exec dirname {} \; | xargs go work use
 
 # Full local CI (all modules)

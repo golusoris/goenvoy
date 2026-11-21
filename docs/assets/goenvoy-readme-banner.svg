@@ -40,7 +40,7 @@
   <text x="44" y="74" font-family="ui-sans-serif,Segoe UI,Helvetica,Arial,sans-serif"
         font-size="64" font-weight="700" fill="#f8fafc" letter-spacing="-1">go<tspan fill="url(#accent)">envoy</tspan></text>
   <g font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="15" fill="#94a3b8">
-    <text x="340" y="52">Pure-stdlib Go client libraries · 69 modules</text>
+    <text x="340" y="52">Pure-stdlib Go client libraries · 71 modules</text>
     <text x="340" y="76">Arr stack · Metadata · Download clients · Media servers</text>
   </g>
 </svg>
