@@ -1,6 +1,6 @@
 site_name: goenvoy
 site_description: Pure-stdlib Go client libraries for media automation, metadata, and download service APIs.
-site_url: https://golusoris.github.io/goenvoy/
+site_url: https://plurano.github.io/goenvoy/
 repo_url: https://github.com/plurano/goenvoy
 repo_name: plurano/goenvoy
 docs_dir: docs
