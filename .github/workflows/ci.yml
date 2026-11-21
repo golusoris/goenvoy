@@ -104,6 +104,8 @@ jobs:
         run: bash tools/testlib_test.sh
       - name: Pinned versions and digests live only in the pin file
         run: bash tools/pin-literals_test.sh
+      - name: Privileged writes stage and rename
+        run: bash tools/privileged-write_test.sh
       - name: Documented module count matches the release manifest
         run: bash tools/readme-module-count_test.sh
 
