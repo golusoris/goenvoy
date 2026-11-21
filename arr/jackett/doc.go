@@ -6,6 +6,9 @@
 //
 // Usage:
 //
-//	c := jackett.New("http://localhost:9117", "your-api-key")
+//	c, err := jackett.New("http://localhost:9117", "your-api-key")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
 //	results, err := c.Search(context.Background(), "ubuntu", nil)
 package jackett

@@ -3,6 +3,7 @@ package mylar
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,14 +38,13 @@ type Client struct {
 // It returns an error if baseURL is not a valid HTTP/HTTPS URL.
 func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	baseURL = strings.TrimRight(baseURL, "/")
-	redactor := &Client{apiKey: apiKey}
 
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("mylar: invalid base URL %q: %w", redactor.scrub(baseURL), redactor.redactError(err))
+		return nil, errors.New("mylar: invalid base URL: must be http(s) with a host")
 	}
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return nil, fmt.Errorf("mylar: invalid base URL %q: must be http(s) with a host", redactor.scrub(baseURL))
+		return nil, errors.New("mylar: invalid base URL: must be http(s) with a host")
 	}
 
 	c := &Client{
@@ -99,7 +99,7 @@ func (c *Client) get(ctx context.Context, cmd string, params url.Values, v any) 
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return &APIError{StatusCode: resp.StatusCode, Status: c.scrub(resp.Status), Body: c.scrub(string(data))}
+		return &APIError{StatusCode: resp.StatusCode, Status: c.scrub(resp.Status), Body: c.scrubBody(string(data))}
 	}
 
 	if v != nil {

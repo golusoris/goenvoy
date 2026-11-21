@@ -1,0 +1,504 @@
+package nzbhydra
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+	"time"
+)
+
+// TestRedactErrorRootIdentity checks that a root URL error is copied only when sanitizing changes it.
+func TestRedactErrorRootIdentity(t *testing.T) {
+	t.Parallel()
+	const key = "plain-key"
+	sentinel := errors.New("fixture transport failure")
+	cases := []struct {
+		name string
+		uerr *url.Error
+		keep bool
+	}{
+		{name: "keyless", uerr: &url.Error{Op: "Get", URL: "http://example.invalid/path?q=1", Err: sentinel}, keep: true},
+		{name: "key in URL", uerr: &url.Error{Op: "Get", URL: "http://example.invalid/?apikey=" + key, Err: sentinel}},
+		{name: "key in Op", uerr: &url.Error{Op: "Get " + key, URL: "http://example.invalid/", Err: sentinel}},
+		{name: "key in cause", uerr: &url.Error{Op: "Get", URL: "http://example.invalid/", Err: fmt.Errorf("fixture %s: %w", key, sentinel)}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertRootIdentity(t, &Client{apiKey: key}, tc.uerr, sentinel, tc.keep)
+		})
+	}
+}
+
+// assertRootIdentity checks the identity, cause, and text of a redacted root URL error.
+func assertRootIdentity(t *testing.T, c *Client, uerr *url.Error, sentinel error, keep bool) {
+	t.Helper()
+	got := c.redactError(uerr)
+	if same := any(got) == any(uerr); same != keep {
+		t.Errorf("same error value = %v; want %v", same, keep)
+	}
+	// Why: a sanitized root stays a *url.Error copy, not a hidden wrapper, so callers keep Op, URL and Err.
+	if clean, ok := got.(*url.Error); !keep && (!ok || clean.Op != c.scrub(uerr.Op)) { //nolint:errorlint // root type wanted, not a tree search
+		t.Errorf("redacted root = %T; want a *url.Error copy with a scrubbed Op", got)
+	}
+	if keep && !errors.Is(got, uerr) {
+		t.Error("errors.Is lost the original root URL error")
+	}
+	if !errors.Is(got, sentinel) {
+		t.Error("errors.Is lost the sentinel cause")
+	}
+	if c.containsKey(got.Error()) {
+		t.Errorf("key form leaked: %s", got.Error())
+	}
+}
+
+// TestScrubJSONForm checks that the HTML-escaped JSON form of the API key is scrubbed and detected.
+func TestScrubJSONForm(t *testing.T) {
+	t.Parallel()
+	const key = "fixture<key"
+	const escaped = `fixture\u003ckey`
+	cases := []struct{ name, text string }{
+		{name: "json escaped", text: `{"error":"` + escaped + `"}`},
+		{name: "raw", text: `{"error":"` + key + `"}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c := &Client{apiKey: key}
+			got := c.scrub(tc.text)
+			if strings.Contains(got, key) || strings.Contains(got, escaped) {
+				t.Errorf("scrub kept the key: %s", got)
+			}
+			if !strings.Contains(got, "REDACTED") {
+				t.Errorf("scrub = %q; want REDACTED marker", got)
+			}
+			if !c.containsKey(tc.text) {
+				t.Errorf("containsKey(%q) = false; want true", tc.text)
+			}
+		})
+	}
+}
+
+// TestAPIErrorJSONFormRedaction checks that a status body holding the JSON-escaped key is scrubbed.
+func TestAPIErrorJSONFormRedaction(t *testing.T) {
+	t.Parallel()
+	const key = "fixture<key"
+	const escaped = `fixture\u003ckey`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		if _, err := io.Copy(w, strings.NewReader(`{"error":"`+escaped+`"}`)); err != nil {
+			t.Errorf("nzbhydra test: write JSON form response: %v", err)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	c, err := New(srv.URL, key, WithHTTPClient(srv.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	_, err = c.doGet(ctx, srv.URL+"/fixture")
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected APIError, got %v", err)
+	}
+	for _, text := range []string{apiErr.Body, apiErr.Error()} {
+		if strings.Contains(text, key) || strings.Contains(text, escaped) {
+			t.Errorf("key leaked: %s", text)
+		}
+	}
+}
+
+// TestScrubPercentVariants checks that lower-case, upper-case, and mixed-case hex and path-escaped spellings of the API key are scrubbed and detected.
+func TestScrubPercentVariants(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ name, key, text, want string }{
+		{name: "lower-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2bk%2fy%3d1", want: "apikey=REDACTED"},
+		{name: "upper-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2Bk%2Fy%3D1", want: "apikey=REDACTED"},
+		{name: "mixed-case hex", key: "fixture+k/y=1", text: "apikey=fixture%2Bk%2fy%3D1", want: "apikey=REDACTED"},
+		{name: "path-escaped space", key: "fixture key", text: "fixture%20key", want: "REDACTED"},
+		{name: "URL path lower hex", key: `k"/z?`, text: "k%22/z%3f", want: "REDACTED"},
+		{name: "URL path mixed hex", key: `k"y/z 1`, text: "k%22y/z%201", want: "REDACTED"},
+		{name: "query-escaped space", key: "fixture key", text: "fixture+key", want: "REDACTED"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertScrubbed(t, &Client{apiKey: tc.key}, tc.text, tc.want)
+		})
+	}
+}
+
+// assertScrubbed checks the scrubbed text, the absence of every key form in it, and detection in the input.
+func assertScrubbed(t *testing.T, c *Client, text, want string) {
+	t.Helper()
+	got := c.scrub(text)
+	if got != want {
+		t.Errorf("scrub(%q) = %q; want %q", text, got, want)
+	}
+	for _, form := range c.keyForms() {
+		if strings.Contains(got, form) {
+			t.Errorf("scrub kept key form %q: %s", form, got)
+		}
+	}
+	if !c.containsKey(text) {
+		t.Errorf("containsKey(%q) = false; want true", text)
+	}
+	if c.containsKey(got) {
+		t.Errorf("containsKey(%q) = true; want false", got)
+	}
+}
+
+// TestKeyFormsDistinct checks that a key whose escaped forms all equal the raw key yields one form.
+func TestKeyFormsDistinct(t *testing.T) {
+	t.Parallel()
+	forms := (&Client{apiKey: "Plain-Key"}).keyForms()
+	if len(forms) != 1 || forms[0] != "Plain-Key" {
+		t.Errorf("keyForms() = %q; want [Plain-Key]", forms)
+	}
+}
+
+// TestAPIErrorPercentVariantRedaction checks that a status body holding a lower-, upper-, or mixed-case percent-hex key is scrubbed.
+func TestAPIErrorPercentVariantRedaction(t *testing.T) {
+	t.Parallel()
+	const key = "fixture+k/y=1"
+	cases := []struct{ name, spelling string }{
+		{name: "lower-case hex", spelling: "fixture%2bk%2fy%3d1"},
+		{name: "upper-case hex", spelling: "fixture%2Bk%2Fy%3D1"},
+		{name: "mixed-case hex", spelling: "fixture%2Bk%2fy%3D1"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			apiErr := percentFormAPIError(t, key, tc.spelling)
+			for _, text := range []string{apiErr.Body, apiErr.Error()} {
+				if strings.Contains(text, key) || strings.Contains(text, tc.spelling) {
+					t.Errorf("key leaked: %s", text)
+				}
+			}
+		})
+	}
+}
+
+// percentFormAPIError returns the APIError for a 500 response whose body echoes spelling.
+func percentFormAPIError(t *testing.T, key, spelling string) *APIError {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		if _, err := io.Copy(w, strings.NewReader("apikey="+spelling)); err != nil {
+			t.Errorf("nzbhydra test: write percent form response: %v", err)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	c, err := New(srv.URL, key, WithHTTPClient(srv.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	_, err = c.doGet(ctx, srv.URL+"/fixture")
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected APIError, got %v", err)
+	}
+	return apiErr
+}
+
+// temporaryCause is a fixture error whose Temporary method returns a fixed value.
+type temporaryCause struct {
+	text      string
+	temporary bool
+}
+
+// Error returns the fixture error text.
+func (e temporaryCause) Error() string { return e.text }
+
+// Temporary reports the configured temporary state.
+func (e temporaryCause) Temporary() bool { return e.temporary }
+
+// TestRedactedErrorTemporary checks that the wrapper forwards Temporary from the hidden error.
+func TestRedactedErrorTemporary(t *testing.T) {
+	t.Parallel()
+	const key = "fixture-key"
+	c := &Client{apiKey: key}
+	cases := []struct {
+		name  string
+		cause error
+		root  bool
+		want  bool
+	}{
+		{name: "temporary cause", cause: temporaryCause{text: "fixture " + key, temporary: true}, want: true},
+		{name: "permanent cause", cause: temporaryCause{text: "fixture " + key, temporary: false}, want: false},
+		{name: "wrapped temporary cause", cause: fmt.Errorf("fixture %s: %w", key, temporaryCause{text: "fixture cause", temporary: true}), want: true},
+		{name: "cause without method", cause: errors.New("fixture " + key), want: false},
+		{name: "root url error temporary cause", cause: &url.Error{Op: "Get", URL: "http://example.invalid/", Err: temporaryCause{text: "fixture " + key, temporary: true}}, root: true, want: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertTemporaryRedacted(t, c, tc.cause, tc.root, tc.want)
+		})
+	}
+}
+
+// assertTemporaryRedacted checks the wrapper type and Temporary result from scrubError or redactError.
+func assertTemporaryRedacted(t *testing.T, c *Client, cause error, root, want bool) {
+	t.Helper()
+	if root {
+		got := c.redactError(cause)
+		uerr, ok := got.(*url.Error) //nolint:errorlint // root type assertion wanted, not a tree search
+		if !ok {
+			t.Fatalf("redactError(%T) = %T; want *url.Error", cause, got)
+		}
+		if gotTemp := uerr.Temporary(); gotTemp != want {
+			t.Errorf("Temporary() = %v; want %v", gotTemp, want)
+		}
+		return
+	}
+	got := c.scrubError(cause)
+	hidden, ok := got.(*redactedError) //nolint:errorlint // wrapper type assertion wanted
+	if !ok {
+		t.Fatalf("scrubError(%T) = %T; want *redactedError", cause, got)
+	}
+	if gotTemp := hidden.Temporary(); gotTemp != want {
+		t.Errorf("Temporary() = %v; want %v", gotTemp, want)
+	}
+}
+
+// TestAPIErrorBodyEscapedForms checks JSON token and plain text redaction through the public client.
+func TestAPIErrorBodyEscapedForms(t *testing.T) {
+	t.Parallel()
+	const key = "fixture/part+token"
+	cases := []struct{ name, body, want string }{
+		{"solidus", `{"error":"fixture\/part+token"}`, `{"error":"REDACTED"}`},
+		{"unicode percent query", `{"error":"apikey=fixture\u00252Fpart\u00252Btoken"}`, "REDACTED"},
+		{"unicode value", `{"error":"fixture\u002fpart+token"}`, "REDACTED"},
+		{"unicode object key", `{"fixture\u002fpart+token":"error"}`, "REDACTED"},
+		{"unrelated JSON", `{"error":"other"}`, `{"error":"other"}`},
+		{"plain text", "before fixture/part+token after", "before REDACTED after"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertAPIErrorEscapedBody(t, key, tc.body, tc.want)
+		})
+	}
+}
+
+// TestAPIErrorBodyMalformedEscapes checks escaped keys and malformed response bodies.
+func TestAPIErrorBodyMalformedEscapes(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ name, key, body, want string }{
+		{"large number", "fixture/part+token", `{"n":1e1000,"error":"fixture\u002fpart+token"}`, "REDACTED"},
+		{"scrub breaks escape", "b123456", `{"noise":"\b123456","error":"\u0062123456"}`, "REDACTED"},
+		{"large number control", "fixture/part+token", `{"n":1e1000,"error":"none"}`, `{"n":1e1000,"error":"none"}`},
+		{"non JSON escaped key", "b123456", `oops \u0062123456`, "REDACTED"},
+		{"surrogate pair", "fixture-key", `{"error":"\ud83d\ude00"}`, `{"error":"\ud83d\ude00"}`},
+		{"lone surrogate", "fixture-key", `{"error":"\ud800"}`, `{"error":"\ud800"}`},
+		{"truncated unicode", "fixture-key", `abc\u00`, `abc\u00`},
+		{"truncated slash", "fixture-key", `abc\`, `abc\`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertAPIErrorEscapedBody(t, tc.key, tc.body, tc.want)
+		})
+	}
+}
+
+// TestUnescapeBody checks tolerant escape decoding and byte preservation.
+func TestUnescapeBody(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ name, input, want string }{
+		{"simple escapes", `\"\\\/\b\f\n\r\t`, "\"\\/\b\f\n\r\t"},
+		{"unicode hex cases", `\u0062\u00e9\u00E9`, "béé"},
+		{"surrogate pair", `\ud83d\ude00`, "😀"},
+		{"lowest pair", `\ud800\udc00`, "\U00010000"},
+		{"lone high", `\ud800x`, "�x"},
+		{"lone low", `\udc00`, "�"},
+		{"invalid and incomplete", `\u00xz\u00\q\`, `\u00xz\u00\q\`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if got := unescapeBody(tc.input); got != tc.want {
+				t.Errorf("unescapeBody(%q) = %q; want %q", tc.input, got, tc.want)
+			}
+		})
+	}
+}
+
+// assertAPIErrorEscapedBody checks the response body and error text from the public client.
+func assertAPIErrorEscapedBody(t *testing.T, key, body, want string) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		if _, err := io.Copy(w, strings.NewReader(body)); err != nil {
+			t.Errorf("write response: %v", err)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	c, err := New(srv.URL, key, WithHTTPClient(srv.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	calls := []func() error{
+		func() error { _, err := c.Search(ctx, "", nil); return err },
+		func() error { _, err := c.GetStats(ctx, StatsRequest{}); return err },
+	}
+	for _, call := range calls {
+		err = call()
+		var apiErr *APIError
+		if !errors.As(err, &apiErr) {
+			t.Fatalf("expected APIError, got %v", err)
+		}
+		if apiErr.Body != want {
+			t.Errorf("body = %q; want %q", apiErr.Body, want)
+		}
+		if (&Client{apiKey: key}).containsKey(err.Error()) || strings.Contains(apiErr.Body, key) {
+			t.Error("key leaked")
+		}
+	}
+}
+
+// TestTransportURLPathKeyRedaction checks a closed server error for a key in the URL path.
+func TestTransportURLPathKeyRedaction(t *testing.T) {
+	t.Parallel()
+	const key = `k"y/z 1`
+	const escaped = `k%22y/z%201`
+	cases := []struct{ name, path string }{
+		{"raw path", key},
+		{"escaped path", escaped},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertTransportURLPathKeyRedaction(t, key, escaped, tc.path)
+		})
+	}
+}
+
+// assertTransportURLPathKeyRedaction checks the error and URL from a closed server.
+func assertTransportURLPathKeyRedaction(t *testing.T, key, escaped, path string) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	srv.Close()
+	c, err := New(srv.URL+"/"+path, key, WithHTTPClient(srv.Client()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	_, err = c.Search(ctx, "", nil)
+	var uerr *url.Error
+	if !errors.As(err, &uerr) {
+		t.Fatalf("expected URL error, got %v", err)
+	}
+	for _, text := range []string{err.Error(), uerr.URL} {
+		if strings.Contains(text, key) || strings.Contains(text, escaped) {
+			t.Errorf("key leaked: %s", text)
+		}
+	}
+}
+
+// tokenCause is a fixture error with clean message text and an exported key-bearing field.
+type tokenCause struct {
+	Token   string
+	msg     string
+	err     error
+	timeout bool
+}
+
+// Error returns key-free text and dereferences e so a typed-nil call would panic.
+func (e *tokenCause) Error() string {
+	if e.msg != "" {
+		return e.msg
+	}
+	return "fixture transport cause"
+}
+
+// Unwrap returns the wrapped sentinel error.
+func (e *tokenCause) Unwrap() error { return e.err }
+
+// Timeout reports whether the fixture cause timed out.
+func (e *tokenCause) Timeout() bool { return e.timeout }
+
+// hiddenCauseCase defines one test case for URL error causes recovered via errors.As.
+type hiddenCauseCase struct {
+	name        string
+	cause       error
+	sentinel    error
+	wantNilErr  bool
+	wantTimeout bool
+}
+
+// TestRedactedErrorAsHidesCause checks that a recovered URL error copy wraps its cause in an opaque error.
+func TestRedactedErrorAsHidesCause(t *testing.T) {
+	t.Parallel()
+	const key = "fixture-key"
+	c := &Client{apiKey: key}
+	sentinel := errors.New("fixture transport failure")
+	cases := []hiddenCauseCase{
+		{name: "wrapped sentinel cause", cause: &tokenCause{Token: key, err: sentinel}, sentinel: sentinel},
+		{name: "direct sentinel cause", cause: sentinel, sentinel: sentinel},
+		{name: "timeout cause", cause: &tokenCause{Token: key, timeout: true}, wantTimeout: true},
+		{name: "nil cause", cause: nil, wantNilErr: true},
+		{name: "typed-nil cause", cause: (*tokenCause)(nil), wantNilErr: true},
+		{name: "wrapped typed-nil cause", cause: fmt.Errorf("wrap: %w", (*tokenCause)(nil))},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertHiddenURLCause(t, c, key, tc)
+		})
+	}
+}
+
+// assertHiddenURLCause checks that errors.As on a hidden URL error hides the underlying cause tree.
+func assertHiddenURLCause(t *testing.T, c *Client, key string, tc hiddenCauseCase) {
+	t.Helper()
+	hidden := c.redactError(fmt.Errorf("outer: %w", &url.Error{Op: "Get", URL: "http://example.invalid/?apikey=" + key, Err: tc.cause}))
+	var uerr *url.Error
+	if !errors.As(hidden, &uerr) || uerr == nil {
+		t.Fatal("errors.As into *url.Error = false or nil; want non-nil")
+	}
+	if c.containsKey(uerr.Error()) || strings.Contains(uerr.Error(), key) {
+		t.Errorf("uerr.Error() leaked key: %s", uerr.Error())
+	}
+	if tc.wantNilErr {
+		if uerr.Err != nil {
+			t.Errorf("uerr.Err = %v; want nil", uerr.Err)
+		}
+		return
+	}
+	assertOpaqueURLCause(t, uerr, tc)
+}
+
+// assertOpaqueURLCause checks that a non-nil URL error cause is opaque while preserving Is and Timeout.
+func assertOpaqueURLCause(t *testing.T, uerr *url.Error, tc hiddenCauseCase) {
+	t.Helper()
+	if _, ok := uerr.Err.(*tokenCause); ok { //nolint:errorlint // verify direct type assertion on uerr.Err fails
+		t.Error("uerr.Err exposed *tokenCause")
+	}
+	if _, ok := errors.Unwrap(uerr).(*tokenCause); ok { //nolint:errorlint // verify type assertion on errors.Unwrap(uerr) fails
+		t.Error("errors.Unwrap(uerr) exposed *tokenCause")
+	}
+	var typedCause *tokenCause
+	if errors.As(uerr.Err, &typedCause) {
+		t.Errorf("errors.As(uerr.Err, &typedCause) = true (%v); want false", typedCause)
+	}
+	if tc.sentinel != nil && !errors.Is(uerr, tc.sentinel) {
+		t.Error("errors.Is(uerr, sentinel) = false; want true")
+	}
+	if uerr.Timeout() != tc.wantTimeout {
+		t.Errorf("uerr.Timeout() = %v; want %v", uerr.Timeout(), tc.wantTimeout)
+	}
+}

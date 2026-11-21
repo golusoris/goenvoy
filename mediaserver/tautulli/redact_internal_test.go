@@ -233,12 +233,12 @@ func TestRedactError(t *testing.T) {
 		name      string
 		err       error
 		sentinel  error
-		rootURL   bool
+		hasURL    bool
 		unchanged bool
 	}{
-		{name: "root URL", err: uerr, sentinel: inner, rootURL: true},
-		{name: "joined URL", err: errors.Join(io.ErrUnexpectedEOF, uerr), sentinel: io.ErrUnexpectedEOF},
-		{name: "wrapped URL", err: fmt.Errorf("read: %w", uerr), sentinel: inner},
+		{name: "root URL", err: uerr, sentinel: inner, hasURL: true},
+		{name: "joined URL", err: errors.Join(io.ErrUnexpectedEOF, uerr), sentinel: io.ErrUnexpectedEOF, hasURL: true},
+		{name: "wrapped URL", err: fmt.Errorf("read: %w", uerr), sentinel: inner, hasURL: true},
 		{name: "keyless join", err: keyless, sentinel: io.ErrUnexpectedEOF, unchanged: true},
 	}
 	for _, tc := range cases {
@@ -247,14 +247,26 @@ func TestRedactError(t *testing.T) {
 			got := c.redactError(tc.err)
 			assertNoKey(t, got.Error(), key)
 			assertSentinel(t, got, tc.sentinel)
-			var matched *url.Error
-			if isURL := errors.As(got, &matched); isURL != tc.rootURL {
-				t.Errorf("root URL type = %v; want %v", isURL, tc.rootURL)
-			}
+			assertMatchedURLError(t, got, key, tc.hasURL)
 			if same := any(got) == any(tc.err); same != tc.unchanged {
 				t.Errorf("same error value = %v; want %v", same, tc.unchanged)
 			}
 		})
+	}
+}
+
+// assertMatchedURLError checks whether errors.As reaches a sanitized *url.Error.
+func assertMatchedURLError(t *testing.T, got error, key string, wantURL bool) {
+	t.Helper()
+	var matched *url.Error
+	if isURL := errors.As(got, &matched); isURL != wantURL {
+		t.Errorf("URL error reachable = %v; want %v", isURL, wantURL)
+	}
+	if wantURL {
+		if matched == nil {
+			t.Fatal("matched URL error = nil; want non-nil")
+		}
+		assertNoKey(t, matched.URL, key)
 	}
 }
 
@@ -277,7 +289,118 @@ func TestNewRedaction(t *testing.T) {
 			if c != nil || err == nil {
 				t.Fatalf("New = %v, %v; want nil client and error", c, err)
 			}
-			assertSafeText(t, err.Error(), key)
+			assertNoKey(t, err.Error(), key)
+		})
+	}
+}
+
+// TestNewRedactsForeignQueryKey checks that constructor errors strip a query apikey different from the client key.
+func TestNewRedactsForeignQueryKey(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, baseURL, key string
+	}{
+		{name: "unsupported scheme", baseURL: "ftp://example.invalid/?apikey=other", key: "k"},
+		{name: "parse failure", baseURL: "http://%zz/?apikey=other", key: ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := New(tc.baseURL, tc.key)
+			if c != nil || err == nil {
+				t.Fatalf("New(%q) = %v, %v; want nil client and error", tc.baseURL, c, err)
+			}
+			if strings.Contains(err.Error(), "other") {
+				t.Errorf("error leaked query key: %s", err.Error())
+			}
+		})
+	}
+}
+
+// TestNewDropsUserinfo checks that constructor errors return a fixed message and omit userinfo and keys.
+func TestNewDropsUserinfo(t *testing.T) {
+	t.Parallel()
+	const key = "abc:def+xyz"
+	cases := []struct {
+		name, baseURL, secret string
+	}{
+		{name: "password equal to key with query", baseURL: "ftp://user:abc:def+xyz@example.invalid/?apikey=abc:def+xyz", secret: key},
+		{name: "foreign password with query", baseURL: "ftp://user:foreign-pass@example.invalid/?apikey=abc:def+xyz", secret: "foreign-pass"},
+		{name: "parse failure with foreign password", baseURL: "http://user:foreign-pass@%zz/?apikey=abc:def+xyz", secret: "foreign-pass"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertNewDropsUserinfo(t, tc.baseURL, key, tc.secret)
+		})
+	}
+}
+
+// assertNewDropsUserinfo checks that New fails on baseURL with the fixed message without leaking user, key, or secret.
+func assertNewDropsUserinfo(t *testing.T, baseURL, key, secret string) {
+	t.Helper()
+	c, err := New(baseURL, key)
+	if c != nil || err == nil {
+		t.Fatalf("New(%q) = %v, %v; want nil client and error", baseURL, c, err)
+	}
+	const want = "tautulli: invalid base URL: must be http(s) with a host"
+	if err.Error() != want {
+		t.Errorf("err.Error() = %q; want %q", err.Error(), want)
+	}
+	for _, sub := range []string{"user", key, secret, "abc%3Adef+xyz", "abc%3adef+xyz"} {
+		if strings.Contains(err.Error(), sub) {
+			t.Errorf("error leaked %q: %s", sub, err.Error())
+		}
+	}
+}
+
+// TestNewOversizedKey checks that an oversized API key does not panic during constructor error scrubbing.
+func TestNewOversizedKey(t *testing.T) {
+	t.Parallel()
+	key := strings.Repeat("k+", 150000)
+	cases := []struct {
+		name, baseURL string
+	}{
+		{name: "unsupported scheme", baseURL: "ftp://example.invalid/?raw=" + key},
+		{name: "parse failure", baseURL: "http://%zz/?raw=" + key},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := New(tc.baseURL, key)
+			if c != nil {
+				t.Errorf("New() client = %v; want nil", c)
+			}
+			if err == nil {
+				t.Fatal("New() error = nil; want non-nil")
+			}
+			assertNoKey(t, err.Error(), key)
+		})
+	}
+}
+
+// TestCarriesKeyNil checks that a nil error never reports a key or panics.
+func TestCarriesKeyNil(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name, key string
+	}{
+		{name: "keyed client", key: "k"},
+		{name: "empty key", key: ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c := &Client{apiKey: tc.key}
+			if c.carriesKey(nil) {
+				t.Error("carriesKey(nil) = true; want false")
+			}
+			if got := c.redactError(nil); got != nil {
+				t.Errorf("redactError(nil) = %v; want nil", got)
+			}
+			if got := c.scrubError(nil); got != nil {
+				t.Errorf("scrubError(nil) = %v; want nil", got)
+			}
 		})
 	}
 }
@@ -402,5 +525,35 @@ func TestScrubQuotedKey(t *testing.T) {
 				t.Errorf("containsKey = %v; want %v", got, tc.contains)
 			}
 		})
+	}
+}
+
+// redactionFanout is a keyless error whose Unwrap returns the previous level twice.
+type redactionFanout struct{ prev error }
+
+// Error returns constant text so only the tree shape costs time.
+func (redactionFanout) Error() string { return "fixture fanout level" }
+
+// Unwrap returns the previous level twice, doubling the tree per level.
+func (e redactionFanout) Unwrap() []error { return []error{e.prev, e.prev} }
+
+// TestRedactErrorFanoutBounded checks that a keyless exponential error tree returns promptly.
+func TestRedactErrorFanoutBounded(t *testing.T) {
+	t.Parallel()
+	c := &Client{apiKey: "placeholder+k/y=1"}
+	var err error
+	err = errors.New("fixture fanout leaf")
+	for range 40 {
+		err = redactionFanout{prev: err}
+	}
+	done := make(chan error, 1)
+	go func() { done <- c.redactError(err) }()
+	select {
+	case got := <-done:
+		if got == nil {
+			t.Error("redactError returned nil for a non-nil error")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("redactError did not return within 2s")
 	}
 }

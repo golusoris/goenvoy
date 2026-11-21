@@ -3,6 +3,7 @@ package tautulli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -47,14 +48,13 @@ type Client struct {
 // It returns an error if baseURL is not a valid HTTP/HTTPS URL.
 func New(baseURL, apiKey string, opts ...Option) (*Client, error) {
 	baseURL = strings.TrimRight(baseURL, "/")
-	redactor := &Client{apiKey: apiKey}
 
 	u, err := url.Parse(baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("tautulli: invalid base URL %q: %w", redactor.scrub(baseURL), redactor.redactError(err))
+		return nil, errors.New("tautulli: invalid base URL: must be http(s) with a host")
 	}
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return nil, fmt.Errorf("tautulli: invalid base URL %q: must be http(s) with a host", redactor.scrub(baseURL))
+		return nil, errors.New("tautulli: invalid base URL: must be http(s) with a host")
 	}
 
 	c := &Client{
@@ -124,7 +124,7 @@ func (c *Client) get(ctx context.Context, cmd string, params url.Values) (json.R
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, &APIError{StatusCode: resp.StatusCode, RawBody: c.scrub(string(body))}
+		return nil, &APIError{StatusCode: resp.StatusCode, RawBody: c.scrubBody(string(body))}
 	}
 
 	var r apiResponse
@@ -133,7 +133,7 @@ func (c *Client) get(ctx context.Context, cmd string, params url.Values) (json.R
 	}
 
 	if r.Response.Result != "success" {
-		return nil, &APIError{StatusCode: resp.StatusCode, RawBody: c.scrub(r.Response.Message)}
+		return nil, &APIError{StatusCode: resp.StatusCode, RawBody: c.scrubBody(r.Response.Message)}
 	}
 
 	return r.Response.Data, nil

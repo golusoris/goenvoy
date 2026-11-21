@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestRedactURL verifies that redactURL replaces apikey query parameter values.
@@ -189,6 +190,11 @@ func checkRedactErrorWrappers(t *testing.T, key string) {
 			if !errors.Is(got, tc.err) || !errors.Is(got, tc.target) {
 				t.Errorf("errors.Is lost the root error or target %v", tc.target)
 			}
+			var matched *url.Error
+			if !errors.As(got, &matched) || matched == nil {
+				t.Fatal("errors.As into *url.Error = false or nil; want non-nil")
+			}
+			checkRedactedKeyForms(t, matched.URL, key)
 		})
 	}
 }
@@ -254,6 +260,73 @@ func TestRedactURLErrorNonURLError(t *testing.T) {
 
 	if gotNil := c.redactError(nil); gotNil != nil {
 		t.Errorf("c.redactError(nil) = %v, want nil", gotNil)
+	}
+	if gotNil := c.scrubError(nil); gotNil != nil {
+		t.Errorf("c.scrubError(nil) = %v, want nil", gotNil)
+	}
+}
+
+// TestNewDropsUserinfo checks that constructor errors return a fixed message and omit userinfo and keys.
+func TestNewDropsUserinfo(t *testing.T) {
+	t.Parallel()
+	const key = "abc:def+xyz"
+	cases := []struct {
+		name, baseURL, secret string
+	}{
+		{name: "password equal to key", baseURL: "ftp://user:abc:def+xyz@example.invalid", secret: key},
+		{name: "foreign password", baseURL: "ftp://user:foreign-pass@example.invalid", secret: "foreign-pass"},
+		{name: "parse failure with foreign password", baseURL: "http://user:foreign-pass@%zz/", secret: "foreign-pass"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assertNewDropsUserinfo(t, tc.baseURL, key, tc.secret)
+		})
+	}
+}
+
+// assertNewDropsUserinfo checks that New fails on baseURL with the fixed message without leaking user, key, or secret.
+func assertNewDropsUserinfo(t *testing.T, baseURL, key, secret string) {
+	t.Helper()
+	c, err := New(baseURL, key)
+	if c != nil || err == nil {
+		t.Fatalf("New(%q) = %v, %v; want nil client and error", baseURL, c, err)
+	}
+	const want = "jackett: invalid base URL: must be http(s) with a host"
+	if err.Error() != want {
+		t.Errorf("err.Error() = %q; want %q", err.Error(), want)
+	}
+	for _, sub := range []string{"user", key, secret, "abc%3Adef+xyz", "abc%3adef+xyz"} {
+		if strings.Contains(err.Error(), sub) {
+			t.Errorf("error leaked %q: %s", sub, err.Error())
+		}
+	}
+}
+
+// TestNewOversizedKey checks that an oversized API key does not panic during constructor error scrubbing.
+func TestNewOversizedKey(t *testing.T) {
+	t.Parallel()
+	key := strings.Repeat("k+", 150000)
+	cases := []struct {
+		name, baseURL string
+	}{
+		{name: "unsupported scheme", baseURL: "ftp://example.invalid/" + key},
+		{name: "parse failure", baseURL: "http://%zz/" + key},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			c, err := New(tc.baseURL, key)
+			if c != nil {
+				t.Errorf("New() client = %v; want nil", c)
+			}
+			if err == nil {
+				t.Fatal("New() error = nil; want non-nil")
+			}
+			if strings.Contains(err.Error(), key) || strings.Contains(err.Error(), url.QueryEscape(key)) {
+				t.Error("New() error leaked oversized key")
+			}
+		})
 	}
 }
 
@@ -400,5 +473,35 @@ func TestAppendWrappedBound(t *testing.T) {
 				t.Errorf("len(appendWrapped(queue, err)) = %d, want %d", got, tc.wantLen)
 			}
 		})
+	}
+}
+
+// redactionFanout is a keyless error whose Unwrap returns the previous level twice.
+type redactionFanout struct{ prev error }
+
+// Error returns constant text so only the tree shape costs time.
+func (redactionFanout) Error() string { return "fixture fanout level" }
+
+// Unwrap returns the previous level twice, doubling the tree per level.
+func (e redactionFanout) Unwrap() []error { return []error{e.prev, e.prev} }
+
+// TestRedactErrorFanoutBounded checks that a keyless exponential error tree returns promptly.
+func TestRedactErrorFanoutBounded(t *testing.T) {
+	t.Parallel()
+	c := &Client{apiKey: "placeholder+k/y=1"}
+	var err error
+	err = errors.New("fixture fanout leaf")
+	for range 40 {
+		err = redactionFanout{prev: err}
+	}
+	done := make(chan error, 1)
+	go func() { done <- c.redactError(err) }()
+	select {
+	case got := <-done:
+		if got == nil {
+			t.Error("redactError returned nil for a non-nil error")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("redactError did not return within 2s")
 	}
 }
