@@ -16,8 +16,8 @@ Only the latest release of each module is patched. Downstream apps should bump p
 
 Every tagged module release ships:
 
-- Source tarball + `checksums.txt`.
-- `checksums.txt.sig` + `.pem` — [cosign](https://docs.sigstore.dev/cosign/) keyless signature (GitHub OIDC).
+- Source tarball `<module>_<version>_source.tar.gz` and its `<module>_<version>_source.checksums.txt`, where `<module>` is the module path with `/` replaced by `_` (for example `metadata_video_tvmaze_v1.3.7_source.tar.gz`).
+- `<asset>.sigstore.json` for every asset — [cosign](https://docs.sigstore.dev/cosign/) keyless Sigstore bundle (GitHub OIDC) holding the signature, certificate and transparency-log proof.
 - SPDX SBOM via [syft](https://github.com/anchore/syft).
 - SLSA-L3 provenance via [actions/attest-build-provenance](https://github.com/actions/attest-build-provenance).
 
@@ -25,11 +25,11 @@ Verify a release archive:
 
 ```bash
 cosign verify-blob \
-  --certificate checksums.txt.pem \
-  --signature checksums.txt.sig \
+  --bundle <module>_<version>_source.checksums.txt.sigstore.json \
   --certificate-identity-regexp '^https://github.com/(golusoris|plurano)/goenvoy/' \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-  checksums.txt
+  <module>_<version>_source.checksums.txt
+sha256sum -c <module>_<version>_source.checksums.txt
 ```
 
 ## Security practices
