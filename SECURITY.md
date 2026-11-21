@@ -28,7 +28,7 @@ cosign verify-blob \
   --bundle <module>_<version>_source.checksums.txt.sigstore.json \
   --certificate-identity-regexp '^https://github.com/(golusoris|plurano)/goenvoy/' \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
-  <module>_<version>_source.checksums.txt
+  <module>_<version>_source.checksums.txt &&
 sha256sum -c <module>_<version>_source.checksums.txt
 ```
 
