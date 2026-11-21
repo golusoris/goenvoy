@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.3](https://github.com/plurano/goenvoy/compare/metadata/adult/tpdb/v1.4.2...metadata/adult/tpdb/v1.4.3) (2026-11-21)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.5 ([#367](https://github.com/plurano/goenvoy/issues/367)) ([bb7ff30](https://github.com/plurano/goenvoy/commit/bb7ff301368a6cff3acc8a96cceb65a22e9f99f3))
+
 ## [1.4.2](https://github.com/golusoris/goenvoy/compare/metadata/adult/tpdb/v1.4.1...metadata/adult/tpdb/v1.4.2) (2026-11-20)
 
 

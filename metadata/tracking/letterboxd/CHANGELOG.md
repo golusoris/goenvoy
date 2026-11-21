@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.9](https://github.com/plurano/goenvoy/compare/metadata/tracking/letterboxd/v1.0.8...metadata/tracking/letterboxd/v1.0.9) (2026-11-21)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/golusoris/goenvoy/metadata to v1.4.5 ([#367](https://github.com/plurano/goenvoy/issues/367)) ([bb7ff30](https://github.com/plurano/goenvoy/commit/bb7ff301368a6cff3acc8a96cceb65a22e9f99f3))
+
 ## [1.0.8](https://github.com/golusoris/goenvoy/compare/metadata/tracking/letterboxd/v1.0.7...metadata/tracking/letterboxd/v1.0.8) (2026-11-20)
 
 
