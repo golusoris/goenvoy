@@ -270,7 +270,7 @@ jobs:
     permissions:
       contents: read
       security-events: write   # gosec SARIF upload inside ci-go.yml (capped by this grant)
-    uses: plurano/golusoris/.github/workflows/ci-go.yml@7c3fabe83c1bfa77120f7efa6bcef29448a9170e # v0.22.2
+    uses: plurano/golusoris/.github/workflows/ci-go.yml@eef63b5553103793eb934cc67a0ea0a75847cfaf # v0.22.3
     with:
       runs-on: ubuntu-26.04
       working-directory: ${{ matrix.module }}
